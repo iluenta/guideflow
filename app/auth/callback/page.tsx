@@ -14,19 +14,37 @@ function CallbackContent() {
       const fullHash = window.location.hash
       const hash = fullHash ? fullHash.substring(1) : ''
       const hashParams = new URLSearchParams(hash)
-      
+
       const accessToken = hashParams.get('access_token')
       const refreshToken = hashParams.get('refresh_token')
       const hashError = hashParams.get('error')
       const hashErrorDescription = hashParams.get('error_description')
-      
+
       // También verificar query params (por si viene de otro flujo o redirección desde login)
-      const code = searchParams.get('code')
-      const tokenHash = searchParams.get('token_hash')
-      const type = searchParams.get('type')
-      const queryError = searchParams.get('error')
-      const queryAccessToken = searchParams.get('access_token') // Por si viene desde login
-      const queryRefreshToken = searchParams.get('refresh_token') // Por si viene desde login
+      let effectiveParams = searchParams
+
+      // En algunos casos searchParams puede estar vacío inicialmente en producción
+      // o ser afectado por ruteos de middleware/proxies. Usamos la URL real como respaldo.
+      if (!effectiveParams.has('code') && !effectiveParams.has('token_hash') && typeof window !== 'undefined') {
+        effectiveParams = new URL(window.location.href).searchParams
+      }
+
+      const code = effectiveParams.get('code')
+      const tokenHash = effectiveParams.get('token_hash')
+      const type = effectiveParams.get('type')
+      const queryError = effectiveParams.get('error')
+      const queryAccessToken = effectiveParams.get('access_token') // Por si viene desde login
+      const queryRefreshToken = effectiveParams.get('refresh_token') // Por si viene desde login
+
+      // Log para debugging en producción (ayuda a diagnosticar problemas de parámetros)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Auth Callback Params:', {
+          hasHashTokens: !!(accessToken && refreshToken),
+          hasCode: !!code,
+          hasTokenHash: !!tokenHash,
+          type
+        })
+      }
 
       // PRIORIDAD 1: Si hay tokens en el hash, procesarlos primero (ignorar errores en query params)
       // Caso 1: Tokens en hash (magic link/recovery directo de Supabase)
@@ -34,7 +52,7 @@ function CallbackContent() {
       if (accessToken && refreshToken) {
         // Limpiar el hash de la URL para evitar loops
         window.history.replaceState(null, '', window.location.pathname + window.location.search)
-        
+
         try {
           const response = await fetch('/api/auth/callback', {
             method: 'POST',
@@ -50,6 +68,7 @@ function CallbackContent() {
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}))
+            console.error('Callback API error (hash):', errorData.error)
             router.push(`/auth/login?error=${encodeURIComponent(errorData.error || 'Error al iniciar sesión')}`)
             return
           }
@@ -81,6 +100,7 @@ function CallbackContent() {
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}))
+            console.error('Callback API error (query tokens):', errorData.error)
             router.push(`/auth/login?error=${encodeURIComponent(errorData.error || 'Error al iniciar sesión')}`)
             return
           }
@@ -98,6 +118,7 @@ function CallbackContent() {
       // Manejar errores SOLO si no hay tokens válidos
       if ((hashError || queryError) && !accessToken && !refreshToken && !queryAccessToken && !queryRefreshToken && !tokenHash && !code) {
         const errorMessage = hashErrorDescription || hashError || queryError || 'Error de autenticación'
+        console.error('Auth error received:', errorMessage)
         router.push(`/auth/login?error=${encodeURIComponent(errorMessage)}`)
         return
       }
@@ -119,6 +140,7 @@ function CallbackContent() {
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}))
+            console.error('Callback API error (token_hash):', errorData.error)
             router.push(`/auth/login?error=${encodeURIComponent(errorData.error || 'Error al iniciar sesión')}`)
             return
           }
@@ -149,6 +171,7 @@ function CallbackContent() {
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}))
+            console.error('Callback API error (code):', errorData.error)
             router.push(`/auth/login?error=${encodeURIComponent(errorData.error || 'Error al iniciar sesión')}`)
             return
           }
@@ -163,8 +186,10 @@ function CallbackContent() {
         }
       }
 
-      // Si no hay ningún parámetro válido, redirigir a login
-      router.push('/auth/login?error=No se recibió código de autenticación')
+      // Si no hay ningún parámetro válido, redirigir a login con un mensaje más claro
+      const debugInfo = `(Params: hash=${!!accessToken}, code=${!!code}, token=${!!tokenHash})`
+      console.warn('No authentication parameters found.', debugInfo)
+      router.push(`/auth/login?error=${encodeURIComponent('No se recibieron datos de autenticación válidos. Por favor, intenta de nuevo.')}`)
     }
 
     handleCallback()
