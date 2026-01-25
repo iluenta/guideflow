@@ -60,6 +60,7 @@ NEXT_PUBLIC_SUPABASE_URL=tu_url_de_supabase
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 SUPPORT_EMAIL=soporte@hostguide.app
+SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key  # Solo para scripts de desarrollo
 ```
 
 ### Base de Datos
@@ -101,6 +102,29 @@ npm run test:watch
 - `npm run build` - Build de producción
 - `npm run start` - Servidor de producción
 - `npm run lint` - Linter de código
+- `npm run dev:admin` - Generar magic link para desarrollo (sin enviar email)
+- `npm run dev:admin:create` - Crear usuario de desarrollo
+
+### Scripts de Desarrollo
+
+Para evitar rate limits de email en desarrollo, puedes usar estos scripts:
+
+```bash
+# Generar magic link sin enviar email (requiere SUPABASE_SERVICE_ROLE_KEY)
+npm run dev:admin
+
+# Con email personalizado
+npm run dev:admin mi-email@ejemplo.com
+
+# Crear usuario de desarrollo primero
+npm run dev:admin:create
+
+# Con email y password personalizados
+npm run dev:admin:create mi-email@ejemplo.com MiPassword123!
+```
+
+**Nota**: Necesitas agregar `SUPABASE_SERVICE_ROLE_KEY` a tu `.env.local`. Puedes obtenerla en:
+Supabase Dashboard > Settings > API > service_role (secret)
 
 ## 🔒 Seguridad
 

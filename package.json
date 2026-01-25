@@ -12,7 +12,10 @@
     "test:integration": "vitest run --dir __tests__/integration",
     "test:security": "vitest run --dir __tests__/security",
     "test:watch": "vitest watch",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "dev:admin": "node scripts/dev-admin-login.js",
+    "dev:admin:create": "node scripts/create-dev-admin.js",
+    "dev:admin:link": "node scripts/dev-admin-login.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -51,6 +54,7 @@
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
+    "dotenv": "^17.2.3",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
@@ -70,12 +74,12 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.2",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@testing-library/react": "^16.0.0",
-    "@testing-library/jest-dom": "^6.6.0",
-    "@testing-library/user-event": "^14.5.2",
     "@vitejs/plugin-react": "^4.3.0",
     "jsdom": "^25.0.0",
     "postcss": "^8.5",
