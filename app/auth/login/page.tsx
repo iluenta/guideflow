@@ -1,12 +1,32 @@
 "use client"
 
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { MagicLinkForm } from '@/components/auth/magic-link-form'
 import { Home } from 'lucide-react'
 
 function LoginForm() {
+  const router = useRouter()
+
+  // Manejar tokens en hash si Supabase redirige directamente a login
+  useEffect(() => {
+    const hash = window.location.hash.substring(1)
+    if (!hash) return
+
+    const hashParams = new URLSearchParams(hash)
+    const accessToken = hashParams.get('access_token')
+    const refreshToken = hashParams.get('refresh_token')
+
+    // Si hay tokens en el hash, redirigir al callback para procesarlos
+    if (accessToken && refreshToken) {
+      // Construir URL de callback con los tokens en query params para que el callback los procese
+      const callbackUrl = `/auth/callback?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`
+      router.push(callbackUrl)
+      return
+    }
+  }, [router])
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">

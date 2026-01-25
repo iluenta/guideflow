@@ -18,11 +18,13 @@ function CallbackContent() {
       const hashError = hashParams.get('error')
       const hashErrorDescription = hashParams.get('error_description')
       
-      // También verificar query params (por si viene de otro flujo)
+      // También verificar query params (por si viene de otro flujo o redirección desde login)
       const code = searchParams.get('code')
       const tokenHash = searchParams.get('token_hash')
       const type = searchParams.get('type')
       const queryError = searchParams.get('error')
+      const queryAccessToken = searchParams.get('access_token') // Por si viene desde login
+      const queryRefreshToken = searchParams.get('refresh_token') // Por si viene desde login
 
       // PRIORIDAD 1: Si hay tokens en el hash, procesarlos primero (ignorar errores en query params)
       // Caso 1: Tokens en hash (magic link/recovery directo de Supabase)
@@ -57,8 +59,39 @@ function CallbackContent() {
         }
       }
 
+      // También verificar tokens en query params (por si vienen desde login)
+      if (queryAccessToken && queryRefreshToken) {
+        try {
+          const response = await fetch('/api/auth/callback', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              access_token: queryAccessToken,
+              refresh_token: queryRefreshToken,
+            }),
+            credentials: 'include',
+          })
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}))
+            router.push(`/auth/login?error=${encodeURIComponent(errorData.error || 'Error al iniciar sesión')}`)
+            return
+          }
+
+          // Redirigir al dashboard
+          router.push('/dashboard')
+          return
+        } catch (err) {
+          console.error('Error processing callback from query params:', err)
+          router.push(`/auth/login?error=${encodeURIComponent('Error inesperado')}`)
+          return
+        }
+      }
+
       // Manejar errores SOLO si no hay tokens válidos
-      if ((hashError || queryError) && !accessToken && !refreshToken && !tokenHash && !code) {
+      if ((hashError || queryError) && !accessToken && !refreshToken && !queryAccessToken && !queryRefreshToken && !tokenHash && !code) {
         const errorMessage = hashErrorDescription || hashError || queryError || 'Error de autenticación'
         router.push(`/auth/login?error=${encodeURIComponent(errorMessage)}`)
         return
