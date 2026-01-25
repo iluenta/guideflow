@@ -12,19 +12,45 @@ function LoginForm() {
 
   // Manejar tokens en hash si Supabase redirige directamente a login
   useEffect(() => {
-    const hash = window.location.hash.substring(1)
-    if (!hash) return
+    // Usar window.location directamente para asegurar que leemos el hash actual
+    const fullHash = window.location.hash
+    if (!fullHash || fullHash.length <= 1) return
 
+    const hash = fullHash.substring(1)
     const hashParams = new URLSearchParams(hash)
     const accessToken = hashParams.get('access_token')
     const refreshToken = hashParams.get('refresh_token')
 
-    // Si hay tokens en el hash, redirigir al callback para procesarlos
+    // Si hay tokens en el hash, procesarlos inmediatamente
     if (accessToken && refreshToken) {
-      // Construir URL de callback con los tokens en query params para que el callback los procese
-      const callbackUrl = `/auth/callback?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`
-      router.push(callbackUrl)
-      return
+      // Limpiar el hash de la URL para evitar loops
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      
+      // Enviar tokens directamente al servidor
+      fetch('/api/auth/callback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        }),
+        credentials: 'include',
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}))
+            router.push(`/auth/login?error=${encodeURIComponent(errorData.error || 'Error al iniciar sesión')}`)
+            return
+          }
+          // Redirigir al dashboard
+          router.push('/dashboard')
+        })
+        .catch((err) => {
+          console.error('Error processing callback:', err)
+          router.push(`/auth/login?error=${encodeURIComponent('Error inesperado al procesar autenticación')}`)
+        })
     }
   }, [router])
   return (

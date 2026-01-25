@@ -10,7 +10,9 @@ function CallbackContent() {
   useEffect(() => {
     async function handleCallback() {
       // Leer parámetros del hash (fragmento de URL después de #) - PRIORITARIO
-      const hash = window.location.hash.substring(1)
+      // Usar window.location directamente para asegurar que leemos el hash actual
+      const fullHash = window.location.hash
+      const hash = fullHash ? fullHash.substring(1) : ''
       const hashParams = new URLSearchParams(hash)
       
       const accessToken = hashParams.get('access_token')
@@ -30,6 +32,9 @@ function CallbackContent() {
       // Caso 1: Tokens en hash (magic link/recovery directo de Supabase)
       // Necesitamos enviarlos al servidor para establecer cookies HTTP-only
       if (accessToken && refreshToken) {
+        // Limpiar el hash de la URL para evitar loops
+        window.history.replaceState(null, '', window.location.pathname + window.location.search)
+        
         try {
           const response = await fetch('/api/auth/callback', {
             method: 'POST',

@@ -10,14 +10,26 @@ export async function POST(request: Request) {
 
     // Caso 1: Tokens directos (del hash)
     if (access_token && refresh_token) {
-      const { error } = await supabase.auth.setSession({
+      const { data, error } = await supabase.auth.setSession({
         access_token,
         refresh_token,
       })
 
       if (error) {
+        // Log del error para debugging (sin exponer tokens)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error setting session:', error.message, error.status)
+        }
         return NextResponse.json(
-          { error: 'Error al establecer la sesión' },
+          { error: error.message || 'Error al establecer la sesión' },
+          { status: 400 }
+        )
+      }
+
+      // Verificar que la sesión se estableció correctamente
+      if (!data.session) {
+        return NextResponse.json(
+          { error: 'No se pudo establecer la sesión' },
           { status: 400 }
         )
       }
