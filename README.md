@@ -2,6 +2,8 @@
 
 Plataforma SaaS multi-tenant para gestión de propiedades de alquiler vacacional.
 
+> Test deploy automático - $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+
 ## 🚀 Inicio Rápido
 
 ### Prerrequisitos
