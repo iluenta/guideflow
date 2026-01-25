@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect } from 'react'
+import React, { Suspense, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,8 +9,10 @@ import { Home } from 'lucide-react'
 
 function LoginForm() {
   const router = useRouter()
+  const [processingHash, setProcessingHash] = React.useState(false)
 
   // Manejar tokens en hash si Supabase redirige directamente a login
+  // IMPORTANTE: Ejecutar inmediatamente, antes de renderizar
   useEffect(() => {
     // Usar window.location directamente para asegurar que leemos el hash actual
     const fullHash = window.location.hash
@@ -23,8 +25,10 @@ function LoginForm() {
 
     // Si hay tokens en el hash, procesarlos inmediatamente
     if (accessToken && refreshToken) {
-      // Limpiar el hash de la URL para evitar loops
-      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      setProcessingHash(true)
+      
+      // Limpiar el hash y query params de la URL para evitar loops
+      window.history.replaceState(null, '', window.location.pathname)
       
       // Enviar tokens directamente al servidor
       fetch('/api/auth/callback', {
@@ -41,6 +45,7 @@ function LoginForm() {
         .then(async (response) => {
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}))
+            setProcessingHash(false)
             router.push(`/auth/login?error=${encodeURIComponent(errorData.error || 'Error al iniciar sesión')}`)
             return
           }
@@ -49,10 +54,23 @@ function LoginForm() {
         })
         .catch((err) => {
           console.error('Error processing callback:', err)
+          setProcessingHash(false)
           router.push(`/auth/login?error=${encodeURIComponent('Error inesperado al procesar autenticación')}`)
         })
     }
   }, [router])
+
+  // Mostrar loading mientras procesamos el hash
+  if (processingHash) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+          <p className="text-muted-foreground">Procesando autenticación...</p>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
@@ -71,7 +89,7 @@ function LoginForm() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <MagicLinkForm mode="login" />
+            <MagicLinkForm mode="login" hideError={processingHash} />
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">¿No tienes una cuenta? </span>
               <Link href="/auth/signup" className="font-medium text-primary hover:underline">

@@ -11,9 +11,10 @@ import { Mail, Loader2 } from 'lucide-react'
 interface MagicLinkFormProps {
   mode: 'login' | 'signup'
   onSuccess?: () => void
+  hideError?: boolean
 }
 
-function MagicLinkFormContent({ mode, onSuccess }: MagicLinkFormProps) {
+function MagicLinkFormContent({ mode, onSuccess, hideError = false }: MagicLinkFormProps) {
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -95,7 +96,7 @@ function MagicLinkFormContent({ mode, onSuccess }: MagicLinkFormProps) {
           disabled={isPending}
         />
       </div>
-      {error && (
+      {error && !hideError && (
         <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
