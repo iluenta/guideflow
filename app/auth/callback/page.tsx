@@ -1,14 +1,20 @@
 "use client"
 
-import { useEffect, Suspense } from 'react'
+import { useEffect, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 function CallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const hasProcessed = useRef(false)
 
   useEffect(() => {
+    // Evitar doble ejecución en React 18/19 Strict Mode
+    if (hasProcessed.current) return
+
     async function handleCallback() {
+      // Marcar como procesado al inicio para evitar re-intentos concurrentes
+      hasProcessed.current = true
       // Leer parámetros del hash (fragmento de URL después de #) - PRIORITARIO
       // Usar window.location directamente para asegurar que leemos el hash actual
       const fullHash = window.location.hash
