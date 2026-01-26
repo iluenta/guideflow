@@ -26,11 +26,9 @@ function CallbackContent() {
       const hashError = hashParams.get('error')
       const hashErrorDescription = hashParams.get('error_description')
 
-      // También verificar query params (por si viene de otro flujo o redirección desde login)
-      let effectiveParams = searchParams
-
       // En algunos casos searchParams puede estar vacío inicialmente en producción
       // o ser afectado por ruteos de middleware/proxies. Usamos la URL real como respaldo.
+      let effectiveParams: any = searchParams
       if (!effectiveParams.has('code') && !effectiveParams.has('token_hash') && typeof window !== 'undefined') {
         effectiveParams = new URL(window.location.href).searchParams
       }

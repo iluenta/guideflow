@@ -366,7 +366,7 @@ export default function GuestGuidePage() {
                     Lugares de interes
                   </p>
                   <div className="space-y-2">
-                    {selectedSectionData.content.landmarks.map((landmark: string) => (
+                    {(selectedSectionData.content as any).landmarks?.map((landmark: string) => (
                       <div
                         key={landmark}
                         className="flex items-center gap-2 text-sm text-muted-foreground"
@@ -715,11 +715,10 @@ export default function GuestGuidePage() {
               className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                  message.role === "user"
+                className={`max-w-[85%] rounded-2xl px-4 py-3 ${message.role === "user"
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-foreground"
-                }`}
+                  }`}
               >
                 <p className="text-sm">{message.content}</p>
               </div>
@@ -831,11 +830,10 @@ export default function GuestGuidePage() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-1 flex-col items-center gap-1 py-2 transition-colors ${
-                activeTab === item.id
+              className={`flex flex-1 flex-col items-center gap-1 py-2 transition-colors ${activeTab === item.id
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               <item.icon className={`h-5 w-5 ${activeTab === item.id ? "stroke-[2.5]" : ""}`} />
               <span className={`text-xs ${activeTab === item.id ? "font-medium" : ""}`}>

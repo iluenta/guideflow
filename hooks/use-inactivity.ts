@@ -6,12 +6,12 @@ interface UseInactivityOptions {
   onLogout?: () => void
 }
 
-export function useInactivity({ 
+export function useInactivity({
   timeoutMinutes = 1440, // 24 horas por defecto
-  onLogout 
+  onLogout
 }: UseInactivityOptions = {}) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const resetTimerRef = useRef<() => void>()
+  const resetTimerRef = useRef<(() => void) | null>(null)
 
   const resetTimer = useCallback(() => {
     // Clear existing timer
@@ -41,7 +41,7 @@ export function useInactivity({
 
     // Event listeners for user activity
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click']
-    
+
     const handleActivity = () => {
       resetTimer()
     }
