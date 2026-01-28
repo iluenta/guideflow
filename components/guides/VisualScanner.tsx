@@ -1,0 +1,242 @@
+'use client'
+
+import { useState, useRef } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+    Camera,
+    Image as ImageIcon,
+    X,
+    Sparkles,
+    Plus,
+    Trash2,
+    Loader2
+} from 'lucide-react'
+import { toast } from 'sonner'
+import Image from 'next/image'
+import { getScanUploadUrl } from '@/app/actions/properties'
+import { processBatchScans } from '@/app/actions/ai-ingestion'
+
+interface VisualScannerProps {
+    propertyId: string
+}
+
+interface SelectedPhoto {
+    id: string
+    file: File
+    preview: string
+}
+
+export function VisualScanner({ propertyId }: VisualScannerProps) {
+    const [photos, setPhotos] = useState<SelectedPhoto[]>([])
+    const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const [uploadingIds, setUploadingIds] = useState<Set<string>>(new Set())
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || [])
+        if (files.length === 0) return
+
+        // Limit to 30 photos total
+        const remainingSlots = 30 - photos.length
+        if (remainingSlots <= 0) {
+            toast.error('Has alcanzado el límite máximo de 30 fotos')
+            return
+        }
+
+        const filesToProcess = files.slice(0, remainingSlots)
+        if (files.length > remainingSlots) {
+            toast.warning(`Solo se han añadido las primeras ${remainingSlots} fotos (Límite: 30)`)
+        }
+
+        const newPhotos: SelectedPhoto[] = filesToProcess.map(file => ({
+            id: Math.random().toString(36).substring(7),
+            file,
+            preview: URL.createObjectURL(file)
+        }))
+
+        setPhotos(prev => [...prev, ...newPhotos])
+    }
+
+    const removePhoto = (id: string) => {
+        if (uploadingIds.has(id)) return // Don't remove while uploading
+        setPhotos(prev => {
+            const photoToRemove = prev.find(p => p.id === id)
+            if (photoToRemove) {
+                URL.revokeObjectURL(photoToRemove.preview)
+            }
+            return prev.filter(p => p.id !== id)
+        })
+    }
+
+    const handleAnalyze = async () => {
+        if (photos.length === 0) {
+            toast.error('Selecciona al menos una foto para analizar')
+            return
+        }
+
+        setIsAnalyzing(true)
+        try {
+            toast.loading('Subiendo fotos...', { id: 'analyze-process' })
+
+            // 1. Upload photos and get public URLs
+            const uploadedUrls = await Promise.all(
+                photos.map(async (photo) => {
+                    setUploadingIds(prev => new Set(prev).add(photo.id))
+
+                    try {
+                        // Pass propertyId to the action as updated in previous step
+                        const { uploadUrl, publicUrl } = await getScanUploadUrl(propertyId, photo.file.name, photo.file.type)
+
+                        const response = await fetch(uploadUrl, {
+                            method: 'PUT',
+                            body: photo.file,
+                            headers: {
+                                'Content-Type': photo.file.type,
+                            },
+                        })
+
+                        if (!response.ok) throw new Error(`Error al subir ${photo.file.name}`)
+                        return publicUrl
+                    } finally {
+                        setUploadingIds(prev => {
+                            const next = new Set(prev)
+                            next.delete(photo.id)
+                            return next
+                        })
+                    }
+                })
+            )
+
+            toast.loading('Analizando con IA...', { id: 'analyze-process' })
+
+            // 2. Process with Gemini
+            const result = await processBatchScans(propertyId, uploadedUrls)
+
+            toast.success(`Análisis completado: Se han generado ${result.count} secciones`, { id: 'analyze-process' })
+
+            // Clear photos after success
+            setPhotos([])
+        } catch (error: any) {
+            console.error('Analyze error:', error)
+            toast.error('Error al analizar las fotos: ' + error.message, { id: 'analyze-process' })
+        } finally {
+            setIsAnalyzing(false)
+        }
+    }
+
+    return (
+        <div className="relative min-h-[400px] space-y-6 pb-40">
+            {/* Header / Intro */}
+            <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-semibold">Escáner Visual con IA</h3>
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+                        {photos.length}/30
+                    </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                    Sube fotos de tu propiedad para que la IA detecte automáticamente servicios,
+                    normas y detalles importantes para tu guía.
+                </p>
+            </div>
+
+            {/* MultiPhotoSelector / Dropzone */}
+            <div
+                className="border-2 border-dashed border-muted-foreground/20 rounded-3xl p-8 flex flex-col items-center justify-center bg-muted/5 hover:bg-muted/10 transition-colors cursor-pointer group"
+                onClick={() => fileInputRef.current?.click()}
+            >
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    capture="environment"
+                    multiple
+                    onChange={handleFileChange}
+                />
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform mb-4">
+                    <Camera className="h-8 w-8" />
+                </div>
+                <div className="text-center">
+                    <p className="font-semibold text-lg">Toca para abrir la cámara o subir fotos</p>
+                    <p className="text-xs text-muted-foreground mt-1 text-balance">
+                        Selecciona hasta 30 fotos de electrodomésticos, manuales o estancias
+                    </p>
+                </div>
+            </div>
+
+            {/* Thumbnail Grid */}
+            {photos.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {photos.map((photo) => (
+                        <Card key={photo.id} className="relative aspect-square rounded-2xl overflow-hidden group border-none shadow-md">
+                            <Image
+                                src={photo.preview}
+                                alt="Preview"
+                                fill
+                                className="object-cover transition-transform group-hover:scale-105"
+                            />
+
+                            {/* Individual Upload Progress Overlay */}
+                            {uploadingIds.has(photo.id) && (
+                                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2 z-10">
+                                    <Loader2 className="h-8 w-8 animate-spin text-white" />
+                                    <span className="text-[10px] text-white font-bold uppercase tracking-wider">Subiendo</span>
+                                </div>
+                            )}
+
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="h-10 w-10 rounded-full"
+                                    disabled={uploadingIds.has(photo.id)}
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        removePhoto(photo.id)
+                                    }}
+                                >
+                                    <Trash2 className="h-5 w-5" />
+                                </Button>
+                            </div>
+                        </Card>
+                    ))}
+
+                    {/* Add more button in grid */}
+                    {photos.length < 30 && (
+                        <button
+                            className="aspect-square rounded-2xl border-2 border-dashed border-muted flex flex-col items-center justify-center gap-2 hover:bg-muted/30 transition-colors"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <Plus className="h-6 w-6 text-muted-foreground" />
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Añadir</span>
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* FAB - Fixed Action Button Mobile-First */}
+            <div className="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-50 w-full px-4 max-w-md md:bottom-10 md:static md:translate-x-0 md:px-0 md:max-w-none md:flex md:justify-center">
+                <Button
+                    size="lg"
+                    className="w-full md:w-auto md:min-w-[280px] h-14 rounded-full shadow-2xl shadow-primary/40 text-lg font-bold gap-3 animate-in fade-in slide-in-from-bottom-10 duration-700"
+                    disabled={photos.length === 0 || isAnalyzing}
+                    onClick={handleAnalyze}
+                >
+                    {isAnalyzing ? (
+                        <>
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                            Analizando estancia...
+                        </>
+                    ) : (
+                        <>
+                            <Sparkles className="h-6 w-6 fill-current" />
+                            Analizar Estancia con IA
+                        </>
+                    )}
+                </Button>
+            </div>
+        </div>
+    )
+}
