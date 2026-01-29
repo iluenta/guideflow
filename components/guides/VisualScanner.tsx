@@ -10,7 +10,10 @@ import {
     Sparkles,
     Plus,
     Trash2,
-    Loader2
+    Loader2,
+    Info,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
@@ -31,6 +34,7 @@ export function VisualScanner({ propertyId }: VisualScannerProps) {
     const [photos, setPhotos] = useState<SelectedPhoto[]>([])
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [uploadingIds, setUploadingIds] = useState<Set<string>>(new Set())
+    const [showTips, setShowTips] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,6 +60,11 @@ export function VisualScanner({ propertyId }: VisualScannerProps) {
         }))
 
         setPhotos(prev => [...prev, ...newPhotos])
+
+        // Reset input value to allow selecting the same file again
+        if (e.target) {
+            e.target.value = ''
+        }
     }
 
     const removePhoto = (id: string) => {
@@ -110,10 +119,10 @@ export function VisualScanner({ propertyId }: VisualScannerProps) {
 
             toast.loading('Analizando con IA...', { id: 'analyze-process' })
 
-            // 2. Process with Gemini
+            // 2. Process with Claude & Brave (Fase 1)
             const result = await processBatchScans(propertyId, uploadedUrls)
 
-            toast.success(`Análisis completado: Se han generado ${result.count} secciones`, { id: 'analyze-process' })
+            toast.success(`Análisis completado: Se han generado ${result.count} manuales técnicos`, { id: 'analyze-process' })
 
             // Clear photos after success
             setPhotos([])
@@ -140,6 +149,62 @@ export function VisualScanner({ propertyId }: VisualScannerProps) {
                     normas y detalles importantes para tu guía.
                 </p>
             </div>
+
+            {/* Photo Tips Toggle */}
+            <Card className="border-primary/20 bg-primary/5 rounded-2xl overflow-hidden">
+                <button
+                    onClick={() => setShowTips(!showTips)}
+                    className="w-full flex items-center justify-between p-4 text-sm font-semibold text-primary hover:bg-primary/5 transition-colors"
+                >
+                    <div className="flex items-center gap-2">
+                        <Info className="h-4 w-4" />
+                        Cómo fotografiar para un análisis perfecto
+                    </div>
+                    {showTips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </button>
+                {showTips && (
+                    <CardContent className="p-4 pt-0 space-y-4 text-sm border-t border-primary/10 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1">
+                                <p className="font-bold flex items-center gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                    Captura el "DNI" del aparato
+                                </p>
+                                <p className="text-muted-foreground text-xs leading-relaxed">
+                                    Saca una foto a la pegatina del modelo (E-Nr o Serial). Suele estar en el borde de la puerta o bajo la caldera. Así HostBot te dará instrucciones exactas.
+                                </p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="font-bold flex items-center gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                    Ángulo de 45 grados
+                                </p>
+                                <p className="text-muted-foreground text-xs leading-relaxed">
+                                    Un ángulo ligero permite a la IA analizar relieves y sombras para detectar si los mandos son táctiles o escamoteables.
+                                </p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="font-bold flex items-center gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                    Iluminación sin reflejos
+                                </p>
+                                <p className="text-muted-foreground text-xs leading-relaxed">
+                                    Evita el flash directo sobre pantallas o vitrocerámicas. Los reflejos bloquean la lectura de iconos.
+                                </p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="font-bold flex items-center gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                    Regla del 75%
+                                </p>
+                                <p className="text-muted-foreground text-xs leading-relaxed">
+                                    Asegúrate de que el panel de mandos ocupe la mayor parte de la foto para máxima resolución de símbolos.
+                                </p>
+                            </div>
+                        </div>
+                    </CardContent>
+                )}
+            </Card>
 
             {/* MultiPhotoSelector / Dropzone */}
             <div

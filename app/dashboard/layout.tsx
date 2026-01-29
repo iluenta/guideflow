@@ -170,7 +170,7 @@ export default function DashboardLayout({
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-8">
           <div className="flex items-center gap-4">
             <button
-              className="lg:hidden"
+              className="lg:hidden invisible md:visible"
               onClick={() => setSidebarOpen(true)}
             >
               <Menu className="h-6 w-6 text-foreground" />
@@ -229,7 +229,32 @@ export default function DashboardLayout({
         </header>
 
         {/* Page content */}
-        <main className="min-h-[calc(100vh-4rem)] p-4 lg:p-8">{children}</main>
+        <main className="min-h-[calc(100vh-4rem)] p-4 lg:p-8 pb-24 lg:pb-8">{children}</main>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t border-border lg:hidden px-6 h-20 flex items-center justify-between shadow-[0_-4px_20px_-1px_rgba(0,0,0,0.1)]">
+          {navigation.slice(0, 5).map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center gap-1 min-w-[64px] transition-all",
+                  isActive ? "text-primary scale-110" : "text-muted-foreground"
+                )}
+              >
+                <div className={cn(
+                  "p-2 rounded-xl transition-colors",
+                  isActive ? "bg-primary/10" : "hover:bg-muted"
+                )}>
+                  <item.icon className="h-5 w-5" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-tighter">{item.name}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
     </div>
   );

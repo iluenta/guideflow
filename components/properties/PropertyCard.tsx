@@ -3,7 +3,9 @@
 import { Property } from '@/app/actions/properties'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MapPin, Users, Bed, Bath, Edit2 } from 'lucide-react'
+import { MapPin, Users, Bed, Bath, Edit2, Sparkles, ExternalLink } from 'lucide-react'
+import { AutoBuildDialog } from './AutoBuildDialog'
+import Link from 'next/link'
 import Image from 'next/image'
 
 interface PropertyCardProps {
@@ -66,9 +68,21 @@ export function PropertyCard({ property, onEdit }: PropertyCardProps) {
                 </div>
             </CardContent>
 
-            <CardFooter className="p-4 pt-0">
+            <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-2 w-full">
+                    <AutoBuildDialog
+                        propertyId={property.id}
+                        onComplete={() => { }}
+                    />
+                    <Button variant="secondary" className="gap-2 text-xs" asChild>
+                        <Link href={`/${property.slug}`} target="_blank">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Ver Guía
+                        </Link>
+                    </Button>
+                </div>
                 <Button variant="outline" className="w-full text-xs font-bold uppercase tracking-wider h-9" onClick={() => onEdit(property)}>
-                    Gestionar Propiedad
+                    Editar Detalles
                 </Button>
             </CardFooter>
         </Card>

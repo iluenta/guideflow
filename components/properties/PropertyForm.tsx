@@ -5,22 +5,27 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Property, createProperty, updateProperty, getUploadUrl } from '@/app/actions/properties'
+import { generateManualFromImage } from '@/app/actions/ai-ingestion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Loader2, Upload, X, Home, MapPin, Users, Bed, Bath } from 'lucide-react'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form'
+import { Loader2, Upload, X, Home, MapPin, Users, Bed, Bath, Sparkles } from 'lucide-react'
 import Image from 'next/image'
 import { toast } from 'sonner'
 
 const propertySchema = z.object({
     name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
+    slug: z.string().min(3, 'El slug debe tener al menos 3 caracteres').regex(/^[a-z0-9-]+$/, 'Solo letras minúsculas, números y guiones'),
     location: z.string().min(3, 'La ubicación es requerida'),
     beds: z.number().min(0).default(1),
     baths: z.number().min(0).default(1),
     guests: z.number().min(1).default(2),
     description: z.string().optional(),
     main_image_url: z.string().optional().nullable(),
+    theme_config: z.object({
+        primary_color: z.string().startsWith('#').default('#ef4444'),
+    }).default({ primary_color: '#ef4444' }),
 })
 
 type PropertyFormValues = z.infer<typeof propertySchema>
@@ -35,18 +40,21 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
     const [loading, setLoading] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [preview, setPreview] = useState<string | null>(property?.main_image_url || null)
+    const [analyzing, setAnalyzing] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const form = useForm<PropertyFormValues>({
         resolver: zodResolver(propertySchema),
         defaultValues: {
             name: property?.name || '',
+            slug: property?.slug || '',
             location: property?.location || '',
             beds: property?.beds || 1,
             baths: property?.baths || 1,
             guests: property?.guests || 2,
             description: property?.description || '',
             main_image_url: property?.main_image_url || null,
+            theme_config: property?.theme_config || { primary_color: '#ef4444' },
         },
     })
 
@@ -81,6 +89,21 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
             setPreview(property?.main_image_url || null)
         } finally {
             setUploading(false)
+        }
+    }
+
+    async function handleAnalyzeImage() {
+        if (!property?.id || !preview) return
+
+        try {
+            setAnalyzing(true)
+            await generateManualFromImage(property.id, preview)
+            toast.success('Manual generado y añadido a la guía')
+            onSuccess()
+        } catch (error: any) {
+            toast.error('Error al analizar la imagen: ' + error.message)
+        } finally {
+            setAnalyzing(false)
         }
     }
 
@@ -119,6 +142,26 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
                                             <Input placeholder="Ej: Apartamento Centro Madrid" className="pl-9" {...field} />
                                         </div>
                                     </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="slug"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>URL personalizada (Slug)</FormLabel>
+                                    <FormControl>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-xs text-muted-foreground whitespace-nowrap">hostguide.app/</span>
+                                            <Input placeholder="casa-asturias" {...field} />
+                                        </div>
+                                    </FormControl>
+                                    <FormDescription className="text-xs">
+                                        Solo minúsculas, números y guiones.
+                                    </FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -193,10 +236,26 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
                             {preview ? (
                                 <>
                                     <Image src={preview} alt="Preview" fill className="object-cover" />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <Button type="button" variant="secondary" size="sm" className="gap-2">
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                        <Button type="button" variant="secondary" size="sm" className="gap-2" onClick={() => !uploading && fileInputRef.current?.click()}>
                                             <Upload className="h-4 w-4" /> Cambiar imagen
                                         </Button>
+                                        {property?.id && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20"
+                                                disabled={analyzing}
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleAnalyzeImage()
+                                                }}
+                                            >
+                                                {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                                                Generar Manual IA
+                                            </Button>
+                                        )}
                                     </div>
                                     <Button
                                         type="button"
@@ -239,6 +298,26 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
                                 accept="image/*"
                             />
                         </div>
+
+                        <FormField
+                            control={form.control}
+                            name="theme_config.primary_color"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Color de marca principal</FormLabel>
+                                    <FormControl>
+                                        <div className="flex items-center gap-3">
+                                            <div
+                                                className="h-9 w-9 rounded-md border border-border shadow-sm"
+                                                style={{ backgroundColor: field.value }}
+                                            />
+                                            <Input type="text" placeholder="#ef4444" {...field} className="font-mono uppercase" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <FormField
                             control={form.control}

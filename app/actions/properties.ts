@@ -315,3 +315,20 @@ export async function updateSectionsOrder(propertyId: string, sectionIds: string
 
     revalidatePath(`/dashboard/properties/${propertyId}`)
 }
+
+export async function getPropertyManuals(propertyId: string) {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+        .from('property_manuals')
+        .select('*')
+        .eq('property_id', propertyId)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching manuals:', error.message)
+        return []
+    }
+
+    return data
+}
