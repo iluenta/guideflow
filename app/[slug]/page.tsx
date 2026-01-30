@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { SectionRenderer } from '@/components/guide/SectionRenderer'
 import { ManualsList } from '@/components/guide/ManualsList'
+import { GuestChat } from '@/components/guide/GuestChat'
 import { Badge } from '@/components/ui/badge'
 import { Home, ExternalLink, MapPin, Sparkles, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -103,13 +104,23 @@ export default async function GuidePage({ params }: GuidePageProps) {
                     <div className="relative z-10">
                         <h3 className="text-xl font-black mb-1 flex items-center gap-3">
                             ¿Tienes dudas?
-                            <Badge className="bg-primary text-white text-[9px] border-none font-black px-2 py-0">LIVE AI</Badge>
+                            <Badge className="bg-primary text-white text-[9px] border-none font-black px-2 py-0">LIVE AI assistant</Badge>
                         </h3>
                         <p className="text-slate-400 text-sm mb-6 leading-relaxed">
                             Pregúntame sobre el parking, cómo llegar o dónde cenar cerca de <span className="text-white font-bold">{property.name}</span>.
                         </p>
-                        <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 font-black rounded-2xl h-12 shadow-xl shadow-black/20 group-active:scale-95 transition-all">
-                            Iniciar Asistente Virtual
+                        <Button
+                            className="w-full bg-white text-slate-900 hover:bg-slate-100 font-black rounded-2xl h-12 shadow-xl shadow-black/20 group-active:scale-95 transition-all"
+                            asChild
+                        >
+                            {/* We can't easily open the floating chat from here without state management, 
+                                so for now we'll just keep the floating button as the primary interaction 
+                                or add a script to trigger it if needed. 
+                                Actually, since this is a server component, we'll just let the floating button handle it.
+                            */}
+                            <div className="flex items-center justify-center gap-2 cursor-pointer">
+                                Iniciar Asistente Virtual
+                            </div>
                         </Button>
                     </div>
                 </div>
@@ -126,6 +137,12 @@ export default async function GuidePage({ params }: GuidePageProps) {
                     </p>
                 </footer>
             </main>
+
+            {/* Floating Chat Component */}
+            <GuestChat
+                propertyId={property.id}
+                propertyName={property.name}
+            />
 
             {/* Floating Header (Glassmorphism) */}
             <div className="fixed top-4 left-4 right-4 z-50 flex items-center justify-center pointer-events-none">

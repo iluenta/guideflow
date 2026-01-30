@@ -103,10 +103,6 @@ export async function geminiREST(
             return null;
         }
 
-        if (candidate.finishReason && candidate.finishReason !== 'STOP') {
-            console.warn(`[GEMINI-REST] Warning: finishReason is ${candidate.finishReason}`);
-        }
-
         const fullText = candidate.content.parts
             .map(p => p.text || '')
             .join(' ')
@@ -120,11 +116,9 @@ export async function geminiREST(
         const effectiveMimeType = options.responseMimeType ?? 'application/json';
 
         if (effectiveMimeType === 'application/json') {
-            // WHITESPACE LOOP PROTECTION
-            // If the model gets stuck generating infinite spaces/newlines, we collapse them.
             let cleaned = fullText
-                .replace(/[ \t]{4,}/g, '   ') // Collapse 4+ spaces/tabs to 3
-                .replace(/\n{4,}/g, '\n\n\n') // Collapse 4+ newlines to 3
+                .replace(/[ \t]{4,}/g, '   ')
+                .replace(/\n{4,}/g, '\n\n\n')
                 .trim();
 
             if (cleaned.includes('```')) {
@@ -132,7 +126,6 @@ export async function geminiREST(
                 if (codeBlockMatch && codeBlockMatch[1]) {
                     cleaned = codeBlockMatch[1].trim();
                 } else {
-                    // Truncated code block? Find the first {
                     const firstBrace = cleaned.indexOf('{');
                     if (firstBrace !== -1) cleaned = cleaned.substring(firstBrace);
                 }
@@ -144,18 +137,15 @@ export async function geminiREST(
             try {
                 return JSON.parse(cleaned);
             } catch (e) {
-                // If parse fails, it might be truncated. Try a basic repair.
                 if (candidate.finishReason === 'MAX_TOKENS' || cleaned.length > 2000) {
                     try {
-                        console.warn('[GEMINI-REST] Parse failed, attempting truncation repair...');
                         const repaired = repairTruncatedJson(cleaned);
                         return JSON.parse(repaired);
                     } catch (repairError) {
                         console.error('[GEMINI-REST] Repair failed.');
                     }
                 }
-                console.error('[GEMINI-REST] JSON Parse Error. Raw text prefix:', fullText.substring(0, 500));
-                console.error('[GEMINI-REST] Cleaned text attempted:', cleaned);
+                console.error('[GEMINI-REST] JSON Parse Error');
                 return null;
             }
         }
@@ -168,46 +158,68 @@ export async function geminiREST(
 }
 
 /**
- * Basic repair for truncated JSON strings.
- * Closes unclosed quotes and braces.
+ * Streaming REST calling function for Chat
  */
+export async function streamGeminiREST(
+    modelName: string,
+    messages: { role: 'user' | 'model'; content: string }[],
+    options: {
+        systemInstruction?: string;
+        temperature?: number;
+        maxOutputTokens?: number;
+    } = {}
+) {
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is missing');
+
+    const payload: any = {
+        contents: messages.map(m => ({
+            role: m.role,
+            parts: [{ text: m.content }]
+        })),
+        generationConfig: {
+            temperature: options.temperature ?? 0.7,
+            maxOutputTokens: options.maxOutputTokens ?? 2048,
+        },
+        safetySettings: DEFAULT_SAFETY_SETTINGS
+    };
+
+    if (options.systemInstruction) {
+        payload.system_instruction = {
+            parts: [{ text: options.systemInstruction }]
+        };
+    }
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse&key=${apiKey}`;
+
+    return await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+}
+
 function repairTruncatedJson(json: string): string {
     let repaired = json.trim();
-
-    // 1. Handle unclosed quotes
     let unescapedQuotes = 0;
     for (let i = 0; i < repaired.length; i++) {
         if (repaired[i] === '"' && (i === 0 || repaired[i - 1] !== '\\')) {
             unescapedQuotes++;
         }
     }
-
-    if (unescapedQuotes % 2 !== 0) {
-        repaired += '"';
-    }
-
-    // 2. Remove trailing commas which make JSON invalid
+    if (unescapedQuotes % 2 !== 0) repaired += '"';
     repaired = repaired.replace(/,\s*$/, '');
-
-    // 3. Handle unclosed braces/brackets
     const stack: string[] = [];
     for (let i = 0; i < repaired.length; i++) {
         const char = repaired[i];
-        if (char === '{' || char === '[') {
-            stack.push(char);
-        } else if (char === '}') {
-            if (stack[stack.length - 1] === '{') stack.pop();
-        } else if (char === ']') {
-            if (stack[stack.length - 1] === '[') stack.pop();
-        }
+        if (char === '{' || char === '[') stack.push(char);
+        else if (char === '}') { if (stack[stack.length - 1] === '{') stack.pop(); }
+        else if (char === ']') { if (stack[stack.length - 1] === '[') stack.pop(); }
     }
-
-    // Close in reverse order
     while (stack.length > 0) {
         const last = stack.pop();
         if (last === '{') repaired += '}';
         else if (last === '[') repaired += ']';
     }
-
     return repaired;
 }

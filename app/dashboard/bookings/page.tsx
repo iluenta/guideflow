@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useId } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -249,12 +249,18 @@ function BookingsPageContent() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [blockDatesOpen, setBlockDatesOpen] = useState(false);
   const [newBookingOpen, setNewBookingOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const id = useId();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filteredBookings = bookings.filter((booking) => {
     const matchesProperty = selectedProperty === "all" || booking.propertyId === selectedProperty;
     const matchesStatus = selectedStatus === "all" || booking.status === selectedStatus;
-    const matchesSearch = 
+    const matchesSearch =
       booking.guestName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booking.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booking.propertyName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -280,28 +286,97 @@ function BookingsPageContent() {
 
   return (
     <div className="space-y-8">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Reservas</h1>
-            <p className="mt-1 text-muted-foreground">Gestiona todas tus reservas y bloqueos</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Dialog open={blockDatesOpen} onOpenChange={setBlockDatesOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2 bg-transparent">
-                  <Ban className="h-4 w-4" />
-                  <span className="hidden sm:inline">Bloquear fechas</span>
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Reservas</h1>
+          <p className="mt-1 text-muted-foreground">Gestiona todas tus reservas y bloqueos</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Dialog open={blockDatesOpen} onOpenChange={setBlockDatesOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2 bg-transparent">
+                <Ban className="h-4 w-4" />
+                <span className="hidden sm:inline">Bloquear fechas</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Bloquear fechas</DialogTitle>
+                <DialogDescription>
+                  Bloquea fechas para mantenimiento, uso personal u otros motivos
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label>Propiedad</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona una propiedad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {properties.filter(p => p.id !== "all").map((property) => (
+                        <SelectItem key={property.id} value={property.id}>
+                          {property.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Fecha inicio</Label>
+                    <Input type="date" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Fecha fin</Label>
+                    <Input type="date" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Motivo</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un motivo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="maintenance">Mantenimiento</SelectItem>
+                      <SelectItem value="personal">Uso personal</SelectItem>
+                      <SelectItem value="renovation">Reformas</SelectItem>
+                      <SelectItem value="other">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Notas (opcional)</Label>
+                  <Textarea placeholder="Detalles adicionales..." rows={3} />
+                </div>
+              </div>
+              <DialogFooter className="mt-6">
+                <Button variant="outline" className="bg-transparent" onClick={() => setBlockDatesOpen(false)}>
+                  Cancelar
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Bloquear fechas</DialogTitle>
-                  <DialogDescription>
-                    Bloquea fechas para mantenimiento, uso personal u otros motivos
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
+                <Button onClick={() => setBlockDatesOpen(false)}>Bloquear fechas</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={newBookingOpen} onOpenChange={setNewBookingOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Nueva reserva</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Nueva reserva manual</DialogTitle>
+                <DialogDescription>
+                  Crea una reserva para un huesped que ha contactado directamente
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-6 pt-4 sm:grid-cols-2">
+                <div className="space-y-4 sm:col-span-2">
                   <div className="space-y-2">
                     <Label>Propiedad</Label>
                     <Select>
@@ -317,210 +392,144 @@ function BookingsPageContent() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Fecha inicio</Label>
-                      <Input type="date" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Fecha fin</Label>
-                      <Input type="date" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Motivo</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un motivo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="maintenance">Mantenimiento</SelectItem>
-                        <SelectItem value="personal">Uso personal</SelectItem>
-                        <SelectItem value="renovation">Reformas</SelectItem>
-                        <SelectItem value="other">Otro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Notas (opcional)</Label>
-                    <Textarea placeholder="Detalles adicionales..." rows={3} />
-                  </div>
                 </div>
-                <DialogFooter className="mt-6">
-                  <Button variant="outline" className="bg-transparent" onClick={() => setBlockDatesOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={() => setBlockDatesOpen(false)}>Bloquear fechas</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            <Dialog open={newBookingOpen} onOpenChange={setNewBookingOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Nueva reserva</span>
+                <div className="space-y-2">
+                  <Label>Fecha entrada</Label>
+                  <Input type="date" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fecha salida</Label>
+                  <Input type="date" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nombre del huesped</Label>
+                  <Input placeholder="Nombre completo" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input type="email" placeholder="email@ejemplo.com" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Telefono</Label>
+                  <Input type="tel" placeholder="+34 600 000 000" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Numero de huespedes</Label>
+                  <Input type="number" min={1} defaultValue={2} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Precio por noche</Label>
+                  <Input type="number" placeholder="85" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tasa de limpieza</Label>
+                  <Input type="number" placeholder="40" />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Notas</Label>
+                  <Textarea placeholder="Informacion adicional sobre la reserva..." rows={3} />
+                </div>
+              </div>
+              <DialogFooter className="mt-6">
+                <Button variant="outline" className="bg-transparent" onClick={() => setNewBookingOpen(false)}>
+                  Cancelar
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Nueva reserva manual</DialogTitle>
-                  <DialogDescription>
-                    Crea una reserva para un huesped que ha contactado directamente
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6 pt-4 sm:grid-cols-2">
-                  <div className="space-y-4 sm:col-span-2">
-                    <div className="space-y-2">
-                      <Label>Propiedad</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona una propiedad" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {properties.filter(p => p.id !== "all").map((property) => (
-                            <SelectItem key={property.id} value={property.id}>
-                              {property.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Fecha entrada</Label>
-                    <Input type="date" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Fecha salida</Label>
-                    <Input type="date" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nombre del huesped</Label>
-                    <Input placeholder="Nombre completo" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input type="email" placeholder="email@ejemplo.com" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Telefono</Label>
-                    <Input type="tel" placeholder="+34 600 000 000" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Numero de huespedes</Label>
-                    <Input type="number" min={1} defaultValue={2} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Precio por noche</Label>
-                    <Input type="number" placeholder="85" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tasa de limpieza</Label>
-                    <Input type="number" placeholder="40" />
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label>Notas</Label>
-                    <Textarea placeholder="Informacion adicional sobre la reserva..." rows={3} />
-                  </div>
-                </div>
-                <DialogFooter className="mt-6">
-                  <Button variant="outline" className="bg-transparent" onClick={() => setNewBookingOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={() => setNewBookingOpen(false)}>Crear reserva</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+                <Button onClick={() => setNewBookingOpen(false)}>Crear reserva</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
+      </div>
 
-        {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Total reservas</p>
-                <CalendarDays className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <p className="mt-2 text-2xl font-bold">{stats.total}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Confirmadas</p>
-                <Check className="h-4 w-4 text-green-500" />
-              </div>
-              <p className="mt-2 text-2xl font-bold">{stats.confirmed}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Pendientes</p>
-                <Clock className="h-4 w-4 text-amber-500" />
-              </div>
-              <p className="mt-2 text-2xl font-bold">{stats.pending}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Ingresos</p>
-                <Euro className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <p className="mt-2 text-2xl font-bold">{stats.revenue.toLocaleString("es-ES")}€</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters */}
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="p-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nombre, ID o propiedad..."
-                  className="pl-9"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {properties.map((property) => (
-                      <SelectItem key={property.id} value={property.id}>
-                        {property.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="confirmed">Confirmadas</SelectItem>
-                    <SelectItem value="pending">Pendientes</SelectItem>
-                    <SelectItem value="completed">Completadas</SelectItem>
-                    <SelectItem value="cancelled">Canceladas</SelectItem>
-                    <SelectItem value="blocked">Bloqueados</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Total reservas</p>
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
             </div>
+            <p className="mt-2 text-2xl font-bold">{stats.total}</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Confirmadas</p>
+              <Check className="h-4 w-4 text-green-500" />
+            </div>
+            <p className="mt-2 text-2xl font-bold">{stats.confirmed}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Pendientes</p>
+              <Clock className="h-4 w-4 text-amber-500" />
+            </div>
+            <p className="mt-2 text-2xl font-bold">{stats.pending}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Ingresos</p>
+              <Euro className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <p className="mt-2 text-2xl font-bold">{stats.revenue.toLocaleString("es-ES")}€</p>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Bookings List */}
-        <Tabs defaultValue="list" className="space-y-4">
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre, ID o propiedad..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {properties.map((property) => (
+                    <SelectItem key={property.id} value={property.id}>
+                      {property.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="confirmed">Confirmadas</SelectItem>
+                  <SelectItem value="pending">Pendientes</SelectItem>
+                  <SelectItem value="completed">Completadas</SelectItem>
+                  <SelectItem value="cancelled">Canceladas</SelectItem>
+                  <SelectItem value="blocked">Bloqueados</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Bookings List */}
+      {!mounted ? (
+        <div className="w-full h-96 bg-slate-50 animate-pulse rounded-xl" />
+      ) : (
+        <Tabs id={id} defaultValue="list" className="space-y-4">
           <TabsList>
             <TabsTrigger value="list">Lista</TabsTrigger>
             <TabsTrigger value="calendar">
@@ -682,208 +691,209 @@ function BookingsPageContent() {
             )}
           </TabsContent>
         </Tabs>
+      )}
 
-        {/* Booking Details Dialog */}
-        <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            {selectedBooking && (
-              <>
-                <DialogHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <DialogTitle className="flex items-center gap-2">
-                        {selectedBooking.status === "blocked" ? "Bloqueo de fechas" : "Detalles de la reserva"}
-                        <Badge variant={getStatusConfig(selectedBooking.status).variant}>
-                          {getStatusConfig(selectedBooking.status).label}
-                        </Badge>
-                      </DialogTitle>
-                      <DialogDescription>
-                        {selectedBooking.id} - Creada el {formatDate(selectedBooking.createdAt)}
-                      </DialogDescription>
-                    </div>
-                  </div>
-                </DialogHeader>
-
-                <div className="space-y-6 pt-4">
-                  {/* Property Info */}
-                  <div className="flex items-center gap-4 rounded-lg border border-border p-4">
-                    <img
-                      src={selectedBooking.propertyImage || "/placeholder.svg"}
-                      alt={selectedBooking.propertyName}
-                      className="h-16 w-24 rounded-lg object-cover"
-                      crossOrigin="anonymous"
-                    />
-                    <div>
-                      <h4 className="font-medium text-foreground">{selectedBooking.propertyName}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDate(selectedBooking.checkIn)} - {formatDate(selectedBooking.checkOut)} ({selectedBooking.nights} noches)
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Guest Info */}
-                  {selectedBooking.status !== "blocked" && (
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-foreground">Informacion del huesped</h4>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-                          <User className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">Nombre</p>
-                            <p className="font-medium">{selectedBooking.guestName}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-                          <Users className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">Huespedes</p>
-                            <p className="font-medium">{selectedBooking.guests}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-                          <Mail className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">Email</p>
-                            <p className="font-medium">{selectedBooking.guestEmail}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-                          <Phone className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">Telefono</p>
-                            <p className="font-medium">{selectedBooking.guestPhone}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Payment Info */}
-                  {selectedBooking.status !== "blocked" && (
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-foreground">Desglose del pago</h4>
-                      <div className="rounded-lg border border-border p-4">
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              {selectedBooking.pricePerNight}€ x {selectedBooking.nights} noches
-                            </span>
-                            <span>{selectedBooking.pricePerNight * selectedBooking.nights}€</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Limpieza</span>
-                            <span>{selectedBooking.cleaningFee}€</span>
-                          </div>
-                          <div className="border-t border-border pt-2 mt-2">
-                            <div className="flex justify-between">
-                              <span className="font-medium">Total</span>
-                              <span className="font-bold text-lg">{selectedBooking.totalPrice}€</span>
-                            </div>
-                            <div className="flex justify-between mt-1">
-                              <span className="text-sm text-muted-foreground">Estado</span>
-                              <span className={`text-sm font-medium ${getPaymentStatusConfig(selectedBooking.paymentStatus).color}`}>
-                                {getPaymentStatusConfig(selectedBooking.paymentStatus).label}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Notes */}
-                  {selectedBooking.notes && (
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-foreground">Notas</h4>
-                      <div className="rounded-lg border border-border p-4">
-                        <p className="text-sm text-muted-foreground">{selectedBooking.notes}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-                    {selectedBooking.status !== "blocked" && selectedBooking.guestEmail && (
-                      <Button variant="outline" className="gap-2 bg-transparent">
-                        <Send className="h-4 w-4" />
-                        Enviar mensaje
-                      </Button>
-                    )}
-                    {selectedBooking.status !== "blocked" && (
-                      <Button variant="outline" className="gap-2 bg-transparent">
-                        <ExternalLink className="h-4 w-4" />
-                        Enviar guia
-                      </Button>
-                    )}
-                    {(selectedBooking.status === "confirmed" || selectedBooking.status === "pending") && (
-                      <Button
-                        variant="destructive"
-                        className="gap-2"
-                        onClick={() => {
-                          setDetailsOpen(false);
-                          setCancelDialogOpen(true);
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                        Cancelar reserva
-                      </Button>
-                    )}
+      {/* Booking Details Dialog */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedBooking && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <DialogTitle className="flex items-center gap-2">
+                      {selectedBooking.status === "blocked" ? "Bloqueo de fechas" : "Detalles de la reserva"}
+                      <Badge variant={getStatusConfig(selectedBooking.status).variant}>
+                        {getStatusConfig(selectedBooking.status).label}
+                      </Badge>
+                    </DialogTitle>
+                    <DialogDescription>
+                      {selectedBooking.id} - Creada el {formatDate(selectedBooking.createdAt)}
+                    </DialogDescription>
                   </div>
                 </div>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
+              </DialogHeader>
 
-        {/* Cancel Booking Dialog */}
-        <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                Cancelar reserva
-              </DialogTitle>
-              <DialogDescription>
-                Esta a punto de cancelar la reserva de {selectedBooking?.guestName}. Esta accion no se puede deshacer.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="rounded-lg bg-destructive/10 p-4">
-                <p className="text-sm text-destructive">
-                  Si la reserva ya esta pagada, debera procesar el reembolso manualmente segun su politica de cancelacion.
-                </p>
+              <div className="space-y-6 pt-4">
+                {/* Property Info */}
+                <div className="flex items-center gap-4 rounded-lg border border-border p-4">
+                  <img
+                    src={selectedBooking.propertyImage || "/placeholder.svg"}
+                    alt={selectedBooking.propertyName}
+                    className="h-16 w-24 rounded-lg object-cover"
+                    crossOrigin="anonymous"
+                  />
+                  <div>
+                    <h4 className="font-medium text-foreground">{selectedBooking.propertyName}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(selectedBooking.checkIn)} - {formatDate(selectedBooking.checkOut)} ({selectedBooking.nights} noches)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Guest Info */}
+                {selectedBooking.status !== "blocked" && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-foreground">Informacion del huesped</h4>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Nombre</p>
+                          <p className="font-medium">{selectedBooking.guestName}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Huespedes</p>
+                          <p className="font-medium">{selectedBooking.guests}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                        <Mail className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="font-medium">{selectedBooking.guestEmail}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                        <Phone className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Telefono</p>
+                          <p className="font-medium">{selectedBooking.guestPhone}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Payment Info */}
+                {selectedBooking.status !== "blocked" && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-foreground">Desglose del pago</h4>
+                    <div className="rounded-lg border border-border p-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {selectedBooking.pricePerNight}€ x {selectedBooking.nights} noches
+                          </span>
+                          <span>{selectedBooking.pricePerNight * selectedBooking.nights}€</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Limpieza</span>
+                          <span>{selectedBooking.cleaningFee}€</span>
+                        </div>
+                        <div className="border-t border-border pt-2 mt-2">
+                          <div className="flex justify-between">
+                            <span className="font-medium">Total</span>
+                            <span className="font-bold text-lg">{selectedBooking.totalPrice}€</span>
+                          </div>
+                          <div className="flex justify-between mt-1">
+                            <span className="text-sm text-muted-foreground">Estado</span>
+                            <span className={`text-sm font-medium ${getPaymentStatusConfig(selectedBooking.paymentStatus).color}`}>
+                              {getPaymentStatusConfig(selectedBooking.paymentStatus).label}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes */}
+                {selectedBooking.notes && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-foreground">Notas</h4>
+                    <div className="rounded-lg border border-border p-4">
+                      <p className="text-sm text-muted-foreground">{selectedBooking.notes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+                  {selectedBooking.status !== "blocked" && selectedBooking.guestEmail && (
+                    <Button variant="outline" className="gap-2 bg-transparent">
+                      <Send className="h-4 w-4" />
+                      Enviar mensaje
+                    </Button>
+                  )}
+                  {selectedBooking.status !== "blocked" && (
+                    <Button variant="outline" className="gap-2 bg-transparent">
+                      <ExternalLink className="h-4 w-4" />
+                      Enviar guia
+                    </Button>
+                  )}
+                  {(selectedBooking.status === "confirmed" || selectedBooking.status === "pending") && (
+                    <Button
+                      variant="destructive"
+                      className="gap-2"
+                      onClick={() => {
+                        setDetailsOpen(false);
+                        setCancelDialogOpen(true);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                      Cancelar reserva
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Motivo de cancelacion</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un motivo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="guest_request">Solicitud del huesped</SelectItem>
-                    <SelectItem value="host_unavailable">Propiedad no disponible</SelectItem>
-                    <SelectItem value="payment_issue">Problema con el pago</SelectItem>
-                    <SelectItem value="violation">Violacion de normas</SelectItem>
-                    <SelectItem value="other">Otro motivo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Notas adicionales</Label>
-                <Textarea placeholder="Detalles sobre la cancelacion..." rows={3} />
-              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Booking Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Cancelar reserva
+            </DialogTitle>
+            <DialogDescription>
+              Esta a punto de cancelar la reserva de {selectedBooking?.guestName}. Esta accion no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="rounded-lg bg-destructive/10 p-4">
+              <p className="text-sm text-destructive">
+                Si la reserva ya esta pagada, debera procesar el reembolso manualmente segun su politica de cancelacion.
+              </p>
             </div>
-            <DialogFooter className="mt-6">
-              <Button variant="outline" className="bg-transparent" onClick={() => setCancelDialogOpen(false)}>
-                Volver
-              </Button>
-              <Button variant="destructive" onClick={() => setCancelDialogOpen(false)}>
-                Confirmar cancelacion
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+            <div className="space-y-2">
+              <Label>Motivo de cancelacion</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="guest_request">Solicitud del huesped</SelectItem>
+                  <SelectItem value="host_unavailable">Propiedad no disponible</SelectItem>
+                  <SelectItem value="payment_issue">Problema con el pago</SelectItem>
+                  <SelectItem value="violation">Violacion de normas</SelectItem>
+                  <SelectItem value="other">Otro motivo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Notas adicionales</Label>
+              <Textarea placeholder="Detalles sobre la cancelacion..." rows={3} />
+            </div>
+          </div>
+          <DialogFooter className="mt-6">
+            <Button variant="outline" className="bg-transparent" onClick={() => setCancelDialogOpen(false)}>
+              Volver
+            </Button>
+            <Button variant="destructive" onClick={() => setCancelDialogOpen(false)}>
+              Confirmar cancelacion
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 

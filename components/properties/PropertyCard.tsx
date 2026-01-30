@@ -81,9 +81,18 @@ export function PropertyCard({ property, onEdit }: PropertyCardProps) {
                         </Link>
                     </Button>
                 </div>
-                <Button variant="outline" className="w-full text-xs font-bold uppercase tracking-wider h-9" onClick={() => onEdit(property)}>
-                    Editar Detalles
-                </Button>
+                <div className="grid grid-cols-2 gap-2 w-full mt-2">
+                    <Button variant="outline" className="gap-2 text-xs border-primary/20 text-primary hover:bg-primary/5 h-9" asChild>
+                        <Link href={`/dashboard/properties/${property.id}/setup`}>
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Configurar
+                        </Link>
+                    </Button>
+                    <Button variant="outline" className="w-full text-xs h-9" onClick={() => onEdit(property)}>
+                        <Edit2 className="h-3.5 w-3.5 mr-1" />
+                        Editar
+                    </Button>
+                </div>
             </CardFooter>
         </Card>
     )
