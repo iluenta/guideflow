@@ -21,9 +21,11 @@ export async function searchBrave(query: string, count: number = 5) {
 
             return response.data.web?.results || [];
         } catch (error: any) {
-            if (error.response?.status === 429 && retries < maxRetries) {
-                console.warn(`[BRAVE-SEARCH] Rate limited (429). Retrying in ${1000 * (retries + 1)}ms...`);
-                await delay(1000 * (retries + 1));
+            const isRateLimit = error.response?.status === 429;
+            if (isRateLimit && retries < maxRetries) {
+                const backoff = Math.pow(2, retries) * 2000; // Exponential backoff: 2s, 4s, 8s
+                console.warn(`[BRAVE-SEARCH] Rate limited (429). Retrying in ${backoff}ms...`);
+                await delay(backoff);
                 retries++;
                 continue;
             }

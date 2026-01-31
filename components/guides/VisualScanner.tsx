@@ -22,6 +22,7 @@ import { processBatchScans } from '@/app/actions/ai-ingestion'
 
 interface VisualScannerProps {
     propertyId: string
+    onSuccess?: () => void
 }
 
 interface SelectedPhoto {
@@ -30,11 +31,12 @@ interface SelectedPhoto {
     preview: string
 }
 
-export function VisualScanner({ propertyId }: VisualScannerProps) {
+export function VisualScanner({ propertyId, onSuccess }: VisualScannerProps) {
     const [photos, setPhotos] = useState<SelectedPhoto[]>([])
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [uploadingIds, setUploadingIds] = useState<Set<string>>(new Set())
     const [showTips, setShowTips] = useState(false)
+    const [replaceExisting, setReplaceExisting] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,13 +121,16 @@ export function VisualScanner({ propertyId }: VisualScannerProps) {
 
             toast.loading('Analizando con IA...', { id: 'analyze-process' })
 
-            // 2. Process with Claude & Brave (Fase 1)
-            const result = await processBatchScans(propertyId, uploadedUrls)
+            // 2. Process with AI (Fase 1)
+            const result = await processBatchScans(propertyId, uploadedUrls, replaceExisting)
 
             toast.success(`Análisis completado: Se han generado ${result.count} manuales técnicos`, { id: 'analyze-process' })
 
             // Clear photos after success
             setPhotos([])
+
+            // Notify parent
+            if (onSuccess) onSuccess()
         } catch (error: any) {
             console.error('Analyze error:', error)
             toast.error('Error al analizar las fotos: ' + error.message, { id: 'analyze-process' })
@@ -280,6 +285,17 @@ export function VisualScanner({ propertyId }: VisualScannerProps) {
                     )}
                 </div>
             )}
+
+            {/* Replacement Toggle */}
+            <div className="flex items-center gap-3 px-4 py-3 bg-muted/20 rounded-2xl border border-dashed border-muted-foreground/10 group cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setReplaceExisting(!replaceExisting)}>
+                <div className={`h-6 w-11 rounded-full relative transition-colors duration-300 ${replaceExisting ? 'bg-primary' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 left-1 bg-white h-4 w-4 rounded-full transition-transform duration-300 ${replaceExisting ? 'translate-x-5' : 'translate-x-0'}`} />
+                </div>
+                <div className="flex-1">
+                    <p className="text-xs font-bold text-slate-700">Actualizar manuales si ya existen</p>
+                    <p className="text-[10px] text-muted-foreground">Si la IA detecta un aparato que ya tienes, lo sustituirá por la nueva versión.</p>
+                </div>
+            </div>
 
             {/* FAB - Fixed Action Button Mobile-First */}
             <div className="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-50 w-full px-4 max-w-md md:bottom-10 md:static md:translate-x-0 md:px-0 md:max-w-none md:flex md:justify-center">

@@ -1,6 +1,6 @@
 # Análisis de Optimización de Costes IA - GuideFlow
 
-Tras analizar el uso actual de las APIs, he identificado oportunidades significativas para reducir costes operativos manteniendo o incluso mejorando la calidad del servicio.
+Tras analizar el uso de las APIs, he completado la **migración total de GuideFlow a Gemini 3 Flash**, eliminando por completo la dependencia de Anthropic (Claude) para reducir los costes operativos a prácticamente cero.
 
 ## Comparativa de Costes Actuales (por 1M de tokens)
 
@@ -12,11 +12,12 @@ Tras analizar el uso actual de las APIs, he identificado oportunidades significa
 
 ## Recomendaciones de Optimización
 
-### 1. Migrar Chat y Auto-fill a Gemini 1.5 Flash
-**Análisis:** Actualmente usamos Claude 3 Haiku para la lógica de chat y generación de FAQs. 
-- **Ventaja de Coste:** Gemini 1.5 Flash es entre 3 y 4 veces más barato que Haiku.
-- **Ventaja Técnica:** Gemini tiene una ventana de contexto de 1M de tokens (frente a los 200k de Haiku) y es extremadamente eficiente procesando múltiples documentos (manuales técnicos largos).
-- **Acción:** Cambiar los endpoints `/api/chat` y `/api/ai-fill-context` para usar Gemini 1.5 Flash.
+### 1. Migración de Chat, Auto-fill e Ingesta a Gemini 3 Flash
+**Estado: COMPLETADO**
+- **Chat/FAQs**: Migrados a `/api/chat` y `/api/ai-fill-context`.
+- **Ingesta/Scraping**: `extractListingData` ahora usa Gemini 3 Flash.
+- **Manuales Técnicos**: `processBatchScans` ahora genera el contenido con Gemini 3 Flash en lugar de Claude 3.5 Sonnet.
+- **Ahorro Estimado**: ~85% de reducción en la factura mensual de IA.
 
 ### 2. Consolidación de Grounding (Búsqueda Local)
 **Análisis:** Usamos Brave Search para encontrar datos reales de negocios.

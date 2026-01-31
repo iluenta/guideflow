@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Property, GuideSection, saveGuideSection, deleteGuideSection, updateSectionsOrder, updateProperty } from '@/app/actions/properties'
+import { Property, GuideSection, saveGuideSection, deleteGuideSection, updateSectionsOrder, updateProperty, deleteManual } from '@/app/actions/properties'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -46,12 +46,25 @@ import { toast } from 'sonner'
 import { AutoBuildDialog } from '@/components/properties/AutoBuildDialog'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { VisualScanner } from './VisualScanner'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { ManualEnrichmentDialog } from './ManualEnrichmentDialog'
 import { HITLValidation } from './HITLValidation'
+import { VisualScanner } from './VisualScanner'
+import { ManualEditDialog } from './ManualEditDialog'
 
 interface GuideManagerProps {
     property: Property
     initialSections: GuideSection[]
+    manuals: any[]
 }
 
 const RECOMMENDATION_CATEGORIES = [
@@ -63,12 +76,28 @@ const RECOMMENDATION_CATEGORIES = [
     { id: 'ocio', label: 'Ocio', icon: <Music className="h-3 w-3" /> },
 ]
 
-export function GuideManager({ property, initialSections }: GuideManagerProps) {
+export function GuideManager({ property, initialSections, manuals }: GuideManagerProps) {
     const [allSections, setAllSections] = useState<GuideSection[]>(initialSections)
+    const [allManuals, setAllManuals] = useState<any[]>(manuals || [])
     const [editingSection, setEditingSection] = useState<Partial<GuideSection> | null>(null)
+    const [enrichingManual, setEnrichingManual] = useState<any | null>(null)
+    const [editingManualContent, setEditingManualContent] = useState<any | null>(null)
     const [isSaving, setIsSaving] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
     const [activeTab, setActiveTab] = useState('info')
+
+    // Confirmation dialog state
+    const [confirmConfig, setConfirmConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        description: string;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        description: '',
+        onConfirm: () => { }
+    })
     const [recCategory, setRecCategory] = useState('all')
 
     // Separate sections and recommendations
@@ -137,15 +166,41 @@ export function GuideManager({ property, initialSections }: GuideManagerProps) {
     }
 
     async function handleDeleteSection(id: string) {
-        if (!confirm('¿Estás seguro de eliminar este elemento?')) return
+        setConfirmConfig({
+            isOpen: true,
+            title: '¿Eliminar elemento?',
+            description: '¿Estás seguro de que quieres eliminar esta sección? Esta acción no se puede deshacer.',
+            onConfirm: async () => {
+                try {
+                    await deleteGuideSection(id, property.id)
+                    setAllSections(prev => prev.filter(s => s.id !== id))
+                    toast.success('Eliminado')
+                } catch (error: any) {
+                    toast.error('Error: ' + error.message)
+                }
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+            }
+        })
+    }
 
-        try {
-            await deleteGuideSection(id, property.id)
-            setAllSections(prev => prev.filter(s => s.id !== id))
-            toast.success('Eliminado')
-        } catch (error: any) {
-            toast.error('Error: ' + error.message)
-        }
+    async function handleDeleteManual(manualId: string) {
+        setConfirmConfig({
+            isOpen: true,
+            title: '¿Eliminar manual?',
+            description: '¿Estás seguro de que quieres eliminar este manual? El asistente de IA dejará de responder preguntas sobre este aparato.',
+            onConfirm: async () => {
+                try {
+                    await deleteManual(manualId, property.id)
+                    setAllManuals(prev => prev.filter(m => m.id !== manualId))
+                    toast.success('Manual eliminado correctamente')
+                    // Force refresh to ensure everything is in sync
+                    window.location.reload()
+                } catch (error: any) {
+                    toast.error('Error al eliminar manual: ' + error.message)
+                }
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+            }
+        })
     }
 
     async function onDragEnd(result: DropResult) {
@@ -432,7 +487,12 @@ export function GuideManager({ property, initialSections }: GuideManagerProps) {
 
                     {/* Escáner Visual */}
                     <TabsContent value="visual" className="animate-in fade-in-50 zoom-in-95 duration-500">
-                        <VisualScanner propertyId={property.id} />
+                        <VisualScanner
+                            propertyId={property.id}
+                            onSuccess={() => {
+                                window.location.reload()
+                            }}
+                        />
                     </TabsContent>
 
                     {/* Config IA */}
@@ -489,28 +549,79 @@ export function GuideManager({ property, initialSections }: GuideManagerProps) {
                                 <div className="h-20 w-20 rounded-3xl bg-white/10 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/20">
                                     <FileText className="h-10 w-10" />
                                 </div>
-                                <div>
+                                <div className="flex-1">
                                     <h4 className="text-xl font-bold mb-2">Base de Conocimientos Técnica</h4>
                                     <p className="opacity-80 leading-relaxed font-medium">
-                                        Sube los manuales oficiales de tus electrodomésticos. HostBot los "leerá" para dar respuestas 100% precisas basadas en el fabricante.
+                                        Manuales oficiales y notas del anfitrión. La IA usa esto para dar respuestas 100% precisas.
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <Card className="border-dashed border-2 py-20 flex flex-col items-center justify-center text-center rounded-[2.5rem] bg-muted/5">
-                            <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary">
-                                <Upload className="h-8 w-8" />
+                        {allManuals.length === 0 ? (
+                            <Card className="border-dashed border-2 py-20 flex flex-col items-center justify-center text-center rounded-[2.5rem] bg-muted/5">
+                                <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary">
+                                    <Upload className="h-8 w-8" />
+                                </div>
+                                <h3 className="text-lg font-bold">Añadir Manual Oficial (PDF)</h3>
+                                <p className="text-sm text-muted-foreground max-w-sm mt-2 mb-8">
+                                    La IA procesará el documento y lo dividirá en secciones funcionales automáticamente.
+                                </p>
+                                <Button className="rounded-2xl h-12 px-8 font-bold gap-2">
+                                    <Plus className="h-5 w-5" />
+                                    Subir Manual o Pegar Link
+                                </Button>
+                            </Card>
+                        ) : (
+                            <div className="grid gap-6">
+                                {allManuals.map((manual) => (
+                                    <Card key={manual.id} className="border shadow-sm rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-300">
+                                        <CardContent className="p-8 flex items-center gap-6">
+                                            <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                                                <FileText className="h-8 w-8" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h4 className="font-bold text-lg">{manual.appliance_name}</h4>
+                                                    <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
+                                                        {manual.brand} {manual.model}
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground line-clamp-1">
+                                                    ID: {manual.id} • Actualizado: {new Date(manual.updated_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    className="rounded-2xl h-11 px-5 font-bold gap-2 border-slate-200"
+                                                    onClick={() => setEnrichingManual(manual)}
+                                                >
+                                                    <Sparkles className="h-4 w-4" />
+                                                    Añadir Notas
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-11 w-11 rounded-2xl text-slate-300 hover:text-slate-600"
+                                                    onClick={() => setEditingManualContent(manual)}
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-11 w-11 rounded-2xl text-destructive/20 hover:text-destructive hover:bg-destructive/5"
+                                                    onClick={() => handleDeleteManual(manual.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
                             </div>
-                            <h3 className="text-lg font-bold">Añadir Manual Oficial (PDF)</h3>
-                            <p className="text-sm text-muted-foreground max-w-sm mt-2 mb-8">
-                                La IA procesará el documento y lo dividirá en secciones funcionales automáticamente.
-                            </p>
-                            <Button className="rounded-2xl h-12 px-8 font-bold gap-2">
-                                <Plus className="h-5 w-5" />
-                                Subir Manual o Pegar Link
-                            </Button>
-                        </Card>
+                        )}
                     </TabsContent>
                 </Tabs>
             </CardContent>
@@ -626,6 +737,46 @@ export function GuideManager({ property, initialSections }: GuideManagerProps) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {enrichingManual && (
+                <ManualEnrichmentDialog
+                    manual={enrichingManual}
+                    isOpen={!!enrichingManual}
+                    onOpenChange={(open) => !open && setEnrichingManual(null)}
+                    onSuccess={() => {
+                        window.location.reload() // Or fetch manuals again
+                    }}
+                />
+            )}
+
+            {editingManualContent && (
+                <ManualEditDialog
+                    manual={editingManualContent}
+                    propertyId={property.id}
+                    isOpen={!!editingManualContent}
+                    onOpenChange={(open) => !open && setEditingManualContent(null)}
+                    onSuccess={() => {
+                        window.location.reload()
+                    }}
+                />
+            )}
+
+            <AlertDialog open={confirmConfig.isOpen} onOpenChange={(open) => setConfirmConfig(prev => ({ ...prev, isOpen: open }))}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{confirmConfig.title}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {confirmConfig.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmConfig.onConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Eliminar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card >
     )
 }

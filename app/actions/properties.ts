@@ -236,6 +236,80 @@ export async function getScanUploadUrl(propertyId: string, fileName: string, con
     }
 }
 
+
+export async function getPropertyManuals(propertyId: string) {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+        .from('property_manuals')
+        .select('*')
+        .eq('property_id', propertyId)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching manuals:', error.message)
+        return []
+    }
+
+    return data
+}
+
+export async function deleteManual(manualId: string, propertyId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const tenant_id = await getTenantId(supabase, user)
+
+    // 1. Delete manual
+    const { error } = await supabase
+        .from('property_manuals')
+        .delete()
+        .eq('id', manualId)
+
+    if (error) throw new Error(error.message)
+
+    // 2. Delete embeddings from context table
+    await supabase.from('context_embeddings').delete().eq('source_id', manualId)
+
+    // 3. Sync appliance list in property_context
+    if (tenant_id) {
+        await syncPropertyApplianceList(propertyId, tenant_id)
+    }
+
+    revalidatePath(`/dashboard/properties/${propertyId}`)
+}
+
+export async function updateManualContent(manualId: string, propertyId: string, content: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const { error } = await supabase
+        .from('property_manuals')
+        .update({ manual_content: content, updated_at: new Date().toISOString() })
+        .eq('id', manualId)
+
+    if (error) throw new Error(error.message)
+
+    const tenant_id = await getTenantId(supabase, user)
+    if (tenant_id) {
+        await syncPropertyApplianceList(propertyId, tenant_id)
+    }
+
+    // Trigger RAG update (simplified: delete and re-insert is handled in manual-enrichment, 
+    // but here we might just want to delete let it be re-indexed or handle it here)
+    // For simplicity, let's keep it consistent with enrichManualWithHostNotes logic if possible
+    // But ManualEditDialog is for RAW editing.
+
+    // We should probably just delete embeddings and they'll be missing, 
+    // OR call a sync function. For now, let's just delete to avoid stale data
+    // and ideally we'd have a 'reindex' button or auto-sync.
+    await supabase.from('context_embeddings').delete().eq('source_id', manualId)
+
+    revalidatePath(`/dashboard/properties/${propertyId}`)
+}
+
 // Guide Sections Actions
 export async function getGuideSections(propertyId: string) {
     const supabase = await createClient()
@@ -316,19 +390,33 @@ export async function updateSectionsOrder(propertyId: string, sectionIds: string
     revalidatePath(`/dashboard/properties/${propertyId}`)
 }
 
-export async function getPropertyManuals(propertyId: string) {
+
+/**
+ * Regenera el índice de aparatos en property_context (appliance_list)
+ */
+export async function syncPropertyApplianceList(propertyId: string, tenantId: string) {
     const supabase = await createClient()
 
-    const { data, error } = await supabase
+    const { data: allManuals } = await supabase
         .from('property_manuals')
-        .select('*')
+        .select('appliance_name, brand, model')
         .eq('property_id', propertyId)
-        .order('created_at', { ascending: false })
 
-    if (error) {
-        console.error('Error fetching manuals:', error.message)
-        return []
-    }
+    if (!allManuals) return
 
-    return data
+    const applianceIndex = allManuals.map(m => `- ${m.appliance_name.toUpperCase()}: ${m.brand} ${m.model || ''}`).join('\n')
+
+    const { error } = await supabase.from('property_context').upsert({
+        property_id: propertyId,
+        tenant_id: tenantId,
+        category: 'tech',
+        subcategory: 'appliance_list',
+        content: {
+            text: `Lista de aparatos con manual disponible:\n${applianceIndex}`,
+            appliances: allManuals
+        },
+        updated_at: new Date().toISOString()
+    }, { onConflict: 'property_id,category,subcategory' })
+
+    if (error) console.error('[SYNC] property_context sync error:', error.message)
 }

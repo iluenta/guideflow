@@ -18,49 +18,44 @@ export async function POST(req: Request) {
         // 1. Generar embedding de la pregunta
         const questionEmbedding = await generateOpenAIEmbedding(lastMessage);
 
-        // 2. Búsqueda vectorial UNIFICADA
+        // 2. Búsqueda vectorial UNIFICADA (Umbral muy bajo y más fragmentos para asegurar recuperación técnicos)
         const { data: relevantChunks, error: rpcError } = await supabase.rpc('match_all_context', {
             query_embedding: questionEmbedding,
-            match_threshold: 0.4,
-            match_count: 10,
+            match_threshold: 0.05, // Bajamos aún más el umbral para asegurar que entre TODO lo remotamente relevante
+            match_count: 25,       // Aumentamos a 25 fragmentos
             p_property_id: propertyId
         });
 
         if (rpcError) console.error('[RPC ERROR]', rpcError);
 
-        // 3. Obtener contexto estructurado
+        // 3. Obtener contexto estructurado (Lista de aparatos, símbolos, normas, etc.)
         const { data: propertyContext } = await supabase
             .from('property_context')
-            .select('category, content')
+            .select('category, subcategory, content')
             .eq('property_id', propertyId);
 
         // 4. Formatear contexto
         const formattedContext = [
-            ... (relevantChunks || []).map((c: any) => `[${c.source_type.toUpperCase()}]: ${c.content}`),
-            ... (propertyContext || []).map((c: any) => `[SISTEMA - ${c.category.toUpperCase()}]: ${JSON.stringify(c.content)}`)
+            ... (relevantChunks || []).map((c: any) => `[MANUAL - ${c.metadata?.appliance?.toUpperCase() || 'GENERAL'}]: ${c.content}`),
+            ... (propertyContext || []).map((c: any) => `[SISTEMA - ${c.category.toUpperCase()}${c.subcategory ? ' - ' + c.subcategory.toUpperCase() : ''}]: ${typeof c.content === 'string' ? c.content : JSON.stringify(c.content)}`)
         ].join('\n\n---\n\n');
 
-        const systemInstruction = `Eres el Asistente Digital de esta propiedad. Tu objetivo es ayudar al huésped con dudas sobre su estancia.
-Responde basándote EXCLUSIVAMENTE en el CONTEXTO proporcionado abajo.
-El contexto incluye información sobre: ACCESO, NORMAS, TECNOLOGÍA (WiFi/TV), MANTENIMIENTO, OCIO y SERVICIOS.
+        const systemInstruction = `Eres HostBot, el asistente experto de esta propiedad. Tu misión es resolver dudas de los huéspedes usando el CONTEXTO proporcionado.
 
-REGLAS CRÍTICAS:
-1. Si la información no está en el contexto, indica amablemente que no tienes ese detalle y que debe contactar al anfitrión.
-2. NUNCA inventes datos (redes wifi, códigos, precios) si no aparecen en el contexto.
-3. Sé cálido, profesional y conciso.
-4. Responde en el mismo idioma que el huésped.
-5. No digas que eres una IA o un modelo de lenguaje.
+IMPORTANTE: Estás hablando con un HUÉSPED en un alojamiento que NO es suyo. 
 
-REGLAS DE FORMATO:
-- Usa Markdown para mejorar la legibilidad.
-- Usa **negritas** para pasos críticos, códigos de red o nombres de aparatos.
-- Usa listas con viñetas para instrucciones paso a paso.
-- Usa tablas SOLO para comparativas simples (máx 3 columnas cortas).
-- ESTRATEGIA MÓVIL: Si la información es compleja, tiene más de 3 columnas o descripciones largas, usa **Listas con Viñetas** en lugar de tablas para mejorar la legibilidad en pantallas estrechas.
-- IMPORTANTE PARA TABLAS: Asegura un salto de línea antes y después de cada tabla. Usa el formato GFM estándar (\`| Col | Col |\` seguido de \`| --- | --- |\`).
-- Mantén los párrafos cortos y con espacio entre ellos.
+REGLAS DE ORO:
+1. **Verdad Absoluta Technical**: Usa los bloques [MANUAL] como fuente de verdad.
+2. **Lenguaje Neutral y Apropiado (CRÍTICO)**: 
+    - NUNCA uses "tu" o "tuyo" para referirte a los aparatos (ej. NO digas "tu campana", "tu termo"). Usa artículos neutros: "**la** campana", "**el** termo", "**el** aire acondicionado".
+    - NO repitas el modelo técnico o serie del aparato en el cuerpo de la respuesta a menos que sea estrictamente necesario (ej. NO digas "Si la campana Teka Serie DBB hace ruido..."). Di simplemente: "Si la campana hace ruido...".
+3. **Filtro del Huésped**: NO des instrucciones de reparación técnica o sustitución de piezas internas. Si la solución requiere intervención, indica que el aparato podría tener una incidencia y recomienda contactar con el anfitrión.
+4. **Soluciones de Usuario**: Céntrate solo en lo que el huésped puede manipular: botones externos, mandos o trucos de uso.
+5. **Sin Excusas**: Si el aparato está en el CONTEXTO, ayuda con la información disponible.
+6. **Descripciones Visuales**: Describe iconos visualmente (ej. "el icono del copo de nieve").
+7. **Tono**: Amable, profesional y directo. Usa Markdown.
 
-CONTEXTO:
+CONTEXTO ACTUAL:
 ${formattedContext}`;
 
         // 5. Gemini Call (Streaming)

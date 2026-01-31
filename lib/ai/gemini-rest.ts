@@ -23,6 +23,11 @@ export interface GeminiResponse {
         code: number;
         status: string;
     };
+    usageMetadata?: {
+        promptTokenCount: number;
+        candidatesTokenCount: number;
+        totalTokenCount: number;
+    };
 }
 
 const DEFAULT_SAFETY_SETTINGS = [
@@ -49,15 +54,14 @@ export async function geminiREST(
     const apiKey = process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is missing');
 
-    // Normalize parts to REST format
     const parts: any[] = Array.isArray(input)
         ? input.map(p => {
             if (typeof p === 'string') return { text: p };
-            if (p.inlineData) {
+            if ((p as any).inlineData) {
                 return {
                     inline_data: {
-                        mime_type: p.inlineData.mimeType,
-                        data: p.inlineData.data
+                        mime_type: (p as any).inlineData.mimeType,
+                        data: (p as any).inlineData.data
                     }
                 };
             }
@@ -99,8 +103,8 @@ export async function geminiREST(
 
         const candidate = data.candidates?.[0];
         if (!candidate || !candidate.content || !candidate.content.parts) {
-            console.warn('[GEMINI-REST] No valid candidates or parts candidates returned. Full data:', JSON.stringify(data, null, 2));
-            return null;
+            console.warn('[GEMINI-REST] No valid candidates returned.');
+            return { data: null, usage: undefined };
         }
 
         const fullText = candidate.content.parts
@@ -108,52 +112,58 @@ export async function geminiREST(
             .join(' ')
             .trim();
 
-        if (!fullText) {
-            console.warn('[GEMINI-REST] Combined parts text is empty.');
-            return null;
-        }
-
         const effectiveMimeType = options.responseMimeType ?? 'application/json';
+        const usageMetrics = data.usageMetadata ? {
+            prompt_tokens: data.usageMetadata.promptTokenCount,
+            candidates_tokens: data.usageMetadata.candidatesTokenCount,
+            total_tokens: data.usageMetadata.totalTokenCount
+        } : undefined;
 
         if (effectiveMimeType === 'application/json') {
-            let cleaned = fullText
-                .replace(/[ \t]{4,}/g, '   ')
-                .replace(/\n{4,}/g, '\n\n\n')
-                .trim();
-
+            let cleaned = fullText.trim();
             if (cleaned.includes('```')) {
-                const codeBlockMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
-                if (codeBlockMatch && codeBlockMatch[1]) {
-                    cleaned = codeBlockMatch[1].trim();
-                } else {
-                    const firstBrace = cleaned.indexOf('{');
-                    if (firstBrace !== -1) cleaned = cleaned.substring(firstBrace);
-                }
-            } else if (!cleaned.startsWith('{')) {
-                const firstBrace = cleaned.indexOf('{');
-                if (firstBrace !== -1) cleaned = cleaned.substring(firstBrace);
+                const match = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+                if (match) cleaned = match[1].trim();
             }
 
             try {
-                return JSON.parse(cleaned);
+                return { data: JSON.parse(cleaned), usage: usageMetrics };
             } catch (e) {
-                if (candidate.finishReason === 'MAX_TOKENS' || cleaned.length > 2000) {
-                    try {
-                        const repaired = repairTruncatedJson(cleaned);
-                        return JSON.parse(repaired);
-                    } catch (repairError) {
-                        console.error('[GEMINI-REST] Repair failed.');
-                    }
-                }
-                console.error('[GEMINI-REST] JSON Parse Error');
-                return null;
+                return { data: cleaned, usage: usageMetrics, error: 'JSON Parse Error' };
             }
         }
 
-        return fullText;
+        return { data: fullText, usage: usageMetrics };
     } catch (error: any) {
-        console.error('[GEMINI-REST] Fetch Exception:', error.message);
-        return null;
+        console.error('[GEMINI-REST] Error:', error.message);
+        return { data: null, usage: undefined, error: error.message };
+    }
+}
+
+/**
+ * Simplified helper for image analysis (Vision)
+ */
+export async function analyzeImageWithGemini(imageUrl: string, prompt: string) {
+    try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
+
+        const buffer = await response.arrayBuffer();
+        const base64Data = Buffer.from(buffer).toString('base64');
+        const mimeType = response.headers.get('content-type') || 'image/jpeg';
+
+        const input = [
+            { inlineData: { mimeType, data: base64Data } },
+            prompt
+        ];
+
+        return await geminiREST('gemini-3-flash-preview', input, {
+            temperature: 0.1,
+            responseMimeType: 'application/json'
+        });
+    } catch (error) {
+        console.error('[GEMINI-VISION] Error:', error);
+        return { data: null, usage: undefined, error: (error as any).message };
     }
 }
 
@@ -197,29 +207,4 @@ export async function streamGeminiREST(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     });
-}
-
-function repairTruncatedJson(json: string): string {
-    let repaired = json.trim();
-    let unescapedQuotes = 0;
-    for (let i = 0; i < repaired.length; i++) {
-        if (repaired[i] === '"' && (i === 0 || repaired[i - 1] !== '\\')) {
-            unescapedQuotes++;
-        }
-    }
-    if (unescapedQuotes % 2 !== 0) repaired += '"';
-    repaired = repaired.replace(/,\s*$/, '');
-    const stack: string[] = [];
-    for (let i = 0; i < repaired.length; i++) {
-        const char = repaired[i];
-        if (char === '{' || char === '[') stack.push(char);
-        else if (char === '}') { if (stack[stack.length - 1] === '{') stack.pop(); }
-        else if (char === ']') { if (stack[stack.length - 1] === '[') stack.pop(); }
-    }
-    while (stack.length > 0) {
-        const last = stack.pop();
-        if (last === '{') repaired += '}';
-        else if (last === '[') repaired += ']';
-    }
-    return repaired;
 }

@@ -1,4 +1,4 @@
-import { getProperties, getGuideSections } from '@/app/actions/properties'
+import { getGuideSections, getProperties, getPropertyManuals } from '@/app/actions/properties'
 import { GuideManager } from '@/components/guides/GuideManager'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +27,10 @@ export default async function GuidesPage({
 
   const initialSections = selectedProperty
     ? await getGuideSections(selectedProperty.id)
+    : []
+
+  const manuals = selectedProperty
+    ? await getPropertyManuals(selectedProperty.id)
     : []
 
   return (
@@ -134,6 +138,7 @@ export default async function GuidesPage({
               <GuideManager
                 property={selectedProperty}
                 initialSections={initialSections}
+                manuals={manuals}
               />
             </CardContent>
           </Card>
