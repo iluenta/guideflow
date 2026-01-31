@@ -1,34 +1,87 @@
 import { StreamingTextResponse } from 'ai';
-import { createClient } from '@supabase/supabase-js';
+import { createEdgeAdminClient } from '@/lib/supabase/edge';
 import { generateOpenAIEmbedding } from '@/lib/ai/openai';
 import { streamGeminiREST } from '@/lib/ai/gemini-rest';
+import { validateAccessToken, generateDeviceFingerprint, logSuspiciousActivity } from '@/lib/security';
+import { RateLimiter } from '@/lib/security/rate-limiter';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = createEdgeAdminClient();
 
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
     try {
-        const { messages, propertyId } = await req.json();
+        const { messages, propertyId: legacyPropertyId, accessToken } = await req.json();
         const lastMessage = messages[messages.length - 1].content;
+        const ip = req.headers.get('x-forwarded-for') || 'unknown';
+        const userAgent = req.headers.get('user-agent') || 'unknown';
+
+        let propertyId = legacyPropertyId;
+
+        // 1. VALIDACIÓN DE SEGURIDAD (FASE 4)
+        if (accessToken) {
+            // 1.1. Validar Token y Ventana Temporal
+            const tokenValidation = await validateAccessToken(supabase, accessToken);
+            if (!tokenValidation.valid) {
+                return new Response(JSON.stringify({
+                    error: 'Acceso denegado',
+                    reason: tokenValidation.reason,
+                    resetAt: (tokenValidation as any).availableFrom || (tokenValidation as any).availableTo
+                }), { status: 403 });
+            }
+
+            propertyId = tokenValidation.access.property_id;
+
+            // 1.2. Rate Limiting Multi-Nivel
+            const deviceFingerprint = await generateDeviceFingerprint(ip, userAgent);
+            const rateLimit = await RateLimiter.checkChatRateLimit(accessToken, ip, deviceFingerprint);
+
+            if (!rateLimit.allowed) {
+                await logSuspiciousActivity(supabase, accessToken, {
+                    type: 'rate_limit_exceeded',
+                    details: { reason: rateLimit.reason, ip },
+                    ip
+                });
+
+                return new Response(JSON.stringify({
+                    error: rateLimit.message,
+                    resetAt: rateLimit.resetAt,
+                    reason: rateLimit.reason
+                }), { status: 429 });
+            }
+
+            // 1.3. Filtro de Prompt Injection & Longitud
+            if (lastMessage.length > 500) {
+                return new Response(JSON.stringify({ error: 'Mensaje demasiado largo (máximo 500 caracteres)' }), { status: 400 });
+            }
+
+            const suspiciousPatterns = [/ignore previous instructions/i, /system prompt/i, /<script>/i, /you are now/i];
+            if (suspiciousPatterns.some(p => p.test(lastMessage))) {
+                await logSuspiciousActivity(supabase, accessToken, {
+                    type: 'prompt_injection_attempt',
+                    details: { message: lastMessage },
+                    ip
+                });
+                return new Response(JSON.stringify({ error: 'Contenido no permitido' }), { status: 400 });
+            }
+        } else if (!legacyPropertyId) {
+            return new Response(JSON.stringify({ error: 'Falta identificación de acceso' }), { status: 401 });
+        }
 
         // 1. Generar embedding de la pregunta
         const questionEmbedding = await generateOpenAIEmbedding(lastMessage);
 
-        // 2. Búsqueda vectorial UNIFICADA (Umbral muy bajo y más fragmentos para asegurar recuperación técnicos)
+        // 2. Búsqueda vectorial UNIFICADA
         const { data: relevantChunks, error: rpcError } = await supabase.rpc('match_all_context', {
             query_embedding: questionEmbedding,
-            match_threshold: 0.05, // Bajamos aún más el umbral para asegurar que entre TODO lo remotamente relevante
-            match_count: 25,       // Aumentamos a 25 fragmentos
+            match_threshold: 0.05,
+            match_count: 25,
             p_property_id: propertyId
         });
 
         if (rpcError) console.error('[RPC ERROR]', rpcError);
 
-        // 3. Obtener contexto estructurado (Lista de aparatos, símbolos, normas, etc.)
+        // 3. Obtener contexto estructurado
         const { data: propertyContext } = await supabase
             .from('property_context')
             .select('category, subcategory, content')

@@ -3,8 +3,9 @@
 import { Property } from '@/app/actions/properties'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MapPin, Users, Bed, Bath, Edit2, Sparkles, ExternalLink } from 'lucide-react'
+import { MapPin, Users, Bed, Bath, Edit2, Sparkles, ExternalLink, Share2 } from 'lucide-react'
 import { AutoBuildDialog } from './AutoBuildDialog'
+import { GuestAccessDialog } from './GuestAccessDialog'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -88,10 +89,10 @@ export function PropertyCard({ property, onEdit }: PropertyCardProps) {
                             Configurar
                         </Link>
                     </Button>
-                    <Button variant="outline" className="w-full text-xs h-9" onClick={() => onEdit(property)}>
-                        <Edit2 className="h-3.5 w-3.5 mr-1" />
-                        Editar
-                    </Button>
+                    <GuestAccessDialog
+                        propertyId={property.id}
+                        propertyName={property.name}
+                    />
                 </div>
             </CardFooter>
         </Card>

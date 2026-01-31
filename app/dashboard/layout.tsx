@@ -21,6 +21,7 @@ import {
   User,
   CalendarCheck,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -41,6 +42,7 @@ const navigation = [
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
   { name: "Guias", href: "/dashboard/guides", icon: BookOpen },
   { name: "Analiticas", href: "/dashboard/analytics", icon: BarChart3 },
+  { name: "Seguridad", href: "/dashboard/security", icon: ShieldCheck },
   { name: "Ajustes", href: "/dashboard/settings", icon: Settings },
 ];
 

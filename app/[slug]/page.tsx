@@ -4,16 +4,38 @@ import Image from 'next/image'
 import { SectionRenderer } from '@/components/guide/SectionRenderer'
 import { ManualsList } from '@/components/guide/ManualsList'
 import { GuestChat } from '@/components/guide/GuestChat'
+import { createClient } from '@/lib/supabase/server'
+import { validateAccessToken } from '@/lib/security'
+import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Home, ExternalLink, MapPin, Sparkles, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface GuidePageProps {
     params: Promise<{ slug: string }>
+    searchParams: Promise<{ token?: string }>
 }
 
-export default async function GuidePage({ params }: GuidePageProps) {
+export default async function GuidePage({ params, searchParams }: GuidePageProps) {
     const { slug } = await params
+    const { token } = await searchParams
+    const supabase = await createClient()
+
+    // 1. Check Authentication (Host check)
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // 2. Security validation (Backup for middleware)
+    if (!user) {
+        if (!token) {
+            redirect('/access-denied?reason=token_required')
+        }
+
+        const validation = await validateAccessToken(supabase, token)
+        if (!validation.valid) {
+            redirect(`/access-denied?reason=${validation.reason}`)
+        }
+    }
+
     const property = await getPropertyBySlug(slug)
 
     if (!property) {

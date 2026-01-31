@@ -29,7 +29,7 @@ export const createClient = async () => {
         },
         set(name: string, value: string, options: CookieOptions) {
           try {
-            ;(cookieStore as any).set({
+            ; (cookieStore as any).set({
               name,
               value,
               ...options,
@@ -46,7 +46,7 @@ export const createClient = async () => {
         },
         remove(name: string, options: CookieOptions) {
           try {
-            ;(cookieStore as any).set({
+            ; (cookieStore as any).set({
               name,
               value: '',
               ...options,
