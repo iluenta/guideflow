@@ -1,11 +1,16 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+function getOpenAI() {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+        throw new Error('[OPENAI] Missing OPENAI_API_KEY');
+    }
+    return new OpenAI({ apiKey });
+}
 
 export async function generateOpenAIEmbedding(text: string) {
     try {
+        const openai = getOpenAI();
         const response = await openai.embeddings.create({
             model: "text-embedding-3-small",
             input: text,

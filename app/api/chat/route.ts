@@ -5,11 +5,20 @@ import { streamGeminiREST } from '@/lib/ai/gemini-rest';
 import { validateAccessToken, generateDeviceFingerprint, logSuspiciousActivity } from '@/lib/security';
 import { RateLimiter } from '@/lib/security/rate-limiter';
 
-const supabase = createEdgeAdminClient();
-
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
+    let supabase;
+    try {
+        supabase = createEdgeAdminClient();
+    } catch (err: any) {
+        console.error('[CHAT] Initialization Error:', err.message);
+        return new Response(JSON.stringify({
+            error: 'Database initialization failed. Check environment variables.',
+            details: err.message
+        }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+
     try {
         const { messages, propertyId: legacyPropertyId, accessToken } = await req.json();
         const lastMessage = messages[messages.length - 1].content;
@@ -106,7 +115,8 @@ REGLAS DE ORO:
 4. **Soluciones de Usuario**: Céntrate solo en lo que el huésped puede manipular: botones externos, mandos o trucos de uso.
 5. **Sin Excusas**: Si el aparato está en el CONTEXTO, ayuda con la información disponible.
 6. **Descripciones Visuales**: Describe iconos visualmente (ej. "el icono del copo de nieve").
-7. **Tono**: Amable, profesional y directo. Usa Markdown.
+7. **Prioridad Eficiencia (NUEVO)**: Al explicar el uso de cualquier aparato, **prioriza siempre la opción más eficiente, de bajo consumo o modo "ECO"** que aparezca en el manual técnico. Si el usuario pregunta cómo realizar una tarea (ej. lavar ropa, poner el lavavajillas), recomienda primero el programa más sostenible.
+8. **Tono**: Amable, profesional y directo. Usa Markdown.
 
 CONTEXTO ACTUAL:
 ${formattedContext}`;
