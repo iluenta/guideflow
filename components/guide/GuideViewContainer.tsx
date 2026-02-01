@@ -100,13 +100,13 @@ export function GuideViewContainer({ property, sections, manuals }: GuideViewCon
             default:
                 return (
                     <div className="min-h-screen bg-beige">
-                        {/* Target Header Design (Image 1) */}
-                        <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-navy/5 px-4 h-16 flex items-center justify-between shadow-sm">
+                        {/* Prototype Header Design (Screenshot 2) */}
+                        <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-navy/5 px-4 h-16 flex items-center justify-between">
                             <button className="p-2 -ml-2 text-navy/70 hover:bg-navy/5 rounded-full transition-colors active:scale-90">
                                 <Menu className="w-6 h-6" />
                             </button>
 
-                            <h1 className="absolute left-1/2 -translate-x-1/2 font-serif text-lg font-bold text-navy tracking-tight max-w-[50%] truncate">
+                            <h1 className="absolute left-1/2 -translate-x-1/2 font-sans text-base font-bold text-navy tracking-tight max-w-[60%] truncate uppercase">
                                 {property.name}
                             </h1>
 
@@ -118,44 +118,14 @@ export function GuideViewContainer({ property, sections, manuals }: GuideViewCon
                             </div>
                         </header>
 
-                        {/* Hero Section (Cleaned up) */}
-                        <div className="relative h-[45vh] w-full overflow-hidden">
-                            {property.main_image_url ? (
-                                <Image
-                                    src={property.main_image_url}
-                                    alt={property.name}
-                                    fill
-                                    className="object-cover"
-                                    priority
-                                />
-                            ) : (
-                                <div className="h-full w-full bg-navy/10" />
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-beige/90 via-transparent to-transparent" />
-
-                            {/* Hero Info Overlay */}
-                            <div className="absolute bottom-10 left-6 right-6">
-                                <Badge className="mb-3 uppercase py-1 px-3 tracking-[0.2em] bg-white text-navy border-none shadow-lg text-[9px] font-black">
-                                    GUEST EXPERIENCE
-                                </Badge>
-                                <div className="text-4xl font-serif font-black text-white drop-shadow-2xl tracking-tight leading-[1.1]">
-                                    {property.name}
-                                </div>
-                                <div className="flex items-center gap-2 mt-3 text-white/95 font-bold drop-shadow-xl uppercase tracking-widest text-[10px]">
-                                    <MapPin className="h-3 w-3" />
-                                    <span>{property.location}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Menu Grid Content */}
-                        <div className="-mt-8 relative z-10 bg-beige rounded-t-[2.5rem] pt-8 shadow-[0_-20px_40px_rgba(0,0,0,0.05)]">
+                        {/* Main Content Area */}
+                        <div className="relative z-10 bg-beige">
                             <MenuGrid onNavigate={handleNavigate} />
                         </div>
 
                         {/* Footer Text */}
-                        <div className="px-6 pb-24 text-center">
-                            <p className="text-[10px] text-slate/40 uppercase font-black tracking-[0.5em]">
+                        <div className="px-6 pb-24 text-center opacity-30">
+                            <p className="text-[9px] text-navy uppercase font-black tracking-[0.4em]">
                                 Powered by GuideFlow Premium
                             </p>
                         </div>
