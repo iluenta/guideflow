@@ -3,26 +3,19 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 
-export default async function PropertySetupPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params
+export default async function NewPropertyPage() {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/auth/login')
 
-    const { data: property } = await supabase
-        .from('properties')
-        .select('name, tenant_id')
-        .eq('id', id)
-        .single()
-
-    if (!property) redirect('/dashboard/properties')
+    const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).single()
 
     return (
         <div className="min-h-screen bg-beige">
             <div className="container py-3">
                 <Suspense fallback={<div className="w-full h-96 bg-slate-50 animate-pulse rounded-3xl" />}>
-                    <PropertySetupWizard propertyId={id} tenantId={property?.tenant_id} />
+                    <PropertySetupWizard tenantId={profile?.tenant_id} />
                 </Suspense>
             </div>
         </div>

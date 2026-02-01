@@ -114,11 +114,13 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Fase 5 Prototype Tokens */
+  /* Fase 5 Prototype Tokens - Refined for Harmony */
   --color-beige: #F5F0E8;
   --color-beige-dark: #E8E0D4;
-  --color-navy: #1E3A5F;
-  --color-navy-light: #2D4A6F;
+  --color-navy: #2C2621;
+  /* Warm Coffee Black */
+  --color-navy-light: #4A423C;
+  /* Muted Warm Gray */
   --color-slate: #6B7B8C;
   --color-cream: #FFFDF9;
 
@@ -134,4 +136,33 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Entry Animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.contextual-banner-anim {
+  animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
+}
+
+.section-essential-anim {
+  animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
+}
+
+.section-explore-anim {
+  animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s backwards;
+}
+
+.section-apartment-anim {
+  animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s backwards;
 }

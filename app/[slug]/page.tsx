@@ -38,6 +38,12 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
 
     const sections = await getGuideSections(property.id)
     const manuals = await getPropertyManuals(property.id)
+
+    const { data: context } = await supabase
+        .from('property_context')
+        .select('*')
+        .eq('property_id', property.id)
+
     const primaryColor = property.theme_config?.primary_color || '#1E3A5F'
 
     return (
@@ -49,6 +55,7 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
                 property={property}
                 sections={sections}
                 manuals={manuals}
+                context={context || []}
             />
         </div>
     )

@@ -20,6 +20,10 @@ export function ChatOnboarding({ onOpenChat }: ChatOnboardingProps) {
         if (!hasSeenOnboarding) {
             const timer = setTimeout(() => {
                 setIsVisible(true);
+                // Soft vibration when modal appears
+                if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                    window.navigator.vibrate(50);
+                }
             }, 1000);
 
             const contentTimer = setTimeout(() => {

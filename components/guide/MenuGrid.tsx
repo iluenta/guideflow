@@ -15,17 +15,25 @@ import {
     Sunset,
     Moon,
     Sun,
-    Coffee
+    Coffee,
+    Sparkles
 } from 'lucide-react';
 
 interface MenuGridProps {
     onNavigate: (pageId: string) => void;
+    welcomeData?: {
+        title?: string;
+        host_name?: string;
+        message?: string;
+    };
 }
 
-export function MenuGrid({ onNavigate }: MenuGridProps) {
+export function MenuGrid({ onNavigate, welcomeData }: MenuGridProps) {
     const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('afternoon');
     const [currentTime, setCurrentTime] = useState('');
     const [isLoaded, setIsLoaded] = useState(false);
+    // Mocking isNewFeature for the first 3 days of guest access
+    const isNewFeature = true;
 
     useEffect(() => {
         const updateTime = () => {
@@ -54,11 +62,12 @@ export function MenuGrid({ onNavigate }: MenuGridProps) {
                     emoji: '☕',
                     title: 'BUENOS DÍAS',
                     subtitle: 'Perfecto para empezar el día:',
-                    bgGradient: 'from-amber-50 to-orange-50',
-                    accentColor: 'text-amber-600',
+                    bgGradient: 'from-orange-50/40 to-stone-50',
+                    borderLColor: 'border-orange-200',
+                    accentColor: 'text-orange-700/70',
                     items: [
                         { emoji: '🥐', label: 'Desayunos cerca', count: '3 opciones', id: 'eat' },
-                        { emoji: '🥾', label: 'Rutas de senderismo', count: '5 rutas', id: 'do' }
+                        { emoji: '🥾', label: 'Rutas de senderismo', count: 'Clima perfecto', id: 'do' }
                     ]
                 };
             case 'afternoon':
@@ -67,8 +76,9 @@ export function MenuGrid({ onNavigate }: MenuGridProps) {
                     emoji: '☀️',
                     title: 'BUENAS TARDES',
                     subtitle: 'Perfecto para esta tarde:',
-                    bgGradient: 'from-sky-50 to-blue-50',
-                    accentColor: 'text-sky-600',
+                    bgGradient: 'from-stone-50 to-slate-50',
+                    borderLColor: 'border-slate-300',
+                    accentColor: 'text-slate-600',
                     items: [
                         { emoji: '🏞️', label: 'Visitar el lago', count: '15 min', id: 'do' },
                         { emoji: '🍰', label: 'Merienda local', count: '4 sitios', id: 'eat' }
@@ -80,7 +90,8 @@ export function MenuGrid({ onNavigate }: MenuGridProps) {
                     emoji: '🌅',
                     title: 'ATARDECER',
                     subtitle: 'Perfecto para esta hora:',
-                    bgGradient: 'from-orange-50 to-rose-50',
+                    bgGradient: 'from-orange-50/50 to-stone-50',
+                    borderLColor: 'border-orange-300',
                     accentColor: 'text-orange-600',
                     items: [
                         { emoji: '🌄', label: 'Ver atardecer', count: 'Mirador', id: 'do' },
@@ -93,10 +104,11 @@ export function MenuGrid({ onNavigate }: MenuGridProps) {
                     emoji: '🌙',
                     title: 'BUENAS NOCHES',
                     subtitle: 'Perfecto para esta noche:',
-                    bgGradient: 'from-indigo-50 to-purple-50',
-                    accentColor: 'text-indigo-600',
+                    bgGradient: 'from-stone-100 to-slate-100',
+                    borderLColor: 'border-slate-400',
+                    accentColor: 'text-slate-700',
                     items: [
-                        { emoji: '🍷', label: 'Cena romántica', count: '3 restaurantes', id: 'eat' },
+                        { emoji: '🍷', label: 'Cena romántica', count: '3 opciones', id: 'eat' },
                         { emoji: '🌟', label: 'Ver estrellas', count: 'Terraza', id: 'do' }
                     ]
                 };
@@ -111,8 +123,8 @@ export function MenuGrid({ onNavigate }: MenuGridProps) {
         }
     };
 
-    const handleNavigate = (pageId: string) => {
-        triggerHaptic();
+    const handleNavigate = (pageId: string, hapticPattern: number | number[] = 10) => {
+        triggerHaptic(hapticPattern);
         onNavigate(pageId);
     };
 
@@ -120,123 +132,137 @@ export function MenuGrid({ onNavigate }: MenuGridProps) {
         <div className={`px-4 pt-6 pb-24 transition-all duration-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
 
             {/* Welcome Title */}
-            <div className="text-center mb-8">
-                <h2 className="font-serif text-3xl text-navy font-medium tracking-wide mb-2 uppercase">Welcome</h2>
-                <p className="text-xs tracking-[0.2em] text-slate uppercase font-medium">Please enjoy your stay</p>
+            <div className="text-center mb-8 px-4">
+                <h2 className="font-serif text-3xl text-navy font-medium tracking-wide mb-2 uppercase opacity-90">
+                    {welcomeData?.title || 'Welcome'}
+                </h2>
+                <p className="text-[10px] tracking-[0.3em] text-slate/60 uppercase font-black mb-1">
+                    {welcomeData?.host_name ? `From ${welcomeData.host_name}` : 'A message from your host'}
+                </p>
+                <p className="text-xs text-navy/40 font-medium italic">
+                    {welcomeData?.message || 'Please enjoy your stay'}
+                </p>
             </div>
 
-            {/* Dynamic Right Now Section */}
-            <div className={`relative rounded-2xl p-5 shadow-card mb-8 overflow-hidden bg-gradient-to-br ${rightNow.bgGradient}`}>
+            {/* Dynamic Contextual Banner (Refined to match Image & Snippet) */}
+            <div className={`relative rounded-2xl p-6 shadow-sm mb-8 overflow-hidden bg-gradient-to-br ${rightNow.bgGradient} border-l-4 ${rightNow.borderLColor} contextual-banner-anim`}>
                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                        <span className="text-2xl">{rightNow.emoji}</span>
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl drop-shadow-sm">{rightNow.emoji}</span>
                         <div className="flex items-center gap-2">
-                            <h3 className="font-serif text-lg text-navy font-semibold">{rightNow.title}</h3>
-                            <span className="text-xs text-slate/70 font-medium bg-white/60 px-2 py-0.5 rounded-full">
+                            <h3 className="font-sans text-[15px] font-black text-navy/90 tracking-tight">{rightNow.title}</h3>
+                            <span className="text-[11px] text-navy/40 font-bold bg-navy/5 px-2 py-0.5 rounded-full">
                                 {currentTime}
                             </span>
                         </div>
                     </div>
-                    <span className="text-[10px] font-bold text-white bg-navy px-2 py-1 rounded-full flex items-center gap-1">
-                        <Sunset className="w-3 h-3" /> NUEVO
-                    </span>
+                    {isNewFeature && (
+                        <span className="bg-navy text-white text-[9px] font-black px-2.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm uppercase tracking-wider">
+                            <Sparkles className="w-3 h-3 fill-white" /> NUEVO
+                        </span>
+                    )}
                 </div>
 
-                <p className="text-sm text-slate/80 font-medium mb-3">{rightNow.subtitle}</p>
+                <p className="text-[13px] text-navy/60 font-medium mb-4">{rightNow.subtitle}</p>
 
-                <div className="space-y-2 mb-4">
+                <div className="space-y-3 mb-5">
                     {rightNow.items.map((item, idx) => (
                         <button
                             key={idx}
-                            onClick={() => handleNavigate(item.id)}
-                            className="flex items-center justify-between w-full bg-white/70 hover:bg-white p-3 rounded-xl transition-all active:scale-[0.98] group shadow-sm border border-navy/5"
+                            onClick={() => handleNavigate(item.id, [50, 30, 50])}
+                            className="flex items-center justify-between w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:bg-white/95 p-4 rounded-2xl transition-all active:scale-[0.98] group"
                         >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-4">
                                 <span className="text-xl">{item.emoji}</span>
-                                <span className="text-sm text-navy font-medium">{item.label}</span>
+                                <div className="flex flex-col text-left">
+                                    <span className="text-[14px] text-navy font-bold leading-none mb-1">{item.label}</span>
+                                    <span className="text-[11px] text-navy/40 font-medium">{item.count}</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-slate/60 font-medium">{item.count}</span>
-                                <ChevronRight className="w-4 h-4 text-slate/40 group-hover:text-navy transition-all" />
-                            </div>
+                            <ChevronRight className="w-4 h-4 text-navy/20 group-hover:text-navy/50 transition-all" />
                         </button>
                     ))}
                 </div>
 
                 <button
-                    onClick={() => handleNavigate('do')}
-                    className={`w-full text-center text-sm font-semibold ${rightNow.accentColor} hover:underline flex items-center justify-center gap-1`}
+                    onClick={() => handleNavigate('leisure', [50, 30, 50])}
+                    className={`w-full text-center text-[13px] font-bold ${rightNow.accentColor} hover:opacity-70 flex items-center justify-center gap-1.5 transition-opacity`}
                 >
                     Ver todas las sugerencias
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-3.5 h-3.5" strokeWidth={3} />
                 </button>
             </div>
 
             {/* Essentials Section */}
-            <div className="mb-10">
-                <h3 className="text-[10px] font-black text-slate/80 uppercase tracking-[0.2em] mb-4 px-1 flex items-center gap-2">
-                    <span className="text-orange-500">⚡</span> LO ESENCIAL
+            <div className="mb-10 section-essential-anim">
+                <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
+                    LO ESENCIAL
                 </h3>
                 <div className="grid grid-cols-3 gap-3">
-                    <button onClick={() => handleNavigate('check-in')} className="bg-navy text-white rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-navy/20 active:scale-95 transition-all aspect-square">
+                    <button onClick={() => handleNavigate('check-in', [50, 30, 50])} className="bg-navy text-white rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-navy/20 active:scale-95 transition-all aspect-square">
                         <Key className="w-6 h-6" strokeWidth={1.5} />
-                        <span className="text-[11px] font-bold uppercase tracking-tighter">Check In</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">Check In</span>
                     </button>
-                    <button onClick={() => handleNavigate('wifi')} className="bg-white text-navy rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-card active:scale-95 transition-all aspect-square border border-navy/5">
+                    <button onClick={() => handleNavigate('wifi', [50, 30, 50])} className="bg-white text-navy rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-navy/[0.03]">
                         <Wifi className="w-6 h-6" strokeWidth={1.5} />
-                        <span className="text-[11px] font-bold uppercase tracking-tighter">WiFi</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">WiFi</span>
                     </button>
-                    <button onClick={() => handleNavigate('emergency')} className="bg-rose-50 text-rose-600 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-rose-100">
+                    <button onClick={() => handleNavigate('emergency', [100, 50, 100])} className="bg-rose-50 text-rose-600 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-rose-100/50">
                         <AlertTriangle className="w-6 h-6" strokeWidth={1.5} />
-                        <span className="text-[11px] font-bold uppercase tracking-tighter">SOS</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-center">SOS</span>
                     </button>
                 </div>
             </div>
 
             {/* Explore Section */}
-            <div className="mb-10">
-                <h3 className="text-[10px] font-black text-slate/80 uppercase tracking-[0.2em] mb-4 px-1 flex items-center gap-2">
-                    <span className="text-pink-500">📍</span> EXPLORA
+            <div className="mb-10 section-explore-anim">
+                <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
+                    EXPLORA
                 </h3>
                 <div className="space-y-3">
                     {[
-                        { id: 'eat', label: 'Dónde Comer', icon: UtensilsCrossed, color: 'bg-orange-50 text-orange-600' },
-                        { id: 'do', label: 'Qué Hacer', icon: CalendarDays, color: 'bg-blue-50 text-blue-600' }
+                        { id: 'eat', label: 'Dónde Comer', icon: UtensilsCrossed, color: 'bg-orange-50 text-orange-600', desc: 'Restaurantes y cafeterías locales' },
+                        { id: 'leisure', label: 'Qué Hacer', icon: CalendarDays, color: 'bg-blue-50 text-blue-600', desc: 'Actividades y lugares de interés' }
                     ].map((item) => (
                         <button
                             key={item.id}
                             onClick={() => handleNavigate(item.id)}
-                            className="w-full bg-white p-4 rounded-2xl shadow-card flex items-center justify-between group active:scale-[0.99] transition-all border border-navy/5"
+                            className="w-full bg-white p-5 rounded-3xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-all border border-navy/[0.02]"
                         >
                             <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-full ${item.color} flex items-center justify-center`}>
-                                    <item.icon className="w-5 h-5" />
+                                <div className={`w-12 h-12 rounded-2xl ${item.color} flex items-center justify-center shadow-inner`}>
+                                    <item.icon className="w-6 h-6" />
                                 </div>
-                                <span className="text-navy font-bold">{item.label}</span>
+                                <div className="flex flex-col text-left">
+                                    <span className="text-navy font-black text-[15px]">{item.label}</span>
+                                    <span className="text-[11px] text-navy/40 font-medium">{item.desc}</span>
+                                </div>
                             </div>
-                            <ChevronRight className="w-5 h-5 text-slate/30 group-hover:text-navy transition-all" />
+                            <div className="w-8 h-8 rounded-full bg-navy/[0.03] flex items-center justify-center group-hover:bg-navy/[0.08] transition-colors">
+                                <ChevronRight className="w-4 h-4 text-navy/30 group-hover:text-navy/60 transition-all" />
+                            </div>
                         </button>
                     ))}
                 </div>
             </div>
 
             {/* Apartment Section */}
-            <div className="mb-10">
-                <h3 className="text-[10px] font-black text-slate/80 uppercase tracking-[0.2em] mb-4 px-1 flex items-center gap-2">
-                    <span className="text-blue-500">🏠</span> TU ALOJAMIENTO
+            <div className="mb-10 section-apartment-anim">
+                <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
+                    TU ALOJAMIENTO
                 </h3>
                 <div className="grid grid-cols-3 gap-3">
-                    <button onClick={() => handleNavigate('house-info')} className="bg-white p-4 rounded-2xl shadow-card flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/5">
-                        <Info className="w-6 h-6" strokeWidth={1.5} />
-                        <span className="text-[10px] font-bold uppercase tracking-tighter">Servicios</span>
+                    <button onClick={() => handleNavigate('house-info')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
+                        <Info className="w-6 h-6 opacity-60" strokeWidth={1.5} />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Servicios</span>
                     </button>
-                    <button onClick={() => handleNavigate('rules')} className="bg-white p-4 rounded-2xl shadow-card flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/5">
-                        <ScrollText className="w-6 h-6" strokeWidth={1.5} />
-                        <span className="text-[10px] font-bold uppercase tracking-tighter">Normas</span>
+                    <button onClick={() => handleNavigate('rules')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
+                        <ScrollText className="w-6 h-6 opacity-60" strokeWidth={1.5} />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Normas</span>
                     </button>
-                    <button onClick={() => handleNavigate('manuals')} className="bg-white p-4 rounded-2xl shadow-card flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/5">
-                        <BookOpen className="w-6 h-6" strokeWidth={1.5} />
-                        <span className="text-[10px] font-bold uppercase tracking-tighter">Manuales</span>
+                    <button onClick={() => handleNavigate('manuals')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
+                        <BookOpen className="w-6 h-6 opacity-60" strokeWidth={1.5} />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Manuales</span>
                     </button>
                 </div>
             </div>

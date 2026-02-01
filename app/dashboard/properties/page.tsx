@@ -9,13 +9,12 @@ import { Plus, Search, Building2, SlidersHorizontal } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import Link from 'next/link'
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingProperty, setEditingProperty] = useState<Property | undefined>()
 
   useEffect(() => {
     fetchProperties()
@@ -39,13 +38,11 @@ export default function PropertiesPage() {
   )
 
   const handleEdit = (property: Property) => {
-    setEditingProperty(property)
-    setIsModalOpen(true)
+    // Ya no se usa para abrir modal, el PropertyCard tiene su propio link
   }
 
   const handleAdd = () => {
-    setEditingProperty(undefined)
-    setIsModalOpen(true)
+    // Ya no se usa, usamos Link directamente
   }
 
   return (
@@ -57,9 +54,11 @@ export default function PropertiesPage() {
             Gestiona tus alojamientos y configura sus guías.
           </p>
         </div>
-        <Button onClick={handleAdd} className="h-11 px-6 gap-2 shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30">
-          <Plus className="h-5 w-5" />
-          Añadir alojamiento
+        <Button asChild className="h-11 px-6 gap-2 shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30">
+          <Link href="/dashboard/properties/new">
+            <Plus className="h-5 w-5" />
+            Añadir propiedad
+          </Link>
         </Button>
       </div>
 
@@ -111,33 +110,15 @@ export default function PropertiesPage() {
             {search ? 'Intenta con otros términos de búsqueda.' : 'Parece que aún no has añadido ninguna propiedad. ¡Empieza ahora!'}
           </p>
           {!search && (
-            <Button onClick={handleAdd} variant="secondary" className="mt-6">
-              Añadir mi primera propiedad
+            <Button asChild variant="secondary" className="mt-6">
+              <Link href="/dashboard/properties/new">
+                Añadir mi primera propiedad
+              </Link>
             </Button>
           )}
         </div>
       )}
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingProperty ? 'Editar Propiedad' : 'Añadir Nueva Propiedad'}
-            </DialogTitle>
-            <DialogDescription>
-              Completa la información básica de tu alojamiento.
-            </DialogDescription>
-          </DialogHeader>
-          <PropertyForm
-            property={editingProperty}
-            onSuccess={() => {
-              setIsModalOpen(false)
-              fetchProperties()
-            }}
-            onCancel={() => setIsModalOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

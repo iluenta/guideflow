@@ -18,12 +18,15 @@ interface GuideViewContainerProps {
     property: any;
     sections: any[];
     manuals: any[];
+    context?: any[];
 }
 
-export function GuideViewContainer({ property, sections, manuals }: GuideViewContainerProps) {
+export function GuideViewContainer({ property, sections, manuals, context }: GuideViewContainerProps) {
     const [currentPage, setCurrentPage] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('home');
     const [language, setLanguage] = useState<string>('es');
+
+    const welcomeData = context?.find(c => c.category === 'welcome')?.content;
 
     // Auto-detect browser language
     useEffect(() => {
@@ -40,7 +43,8 @@ export function GuideViewContainer({ property, sections, manuals }: GuideViewCon
         setCurrentPage(pageId);
         // Map pageIds to tabs if possible
         if (pageId === 'eat' || pageId === 'food') setActiveTab('eat');
-        else if (pageId === 'manuals' || pageId === 'info') setActiveTab('info');
+        else if (pageId === 'do' || pageId === 'things-do') setActiveTab('leisure');
+        else if (pageId === 'manuals' || pageId === 'info' || pageId === 'house-info') setActiveTab('info');
         else setActiveTab('home');
 
         window.scrollTo(0, 0);
@@ -55,7 +59,9 @@ export function GuideViewContainer({ property, sections, manuals }: GuideViewCon
         setActiveTab(tabId);
         if (tabId === 'home') setCurrentPage(null);
         else if (tabId === 'eat') setCurrentPage('eat');
+        else if (tabId === 'leisure') setCurrentPage('do');
         else if (tabId === 'info') setCurrentPage('manuals');
+        else if (tabId === 'profile') setCurrentPage('profile');
         window.scrollTo(0, 0);
     };
 
@@ -120,7 +126,7 @@ export function GuideViewContainer({ property, sections, manuals }: GuideViewCon
 
                         {/* Main Content Area */}
                         <div className="relative z-10 bg-beige">
-                            <MenuGrid onNavigate={handleNavigate} />
+                            <MenuGrid onNavigate={handleNavigate} welcomeData={welcomeData} />
                         </div>
 
                         {/* Footer Text */}
@@ -143,7 +149,6 @@ export function GuideViewContainer({ property, sections, manuals }: GuideViewCon
             <BottomNav
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
-                onChatOpen={handleChatOpen}
                 currentLanguage={language}
             />
 

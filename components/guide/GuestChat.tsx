@@ -2,7 +2,7 @@
 
 import { useChat } from 'ai/react'
 import { useState, useEffect, useRef } from 'react'
-import { X, Send, Bot, User, Sparkles } from 'lucide-react'
+import { X, Send, Bot, User, Sparkles, MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -49,6 +49,28 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
 
     return (
         <>
+            {/* Floating Chat Trigger - Restored as FAB */}
+            {
+                !isOpen && (
+                    <button
+                        onClick={() => {
+                            setIsOpen(true);
+                            if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                                window.navigator.vibrate([50, 30, 50]);
+                            }
+                        }}
+                        className="fixed bottom-24 right-5 w-14 h-14 bg-navy text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-40 animate-in fade-in zoom-in slide-in-from-bottom-5 duration-500"
+                        aria-label="Abrir chat de ayuda"
+                    >
+                        <div className="relative">
+                            <MessageCircle className="w-7 h-7" strokeWidth={2.5} />
+                            {/* Status Pulse */}
+                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse shadow-sm" />
+                        </div>
+                    </button>
+                )
+            }
+
             {/* Chat Backdrop */}
             <div
                 className={cn(
