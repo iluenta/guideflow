@@ -21,7 +21,7 @@ export async function POST(req: Request) {
         // Verify property exists
         const { data: property, error: propertyError } = await supabase
             .from('properties')
-            .select('id, slug, name')
+            .select('id, slug, name, tenant_id')
             .eq('id', propertyId)
             .single();
 
@@ -31,21 +31,24 @@ export async function POST(req: Request) {
 
         const accessToken = generateSecureToken();
 
-        // Calculate access windows (2 days before - 2 days after)
+        // Calculate access windows (UTC based)
+        // From: 2 days before check-in (UTC 00:00:00)
+        // Until: End of checkout day (UTC 23:59:59) - Grace period reduced from 2 days to 0
         const checkin = new Date(checkinDate);
         const checkout = new Date(checkoutDate);
 
         const validFrom = new Date(checkin);
-        validFrom.setDate(validFrom.getDate() - 2);
+        validFrom.setUTCDate(validFrom.getUTCDate() - 2);
+        validFrom.setUTCHours(0, 0, 0, 0);
 
         const validUntil = new Date(checkout);
-        validUntil.setDate(validUntil.getDate() + 2);
-        validUntil.setHours(23, 59, 59, 999); // Until end of the day
+        validUntil.setUTCHours(23, 59, 59, 999);
 
         const { error: insertError } = await supabase
             .from('guest_access_tokens')
             .insert({
                 property_id: propertyId,
+                tenant_id: property.tenant_id, // Store for RLS/Auditing
                 guest_name: guestName || 'Invitado',
                 access_token: accessToken,
                 valid_from: validFrom.toISOString(),

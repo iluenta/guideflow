@@ -28,7 +28,7 @@ export async function generateDeviceFingerprint(ip: string | undefined, userAgen
 /**
  * Validates a guest access token and checks temporal windows.
  */
-export async function validateAccessToken(supabase: any, token: string) {
+export async function validateAccessToken(supabase: any, token: string, expectedPropertyId?: string) {
     // We use a dedicated admin client to ensure we can read metadata even with RLS
     const { createEdgeAdminClient } = await import('./supabase/edge');
     const supabaseAdmin = createEdgeAdminClient();
@@ -41,6 +41,12 @@ export async function validateAccessToken(supabase: any, token: string) {
 
     if (error || !access) {
         console.error('[SECURITY_LIB] Token lookup failed:', error?.message || 'Not found');
+        return { valid: false, reason: 'invalid_token' };
+    }
+
+    // Verify token is for the correct property
+    if (expectedPropertyId && access.property_id !== expectedPropertyId) {
+        console.warn(`[SECURITY_LIB] Token property mismatch: expected ${expectedPropertyId}, got ${access.property_id}`);
         return { valid: false, reason: 'invalid_token' };
     }
 

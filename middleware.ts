@@ -68,47 +68,49 @@ export async function middleware(request: NextRequest) {
     const pathSegments = pathname.split('/').filter(Boolean)
     const firstSegment = pathSegments[0]
 
-    if (firstSegment && !reservedRoutes.includes(firstSegment) && pathSegments.length === 1) {
+    // 5. Guest Access Security (Fase 4)
+    // Identify guide routes (non-reserved routes)
+    if (firstSegment && !reservedRoutes.includes(firstSegment)) {
 
-        // Hosts can bypass token if they are logged in
-        if (user) return response
+        const supabaseAdmin = createEdgeAdminClient()
 
-        // Guests MUST have a token
+        // 5.1 Identify requested property
+        const { data: requestedProperty, error: propError } = await supabaseAdmin
+            .from('properties')
+            .select('id, tenant_id')
+            .eq('slug', firstSegment)
+            .single()
+
+        // 5.2 Smart Host Bypass: Only owners can bypass token check
+        if (user && requestedProperty) {
+            const userTenantId = user.app_metadata?.tenant_id || user.user_metadata?.tenant_id
+            if (requestedProperty.tenant_id === userTenantId) {
+                console.log(`[SECURITY] HOST BYPASS: Owner access granted for ${firstSegment}`);
+                return response
+            }
+        }
+
+        // Guests (and users accessing other communities) MUST have a token
         if (!token) {
             console.log(`[SECURITY] REJECTED: No token provided for path ${pathname}`);
             return NextResponse.redirect(new URL('/access-denied?reason=token_required', request.url))
         }
 
         const cleanToken = token.trim();
-        console.log(`[SECURITY] Validating token: "${cleanToken}" for path: ${pathname}`);
+        console.log(`[SECURITY] Validating token for path: ${pathname}`);
 
-        // Validate Token using Admin Client (Bypass RLS)
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        console.log(`[SECURITY] Supabase URL available: ${!!supabaseUrl} (${supabaseUrl?.substring(0, 15)}...)`);
-
-        const supabaseAdmin = createEdgeAdminClient()
-
-        if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-            console.error('[SECURITY] CRITICAL: SUPABASE_SERVICE_ROLE_KEY IS MISSING!');
-        }
-
+        // 5.3 Validate Token with Strict Property Binding
         const { data: access, error: dbError } = await supabaseAdmin
             .from('guest_access_tokens')
             .select('*')
             .eq('access_token', cleanToken)
+            .eq('property_id', requestedProperty?.id) // BINDING: Must match propertyId
             .single()
 
-        if (dbError) {
-            console.error(`[SECURITY] DB ERROR for "${cleanToken}":`, dbError);
-            return NextResponse.redirect(new URL(`/access-denied?reason=invalid&msg=${encodeURIComponent(dbError.message)}`, request.url))
+        if (dbError || !access) {
+            console.error(`[SECURITY] INVALID: Token "${cleanToken}" for property "${firstSegment}"`);
+            return NextResponse.redirect(new URL(`/access-denied?reason=invalid`, request.url))
         }
-
-        if (!access) {
-            console.error(`[SECURITY] NOT FOUND: Token "${cleanToken}" not in table.`);
-            return NextResponse.redirect(new URL('/access-denied?reason=invalid&msg=not_found', request.url))
-        }
-
-        console.log(`[SECURITY] SUCCESS: Token found for guest: ${access.guest_name}`);
 
         if (!access.is_active) {
             return NextResponse.redirect(new URL('/access-denied?reason=inactive', request.url))
@@ -118,27 +120,23 @@ export async function middleware(request: NextRequest) {
         const validFrom = access.valid_from ? new Date(access.valid_from) : null
         const validUntil = access.valid_until ? new Date(access.valid_until) : null
 
-        // Diagnostic logs
-        console.log(`[SECURITY] Token: ${token}`)
-        console.log(`[SECURITY] Now (UTC): ${now.toISOString()} (${now.getTime()})`)
-        console.log(`[SECURITY] From (DB): ${validFrom?.toISOString()} (${validFrom?.getTime() || 'null'})`)
-        console.log(`[SECURITY] Until (DB): ${validUntil?.toISOString()} (${validUntil?.getTime() || 'null'})`)
-
         if (!validFrom || isNaN(validFrom.getTime()) || !validUntil || isNaN(validUntil.getTime())) {
-            console.error('[SECURITY] Error: Invalid or missing dates in DB')
+            console.error('[SECURITY] Error: Invalid dates in DB')
             return NextResponse.redirect(new URL('/access-denied?reason=invalid', request.url))
         }
 
+        // Compare using UTC timestamps
         if (now.getTime() < validFrom.getTime()) {
             console.warn('[SECURITY] Access denied: Too early')
             return NextResponse.redirect(new URL(`/access-denied?reason=too_early&date=${validFrom.toISOString()}`, request.url))
         }
+
         if (now.getTime() > validUntil.getTime()) {
-            console.warn('[SECURITY] Access denied: Expired')
+            console.warn(`[SECURITY] Access denied: Expired. Until: ${validUntil.toISOString()}, Now: ${now.toISOString()}`);
             return NextResponse.redirect(new URL('/access-denied?reason=expired', request.url))
         }
 
-        console.log('[SECURITY] Access granted for token')
+        console.log(`[SECURITY] ACCESS GRANTED: Guest ${access.guest_name}`);
     }
 
     return response

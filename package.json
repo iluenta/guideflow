@@ -15,7 +15,8 @@
     "test:coverage": "vitest run --coverage",
     "dev:admin": "node scripts/dev-admin-login.js",
     "dev:admin:create": "node scripts/create-dev-admin.js",
-    "dev:admin:link": "node scripts/dev-admin-login.js"
+    "dev:admin:link": "node scripts/dev-admin-login.js",
+    "security:report": "node scripts/validate-security-report.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

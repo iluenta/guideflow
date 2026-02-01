@@ -81,12 +81,16 @@ Ver `documentacion/SUPABASE_SETUP.md` para más detalles.
 - [Configuración de Resend](documentacion/RESEND_SETUP.md)
 - [Solución de Problemas](documentacion/TROUBLESHOOTING.md)
 - [Expiración de JWT](documentacion/JWT_EXPIRATION.md)
+- [**🔒 Reporte de Auditoría de Seguridad**](documentacion/SECURITY_AUDIT.md) ⚠️ **IMPORTANTE**
 
 ## 🧪 Testing
 
 ```bash
 # Ejecutar todos los tests
 npm test
+
+# Tests de seguridad (auditoría de penetración)
+npm run test:security
 
 # Tests unitarios
 npm run test:unit
@@ -97,6 +101,22 @@ npm run test:integration
 # Modo watch
 npm run test:watch
 ```
+
+### Tests de Seguridad
+
+Se han creado 11 suites de tests de seguridad que validan:
+- SQL Injection
+- XSS (Cross-Site Scripting)
+- Autenticación y autorización
+- CSRF
+- Rate Limiting
+- Validación de inputs
+- File Upload
+- Prompt Injection
+- Exposición de datos
+- Tests de integración
+
+Ver [Reporte de Auditoría de Seguridad](documentacion/SECURITY_AUDIT.md) para más detalles.
 
 ## 🏗️ Scripts Disponibles
 
