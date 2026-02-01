@@ -12,29 +12,42 @@ export function ChatOnboarding({ onOpenChat }: ChatOnboardingProps) {
     const [isVisible, setIsVisible] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [showContent, setShowContent] = useState(false);
+    const [typedText, setTypedText] = useState('');
+    const fullText = "Soy tu asistente virtual. Estoy aquí para ayudarte durante tu estancia.";
 
     useEffect(() => {
-        // Check if already seen
         const hasSeenOnboarding = localStorage.getItem('chatOnboardingSeen');
         if (!hasSeenOnboarding) {
-            // Show after a short delay for smooth entrance
             const timer = setTimeout(() => {
                 setIsVisible(true);
-            }, 1500);
+            }, 1000);
 
-            // Stagger content animation
             const contentTimer = setTimeout(() => {
                 setShowContent(true);
-            }, 1800);
+            }, 1300);
 
-            // Auto close after 10 seconds (as per prototype code)
+            // Typing effect logic
+            const typingDelay = 1800;
+            let currentText = '';
+            const typingTimer = setTimeout(() => {
+                const interval = setInterval(() => {
+                    if (currentText.length < fullText.length) {
+                        currentText = fullText.slice(0, currentText.length + 1);
+                        setTypedText(currentText);
+                    } else {
+                        clearInterval(interval);
+                    }
+                }, 30);
+            }, typingDelay);
+
             const autoCloseTimer = setTimeout(() => {
                 handleClose();
-            }, 10000);
+            }, 15000);
 
             return () => {
                 clearTimeout(timer);
                 clearTimeout(contentTimer);
+                clearTimeout(typingTimer);
                 clearTimeout(autoCloseTimer);
             };
         }
@@ -73,11 +86,11 @@ export function ChatOnboarding({ onOpenChat }: ChatOnboardingProps) {
                 onClick={handleClose}
             />
 
-            {/* Modal Card */}
+            {/* Modal Card with slideUpFadeIn animation */}
             <div
                 className={cn(
-                    "relative w-full max-w-[360px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden transform transition-all duration-400",
-                    isClosing ? "scale-90 translate-y-8 opacity-0" : "scale-100 translate-y-0 opacity-100"
+                    "relative w-full max-w-[360px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden chat-onboarding",
+                    isClosing ? "opacity-0 translate-y-8 scale-95" : ""
                 )}
             >
                 {/* Decorative top accent */}
@@ -100,7 +113,6 @@ export function ChatOnboarding({ onOpenChat }: ChatOnboardingProps) {
                             showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                         )}
                     >
-                        {/* Friendly wave emoji */}
                         <div className="text-6xl mb-4 inline-block animate-wave">
                             👋
                         </div>
@@ -108,11 +120,15 @@ export function ChatOnboarding({ onOpenChat }: ChatOnboardingProps) {
                         <h2 className="font-serif text-3xl text-navy font-bold mb-3 tracking-tight">
                             ¡Bienvenido!
                         </h2>
-                        <p className="text-slate text-[15px] leading-relaxed font-medium">
-                            Soy tu asistente virtual.
-                            <br />
-                            Estoy aquí para ayudarte durante tu estancia.
-                        </p>
+                        <div className="min-h-[3rem]">
+                            <p className="text-slate text-[15px] leading-relaxed font-medium">
+                                {typedText}
+                                <span className={cn(
+                                    "inline-block w-0.5 h-4 bg-navy ml-0.5 animate-pulse",
+                                    typedText.length === fullText.length ? "hidden" : ""
+                                )} />
+                            </p>
+                        </div>
                     </div>
 
                     {/* Example Questions/Suggestions */}
@@ -134,7 +150,7 @@ export function ChatOnboarding({ onOpenChat }: ChatOnboardingProps) {
                                 <HelpCircle className="w-5 h-5" />
                             </div>
                             <span className="text-sm text-navy font-bold">
-                                "¿Cómo funciona el horno?"
+                                "Cómo funciona el horno"
                             </span>
                         </button>
 
@@ -188,9 +204,9 @@ export function ChatOnboarding({ onOpenChat }: ChatOnboardingProps) {
                     >
                         <button
                             onClick={handleOpenChat}
-                            className="w-full bg-navy hover:bg-navy-light text-white py-4.5 rounded-[1.25rem] font-bold shadow-xl shadow-navy/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5"
+                            className="w-full bg-navy hover:bg-navy-light text-white py-4 rounded-[1.25rem] font-bold shadow-xl shadow-navy/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5"
                         >
-                            <Sparkles className="w-4.5 h-4.5" />
+                            <Sparkles className="w-4 h-4" />
                             Hacer una pregunta
                         </button>
                         <button
@@ -209,8 +225,21 @@ export function ChatOnboarding({ onOpenChat }: ChatOnboardingProps) {
           25% { transform: rotate(20deg); }
           75% { transform: rotate(-10deg); }
         }
+        @keyframes slideUpFadeIn {
+          from { 
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
         .animate-wave {
           animation: wave 2s ease-in-out infinite;
+        }
+        .chat-onboarding {
+          animation: slideUpFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
       `}</style>
         </div>
