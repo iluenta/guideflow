@@ -2,26 +2,37 @@
 @import 'tw-animate-css';
 
 @theme {
-  /* Colors */
-  --color-beige: #F5F0E8;
-  --color-navy: #1E3A5F;
-  --color-slate: #6B7B8C;
-  --color-cream: #FFFDF9;
+  /* Brand Colors */
+  --color-teal: #316263;
+  --color-clay: #C36A4A;
+  --color-cloud: #F0EEE9;
+  --color-ink: #101417;
 
-  /* Functional Colors */
-  --color-background: var(--color-beige);
-  --color-foreground: var(--color-navy);
-  --color-primary: var(--color-navy);
-  --color-primary-foreground: var(--color-beige);
-  --color-secondary: var(--color-slate);
-  --color-secondary-foreground: var(--color-cream);
-  --color-muted: #E2DDD5;
-  --color-muted-foreground: var(--color-slate);
-  --color-accent: var(--color-navy);
-  --color-accent-foreground: var(--color-beige);
-  --color-border: #E2DDD5;
-  --color-input: #E2DDD5;
-  --color-ring: var(--color-navy);
+  /* Functional Colors mapping */
+  --color-background: var(--color-cloud);
+  --color-foreground: var(--color-ink);
+
+  --color-primary: var(--color-teal);
+  --color-primary-foreground: var(--color-cloud);
+
+  --color-secondary: var(--color-clay);
+  --color-secondary-foreground: var(--color-cloud);
+
+  --color-muted: #E5E2DA;
+  --color-muted-foreground: #525252;
+
+  --color-accent: var(--color-clay);
+  --color-accent-foreground: var(--color-cloud);
+
+  --color-border: #E5E2DA;
+  --color-input: #E5E2DA;
+  --color-ring: var(--color-teal);
+
+  /* Legacy aliases to avoid breaking existing code */
+  --color-beige: var(--color-cloud);
+  --color-navy: var(--color-ink);
+  --color-slate: #525252;
+  --color-cream: #FFFDF9;
 
   /* Fonts */
   --font-sans: 'Inter', 'Geist', 'Geist Fallback', system-ui, sans-serif;
@@ -35,8 +46,8 @@
   --radius-xl: 1.5rem;
 
   /* Shadows */
-  --shadow-card: 0 4px 20px -2px rgba(30, 58, 95, 0.08);
-  --shadow-card-hover: 0 8px 30px -4px rgba(30, 58, 95, 0.12);
+  --shadow-card: 0 4px 20px -2px rgba(16, 20, 23, 0.08);
+  --shadow-card-hover: 0 8px 30px -4px rgba(16, 20, 23, 0.12);
 }
 
 @layer base {

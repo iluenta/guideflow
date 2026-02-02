@@ -13,6 +13,7 @@ import { LanguageSelector } from './LanguageSelector';
 import { ChatOnboarding } from './ChatOnboarding';
 
 import { BottomNav } from './BottomNav';
+import { CheckInView } from './CheckInView';
 
 interface GuideViewContainerProps {
     property: any;
@@ -73,23 +74,27 @@ export function GuideViewContainer({ property, sections, manuals, context }: Gui
     const renderCurrentView = () => {
         switch (currentPage) {
             case 'wifi':
-                const wifiSection = sections.find(s => s.title.toLowerCase().includes('wifi') || s.content_type === 'text' && s.title.toLowerCase().includes('internet'));
+                const techData = context?.find(c => c.category === 'tech')?.content || {};
                 return (
                     <WifiView
                         onBack={handleBack}
-                        networkName={property.metadata?.wifi_name}
-                        password={property.metadata?.wifi_password}
-                        notes={wifiSection?.data?.text}
+                        networkName={techData.wifi_ssid}
+                        password={techData.wifi_password}
+                        notes={techData.router_notes}
                         currentLanguage={language}
                         onLanguageChange={setLanguage}
                     />
                 );
             case 'rules':
+                const rulesData = context?.find(c => c.category === 'rules')?.content || {};
+                const rulesCheckinData = context?.find(c => c.category === 'checkin')?.content || {};
                 const rulesSection = sections.find(s => s.title.toLowerCase().includes('normas') || s.title.toLowerCase().includes('reglas'));
                 return (
                     <RulesView
                         onBack={handleBack}
-                        rules={rulesSection?.data?.text}
+                        rulesData={rulesData}
+                        checkinData={rulesCheckinData}
+                        oldRules={rulesSection?.data?.text}
                         currentLanguage={language}
                         onLanguageChange={setLanguage}
                     />
@@ -103,11 +108,24 @@ export function GuideViewContainer({ property, sections, manuals, context }: Gui
                         onLanguageChange={setLanguage}
                     />
                 );
+            case 'check-in':
+            case 'checkin':
+                const checkinData = context?.find(c => c.category === 'checkin')?.content || {};
+                const accessData = context?.find(c => c.category === 'access')?.content;
+                return (
+                    <CheckInView
+                        onBack={handleBack}
+                        checkinData={checkinData}
+                        address={accessData?.full_address || property.full_address || ''}
+                        hostName={welcomeData?.host_name || (language === 'es' ? 'tu anfitrión' : 'your host')}
+                        currentLanguage={language}
+                    />
+                );
             default:
                 return (
                     <div className="min-h-screen bg-beige">
                         {/* Prototype Header Design (Screenshot 2) */}
-                        <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-navy/5 px-4 h-16 flex items-center justify-between">
+                        <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-md border-b border-border/10 px-4 h-16 flex items-center justify-between">
                             <button className="p-2 -ml-2 text-navy/70 hover:bg-navy/5 rounded-full transition-colors active:scale-90">
                                 <Menu className="w-6 h-6" />
                             </button>
@@ -126,7 +144,7 @@ export function GuideViewContainer({ property, sections, manuals, context }: Gui
 
                         {/* Main Content Area */}
                         <div className="relative z-10 bg-beige">
-                            <MenuGrid onNavigate={handleNavigate} welcomeData={welcomeData} />
+                            <MenuGrid onNavigate={handleNavigate} welcomeData={welcomeData} imageUrl={property.main_image_url} />
                         </div>
 
                         {/* Footer Text */}

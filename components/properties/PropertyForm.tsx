@@ -17,7 +17,7 @@ import { toast } from 'sonner'
 const propertySchema = z.object({
     name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
     slug: z.string().min(3, 'El slug debe tener al menos 3 caracteres').regex(/^[a-z0-9-]+$/, 'Solo letras minúsculas, números y guiones'),
-    location: z.string().min(3, 'La ubicación es requerida'),
+    full_address: z.string().min(3, 'La ubicación es requerida'),
     beds: z.number().min(0).default(1),
     baths: z.number().min(0).default(1),
     guests: z.number().min(1).default(2),
@@ -48,7 +48,7 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
         defaultValues: {
             name: property?.name || '',
             slug: property?.slug || '',
-            location: property?.location || '',
+            full_address: property?.full_address || '',
             beds: property?.beds || 1,
             baths: property?.baths || 1,
             guests: property?.guests || 2,
@@ -169,7 +169,7 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
 
                         <FormField
                             control={form.control}
-                            name="location"
+                            name="full_address"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Ubicación</FormLabel>

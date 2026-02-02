@@ -18,6 +18,7 @@ import {
   Home,
   Star,
 } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 
 const features = [
   {
@@ -135,12 +136,10 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <Home className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-semibold text-foreground">
-                HostGuide
+            <div className="flex items-center gap-3">
+              <Logo size={36} className="rounded-xl shadow-sm" />
+              <span className="text-xl font-black text-foreground tracking-tight">
+                GuideFlow
               </span>
             </div>
 
@@ -421,11 +420,10 @@ export default function LandingPage() {
             {pricingPlans.map((plan) => (
               <Card
                 key={plan.name}
-                className={`relative border-2 ${
-                  plan.highlighted
-                    ? "border-primary shadow-lg"
-                    : "border-border"
-                }`}
+                className={`relative border-2 ${plan.highlighted
+                  ? "border-primary shadow-lg"
+                  : "border-border"
+                  }`}
               >
                 {plan.highlighted && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-sm font-medium text-primary-foreground">
@@ -496,12 +494,10 @@ export default function LandingPage() {
       <footer className="border-t border-border bg-card px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <Home className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <span className="text-lg font-semibold text-foreground">
-                HostGuide
+            <div className="flex items-center gap-3">
+              <Logo size={28} className="rounded-lg shadow-sm" />
+              <span className="text-xl font-black text-foreground tracking-tight">
+                GuideFlow
               </span>
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
@@ -517,7 +513,7 @@ export default function LandingPage() {
             </div>
           </div>
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            2026 HostGuide. Todos los derechos reservados.
+            2026 GuideFlow. Todos los derechos reservados.
           </p>
         </div>
       </footer>

@@ -44,12 +44,12 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
         .select('*')
         .eq('property_id', property.id)
 
-    const primaryColor = property.theme_config?.primary_color || '#1E3A5F'
+    const primaryColor = property.theme_config?.primary_color || '#316263'
 
     return (
         <div
             className="min-h-screen bg-beige font-sans selection:bg-navy/10"
-            style={{ '--primary': primaryColor, '--primary-foreground': '#F5F0E8' } as React.CSSProperties}
+            style={{ '--primary': primaryColor, '--primary-foreground': '#F0EEE9' } as React.CSSProperties}
         >
             <GuideViewContainer
                 property={property}

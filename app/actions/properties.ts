@@ -28,13 +28,21 @@ export type Property = {
     tenant_id: string
     name: string
     slug: string | null
-    location: string
+    full_address: string | null
     beds: number
     baths: number
     guests: number
     description: string | null
     main_image_url: string | null
     theme_config: any
+    latitude: number | null
+    longitude: number | null
+    city: string | null
+    country: string | null
+    country_code: string | null
+    postal_code: string | null
+    neighborhood: string | null
+    timezone: string | null
     created_at: string
     updated_at: string
 }

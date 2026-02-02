@@ -3,7 +3,7 @@
 import { Property } from '@/app/actions/properties'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MapPin, Users, Bed, Bath, Edit2, Sparkles, ExternalLink, Share2 } from 'lucide-react'
+import { MapPin, Users, Bed, Bath, Sparkles, ExternalLink, Share2 } from 'lucide-react'
 import { AutoBuildDialog } from './AutoBuildDialog'
 import { GuestAccessDialog } from './GuestAccessDialog'
 import Link from 'next/link'
@@ -11,10 +11,9 @@ import Image from 'next/image'
 
 interface PropertyCardProps {
     property: Property
-    onEdit: (property: Property) => void
 }
 
-export function PropertyCard({ property, onEdit }: PropertyCardProps) {
+export function PropertyCard({ property }: PropertyCardProps) {
     return (
         <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm">
             <div className="relative aspect-video overflow-hidden">
@@ -30,16 +29,6 @@ export function PropertyCard({ property, onEdit }: PropertyCardProps) {
                         <span className="text-muted-foreground text-sm">Sin imagen</span>
                     </div>
                 )}
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                        size="icon"
-                        variant="secondary"
-                        className="h-8 w-8 rounded-full shadow-md"
-                        onClick={() => onEdit(property)}
-                    >
-                        <Edit2 className="h-4 w-4" />
-                    </Button>
-                </div>
             </div>
 
             <CardHeader className="p-4 pb-0">
@@ -48,7 +37,9 @@ export function PropertyCard({ property, onEdit }: PropertyCardProps) {
                 </h3>
                 <div className="flex items-center gap-1 text-muted-foreground text-sm">
                     <MapPin className="h-3.5 w-3.5" />
-                    <span className="line-clamp-1">{property.location}</span>
+                    <span className="line-clamp-1">
+                        {property.city ? `${property.city}${property.country ? `, ${property.country}` : ''}` : 'Sin ubicación'}
+                    </span>
                 </div>
             </CardHeader>
 

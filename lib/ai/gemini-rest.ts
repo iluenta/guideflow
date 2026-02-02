@@ -157,7 +157,7 @@ export async function analyzeImageWithGemini(imageUrl: string, prompt: string) {
             prompt
         ];
 
-        return await geminiREST('gemini-3-flash-preview', input, {
+        const { data } = await geminiREST('gemini-1.5-flash-latest', prompt, {
             temperature: 0.1,
             responseMimeType: 'application/json'
         });

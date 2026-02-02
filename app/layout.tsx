@@ -15,7 +15,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'HostGuide - Gestiona tu Alojamiento Turistico',
+  title: 'GuideFlow - Gestiona tu Alojamiento Turistico',
   description: 'Plataforma todo en uno para propietarios de alojamientos turisticos. Landing personalizable, calendario de reservas y guia del huesped con IA.',
   generator: 'v0.app',
   icons: {

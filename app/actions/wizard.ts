@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { geocodeAddress } from '@/lib/geocoding'
 
 export async function saveWizardStep(
     category: string,
@@ -19,12 +20,18 @@ export async function saveWizardStep(
         const propValues = {
             name: stepData.name,
             slug: stepData.slug,
-            location: stepData.location,
             guests: stepData.guests,
             beds: stepData.beds,
             baths: stepData.baths,
             description: stepData.description,
-            theme_config: { primary_color: stepData.primary_color }
+            main_image_url: stepData.main_image_url,
+            theme_config: { primary_color: stepData.primary_color },
+            // Add initial geolocation if available
+            latitude: stepData.latitude,
+            longitude: stepData.longitude,
+            city: stepData.city,
+            country: stepData.country,
+            postal_code: stepData.postal_code
         }
 
         if (currentPropId) {
@@ -86,6 +93,31 @@ export async function saveWizardStep(
             }, { onConflict: 'property_id,category' })
 
         if (error) throw error
+
+        // IF it's the 'access' category, we also update the main property table with precise location info
+        if (category === 'access') {
+            const { data: updatedProp, error: propError } = await supabase.from('properties').update({
+                full_address: stepData.full_address,
+                latitude: stepData.latitude,
+                longitude: stepData.longitude,
+                city: stepData.city,
+                country: stepData.country,
+                country_code: stepData.country_code,
+                postal_code: stepData.postal_code,
+                neighborhood: stepData.neighborhood,
+                timezone: stepData.timezone,
+                geocoding_confidence: stepData.geocoding_confidence,
+                geocoding_source: stepData.geocoding_source,
+                geocoding_accuracy: stepData.geocoding_accuracy,
+                geocoding_validated_at: new Date().toISOString()
+            }).eq('id', currentPropId)
+                .select()
+                .single()
+
+            if (propError) throw propError
+            return { success: true, property: updatedProp }
+        }
+
         return { success: true }
     }
 }

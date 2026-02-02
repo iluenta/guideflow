@@ -56,9 +56,9 @@ const sections = [
     id: "wifi",
     icon: Wifi,
     title: "WiFi",
-    shortInfo: "HostGuide_5G",
+    shortInfo: "GuideFlow_5G",
     content: {
-      network: "HostGuide_5G",
+      network: "GuideFlow_5G",
       password: "bienvenido2026",
       speed: "300 Mbps",
       tips: "El router esta en el salon. Si tienes problemas, reinicialo desconectando 10 segundos.",
@@ -221,7 +221,7 @@ export default function GuestGuidePage() {
       const lowerMessage = message.toLowerCase();
 
       if (lowerMessage.includes("wifi") || lowerMessage.includes("internet")) {
-        response = `La red WiFi es "HostGuide_5G" y la contrasena es "bienvenido2026". La velocidad es de 300 Mbps. Si tienes algun problema, puedes reiniciar el router que esta en el salon.`;
+        response = `La red WiFi es "GuideFlow_5G" y la contrasena es "bienvenido2026". La velocidad es de 300 Mbps. Si tienes algun problema, puedes reiniciar el router que esta en el salon.`;
       } else if (lowerMessage.includes("check") || lowerMessage.includes("salida")) {
         response = `El check-out es antes de las 11:00. Por favor, deja las llaves dentro del apartamento y cierra la puerta al salir. El codigo de acceso es 4521#.`;
       } else if (lowerMessage.includes("desayun") || lowerMessage.includes("cafe")) {
@@ -489,7 +489,7 @@ export default function GuestGuidePage() {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-foreground">WiFi</h3>
-              <p className="text-sm text-muted-foreground">HostGuide_5G</p>
+              <p className="text-sm text-muted-foreground">GuideFlow_5G</p>
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
@@ -716,8 +716,8 @@ export default function GuestGuidePage() {
             >
               <div
                 className={`max-w-[85%] rounded-2xl px-4 py-3 ${message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-foreground"
                   }`}
               >
                 <p className="text-sm">{message.content}</p>
@@ -831,8 +831,8 @@ export default function GuestGuidePage() {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`flex flex-1 flex-col items-center gap-1 py-2 transition-colors ${activeTab === item.id
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
                 }`}
             >
               <item.icon className={`h-5 w-5 ${activeTab === item.id ? "stroke-[2.5]" : ""}`} />

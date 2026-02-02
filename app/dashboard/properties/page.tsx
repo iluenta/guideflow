@@ -34,12 +34,9 @@ export default function PropertiesPage() {
 
   const filteredProperties = properties.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.location.toLowerCase().includes(search.toLowerCase())
+    (p.full_address || '').toLowerCase().includes(search.toLowerCase())
   )
 
-  const handleEdit = (property: Property) => {
-    // Ya no se usa para abrir modal, el PropertyCard tiene su propio link
-  }
 
   const handleAdd = () => {
     // Ya no se usa, usamos Link directamente
@@ -96,7 +93,6 @@ export default function PropertiesPage() {
             <PropertyCard
               key={property.id}
               property={property}
-              onEdit={handleEdit}
             />
           ))}
         </div>

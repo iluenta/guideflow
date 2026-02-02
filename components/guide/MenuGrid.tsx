@@ -26,9 +26,10 @@ interface MenuGridProps {
         host_name?: string;
         message?: string;
     };
+    imageUrl?: string;
 }
 
-export function MenuGrid({ onNavigate, welcomeData }: MenuGridProps) {
+export function MenuGrid({ onNavigate, welcomeData, imageUrl }: MenuGridProps) {
     const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('afternoon');
     const [currentTime, setCurrentTime] = useState('');
     const [isLoaded, setIsLoaded] = useState(false);
@@ -129,141 +130,156 @@ export function MenuGrid({ onNavigate, welcomeData }: MenuGridProps) {
     };
 
     return (
-        <div className={`px-4 pt-6 pb-24 transition-all duration-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className={`transition-all duration-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
 
-            {/* Welcome Title */}
-            <div className="text-center mb-8 px-4">
-                <h2 className="font-serif text-3xl text-navy font-medium tracking-wide mb-2 uppercase opacity-90">
-                    {welcomeData?.title || 'Welcome'}
-                </h2>
-                <p className="text-[10px] tracking-[0.3em] text-slate/60 uppercase font-black mb-1">
-                    {welcomeData?.host_name ? `From ${welcomeData.host_name}` : 'A message from your host'}
-                </p>
-                <p className="text-xs text-navy/40 font-medium italic">
-                    {welcomeData?.message || 'Please enjoy your stay'}
-                </p>
-            </div>
+            {/* Hero Image Section */}
+            {imageUrl && (
+                <div className="relative w-full aspect-[16/9] mb-6 overflow-hidden">
+                    <img
+                        src={imageUrl}
+                        alt="Property"
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-beige via-transparent to-transparent" />
+                </div>
+            )}
 
-            {/* Dynamic Contextual Banner (Refined to match Image & Snippet) */}
-            <div className={`relative rounded-2xl p-6 shadow-sm mb-8 overflow-hidden bg-gradient-to-br ${rightNow.bgGradient} border-l-4 ${rightNow.borderLColor} contextual-banner-anim`}>
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <span className="text-2xl drop-shadow-sm">{rightNow.emoji}</span>
-                        <div className="flex items-center gap-2">
-                            <h3 className="font-sans text-[15px] font-black text-navy/90 tracking-tight">{rightNow.title}</h3>
-                            <span className="text-[11px] text-navy/40 font-bold bg-navy/5 px-2 py-0.5 rounded-full">
-                                {currentTime}
-                            </span>
+            <div className="px-4 pt-2 pb-24">
+
+                {/* Welcome Title */}
+                <div className="text-center mb-8 px-4">
+                    <h2 className="font-serif text-3xl text-navy font-medium tracking-wide mb-2 uppercase opacity-90">
+                        {welcomeData?.title || 'Welcome'}
+                    </h2>
+                    <p className="text-[10px] tracking-[0.3em] text-slate/60 uppercase font-black mb-1">
+                        {welcomeData?.host_name || 'A message from your host'}
+                    </p>
+                    <p className="text-xs text-navy/40 font-medium italic">
+                        {welcomeData?.message || 'Please enjoy your stay'}
+                    </p>
+                </div>
+
+                {/* Dynamic Contextual Banner (Refined to match Image & Snippet) */}
+                <div className={`relative rounded-2xl p-6 shadow-sm mb-8 overflow-hidden bg-gradient-to-br ${rightNow.bgGradient} border-l-4 ${rightNow.borderLColor} contextual-banner-anim`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl drop-shadow-sm">{rightNow.emoji}</span>
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-sans text-[15px] font-black text-navy/90 tracking-tight">{rightNow.title}</h3>
+                                <span className="text-[11px] text-navy/40 font-bold bg-navy/5 px-2 py-0.5 rounded-full">
+                                    {currentTime}
+                                </span>
+                            </div>
                         </div>
+                        {isNewFeature && (
+                            <span className="bg-navy text-white text-[9px] font-black px-2.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm uppercase tracking-wider">
+                                <Sparkles className="w-3 h-3 fill-white" /> NUEVO
+                            </span>
+                        )}
                     </div>
-                    {isNewFeature && (
-                        <span className="bg-navy text-white text-[9px] font-black px-2.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm uppercase tracking-wider">
-                            <Sparkles className="w-3 h-3 fill-white" /> NUEVO
-                        </span>
-                    )}
+
+                    <p className="text-[13px] text-navy/60 font-medium mb-4">{rightNow.subtitle}</p>
+
+                    <div className="space-y-3 mb-5">
+                        {rightNow.items.map((item, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => handleNavigate(item.id, [50, 30, 50])}
+                                className="flex items-center justify-between w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:bg-white/95 p-4 rounded-2xl transition-all active:scale-[0.98] group"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <span className="text-xl">{item.emoji}</span>
+                                    <div className="flex flex-col text-left">
+                                        <span className="text-[14px] text-navy font-bold leading-none mb-1">{item.label}</span>
+                                        <span className="text-[11px] text-navy/40 font-medium">{item.count}</span>
+                                    </div>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-navy/20 group-hover:text-navy/50 transition-all" />
+                            </button>
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={() => handleNavigate('leisure', [50, 30, 50])}
+                        className={`w-full text-center text-[13px] font-bold ${rightNow.accentColor} hover:opacity-70 flex items-center justify-center gap-1.5 transition-opacity`}
+                    >
+                        Ver todas las sugerencias
+                        <ChevronRight className="w-3.5 h-3.5" strokeWidth={3} />
+                    </button>
                 </div>
 
-                <p className="text-[13px] text-navy/60 font-medium mb-4">{rightNow.subtitle}</p>
-
-                <div className="space-y-3 mb-5">
-                    {rightNow.items.map((item, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => handleNavigate(item.id, [50, 30, 50])}
-                            className="flex items-center justify-between w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:bg-white/95 p-4 rounded-2xl transition-all active:scale-[0.98] group"
-                        >
-                            <div className="flex items-center gap-4">
-                                <span className="text-xl">{item.emoji}</span>
-                                <div className="flex flex-col text-left">
-                                    <span className="text-[14px] text-navy font-bold leading-none mb-1">{item.label}</span>
-                                    <span className="text-[11px] text-navy/40 font-medium">{item.count}</span>
-                                </div>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-navy/20 group-hover:text-navy/50 transition-all" />
+                {/* Essentials Section */}
+                <div className="mb-10 section-essential-anim">
+                    <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
+                        LO ESENCIAL
+                    </h3>
+                    <div className="grid grid-cols-3 gap-3">
+                        <button onClick={() => handleNavigate('check-in', [50, 30, 50])} className="bg-navy text-white rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-navy/20 active:scale-95 transition-all aspect-square">
+                            <Key className="w-6 h-6" strokeWidth={1.5} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Check In</span>
                         </button>
-                    ))}
-                </div>
-
-                <button
-                    onClick={() => handleNavigate('leisure', [50, 30, 50])}
-                    className={`w-full text-center text-[13px] font-bold ${rightNow.accentColor} hover:opacity-70 flex items-center justify-center gap-1.5 transition-opacity`}
-                >
-                    Ver todas las sugerencias
-                    <ChevronRight className="w-3.5 h-3.5" strokeWidth={3} />
-                </button>
-            </div>
-
-            {/* Essentials Section */}
-            <div className="mb-10 section-essential-anim">
-                <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
-                    LO ESENCIAL
-                </h3>
-                <div className="grid grid-cols-3 gap-3">
-                    <button onClick={() => handleNavigate('check-in', [50, 30, 50])} className="bg-navy text-white rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-navy/20 active:scale-95 transition-all aspect-square">
-                        <Key className="w-6 h-6" strokeWidth={1.5} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Check In</span>
-                    </button>
-                    <button onClick={() => handleNavigate('wifi', [50, 30, 50])} className="bg-white text-navy rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-navy/[0.03]">
-                        <Wifi className="w-6 h-6" strokeWidth={1.5} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">WiFi</span>
-                    </button>
-                    <button onClick={() => handleNavigate('emergency', [100, 50, 100])} className="bg-rose-50 text-rose-600 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-rose-100/50">
-                        <AlertTriangle className="w-6 h-6" strokeWidth={1.5} />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-center">SOS</span>
-                    </button>
-                </div>
-            </div>
-
-            {/* Explore Section */}
-            <div className="mb-10 section-explore-anim">
-                <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
-                    EXPLORA
-                </h3>
-                <div className="space-y-3">
-                    {[
-                        { id: 'eat', label: 'Dónde Comer', icon: UtensilsCrossed, color: 'bg-orange-50 text-orange-600', desc: 'Restaurantes y cafeterías locales' },
-                        { id: 'leisure', label: 'Qué Hacer', icon: CalendarDays, color: 'bg-blue-50 text-blue-600', desc: 'Actividades y lugares de interés' }
-                    ].map((item) => (
-                        <button
-                            key={item.id}
-                            onClick={() => handleNavigate(item.id)}
-                            className="w-full bg-white p-5 rounded-3xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-all border border-navy/[0.02]"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className={`w-12 h-12 rounded-2xl ${item.color} flex items-center justify-center shadow-inner`}>
-                                    <item.icon className="w-6 h-6" />
-                                </div>
-                                <div className="flex flex-col text-left">
-                                    <span className="text-navy font-black text-[15px]">{item.label}</span>
-                                    <span className="text-[11px] text-navy/40 font-medium">{item.desc}</span>
-                                </div>
-                            </div>
-                            <div className="w-8 h-8 rounded-full bg-navy/[0.03] flex items-center justify-center group-hover:bg-navy/[0.08] transition-colors">
-                                <ChevronRight className="w-4 h-4 text-navy/30 group-hover:text-navy/60 transition-all" />
-                            </div>
+                        <button onClick={() => handleNavigate('wifi', [50, 30, 50])} className="bg-white text-navy rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-navy/[0.03]">
+                            <Wifi className="w-6 h-6" strokeWidth={1.5} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">WiFi</span>
                         </button>
-                    ))}
+                        <button onClick={() => handleNavigate('emergency', [100, 50, 100])} className="bg-rose-50 text-rose-600 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-rose-100/50">
+                            <AlertTriangle className="w-6 h-6" strokeWidth={1.5} />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-center">SOS</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            {/* Apartment Section */}
-            <div className="mb-10 section-apartment-anim">
-                <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
-                    TU ALOJAMIENTO
-                </h3>
-                <div className="grid grid-cols-3 gap-3">
-                    <button onClick={() => handleNavigate('house-info')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
-                        <Info className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Servicios</span>
-                    </button>
-                    <button onClick={() => handleNavigate('rules')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
-                        <ScrollText className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Normas</span>
-                    </button>
-                    <button onClick={() => handleNavigate('manuals')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
-                        <BookOpen className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Manuales</span>
-                    </button>
+                {/* Explore Section */}
+                <div className="mb-10 section-explore-anim">
+                    <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
+                        EXPLORA
+                    </h3>
+                    <div className="space-y-3">
+                        {[
+                            { id: 'eat', label: 'Dónde Comer', icon: UtensilsCrossed, color: 'bg-orange-50 text-orange-600', desc: 'Restaurantes y cafeterías locales' },
+                            { id: 'leisure', label: 'Qué Hacer', icon: CalendarDays, color: 'bg-blue-50 text-blue-600', desc: 'Actividades y lugares de interés' }
+                        ].map((item) => (
+                            <button
+                                key={item.id}
+                                onClick={() => handleNavigate(item.id)}
+                                className="w-full bg-white p-5 rounded-3xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-all border border-navy/[0.02]"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-12 h-12 rounded-2xl ${item.color} flex items-center justify-center shadow-inner`}>
+                                        <item.icon className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex flex-col text-left">
+                                        <span className="text-navy font-black text-[15px]">{item.label}</span>
+                                        <span className="text-[11px] text-navy/40 font-medium">{item.desc}</span>
+                                    </div>
+                                </div>
+                                <div className="w-8 h-8 rounded-full bg-navy/[0.03] flex items-center justify-center group-hover:bg-navy/[0.08] transition-colors">
+                                    <ChevronRight className="w-4 h-4 text-navy/30 group-hover:text-navy/60 transition-all" />
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Apartment Section */}
+                <div className="mb-10 section-apartment-anim">
+                    <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
+                        TU ALOJAMIENTO
+                    </h3>
+                    <div className="grid grid-cols-3 gap-3">
+                        <button onClick={() => handleNavigate('house-info')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
+                            <Info className="w-6 h-6 opacity-60" strokeWidth={1.5} />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Servicios</span>
+                        </button>
+                        <button onClick={() => handleNavigate('rules')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
+                            <ScrollText className="w-6 h-6 opacity-60" strokeWidth={1.5} />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Normas</span>
+                        </button>
+                        <button onClick={() => handleNavigate('manuals')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
+                            <BookOpen className="w-6 h-6 opacity-60" strokeWidth={1.5} />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Manuales</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

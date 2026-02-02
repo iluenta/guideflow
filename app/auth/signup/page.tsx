@@ -4,17 +4,15 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { MagicLinkForm } from '@/components/auth/magic-link-form'
-import { Home } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 
 function SignupForm() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
-        <div className="flex items-center justify-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <Home className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="text-2xl font-semibold">HostGuide</span>
+        <div className="flex flex-col items-center justify-center gap-3">
+          <Logo size={56} className="rounded-2xl shadow-md" />
+          <span className="text-3xl font-black text-slate-900 tracking-tight">GuideFlow</span>
         </div>
 
         <Card>
@@ -44,11 +42,9 @@ export default function SignupPage() {
     <Suspense fallback={
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="w-full max-w-md space-y-6">
-          <div className="flex items-center justify-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Home className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-2xl font-semibold">HostGuide</span>
+          <div className="flex flex-col items-center justify-center gap-3">
+            <Logo size={56} className="rounded-2xl shadow-md" />
+            <span className="text-3xl font-black text-foreground tracking-tight">GuideFlow</span>
           </div>
           <Card>
             <CardContent className="pt-6">
