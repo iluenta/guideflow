@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { geocodeAddress } from '@/lib/geocoding'
+import { syncWizardDataToRAG } from './rag-sync'
 
 export async function saveWizardStep(
     category: string,
@@ -26,7 +27,6 @@ export async function saveWizardStep(
             description: stepData.description,
             main_image_url: stepData.main_image_url,
             theme_config: { primary_color: stepData.primary_color },
-            // Add initial geolocation if available
             latitude: stepData.latitude,
             longitude: stepData.longitude,
             city: stepData.city,
@@ -56,34 +56,59 @@ export async function saveWizardStep(
         }
     } else if (category === 'faqs') {
         if (!currentPropId) throw new Error('ID de propiedad requerido para FAQs')
-        // En Server Actions podemos hacer múltiples operaciones de forma segura
-        for (const faq of stepData) {
-            const { error } = await supabase.from('property_faqs').upsert({
-                property_id: currentPropId,
-                question: faq.question,
-                answer: faq.answer,
-                category: faq.category
-            })
+
+        // 1. Limpiar registros anteriores
+        await supabase.from('property_faqs').delete().eq('property_id', currentPropId)
+
+        // 2. Insertar los nuevos
+        if (stepData && stepData.length > 0) {
+            const { error } = await supabase.from('property_faqs').insert(
+                stepData.map((faq: any) => ({
+                    property_id: currentPropId,
+                    tenant_id: tenantId,
+                    question: faq.question,
+                    answer: faq.answer,
+                    category: faq.category,
+                    priority: faq.priority || 0
+                }))
+            )
             if (error) throw error
         }
+
+        // 3. Sincronizar RAG
+        await syncWizardDataToRAG(currentPropId, tenantId || '', 'faqs', stepData)
         return { success: true }
+
     } else if (category === 'dining') {
         if (!currentPropId) throw new Error('ID de propiedad requerido para Recomendaciones')
-        for (const rec of stepData) {
-            const { error } = await supabase.from('property_recommendations').upsert({
-                property_id: currentPropId,
-                type: rec.type || 'restaurant',
-                name: rec.name,
-                description: rec.description || rec.specialty,
-                distance: rec.distance,
-                price_range: rec.price_range,
-                personal_note: rec.personal_note
-            })
+
+        // 1. Limpiar anteriores
+        await supabase.from('property_recommendations').delete().eq('property_id', currentPropId)
+
+        // 2. Insertar nuevos
+        if (stepData && stepData.length > 0) {
+            const { error } = await supabase.from('property_recommendations').insert(
+                stepData.map((rec: any) => ({
+                    property_id: currentPropId,
+                    tenant_id: tenantId,
+                    type: rec.category || rec.type || 'restaurant',
+                    name: rec.name,
+                    description: rec.description || rec.specialty || '',
+                    distance: rec.distance || '',
+                    metadata: {
+                        time: rec.time,
+                        price_range: rec.price_range,
+                        personal_note: rec.personal_note
+                    }
+                }))
+            )
             if (error) throw error
         }
         return { success: true }
+
     } else {
         if (!currentPropId) throw new Error(`ID de propiedad requerido para ${category}`)
+
         const { error } = await supabase
             .from('property_context')
             .upsert({
@@ -94,7 +119,10 @@ export async function saveWizardStep(
 
         if (error) throw error
 
-        // IF it's the 'access' category, we also update the main property table with precise location info
+        // Sincronizar RAG para contexto
+        await syncWizardDataToRAG(currentPropId, tenantId || '', category, stepData)
+
+        // IF it's the 'access' category, update main property table
         if (category === 'access') {
             const { data: updatedProp, error: propError } = await supabase.from('properties').update({
                 full_address: stepData.full_address,

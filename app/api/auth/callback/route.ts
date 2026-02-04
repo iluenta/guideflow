@@ -39,14 +39,20 @@ export async function POST(request: Request) {
 
     // Caso 2: token_hash (de nuestro script)
     if (token_hash && type) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Verifying OTP:', { type, token_hash: token_hash.substring(0, 10) + '...' })
+      }
       const { error } = await supabase.auth.verifyOtp({
         token_hash,
         type: type as 'email' | 'recovery' | 'magiclink',
       })
 
       if (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('OTP Verification Error:', error.message, error.status)
+        }
         let errorMessage = 'Error al verificar el token'
-        
+
         if (error.message.includes('expired') || error.message.includes('invalid')) {
           errorMessage = 'El enlace ha expirado o es inválido'
         } else if (error.message.includes('already been used')) {
@@ -68,7 +74,7 @@ export async function POST(request: Request) {
 
       if (error) {
         let errorMessage = 'Error al intercambiar el código'
-        
+
         if (error.message.includes('expired') || error.message.includes('invalid')) {
           errorMessage = 'El código ha expirado o es inválido'
         } else if (error.message.includes('already been used')) {

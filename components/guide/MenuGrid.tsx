@@ -16,7 +16,8 @@ import {
     Moon,
     Sun,
     Coffee,
-    Sparkles
+    Sparkles,
+    ShoppingBag
 } from 'lucide-react';
 
 interface MenuGridProps {
@@ -27,9 +28,10 @@ interface MenuGridProps {
         message?: string;
     };
     imageUrl?: string;
+    currentLanguage?: string;
 }
 
-export function MenuGrid({ onNavigate, welcomeData, imageUrl }: MenuGridProps) {
+export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 'es' }: MenuGridProps) {
     const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('afternoon');
     const [currentTime, setCurrentTime] = useState('');
     const [isLoaded, setIsLoaded] = useState(false);
@@ -132,30 +134,18 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl }: MenuGridProps) {
     return (
         <div className={`transition-all duration-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
 
-            {/* Hero Image Section */}
-            {imageUrl && (
-                <div className="relative w-full aspect-[16/9] mb-6 overflow-hidden">
-                    <img
-                        src={imageUrl}
-                        alt="Property"
-                        className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-beige via-transparent to-transparent" />
-                </div>
-            )}
+            <div className="px-4 pt-10 pb-24">
 
-            <div className="px-4 pt-2 pb-24">
-
-                {/* Welcome Title */}
-                <div className="text-center mb-8 px-4">
-                    <h2 className="font-serif text-3xl text-navy font-medium tracking-wide mb-2 uppercase opacity-90">
-                        {welcomeData?.title || 'Welcome'}
+                {/* Welcome Title (Polished Fase 5 Style) */}
+                <div className="text-center mb-10 px-4">
+                    <h2 className="font-serif text-[40px] text-navy font-bold tracking-tight mb-1 uppercase leading-tight">
+                        {welcomeData?.title || (currentLanguage === 'es' ? 'BIENVENIDO' : 'WELCOME')}
                     </h2>
-                    <p className="text-[10px] tracking-[0.3em] text-slate/60 uppercase font-black mb-1">
-                        {welcomeData?.host_name || 'A message from your host'}
+                    <p className="text-[10px] tracking-[0.4em] text-slate font-black mb-4 uppercase opacity-60">
+                        {welcomeData?.host_name || (currentLanguage === 'es' ? 'TU ANFITRIÓN' : 'YOUR HOST')}
                     </p>
-                    <p className="text-xs text-navy/40 font-medium italic">
-                        {welcomeData?.message || 'Please enjoy your stay'}
+                    <p className="text-[13px] text-slate/70 font-medium italic max-w-[85%] mx-auto leading-relaxed">
+                        {welcomeData?.message || (currentLanguage === 'es' ? 'Disfruta de tu estancia en nuestra casa' : 'Please enjoy your stay')}
                     </p>
                 </div>
 
@@ -237,7 +227,8 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl }: MenuGridProps) {
                     <div className="space-y-3">
                         {[
                             { id: 'eat', label: 'Dónde Comer', icon: UtensilsCrossed, color: 'bg-orange-50 text-orange-600', desc: 'Restaurantes y cafeterías locales' },
-                            { id: 'leisure', label: 'Qué Hacer', icon: CalendarDays, color: 'bg-blue-50 text-blue-600', desc: 'Actividades y lugares de interés' }
+                            { id: 'leisure', label: 'Qué Hacer', icon: CalendarDays, color: 'bg-blue-50 text-blue-600', desc: 'Actividades y lugares de interés' },
+                            { id: 'shopping', label: 'Compras', icon: ShoppingBag, color: 'bg-emerald-50 text-emerald-600', desc: 'Tiendas, mercados y más' }
                         ].map((item) => (
                             <button
                                 key={item.id}
@@ -269,7 +260,7 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl }: MenuGridProps) {
                     <div className="grid grid-cols-3 gap-3">
                         <button onClick={() => handleNavigate('house-info')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
                             <Info className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Servicios</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Info Casa</span>
                         </button>
                         <button onClick={() => handleNavigate('rules')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
                             <ScrollText className="w-6 h-6 opacity-60" strokeWidth={1.5} />
@@ -277,7 +268,7 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl }: MenuGridProps) {
                         </button>
                         <button onClick={() => handleNavigate('manuals')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
                             <BookOpen className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Manuales</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Guía de USO</span>
                         </button>
                     </div>
                 </div>

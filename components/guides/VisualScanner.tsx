@@ -17,11 +17,12 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
-import { getScanUploadUrl } from '@/app/actions/properties'
+import { getScanUploadUrl, updateInventoryStatus } from '@/app/actions/properties'
 import { processBatchScans } from '@/app/actions/ai-ingestion'
 
 interface VisualScannerProps {
     propertyId: string
+    onStart?: () => void
     onSuccess?: () => void
 }
 
@@ -31,7 +32,7 @@ interface SelectedPhoto {
     preview: string
 }
 
-export function VisualScanner({ propertyId, onSuccess }: VisualScannerProps) {
+export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerProps) {
     const [photos, setPhotos] = useState<SelectedPhoto[]>([])
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [uploadingIds, setUploadingIds] = useState<Set<string>>(new Set())
@@ -87,6 +88,11 @@ export function VisualScanner({ propertyId, onSuccess }: VisualScannerProps) {
         }
 
         setIsAnalyzing(true)
+        if (onStart) onStart()
+
+        // Update DB status immediately to 'generating' so polling in parent works during uploads
+        await updateInventoryStatus(propertyId, 'generating')
+
         try {
             toast.loading('Subiendo fotos...', { id: 'analyze-process' })
 

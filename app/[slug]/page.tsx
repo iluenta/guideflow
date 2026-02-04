@@ -1,4 +1,4 @@
-import { getPropertyBySlug, getGuideSections, getPropertyManuals } from '@/app/actions/properties'
+import { getPropertyBySlug, getGuideSections, getPropertyManuals, getPropertyRecommendations, getPropertyFaqs } from '@/app/actions/properties'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { validateAccessToken } from '@/lib/security'
@@ -38,6 +38,8 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
 
     const sections = await getGuideSections(property.id)
     const manuals = await getPropertyManuals(property.id)
+    const recommendations = await getPropertyRecommendations(property.id)
+    const faqs = await getPropertyFaqs(property.id)
 
     const { data: context } = await supabase
         .from('property_context')
@@ -55,6 +57,8 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
                 property={property}
                 sections={sections}
                 manuals={manuals}
+                recommendations={recommendations}
+                faqs={faqs}
                 context={context || []}
             />
         </div>

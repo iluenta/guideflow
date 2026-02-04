@@ -37,17 +37,36 @@ export async function POST(req: Request) {
 
     let prompt = '';
 
-    if (section === 'dining') {
+    if (section === 'dining' || section === 'recommendations') {
+      const selectedCat = existingData?.category || 'todos';
+      let categoryDirectives = '';
+
+      if (selectedCat === 'todos') {
+        categoryDirectives = `Genera una lista de 10-12 recomendaciones REALES distribuidas en estas categorías:
+        - Restaurantes (Especialidad local, café)
+        - Compras (Supermercados, mercado local)
+        - Cultura (Museos, sitios históricos)
+        - Naturaleza (Parques, miradores)
+        - Ocio (Bares, experiencias)
+        - Relax (Spa, zonas tranquilas)`;
+      } else {
+        categoryDirectives = `Genera una lista de 6-8 recomendaciones REALES específicas para la categoría: ${selectedCat.toUpperCase()}.`;
+      }
+
       prompt = `Eres un experto local de la ciudad de ${finalCity}.
 UBICACIÓN EXACTA DEL APARTAMENTO: ${fullAddress}
 NOMBRE DE LA PROPIEDAD: ${property.name}
 
-TAREA: Genera una lista de 8-10 recomendaciones REALES de ocio cerca de esta ubicación exacta, siguiendo esta taxonomía:
-1. Desayunos (Cafeterías, panaderías)
-2. Comida/Cena (Especialidades locales, opciones económicas)
-3. Bares/Copas
-4. Supermercados y Farmacias (incluyendo 24h si hay)
-5. Ocio y Cultura (Museos, parques, experiencias)
+TAREA: ${categoryDirectives}
+
+IMPORTANTE: Proporciona datos REALES y precisos. Cada recomendación debe tener:
+- name: Nombre real.
+- category: Una de estas (restaurantes, compras, cultura, naturaleza, ocio, relax).
+- distance: Distancia a pie o en coche (ej: 300m, 1.2km).
+- time: Tiempo estimado (ej: 5 min, 15 min).
+- price_range: Rango de precios (ej: €, €€, €€€).
+- description: Breve descripción de por qué es recomendable.
+- personal_note: Una nota corta y cercana (ej: "No te pierdas su tarta de queso").
 
 Responde estrictamente en formato JSON con la clave "recommendations". Sin explicaciones.`;
     }
@@ -110,6 +129,31 @@ Responde estrictamente en formato JSON con la clave "inventory".`;
 TAREA: Genera 12 FAQs realistas y útiles siguiendo estas categorías.
 
 Responde estrictamente en formato JSON con la clave "faqs".`;
+    } else if (section === 'contacts') {
+      prompt = `Eres un asistente local experto en servicios de emergencia y soporte para la ciudad de ${finalCity}.
+UBICACIÓN EXACTA: "${fullAddress}"
+
+TAREA: Genera una lista de contactos de emergencia REALES y CERCANOS a esta ubicación.
+Debes incluir:
+1. Policía Local de la zona.
+2. El Centro de Salud o Urgencias Médicas más cercano.
+3. El Hospital más cercano con urgencias 24h.
+4. Una Farmacia cercana (PRIORIZA farmacias 24h o con horario ampliado).
+
+IMPORTANTE: Proporciona nombres reales y números de teléfono reales (formato español preferiblemente si es España, ej: +34 ...). 
+Para cada contacto, obligatoriamente proporciona la DIRECCIÓN REAL EXACTA.
+
+Responde estrictamente en formato JSON con la clave "emergency_contacts". El formato de cada contacto debe ser:
+{
+  "id": "uuid-generado",
+  "name": "Nombre del sitio (ej: Hospital Tierra de Barros)",
+  "phone": "Teléfono real",
+  "address": "Dirección completa y exacta (Calle, número, ciudad)",
+  "type": "policia | salud | farmacia | bomberos",
+  "distance": "Ej: 5 min en coche"
+}
+
+Responde ÚNICAMENTE con el objeto JSON. Sin explicaciones.`;
     }
 
     const model = genAI.getGenerativeModel({

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Sparkles, Save, ChevronRight, ChevronLeft, Check, Plus, Trash2, MapPin, Clock, Utensils, HelpCircle, ShieldAlert, Wifi, Package, Home as HomeIcon, Upload, X, Loader2 } from 'lucide-react'
+import { Sparkles, Save, BookOpen, ChevronRight, ChevronLeft, Check, Plus, Trash2, MapPin, Clock, Utensils, HelpCircle, ShieldAlert, Wifi, Package, Home as HomeIcon, Upload, X, Loader2, Phone, MessageSquare, AlertCircle } from 'lucide-react'
 import Image from 'next/image'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase/client'
@@ -22,6 +22,9 @@ import { geocodeAddress, GeocodingResult } from '@/lib/geocoding'
 import { validateLocation, ValidationResult } from '@/lib/geocoding-validation'
 import MapPreview from './MapPreview'
 import TransportInfo from './TransportInfo'
+import { VisualScanner } from '@/components/guides/VisualScanner'
+import { LocalRecommendations } from '@/components/guides/LocalRecommendations'
+import { Recommendation } from '@/components/guides/RecommendationCard'
 
 interface PropertySetupWizardProps {
     propertyId?: string // Opcional para creación
@@ -43,6 +46,16 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         welcome: { title: 'Welcome', host_name: '', message: 'Please enjoy your stay' },
         access: { full_address: '', checkin_type: 'lockbox' },
         checkin: { checkin_time: '15:00 - 22:00', emergency_phone: '', steps: [] },
+        contacts: {
+            support_name: '',
+            support_phone: '',
+            support_mobile: '',
+            host_phone: '',
+            host_mobile: '',
+            emergency_contacts: [],
+            custom_contacts: [],
+            preferred_contact_id: 'support'
+        },
         rules: { smoking: 'no', pets: 'no', quiet_hours: '22:00 - 08:00', checkout_time: '11:00', rules_items: [] },
         tech: { wifi_ssid: '', wifi_password: '', router_notes: '' },
         inventory: { bathroom: [], bedroom: [], kitchen: [], cleaning: [] },
@@ -101,8 +114,33 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         return () => clearTimeout(timer)
     }, [geocodingResult?.lat, geocodingResult?.lng, activeTab, mounted])
 
+    // Polling para el estado del inventario
+    useEffect(() => {
+        if (!propertyId || property?.inventory_status !== 'generating') return
+
+        const interval = setInterval(async () => {
+            const { data: prop } = await supabase
+                .from('properties')
+                .select('inventory_status')
+                .eq('id', propertyId)
+                .single()
+
+            if (prop && prop.inventory_status !== 'generating') {
+                setProperty((prev: any) => ({ ...prev, inventory_status: prop.inventory_status }))
+                if (prop.inventory_status === 'completed') {
+                    toast({
+                        title: "¡Escaneo completado!",
+                        description: "Los manuales técnicos ya están disponibles en tu guía.",
+                    })
+                }
+            }
+        }, 5000)
+
+        return () => clearInterval(interval)
+    }, [propertyId, property?.inventory_status])
+
     // Calcular progreso
-    const steps = ['property', 'access', 'welcome', 'checkin', 'rules', 'tech', 'inventory', 'dining', 'faqs']
+    const steps = ['property', 'access', 'welcome', 'contacts', 'checkin', 'rules', 'tech', 'visual-scanner', 'dining', 'faqs']
     const progress = ((steps.indexOf(activeTab) + 1) / steps.length) * 100
 
     // Sincronizar activeTab con la URL
@@ -352,7 +390,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         await saveStep('access', sanitizedData);
     };
 
-    const saveStep = async (category: string, stepData: any) => {
+    const saveStep = async (category: string, stepData: any, forcedNextTab?: string) => {
         setLoading(true)
         try {
             const currentPropId = propertyId || property?.id
@@ -418,6 +456,11 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                     return
                 }
 
+                if (forcedNextTab) {
+                    handleTabChange(forcedNextTab)
+                    return
+                }
+
                 const nextIdx = steps.indexOf(category) + 1
                 if (nextIdx < steps.length) {
                     handleTabChange(steps[nextIdx])
@@ -431,7 +474,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         }
     }
 
-    const handleAIFill = async (section: string) => {
+    const handleAIFill = async (section: string, category: string = 'todos') => {
         if (section === 'transport') {
             setAiProgress(0)
             const interval = setInterval(() => {
@@ -448,7 +491,9 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         const payload = {
             propertyId,
             section,
-            existingData: section === 'transport' ? { address: finalAddressToUse } : undefined
+            existingData: section === 'dining' || section === 'recommendations'
+                ? { address: finalAddressToUse, category }
+                : (section === 'transport' ? { address: finalAddressToUse } : undefined)
         }
 
         // Registrar la posición que disparó la IA
@@ -497,6 +542,14 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                 }))
             } else if (section === 'inventory') {
                 setData((prev: any) => ({ ...prev, inventory: result.inventory }))
+            } else if (section === 'contacts') {
+                setData((prev: any) => ({
+                    ...prev,
+                    contacts: {
+                        ...prev.contacts,
+                        emergency_contacts: result.emergency_contacts || []
+                    }
+                }))
             }
 
             toast({ title: 'IA Generada', description: 'Hemos añadido sugerencias reales basadas en tu ubicación.' })
@@ -558,6 +611,15 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                             {completedSteps.includes('welcome') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <Sparkles className="w-3 h-3 mr-1" />} Saludo
                         </TabsTrigger>
                         <TabsTrigger
+                            value="contacts"
+                            className={cn(
+                                "flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all text-[9px] sm:text-[10px] py-1.5 sm:py-2 font-semibold uppercase tracking-wide",
+                                completedSteps.includes('contacts') && "bg-emerald-50/50 text-emerald-700 data-[state=active]:text-primary"
+                            )}
+                        >
+                            {completedSteps.includes('contacts') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <Phone className="w-3 h-3 mr-1" />} Contactos
+                        </TabsTrigger>
+                        <TabsTrigger
                             value="checkin"
                             className={cn(
                                 "flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all text-[9px] sm:text-[10px] py-1.5 sm:py-2 font-semibold uppercase tracking-wide",
@@ -585,13 +647,21 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                             {completedSteps.includes('tech') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <Wifi className="w-3 h-3 mr-1" />} Tech
                         </TabsTrigger>
                         <TabsTrigger
-                            value="inventory"
+                            value="visual-scanner"
                             className={cn(
-                                "flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all text-[9px] sm:text-[10px] py-1.5 sm:py-2 font-semibold uppercase tracking-wide",
+                                "flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all text-[9px] sm:text-[10px] py-1.5 sm:py-2 font-semibold uppercase tracking-wide transition-all",
+                                property?.inventory_status === 'generating' && "text-red-500 animate-pulse border border-red-100 bg-red-50/30",
                                 completedSteps.includes('inventory') && "bg-emerald-50/50 text-emerald-700 data-[state=active]:text-primary"
                             )}
                         >
-                            {completedSteps.includes('inventory') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <Package className="w-3 h-3 mr-1" />} Inventario
+                            {property?.inventory_status === 'generating' ? (
+                                <span className="flex items-center">
+                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                    PROCESANDO...
+                                </span>
+                            ) : (
+                                <>{completedSteps.includes('inventory') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <Package className="w-3 h-3 mr-1" />} Escáner</>
+                            )}
                         </TabsTrigger>
                         <TabsTrigger
                             value="dining"
@@ -600,7 +670,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                 completedSteps.includes('dining') && "bg-emerald-50/50 text-emerald-700 data-[state=active]:text-primary"
                             )}
                         >
-                            {completedSteps.includes('dining') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <Utensils className="w-3 h-3 mr-1" />} Ocio
+                            {completedSteps.includes('dining') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <MapPin className="w-3 h-3 mr-1" />} Recomendaciones
                         </TabsTrigger>
                         <TabsTrigger
                             value="faqs"
@@ -609,7 +679,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                 completedSteps.includes('faqs') && "bg-emerald-50/50 text-emerald-700 data-[state=active]:text-primary"
                             )}
                         >
-                            {completedSteps.includes('faqs') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <HelpCircle className="w-3 h-3 mr-1" />} FAQs
+                            {completedSteps.includes('faqs') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <BookOpen className="w-3 h-3 mr-1" />} Guía
                         </TabsTrigger>
                     </TabsList>
 
@@ -789,8 +859,15 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                         <Label>Teléfono de Asistencia (Llamar si hay problemas)</Label>
                                         <Input
                                             placeholder="Ej: 666 123 456"
-                                            value={data.checkin.emergency_phone}
-                                            onChange={e => setData({ ...data, checkin: { ...data.checkin, emergency_phone: e.target.value } })}
+                                            value={data.contacts.support_phone}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setData({
+                                                    ...data,
+                                                    contacts: { ...data.contacts, support_phone: val },
+                                                    checkin: { ...data.checkin, emergency_phone: val }
+                                                });
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -892,6 +969,369 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
                                 <Button variant="ghost" onClick={() => handleTabChange('welcome')}><ChevronLeft className="mr-2" /> Anterior</Button>
                                 <Button onClick={() => saveStep('checkin', data.checkin)} disabled={loading}>
+                                    {loading ? 'Guardando...' : <><Save className="w-4 h-4 mr-2" /> Guardar y Continuar</>}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </TabsContent>
+
+                    {/* --- CONTACTOS --- */}
+                    <TabsContent value="contacts" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
+                            <CardHeader className="bg-slate-50 border-b py-3 px-4">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <CardTitle className="text-base">Contactos y Emergencias</CardTitle>
+                                        <CardDescription className="text-xs">Personas de contacto durante la estancia y servicios de emergencia.</CardDescription>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 text-[10px] font-bold uppercase tracking-wider border-navy/20 text-navy hover:bg-navy/5"
+                                        onClick={() => handleAIFill('contacts')}
+                                        disabled={aiLoading === 'contacts' || !data.access.full_address}
+                                    >
+                                        {aiLoading === 'contacts' ? (
+                                            <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="w-3 h-3 mr-2" />
+                                        )}
+                                        {aiLoading === 'contacts' ? 'Generando...' : 'Autocompletar Emergencias'}
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-4 space-y-6">
+                                {/* Contacto de Soporte */}
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-navy/40 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <ShieldAlert className="w-3 h-3" /> Soporte Oficial
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className={cn(
+                                                "h-7 px-3 text-[10px] gap-1.5 rounded-full transition-all",
+                                                data.contacts.preferred_contact_id === 'support'
+                                                    ? "bg-green-100 text-green-700 hover:bg-green-100"
+                                                    : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                                            )}
+                                            onClick={() => setData({ ...data, contacts: { ...data.contacts, preferred_contact_id: 'support' } })}
+                                        >
+                                            <Check className={cn("w-3 h-3", data.contacts.preferred_contact_id === 'support' ? "opacity-100" : "opacity-0")} />
+                                            {data.contacts.preferred_contact_id === 'support' ? 'CONTACTO PREFERENTE' : 'MARCAR COMO PREFERENTE'}
+                                        </Button>
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs">Nombre (Ej: Soporte GuideFlow)</Label>
+                                            <Input
+                                                placeholder="Ej: Atención al Cliente"
+                                                value={data.contacts.support_name}
+                                                onChange={e => setData({ ...data, contacts: { ...data.contacts, support_name: e.target.value } })}
+                                                className="bg-[#F9F6F2] border-none rounded-xl h-12"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="support_phone" className="text-xs font-bold text-navy/60">Teléfono Principal (Llamadas)</Label>
+                                            <Input
+                                                id="support_phone"
+                                                placeholder="Ej: 912345678"
+                                                value={data.contacts.support_phone}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setData((prev: any) => ({
+                                                        ...prev,
+                                                        contacts: { ...prev.contacts, support_phone: val },
+                                                        checkin: { ...prev.checkin, emergency_phone: val }
+                                                    }));
+                                                }}
+                                                className="bg-[#F9F6F2] border-none rounded-xl h-12"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="support_mobile" className="text-xs font-bold text-navy/60">Teléfono Móvil (WhatsApp)</Label>
+                                            <Input
+                                                id="support_mobile"
+                                                placeholder="Ej: 666123456"
+                                                value={data.contacts.support_mobile}
+                                                onChange={(e) => setData((prev: any) => ({
+                                                    ...prev,
+                                                    contacts: { ...prev.contacts, support_mobile: e.target.value }
+                                                }))}
+                                                className="bg-[#F9F6F2] border-none rounded-xl h-12"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Contacto del Anfitrión */}
+                                <div className="space-y-4 border-t pt-6">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-navy/40 flex items-center gap-2 flex-1">
+                                            <Sparkles className="w-3 h-3" /> Tu Contacto (Anfitrión)
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className={cn(
+                                                    "h-7 px-3 text-[10px] gap-1.5 rounded-full transition-all ml-4",
+                                                    data.contacts.preferred_contact_id === 'host'
+                                                        ? "bg-green-100 text-green-700 hover:bg-green-100"
+                                                        : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                                                )}
+                                                onClick={() => setData({ ...data, contacts: { ...data.contacts, preferred_contact_id: 'host' } })}
+                                            >
+                                                <Check className={cn("w-3 h-3", data.contacts.preferred_contact_id === 'host' ? "opacity-100" : "opacity-0")} />
+                                                {data.contacts.preferred_contact_id === 'host' ? 'CONTACTO PREFERENTE' : 'MARCAR COMO PREFERENTE'}
+                                            </Button>
+                                        </h3>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-[10px] h-6 px-2 text-primary hover:text-primary/80"
+                                            onClick={() => {
+                                                setData({
+                                                    ...data,
+                                                    contacts: {
+                                                        ...data.contacts,
+                                                        host_phone: data.contacts.support_phone || data.contacts.host_phone,
+                                                        host_mobile: data.contacts.support_mobile || data.contacts.host_mobile
+                                                    }
+                                                })
+                                                toast({
+                                                    title: "Teléfonos sincronizados",
+                                                    description: "Se han copiado los números del soporte al anfitrión."
+                                                })
+                                            }}
+                                        >
+                                            Sincronizar Teléfono
+                                        </Button>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs">Nombre</Label>
+                                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3 h-12">
+                                                <div className="h-7 w-7 rounded-full bg-white flex items-center justify-center text-navy shadow-sm shrink-0">
+                                                    <HomeIcon className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-bold text-navy truncate">{data.welcome?.host_name || 'No definido'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="host_phone" className="text-xs font-bold text-navy/60">Teléfono Principal (Llamadas)</Label>
+                                            <Input
+                                                id="host_phone"
+                                                placeholder="Ej: 912345678"
+                                                value={data.contacts.host_phone}
+                                                onChange={(e) => setData((prev: any) => ({
+                                                    ...prev,
+                                                    contacts: { ...prev.contacts, host_phone: e.target.value }
+                                                }))}
+                                                className="bg-[#F9F6F2] border-none rounded-xl h-12"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="host_mobile" className="text-xs font-bold text-navy/60">Teléfono Móvil (WhatsApp)</Label>
+                                            <Input
+                                                id="host_mobile"
+                                                placeholder="Ej: 666123456"
+                                                value={data.contacts.host_mobile}
+                                                onChange={(e) => setData((prev: any) => ({
+                                                    ...prev,
+                                                    contacts: { ...prev.contacts, host_mobile: e.target.value }
+                                                }))}
+                                                className="bg-[#F9F6F2] border-none rounded-xl h-12"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Emergencias IA */}
+                                <div className="space-y-4 border-t pt-6">
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-navy/40 flex items-center gap-2">
+                                        <AlertCircle className="w-3 h-3" /> Emergencias Locales
+                                    </h3>
+
+                                    <div className="space-y-3">
+                                        {data.contacts.emergency_contacts.map((contact: any, idx: number) => (
+                                            <div key={contact.id || idx} className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm flex items-center gap-4 group">
+                                                <div className="h-10 w-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+                                                    {contact.type === 'policia' && <ShieldAlert className="w-5 h-5" />}
+                                                    {contact.type === 'salud' && <Plus className="w-5 h-5" />}
+                                                    {contact.type === 'farmacia' && <AlertCircle className="w-5 h-5" />}
+                                                    {(!contact.type || contact.type === 'bomberos') && <Phone className="w-5 h-5" />}
+                                                </div>
+                                                <div className="flex-1 space-y-3">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        <Input
+                                                            placeholder="Nombre del servicio"
+                                                            className="font-bold border-none bg-slate-50 h-9"
+                                                            value={contact.name}
+                                                            onChange={e => {
+                                                                const newContacts = [...data.contacts.emergency_contacts];
+                                                                newContacts[idx].name = e.target.value;
+                                                                setData({ ...data, contacts: { ...data.contacts, emergency_contacts: newContacts } });
+                                                            }}
+                                                        />
+                                                        <Input
+                                                            placeholder="Teléfono (ej: +34...)"
+                                                            className="border-none bg-slate-50 h-9"
+                                                            value={contact.phone}
+                                                            onChange={e => {
+                                                                const newContacts = [...data.contacts.emergency_contacts];
+                                                                newContacts[idx].phone = e.target.value;
+                                                                setData({ ...data, contacts: { ...data.contacts, emergency_contacts: newContacts } });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                                                        <div className="md:col-span-3">
+                                                            <Input
+                                                                placeholder="Dirección exacta para navegación"
+                                                                className="border-none bg-slate-50 h-9 text-xs"
+                                                                value={contact.address || ''}
+                                                                onChange={e => {
+                                                                    const newContacts = [...data.contacts.emergency_contacts];
+                                                                    newContacts[idx].address = e.target.value;
+                                                                    setData({ ...data, contacts: { ...data.contacts, emergency_contacts: newContacts } });
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <Input
+                                                            placeholder="Distancia (ej: 5 min)"
+                                                            className="border-none bg-slate-50 h-9 text-xs"
+                                                            value={contact.distance || ''}
+                                                            onChange={e => {
+                                                                const newContacts = [...data.contacts.emergency_contacts];
+                                                                newContacts[idx].distance = e.target.value;
+                                                                setData({ ...data, contacts: { ...data.contacts, emergency_contacts: newContacts } });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-destructive transition-opacity"
+                                                    onClick={() => {
+                                                        const newContacts = [...data.contacts.emergency_contacts];
+                                                        newContacts.splice(idx, 1);
+                                                        setData({ ...data, contacts: { ...data.contacts, emergency_contacts: newContacts } });
+                                                    }}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+
+                                        <Button
+                                            variant="outline"
+                                            className="w-full h-10 border-dashed border-2 rounded-xl text-xs text-slate-500"
+                                            onClick={() => {
+                                                setData({
+                                                    ...data,
+                                                    contacts: {
+                                                        ...data.contacts,
+                                                        emergency_contacts: [
+                                                            ...data.contacts.emergency_contacts,
+                                                            { id: crypto.randomUUID(), name: '', phone: '', address: '', type: 'salud', distance: '' }
+                                                        ]
+                                                    }
+                                                })
+                                            }}
+                                        >
+                                            <Plus className="w-3 h-3 mr-2" /> Añadir Emergencia
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Otros Contactos */}
+                                <div className="space-y-4 border-t pt-6">
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-navy/40 flex items-center gap-2">
+                                        <Plus className="w-3 h-3" /> Otros Contactos (Taxi, Mantenimiento...)
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {data.contacts.custom_contacts.map((contact: any, idx: number) => (
+                                            <div key={contact.id || idx} className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm flex items-center gap-4 group">
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <button
+                                                        onClick={() => setData({ ...data, contacts: { ...data.contacts, preferred_contact_id: contact.id } })}
+                                                        className={cn(
+                                                            "h-8 w-8 rounded-xl flex items-center justify-center transition-all",
+                                                            data.contacts.preferred_contact_id === contact.id
+                                                                ? "bg-green-500 text-white shadow-lg scale-110"
+                                                                : "bg-slate-50 text-slate-300 hover:bg-slate-100"
+                                                        )}
+                                                        title="Marcar como contacto preferente"
+                                                    >
+                                                        <Check className={cn("w-5 h-5", data.contacts.preferred_contact_id === contact.id ? "opacity-100" : "opacity-20")} />
+                                                    </button>
+                                                    {data.contacts.preferred_contact_id === contact.id && (
+                                                        <span className="text-[7px] font-black text-green-600 uppercase tracking-tighter">PREFERENTE</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <Input
+                                                        placeholder="Etiqueta (ej: Radio Taxi)"
+                                                        className="font-bold border-none bg-slate-50/50 h-9"
+                                                        value={contact.name}
+                                                        onChange={e => {
+                                                            const newContacts = [...data.contacts.custom_contacts];
+                                                            newContacts[idx].name = e.target.value;
+                                                            setData({ ...data, contacts: { ...data.contacts, custom_contacts: newContacts } });
+                                                        }}
+                                                    />
+                                                    <Input
+                                                        placeholder="Teléfono"
+                                                        className="border-none bg-slate-50/50 h-9"
+                                                        value={contact.phone}
+                                                        onChange={e => {
+                                                            const newContacts = [...data.contacts.custom_contacts];
+                                                            newContacts[idx].phone = e.target.value;
+                                                            setData({ ...data, contacts: { ...data.contacts, custom_contacts: newContacts } });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-destructive transition-opacity"
+                                                    onClick={() => {
+                                                        const newContacts = [...data.contacts.custom_contacts];
+                                                        newContacts.splice(idx, 1);
+                                                        setData({ ...data, contacts: { ...data.contacts, custom_contacts: newContacts } });
+                                                    }}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                        <Button
+                                            variant="outline"
+                                            className="w-full h-10 border-dashed border-2 rounded-xl text-xs text-slate-500"
+                                            onClick={() => {
+                                                setData({
+                                                    ...data,
+                                                    contacts: {
+                                                        ...data.contacts,
+                                                        custom_contacts: [
+                                                            ...data.contacts.custom_contacts,
+                                                            { id: crypto.randomUUID(), name: '', phone: '' }
+                                                        ]
+                                                    }
+                                                })
+                                            }}
+                                        >
+                                            <Plus className="w-3 h-3 mr-2" /> Añadir Contacto
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                            <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
+                                <Button variant="ghost" onClick={() => handleTabChange('welcome')}><ChevronLeft className="mr-2" /> Anterior</Button>
+                                <Button onClick={() => saveStep('contacts', data.contacts, 'checkin')} disabled={loading}>
                                     {loading ? 'Guardando...' : <><Save className="w-4 h-4 mr-2" /> Guardar y Continuar</>}
                                 </Button>
                             </CardFooter>
@@ -1283,129 +1723,50 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                         </Card>
                     </TabsContent>
 
-                    {/* --- INVENTARIO / SERVICIOS --- */}
-                    <TabsContent value="inventory" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    {/* --- ESCÁNER VISUAL CON IA --- */}
+                    <TabsContent value="visual-scanner" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
-                            <CardHeader className="bg-slate-50 border-b py-3 px-4">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <CardTitle className="text-base">Servicios e Inventario</CardTitle>
-                                        <CardDescription className="text-xs">Qué equipos y servicios facilitas a tus huéspedes.</CardDescription>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="bg-primary/5 border-primary/20 text-primary hover:bg-primary/10"
-                                        onClick={() => handleAIFill('inventory')}
-                                        disabled={aiLoading === 'inventory'}
-                                    >
-                                        {aiLoading === 'inventory' ? 'Sugerencia...' : <><Sparkles className="w-4 h-4 mr-2" /> Sugerir con IA</>}
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Baño</Label>
-                                        <Textarea
-                                            placeholder="Ej: Secador, Gel, Champú..."
-                                            className="min-h-[100px]"
-                                            value={Array.isArray(data.inventory?.bathroom) ? data.inventory.bathroom.join(', ') : (data.inventory?.bathroom || '')}
-                                            onChange={e => setData({ ...data, inventory: { ...data.inventory, bathroom: e.target.value } })}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Dormitorio</Label>
-                                        <Textarea
-                                            placeholder="Ej: Almohadas extra, Mantas..."
-                                            className="min-h-[100px]"
-                                            value={Array.isArray(data.inventory?.bedroom) ? data.inventory.bedroom.join(', ') : (data.inventory?.bedroom || '')}
-                                            onChange={e => setData({ ...data, inventory: { ...data.inventory, bedroom: e.target.value } })}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Cocina</Label>
-                                        <Textarea
-                                            placeholder="Ej: Nespresso, Aceite, Sal..."
-                                            className="min-h-[100px]"
-                                            value={Array.isArray(data.inventory?.kitchen) ? data.inventory.kitchen.join(', ') : (data.inventory?.kitchen || '')}
-                                            onChange={e => setData({ ...data, inventory: { ...data.inventory, kitchen: e.target.value } })}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Limpieza y Otros</Label>
-                                        <Textarea
-                                            placeholder="Ej: Plancha, Tabla, Tendedero..."
-                                            className="min-h-[100px]"
-                                            value={Array.isArray(data.inventory?.cleaning) ? data.inventory.cleaning.join(', ') : (data.inventory?.cleaning || '')}
-                                            onChange={e => setData({ ...data, inventory: { ...data.inventory, cleaning: e.target.value } })}
-                                        />
-                                    </div>
-                                </div>
+                            <CardContent className="p-6">
+                                <VisualScanner
+                                    propertyId={propertyId || ''}
+                                    onStart={() => {
+                                        // Update local status to generating to trigger the polling effect and show "PROCESANDO"
+                                        setProperty((prev: any) => ({ ...prev, inventory_status: 'generating' }))
+                                    }}
+                                    onSuccess={() => {
+                                        // Force immediate status update to 'completed' to avoid polling lag
+                                        setProperty((prev: any) => ({ ...prev, inventory_status: 'completed' }))
+                                        toast({
+                                            title: "¡Análisis finalizado!",
+                                            description: "Los manuales técnicos ya están disponibles en tu guía.",
+                                        })
+                                    }}
+                                />
                             </CardContent>
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
-                                <Button variant="ghost" onClick={() => setActiveTab('tech')}><ChevronLeft className="mr-2" /> Anterior</Button>
-                                <Button onClick={() => saveStep('inventory', data.inventory)} disabled={loading}>Guardar y Continuar <ChevronRight className="ml-2" /></Button>
+                                <Button variant="ghost" onClick={() => handleTabChange('tech')}><ChevronLeft className="mr-2" /> Anterior</Button>
+                                <Button onClick={() => handleTabChange('dining')} disabled={loading}>Continuar a Recomendaciones <ChevronRight className="ml-2" /></Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
 
                     {/* --- OCIO (RESTAURANTES) --- */}
                     <TabsContent value="dining" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <h2 className="text-xl font-bold">Recomendaciones Locales</h2>
-                                <Button
-                                    onClick={() => handleAIFill('dining')}
-                                    disabled={aiLoading === 'dining'}
-                                    className="bg-gradient-to-r from-purple-600 to-primary hover:from-purple-700 hover:to-primary/90"
-                                >
-                                    {aiLoading === 'dining' ? 'Analizando zona...' : <><Sparkles className="w-4 h-4 mr-2" /> Sugerir con IA</>}
-                                </Button>
-                            </div>
+                        <LocalRecommendations
+                            propertyId={propertyId || ''}
+                            recommendations={data.dining}
+                            onUpdate={(recs) => setData({ ...data, dining: recs })}
+                            onAISuggest={(category) => handleAIFill('dining', category)}
+                            aiLoading={aiLoading === 'dining'}
+                        />
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {data.dining.map((rec: any, idx: number) => (
-                                    <Card key={idx} className="relative overflow-hidden group">
-                                        <CardHeader className="pb-2">
-                                            <div className="flex justify-between items-start">
-                                                <CardTitle className="text-lg">{rec.name}</CardTitle>
-                                                <Badge variant="secondary">{rec.type}</Badge>
-                                            </div>
-                                            <CardDescription>{rec.distance} • {rec.price_range}</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <p className="text-sm text-slate-600 line-clamp-2 italic">"{rec.personal_note}"</p>
-                                        </CardContent>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-destructive"
-                                            onClick={() => {
-                                                const newDining = [...data.dining];
-                                                newDining.splice(idx, 1);
-                                                setData({ ...data, dining: newDining });
-                                            }}
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </Card>
-                                ))}
-
-                                <Button
-                                    variant="outline"
-                                    className="h-full min-h-[140px] border-dashed rounded-3xl border-slate-200 hover:border-primary hover:bg-primary/5 transition-all flex flex-col gap-2"
-                                    onClick={() => setData({ ...data, dining: [...data.dining, { name: 'Nuevo Sitio', type: 'Tipo', distance: '100m', price_range: '€€', personal_note: 'Escribe algo aquí' }] })}
-                                >
-                                    <Plus className="w-6 h-6 text-slate-400" />
-                                    <span className="text-slate-500 font-medium">Añadir Recomendación</span>
-                                </Button>
-                            </div>
-
-                            <div className="flex justify-between mt-8">
-                                <Button variant="ghost" onClick={() => setActiveTab('inventory')}><ChevronLeft className="mr-2" /> Anterior</Button>
-                                <Button onClick={() => saveStep('dining', data.dining)} disabled={loading}>Guardar y Continuar <ChevronRight className="ml-2" /></Button>
-                            </div>
+                        <div className="flex justify-between mt-12 border-t pt-8">
+                            <Button variant="ghost" onClick={() => handleTabChange('visual-scanner')} className="h-12 rounded-xl font-bold px-6">
+                                <ChevronLeft className="mr-2 w-4 h-4" /> Anterior
+                            </Button>
+                            <Button onClick={() => saveStep('dining', data.dining)} disabled={loading} className="h-12 rounded-xl font-bold px-10 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90">
+                                Guardar y Continuar <ChevronRight className="ml-2 w-4 h-4" />
+                            </Button>
                         </div>
                     </TabsContent>
 
@@ -1414,15 +1775,15 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                         <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
                             <CardHeader className="bg-slate-50 border-b flex flex-row justify-between items-center py-3 px-4">
                                 <div>
-                                    <CardTitle className="text-base">Preguntas Frecuentes</CardTitle>
-                                    <CardDescription className="text-xs">Anticípate a las dudas de tus huéspedes.</CardDescription>
+                                    <CardTitle className="text-base">Guía del Alojamiento</CardTitle>
+                                    <CardDescription className="text-xs">Anticípate a las dudas de tus huéspedes y explica cómo funciona todo.</CardDescription>
                                 </div>
                                 <Button
                                     variant="outline"
                                     onClick={() => handleAIFill('faqs')}
                                     disabled={aiLoading === 'faqs'}
                                 >
-                                    {aiLoading === 'faqs' ? 'Generando...' : <><Sparkles className="w-4 h-4 mr-2" /> Auto-generar FAQs</>}
+                                    {aiLoading === 'faqs' ? 'Generando...' : <><Sparkles className="w-4 h-4 mr-2" /> Auto-generar Guía</>}
                                 </Button>
                             </CardHeader>
                             <CardContent className="p-4 space-y-4">
@@ -1472,7 +1833,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                     className="w-full border-dashed border-2 hover:bg-primary/5"
                                     onClick={() => setData({ ...data, faqs: [...data.faqs, { question: '', answer: '', category: 'custom' }] })}
                                 >
-                                    <Plus className="w-4 h-4 mr-2" /> Añadir FAQ
+                                    <Plus className="w-4 h-4 mr-2" /> Añadir Sección a la Guía
                                 </Button>
                             </CardContent>
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">

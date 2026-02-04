@@ -157,10 +157,12 @@ export async function analyzeImageWithGemini(imageUrl: string, prompt: string) {
             prompt
         ];
 
-        const { data } = await geminiREST('gemini-1.5-flash-latest', prompt, {
+        const { data, usage, error } = await geminiREST('gemini-2.0-flash', input, {
             temperature: 0.1,
             responseMimeType: 'application/json'
         });
+
+        return { data, usage, error };
     } catch (error) {
         console.error('[GEMINI-VISION] Error:', error);
         return { data: null, usage: undefined, error: (error as any).message };

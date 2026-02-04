@@ -336,6 +336,40 @@ export async function getGuideSections(propertyId: string) {
     return data as GuideSection[]
 }
 
+export async function getPropertyRecommendations(propertyId: string) {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+        .from('property_recommendations')
+        .select('*')
+        .eq('property_id', propertyId)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching recommendations:', error.message)
+        return []
+    }
+
+    return data
+}
+
+export async function getPropertyFaqs(propertyId: string) {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+        .from('property_faqs')
+        .select('*')
+        .eq('property_id', propertyId)
+        .order('created_at', { ascending: true })
+
+    if (error) {
+        console.error('Error fetching FAQs:', error.message)
+        return []
+    }
+
+    return data
+}
+
 export async function saveGuideSection(propertyId: string, section: Partial<GuideSection>) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -427,4 +461,19 @@ export async function syncPropertyApplianceList(propertyId: string, tenantId: st
     }, { onConflict: 'property_id,category,subcategory' })
 
     if (error) console.error('[SYNC] property_context sync error:', error.message)
+}
+
+/**
+ * Actualiza el estado del inventario para feedback visual
+ */
+export async function updateInventoryStatus(propertyId: string, status: 'idle' | 'generating' | 'completed' | 'failed') {
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('properties')
+        .update({ inventory_status: status })
+        .eq('id', propertyId)
+
+    if (error) console.error('[STATUS] Error updating inventory status:', error.message)
+    revalidatePath(`/dashboard/properties/${propertyId}`)
+    return { success: !error }
 }

@@ -90,16 +90,37 @@ export async function POST(req: Request) {
 
         if (rpcError) console.error('[RPC ERROR]', rpcError);
 
-        // 3. Obtener contexto estructurado
-        const { data: propertyContext } = await supabase
-            .from('property_context')
-            .select('category, subcategory, content')
-            .eq('property_id', propertyId);
+        // 3. Obtener contexto estructurado (Contexto y FAQs directamente)
+        const [{ data: propertyContext }, { data: propertyFaqs }] = await Promise.all([
+            supabase.from('property_context').select('category, subcategory, content').eq('property_id', propertyId),
+            supabase.from('property_faqs').select('question, answer').eq('property_id', propertyId)
+        ]);
 
-        // 4. Formatear contexto
+        // 4. Formatear contexto enriquecido para el modelo
         const formattedContext = [
-            ... (relevantChunks || []).map((c: any) => `[MANUAL - ${c.metadata?.appliance?.toUpperCase() || 'GENERAL'}]: ${c.content}`),
-            ... (propertyContext || []).map((c: any) => `[SISTEMA - ${c.category.toUpperCase()}${c.subcategory ? ' - ' + c.subcategory.toUpperCase() : ''}]: ${typeof c.content === 'string' ? c.content : JSON.stringify(c.content)}`)
+            ...(relevantChunks || []).map((c: any) => `[GUÍA TÉCNICA - ${c.metadata?.appliance?.toUpperCase() || 'GENERAL'}]: ${c.content}`),
+            ...(propertyContext || []).map((c: any) => {
+                const label = `INFO ${c.category.toUpperCase()}${c.subcategory ? ' - ' + c.subcategory.toUpperCase() : ''}`;
+                let content = typeof c.content === 'string' ? c.content : JSON.stringify(c.content);
+
+                // Si es contacto, resaltar el preferente para el modelo
+                if (c.category === 'contacts' && typeof c.content === 'object' && c.content !== null) {
+                    const ctx = c.content as any;
+                    if (ctx.preferred_contact_id) {
+                        let preferredName = ctx.preferred_contact_id;
+                        if (ctx.preferred_contact_id === 'support') preferredName = ctx.support_name || 'Soporte';
+                        else if (ctx.preferred_contact_id === 'host') preferredName = 'Anfitrión';
+                        else {
+                            const custom = ctx.custom_contacts?.find((cc: any) => cc.id === ctx.preferred_contact_id);
+                            if (custom) preferredName = custom.name;
+                        }
+                        content += `\n[NOTA MODELO]: El contacto preferente/principal es '${preferredName}'. Priorizar siempre su mención y mostrarlo primero.`;
+                    }
+                }
+
+                return `[${label}]: ${content}`;
+            }),
+            ...(propertyFaqs || []).map((f: any) => `[PREGUNTA FRECUENTE]: ${f.question}\n[RESPUESTA]: ${f.answer}`)
         ].join('\n\n---\n\n');
 
         const systemInstruction = `Eres HostBot, el asistente experto de esta propiedad. Tu misión es resolver dudas de los huéspedes usando el CONTEXTO proporcionado.
@@ -107,16 +128,19 @@ export async function POST(req: Request) {
 IMPORTANTE: Estás hablando con un HUÉSPED en un alojamiento que NO es suyo. 
 
 REGLAS DE ORO:
-1. **Verdad Absoluta Technical**: Usa los bloques [MANUAL] como fuente de verdad.
-2. **Lenguaje Neutral y Apropiado (CRÍTICO)**: 
+1. **Verdad Absoluta**: Usa los bloques [GUÍA TÉCNICA], [INFO] y [PREGUNTA FRECUENTE] como base.
+2. **TERMINOLOGÍA PROHIBIDA (CRÍTICO)**: 
+    - NUNCA uses las palabras "manual", "manuales" o "documentación técnica" al hablar con el huésped. 
+    - En su lugar usa: "Guía del alojamiento", "Normas de la casa", "Instrucciones", "Información de la propiedad" o simplemente "Según la información disponible".
+    - NUNCA digas "Según el manual...". Di "Según la guía de uso..." o "He comprobado las indicaciones del anfitrión...".
+3. **Lenguaje Neutral y Apropiado**: 
     - NUNCA uses "tu" o "tuyo" para referirte a los aparatos (ej. NO digas "tu campana", "tu termo"). Usa artículos neutros: "**la** campana", "**el** termo", "**el** aire acondicionado".
-    - NO repitas el modelo técnico o serie del aparato en el cuerpo de la respuesta a menos que sea estrictamente necesario (ej. NO digas "Si la campana Teka Serie DBB hace ruido..."). Di simplemente: "Si la campana hace ruido...".
-3. **Filtro del Huésped**: NO des instrucciones de reparación técnica o sustitución de piezas internas. Si la solución requiere intervención, indica que el aparato podría tener una incidencia y recomienda contactar con el anfitrión.
-4. **Soluciones de Usuario**: Céntrate solo en lo que el huésped puede manipular: botones externos, mandos o trucos de uso.
-5. **Sin Excusas**: Si el aparato está en el CONTEXTO, ayuda con la información disponible.
-6. **Descripciones Visuales**: Describe iconos visualmente (ej. "el icono del copo de nieve").
-7. **Prioridad Eficiencia (NUEVO)**: Al explicar el uso de cualquier aparato, **prioriza siempre la opción más eficiente, de bajo consumo o modo "ECO"** que aparezca en el manual técnico. Si el usuario pregunta cómo realizar una tarea (ej. lavar ropa, poner el lavavajillas), recomienda primero el programa más sostenible.
-8. **Tono**: Amable, profesional y directo. Usa Markdown.
+    - NO repitas el modelo técnico o serie del aparato en el cuerpo de la respuesta. Di simplemente: "Si la campana hace ruido...".
+4. **Filtro del Huésped**: NO des instrucciones de reparación técnica. Si es algo complejo, recomienda contactar con el anfitrión.
+5. **Soluciones de Usuario**: Céntrate solo en lo que el huésped puede manipular: botones, mandos, termostatos.
+6. **Prioridad Eficiencia**: Recomienda siempre el modo "ECO" o más sostenible si aparece en la información.
+7. **Prioridad de Contacto (NUEVO)**: Si se solicita información de contacto, busca en el bloque [INFO CONTACTS] el campo 'preferred_contact_id'. Presenta SIEMPRE ese contacto en primer lugar y destácalo como el contacto principal de confianza del anfitrión.
+8. **Tono**: Amable, premium, servicial y directo. Usa Markdown.
 
 CONTEXTO ACTUAL:
 ${formattedContext}`;

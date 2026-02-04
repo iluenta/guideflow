@@ -63,7 +63,7 @@ export async function extractListingData(content: string) {
     `
 
     try {
-        const response = await geminiREST('gemini-3-flash-preview', prompt, {
+        const response = await geminiREST('gemini-2.0-flash', prompt, {
             temperature: 0.1,
             responseMimeType: 'application/json'
         });
@@ -119,6 +119,16 @@ export async function processBatchScans(propertyId: string, imageUrls: string[],
 
     try {
         console.log(`[BATCH] Starting analysis for ${imageUrls.length} images (Replace: ${replaceExisting})...`)
+
+        // Update property status to 'generating'
+        await supabase
+            .from('properties')
+            .update({
+                inventory_status: 'generating',
+                inventory_last_scan_at: new Date().toISOString()
+            })
+            .eq('id', propertyId)
+
         const perImageResults = await Promise.all(
             imageUrls.map(async (url, index) => {
                 const startTime = new Date().toISOString();
@@ -164,7 +174,7 @@ RESPONDE SOLO CON EL JSON.`
                             error_log: `AI Vision Error: ${geminiResponse?.error || 'Empty response'}`,
                             analysis_started_at: startTime,
                             analysis_finished_at: endTime,
-                            ai_model: 'gemini-3-flash-preview'
+                            ai_model: 'gemini-2.0-flash'
                         })
                         return { success: false, error: 'AI Vision Error' }
                     }
@@ -194,7 +204,7 @@ RESPONDE SOLO CON EL JSON.`
                             error_log: 'JSON Parse Error',
                             analysis_started_at: startTime,
                             analysis_finished_at: endTime,
-                            ai_model: 'gemini-3-flash-preview'
+                            ai_model: 'gemini-2.0-flash'
                         })
                         return { success: false, error: 'Parse Error' }
                     }
@@ -209,7 +219,7 @@ RESPONDE SOLO CON EL JSON.`
                             error_log: reason,
                             analysis_started_at: startTime,
                             analysis_finished_at: endTime,
-                            ai_model: 'gemini-3-flash-preview',
+                            ai_model: 'gemini-2.0-flash',
                             analysis_result: analysis
                         })
                         return { success: false, error: reason }
@@ -224,7 +234,7 @@ RESPONDE SOLO CON EL JSON.`
                         status: 'completed',
                         analysis_started_at: startTime,
                         analysis_finished_at: endTime,
-                        ai_model: 'gemini-3-flash-preview',
+                        ai_model: 'gemini-2.0-flash',
                         tokens_prompt: usage?.prompt_tokens,
                         tokens_completion: usage?.candidates_tokens
                     }).select().single();
@@ -271,7 +281,7 @@ RESPONDE SOLO CON EL JSON.`
                         4. **HALLUCINACIÓN**: Si no conoces el modelo, NO inventes una marca o especificaciones técnicas arbitrarias. Sé genérico pero preciso en el uso.`
                     }
 
-                    const genResponse = await geminiREST('gemini-3-flash-preview', generationPrompt, {
+                    const genResponse = await geminiREST('gemini-2.0-flash', generationPrompt, {
                         responseMimeType: 'text/plain',
                         temperature: 0.5
                     })
@@ -362,8 +372,8 @@ RESPONDE SOLO CON EL JSON.`
 
                     if (ctxErr) console.error('[BATCH] context_embeddings upsert error:', ctxErr.message)
 
-                    // 4.3. Actualizar índice de aparatos en property_context
-                    await syncPropertyApplianceList(propertyId, tenant_id)
+                    // 4.3. Actualizar índice de aparatos en property_context (SE MUEVE FUERA DEL LOOP)
+                    // await syncPropertyApplianceList(propertyId, tenant_id)
 
                     console.log(`[PROCESS] [${index + 1}] SUCCESS: Manual generated and synced to RAG.`)
                     return { success: true }
@@ -386,10 +396,27 @@ RESPONDE SOLO CON EL JSON.`
         )
         const successCount = perImageResults.filter(r => r.success).length
         console.log(`[BATCH] Finished. Success: ${successCount}/${imageUrls.length}`)
+
+        // Update Appliance list index ONCE for the whole batch
+        await syncPropertyApplianceList(propertyId, tenant_id)
+
+        // Update property status to 'completed'
+        await supabase
+            .from('properties')
+            .update({ inventory_status: 'completed' })
+            .eq('id', propertyId)
+
         revalidatePath(`/dashboard/properties/${propertyId}`)
         return { success: true, count: successCount }
     } catch (error: any) {
         console.error('[BATCH] Fatal batch error:', error.message)
+
+        // Attempt to set failed status
+        await supabase
+            .from('properties')
+            .update({ inventory_status: 'failed' })
+            .eq('id', propertyId)
+
         throw new Error(`Error: ${error.message}`)
     }
 }

@@ -1,28 +1,33 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MenuGrid } from './MenuGrid';
-import { WifiView } from './WifiView';
-import { RulesView } from './RulesView';
-import { ManualsView } from './ManualsView';
+import { MenuGrid } from '@/components/guide/MenuGrid';
+import { WifiView } from '@/components/guide/WifiView';
+import { RulesView } from '@/components/guide/RulesView';
+import { ManualsView } from '@/components/guide/ManualsView';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Menu } from 'lucide-react';
-import { GuestChat } from './GuestChat';
-import { LanguageSelector } from './LanguageSelector';
-import { ChatOnboarding } from './ChatOnboarding';
+import { GuestChat } from '@/components/guide/GuestChat';
+import { LanguageSelector } from '@/components/guide/LanguageSelector';
+import { ChatOnboarding } from '@/components/guide/ChatOnboarding';
 
-import { BottomNav } from './BottomNav';
-import { CheckInView } from './CheckInView';
+import { BottomNav } from '@/components/guide/BottomNav';
+import { CheckInView } from '@/components/guide/CheckInView';
+import { EmergencyView } from '@/components/guide/EmergencyView';
+import { RecommendationsView } from '@/components/guide/RecommendationsView';
+import { HouseInfoView } from '@/components/guide/HouseInfoView';
 
 interface GuideViewContainerProps {
     property: any;
     sections: any[];
     manuals: any[];
+    recommendations: any[];
+    faqs?: any[];
     context?: any[];
 }
 
-export function GuideViewContainer({ property, sections, manuals, context }: GuideViewContainerProps) {
+export function GuideViewContainer({ property, sections, manuals, recommendations, faqs = [], context }: GuideViewContainerProps) {
     const [currentPage, setCurrentPage] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('home');
     const [language, setLanguage] = useState<string>('es');
@@ -44,7 +49,8 @@ export function GuideViewContainer({ property, sections, manuals, context }: Gui
         setCurrentPage(pageId);
         // Map pageIds to tabs if possible
         if (pageId === 'eat' || pageId === 'food') setActiveTab('eat');
-        else if (pageId === 'do' || pageId === 'things-do') setActiveTab('leisure');
+        else if (pageId === 'do' || pageId === 'things-do' || pageId === 'leisure') setActiveTab('leisure');
+        else if (pageId === 'shopping' || pageId === 'compras') setActiveTab('leisure'); // Or a new shopping tab if desired
         else if (pageId === 'manuals' || pageId === 'info' || pageId === 'house-info') setActiveTab('info');
         else setActiveTab('home');
 
@@ -104,6 +110,7 @@ export function GuideViewContainer({ property, sections, manuals, context }: Gui
                     <ManualsView
                         onBack={handleBack}
                         manuals={manuals}
+                        faqs={faqs}
                         currentLanguage={language}
                         onLanguageChange={setLanguage}
                     />
@@ -118,6 +125,54 @@ export function GuideViewContainer({ property, sections, manuals, context }: Gui
                         checkinData={checkinData}
                         address={accessData?.full_address || property.full_address || ''}
                         hostName={welcomeData?.host_name || (language === 'es' ? 'tu anfitrión' : 'your host')}
+                        currentLanguage={language}
+                    />
+                );
+            case 'emergency':
+                const contactsData = context?.find(c => c.category === 'contacts')?.content || {};
+                return (
+                    <EmergencyView
+                        onBack={handleBack}
+                        contactsData={contactsData}
+                        hostName={welcomeData?.host_name || (language === 'es' ? 'tu anfitrión' : 'your host')}
+                        currentLanguage={language}
+                    />
+                );
+            case 'house-info':
+                return (
+                    <HouseInfoView
+                        onBack={handleBack}
+                        property={property}
+                        currentLanguage={language}
+                        onLanguageChange={setLanguage}
+                    />
+                );
+            case 'eat':
+                return (
+                    <RecommendationsView
+                        onBack={handleBack}
+                        recommendations={recommendations}
+                        group="eat"
+                        currentLanguage={language}
+                    />
+                );
+            case 'do':
+            case 'leisure':
+                return (
+                    <RecommendationsView
+                        onBack={handleBack}
+                        recommendations={recommendations}
+                        group="do"
+                        currentLanguage={language}
+                    />
+                );
+            case 'shopping':
+            case 'compras':
+                return (
+                    <RecommendationsView
+                        onBack={handleBack}
+                        recommendations={recommendations}
+                        group="shopping"
                         currentLanguage={language}
                     />
                 );
@@ -144,7 +199,7 @@ export function GuideViewContainer({ property, sections, manuals, context }: Gui
 
                         {/* Main Content Area */}
                         <div className="relative z-10 bg-beige">
-                            <MenuGrid onNavigate={handleNavigate} welcomeData={welcomeData} imageUrl={property.main_image_url} />
+                            <MenuGrid onNavigate={handleNavigate} welcomeData={welcomeData} imageUrl={property.main_image_url} currentLanguage={language} />
                         </div>
 
                         {/* Footer Text */}

@@ -43,7 +43,7 @@ REGLAS DE ORO:
 
 RESPONDE SOLO CON EL NUEVO CONTENIDO DEL MANUAL EN MARKDOWN.`
 
-    const genResponse = await geminiREST('gemini-3-flash-preview', fusionPrompt, {
+    const genResponse = await geminiREST('gemini-2.0-flash', fusionPrompt, {
         responseMimeType: 'text/plain',
         temperature: 0.3
     })
