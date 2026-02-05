@@ -33,9 +33,9 @@ export default function MapPreview({
 
         map.current = new mapboxgl.Map({
             container: mapContainer.current,
-            style: 'mapbox://styles/mapbox/light-v11',
+            style: 'mapbox://styles/mapbox/streets-v12',
             center: [lng, lat],
-            zoom: 15,
+            zoom: 18,
             attributionControl: false
         })
 
@@ -70,7 +70,7 @@ export default function MapPreview({
     // Update marker and map center when props change (from external geocoding)
     useEffect(() => {
         if (map.current && marker.current) {
-            map.current.flyTo({ center: [lng, lat], zoom: 15 })
+            map.current.flyTo({ center: [lng, lat], zoom: 18 })
             marker.current.setLngLat([lng, lat])
         }
     }, [lat, lng])

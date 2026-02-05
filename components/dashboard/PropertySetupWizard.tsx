@@ -137,6 +137,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
             if (prop && prop.inventory_status !== 'generating') {
                 setProperty((prev: any) => ({ ...prev, inventory_status: prop.inventory_status }))
                 if (prop.inventory_status === 'completed') {
+                    setCompletedSteps(prev => Array.from(new Set([...prev, 'inventory'])))
                     toast({
                         title: "¡Escaneo completado!",
                         description: "Los manuales técnicos ya están disponibles en tu guía.",
@@ -240,6 +241,10 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                     });
                     // Also set a default valid validation if it's already in DB
                     setValidationResult({ isValid: true, confidence: 1, warnings: [] });
+                }
+
+                if (propDetails.inventory_status === 'completed') {
+                    completed.push('inventory')
                 }
             }
 

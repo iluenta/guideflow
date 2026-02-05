@@ -1,8 +1,10 @@
+# Fichero 6: GuestChat Reference
 // app/guide/[propertyId]/components/GuestChat.tsx
+
+```tsx
 'use client';
 
 import { useChat } from 'ai/react';
-import { useState } from 'react';
 
 export default function GuestChat({ propertyId }: { propertyId: string }) {
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
@@ -20,11 +22,10 @@ export default function GuestChat({ propertyId }: { propertyId: string }) {
             className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[80%] rounded-lg p-3 ${
-                m.role === 'user'
+              className={`max-w-[80%] rounded-lg p-3 ${m.role === 'user'
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-100 text-gray-900'
-              }`}
+                }`}
             >
               {m.content}
             </div>
@@ -64,3 +65,4 @@ export default function GuestChat({ propertyId }: { propertyId: string }) {
     </div>
   );
 }
+```

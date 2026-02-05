@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import {
     Sparkles, Plus, Trash2, MapPin, Clock, Utensils,
     ShoppingBag, Landmark, Trees, Music, Coffee, Star,
-    Search, ChevronLeft, ChevronRight, Check
+    Search, ChevronLeft, ChevronRight, Check, Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { RecommendationCard, Recommendation } from './RecommendationCard'

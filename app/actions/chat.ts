@@ -2,10 +2,10 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { generateOpenAIEmbedding } from '@/lib/ai/openai'
-import { generateContentWithClaude } from '@/lib/ai/claude'
+import { geminiREST } from '@/lib/ai/gemini-rest'
 
 /**
- * RAG-enabled chat for guests using Claude 3 Haiku and OpenAI Embeddings
+ * RAG-enabled chat for guests using Gemini 2.0 Flash and OpenAI Embeddings
  */
 export async function chatWithHostBot(propertyId: string, message: string) {
     const supabase = await createClient()
@@ -42,7 +42,10 @@ export async function chatWithHostBot(propertyId: string, message: string) {
         ? `${systemInstruction}\n\nCONTEXTO TÉCNICO:\n${context}\n\nPREGUNTA DEL HUÉSPED: ${message}`
         : `${systemInstruction}\n\nPREGUNTA DEL HUÉSPED: ${message}`
 
-    const responseText = await generateContentWithClaude(fullPrompt, 'claude-haiku-4-5')
+    const { data: responseText } = await geminiREST('gemini-2.0-flash', fullPrompt, {
+        temperature: 0.7,
+        responseMimeType: 'text/plain'
+    })
 
     return {
         answer: responseText || "Lo siento, estoy teniendo problemas para responder en este momento. Por favor, intenta de nuevo o contacta al anfitrión.",

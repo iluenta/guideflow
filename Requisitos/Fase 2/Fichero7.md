@@ -1,4 +1,7 @@
+# Fichero 7: Chat API Reference
 // app/api/chat/route.ts
+
+```typescript
 import { OpenAIStream, StreamingTextResponse } from 'ai';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
@@ -86,3 +89,4 @@ RESPUESTA:`
 
   return new StreamingTextResponse(textStream);
 }
+```

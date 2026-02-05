@@ -75,7 +75,7 @@ RESPONDE SOLO EN JSON:
   "explanation": "explicación muy breve en español"
 }`;
 
-    const { data } = await geminiREST('gemini-1.5-flash', prompt, {
+    const { data } = await geminiREST('gemini-2.0-flash', prompt, {
         temperature: 0.1,
         responseMimeType: 'application/json'
     });

@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { generateEmbedding } from '@/lib/ai/embeddings'
 import { revalidatePath } from 'next/cache'
-import { generateContentWithClaude } from '@/lib/ai/claude'
+import { geminiREST } from '@/lib/ai/gemini-rest'
 
 /**
  * Ingests a new manual, chunks it, and generates embeddings for RAG using REST API
@@ -62,12 +62,15 @@ export async function ingestManual(propertyId: string, fileUrl: string, name: st
     }
     `
 
-    const resultText = await generateContentWithClaude(`AQUÍ TIENES EL CONTENIDO DEL MANUAL:\n${base64Data}\n\n${prompt}`)
+    const { data: result } = await geminiREST('gemini-2.0-flash', [
+        { inlineData: { mimeType: 'application/pdf', data: base64Data } },
+        prompt
+    ], {
+        temperature: 0.1,
+        responseMimeType: 'application/json'
+    })
 
-    const jsonMatch = resultText?.match(/\{[\s\S]*\}/)
-    const result = jsonMatch ? JSON.parse(jsonMatch[0]) : null
-
-    if (!result) throw new Error('No se pudo procesar el PDF con la IA.')
+    if (!result || !result.sections) throw new Error('No se pudo procesar el PDF con la IA.')
 
     const { sections, structured_info } = result
 

@@ -145,11 +145,11 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                             <div>
                                 <div className="flex items-center gap-3">
                                     <h3 className="font-serif text-xl font-bold tracking-tight">
-                                        {currentLanguage === 'es' ? 'Asistente del alojamiento' : 'Stay Assistant'}
+                                        {currentLanguage === 'es' ? 'Asistente de' : 'Assistant for'}
                                     </h3>
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 rounded-full">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-green-400">{onlineStatus}</span>
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/10 shrink-0 whitespace-nowrap">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-white">{onlineStatus}</span>
                                     </div>
                                 </div>
                                 <p className="text-white/60 text-xs font-medium mt-0.5">{propertyName}</p>
@@ -318,7 +318,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                         </button>
                     </form>
                     <p className="text-center text-[10px] text-slate-300 mt-5 uppercase tracking-[0.3em] font-black">
-                        HOSTBOT POWERED BY GEMINI 3 FLASH
+                        HOSTBOT POWERED BY GEMINI 2.0 FLASH
                     </p>
                 </div>
             </div>

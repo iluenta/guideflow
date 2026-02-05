@@ -133,6 +133,19 @@ export async function createProperty(formData: Partial<Property>) {
         throw new Error('Usuario sin tenant asignado')
     }
 
+    // Check for slug uniqueness if provided
+    if (formData.slug) {
+        const { data: existing } = await supabase
+            .from('properties')
+            .select('id')
+            .eq('slug', formData.slug)
+            .maybeSingle()
+
+        if (existing) {
+            throw new Error('SLUG_ALREADY_EXISTS')
+        }
+    }
+
     const { data, error } = await supabase
         .from('properties')
         .insert({
@@ -143,6 +156,9 @@ export async function createProperty(formData: Partial<Property>) {
         .single()
 
     if (error) {
+        if (error.code === '23505') {
+            throw new Error('SLUG_ALREADY_EXISTS')
+        }
         console.error('Error creating property:', error.message)
         throw new Error(error.message)
     }
@@ -157,6 +173,20 @@ export async function updateProperty(id: string, formData: Partial<Property>) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
 
+    // Check for slug uniqueness if changing it
+    if (formData.slug) {
+        const { data: existing } = await supabase
+            .from('properties')
+            .select('id')
+            .eq('slug', formData.slug)
+            .neq('id', id)
+            .maybeSingle()
+
+        if (existing) {
+            throw new Error('SLUG_ALREADY_EXISTS')
+        }
+    }
+
     // In Next.js Server Actions, even with RLS, we should be explicit
     const { data, error } = await supabase
         .from('properties')
@@ -166,6 +196,9 @@ export async function updateProperty(id: string, formData: Partial<Property>) {
         .maybeSingle()
 
     if (error) {
+        if (error.code === '23505') {
+            throw new Error('SLUG_ALREADY_EXISTS')
+        }
         console.error('Error updating property:', error.message)
         throw new Error(error.message)
     }

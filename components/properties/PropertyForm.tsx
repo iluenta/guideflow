@@ -41,7 +41,19 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
     const [uploading, setUploading] = useState(false)
     const [preview, setPreview] = useState<string | null>(property?.main_image_url || null)
     const [analyzing, setAnalyzing] = useState(false)
+    const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!property?.slug)
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const generateSlug = (text: string) => {
+        return text
+            .toLowerCase()
+            .normalize('NFD') // Normalize to handle accents
+            .replace(/[\u0300-\u036f]/g, '') // Remove accents
+            .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+            .trim()
+            .replace(/\s+/g, '-') // Spaces to dashes
+            .replace(/-+/g, '-') // Multiple dashes to single
+    }
 
     const form = useForm<PropertyFormValues>({
         resolver: zodResolver(propertySchema),
@@ -118,8 +130,13 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
                 toast.success('Propiedad creada')
             }
             onSuccess()
-        } catch (error) {
-            toast.error('Error al guardar la propiedad')
+        } catch (error: any) {
+            if (error.message === 'SLUG_ALREADY_EXISTS') {
+                form.setError('slug', { message: 'Este slug ya está en uso por otra propiedad' })
+                toast.error('El slug de la URL ya está en uso')
+            } else {
+                toast.error('Error al guardar la propiedad: ' + error.message)
+            }
         } finally {
             setLoading(false)
         }
@@ -139,7 +156,17 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
                                     <FormControl>
                                         <div className="relative">
                                             <Home className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                            <Input placeholder="Ej: Apartamento Centro Madrid" className="pl-9" {...field} />
+                                            <Input
+                                                placeholder="Ej: Apartamento Centro Madrid"
+                                                className="pl-9"
+                                                {...field}
+                                                onChange={(e) => {
+                                                    field.onChange(e)
+                                                    if (!property && !slugManuallyEdited) {
+                                                        form.setValue('slug', generateSlug(e.target.value))
+                                                    }
+                                                }}
+                                            />
                                         </div>
                                     </FormControl>
                                     <FormMessage />
@@ -156,7 +183,14 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
                                     <FormControl>
                                         <div className="flex items-center gap-1">
                                             <span className="text-xs text-muted-foreground whitespace-nowrap">hostguide.app/</span>
-                                            <Input placeholder="casa-asturias" {...field} />
+                                            <Input
+                                                placeholder="casa-asturias"
+                                                {...field}
+                                                onChange={(e) => {
+                                                    field.onChange(e)
+                                                    setSlugManuallyEdited(true)
+                                                }}
+                                            />
                                         </div>
                                     </FormControl>
                                     <FormDescription className="text-xs">

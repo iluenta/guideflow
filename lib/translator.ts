@@ -2,9 +2,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Usamos Gemini 1.5 Flash por ser el modelo más económico y eficiente para traducciones
+// Usamos Gemini 2.0 Flash por ser el modelo más económico y eficiente para traducciones
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,7 +31,7 @@ export class Translator {
       return cached.translated_text;
     }
 
-    // 2. Traducir con Gemini 1.5 Flash
+    // 2. Traducir con Gemini 2.0 Flash
     const prompt = `Translate the following text from ${this.getLanguageName(sourceLang)} to ${this.getLanguageName(targetLang)}.
 
 ${context ? `CONTEXT: ${context}\n\n` : ''}TEXT TO TRANSLATE:
@@ -58,7 +58,7 @@ TRANSLATION:`;
       sourceLang,
       targetLang,
       // Metadata simplificado para Gemini Flash
-      translationMethod: 'gemini-1.5-flash'
+      translationMethod: 'gemini-2.0-flash'
     });
 
     return translation;
@@ -86,7 +86,7 @@ TRANSLATION:`;
         source_language: data.sourceLang,
         target_language: data.targetLang,
         translation_method: data.translationMethod,
-        cost_usd: 0 // Gemini 1.5 Flash tiene un tier gratutito muy generoso
+        cost_usd: 0 // Gemini 2.0 Flash tiene un tier gratutito muy generoso
       });
   }
 
