@@ -36,7 +36,6 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
     const [photos, setPhotos] = useState<SelectedPhoto[]>([])
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [uploadingIds, setUploadingIds] = useState<Set<string>>(new Set())
-    const [showTips, setShowTips] = useState(false)
     const [replaceExisting, setReplaceExisting] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -146,7 +145,7 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
     }
 
     return (
-        <div className="relative min-h-[400px] space-y-6 pb-40">
+        <div className="relative space-y-6 pb-4">
             {/* Header / Intro */}
             <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -161,65 +160,57 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                 </p>
             </div>
 
-            {/* Photo Tips Toggle */}
-            <Card className="border-primary/20 bg-primary/5 rounded-2xl overflow-hidden">
-                <button
-                    onClick={() => setShowTips(!showTips)}
-                    className="w-full flex items-center justify-between p-4 text-sm font-semibold text-primary hover:bg-primary/5 transition-colors"
-                >
-                    <div className="flex items-center gap-2">
-                        <Info className="h-4 w-4" />
-                        Cómo fotografiar para un análisis perfecto
-                    </div>
-                    {showTips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </button>
-                {showTips && (
-                    <CardContent className="p-4 pt-0 space-y-4 text-sm border-t border-primary/10 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-1">
-                                <p className="font-bold flex items-center gap-1.5">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                    Captura el "DNI" del aparato
-                                </p>
-                                <p className="text-muted-foreground text-xs leading-relaxed">
-                                    Saca una foto a la pegatina del modelo (E-Nr o Serial). Suele estar en el borde de la puerta o bajo la caldera. Así HostBot te dará instrucciones exactas.
-                                </p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="font-bold flex items-center gap-1.5">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                    Ángulo de 45 grados
-                                </p>
-                                <p className="text-muted-foreground text-xs leading-relaxed">
-                                    Un ángulo ligero permite a la IA analizar relieves y sombras para detectar si los mandos son táctiles o escamoteables.
-                                </p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="font-bold flex items-center gap-1.5">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                    Iluminación sin reflejos
-                                </p>
-                                <p className="text-muted-foreground text-xs leading-relaxed">
-                                    Evita el flash directo sobre pantallas o vitrocerámicas. Los reflejos bloquean la lectura de iconos.
-                                </p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="font-bold flex items-center gap-1.5">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                    Regla del 75%
-                                </p>
-                                <p className="text-muted-foreground text-xs leading-relaxed">
-                                    Asegúrate de que el panel de mandos ocupe la mayor parte de la foto para máxima resolución de símbolos.
-                                </p>
-                            </div>
+            {/* Photo Tips - Always Visible & Compact */}
+            <Card className="border-primary/10 bg-primary/5 rounded-2xl overflow-hidden shadow-none border">
+                <div className="p-3 border-b border-primary/10 bg-primary/5 flex items-center gap-2 text-primary">
+                    <Info className="h-3.5 w-3.5" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Cómo fotografiar para el análisis IA</span>
+                </div>
+                <CardContent className="p-3 space-y-3">
+                    <div className="grid gap-3 grid-cols-2">
+                        <div className="space-y-0.5">
+                            <p className="text-[10px] font-bold flex items-center gap-1.5 text-primary">
+                                <span className="h-1 w-1 rounded-full bg-primary" />
+                                "DNI" del aparato
+                            </p>
+                            <p className="text-muted-foreground text-[9px] leading-tight">
+                                Foto a la pegatina del modelo/serie (E-Nr) para instrucciones exactas.
+                            </p>
                         </div>
-                    </CardContent>
-                )}
+                        <div className="space-y-0.5">
+                            <p className="text-[10px] font-bold flex items-center gap-1.5 text-primary">
+                                <span className="h-1 w-1 rounded-full bg-primary" />
+                                Ángulo 45º
+                            </p>
+                            <p className="text-muted-foreground text-[9px] leading-tight">
+                                Permite detectar mandos táctiles o escamoteables mediante sombras.
+                            </p>
+                        </div>
+                        <div className="space-y-0.5">
+                            <p className="text-[10px] font-bold flex items-center gap-1.5 text-primary">
+                                <span className="h-1 w-1 rounded-full bg-primary" />
+                                Sin reflejos
+                            </p>
+                            <p className="text-muted-foreground text-[9px] leading-tight">
+                                Evita el flash en pantallas. Los reflejos bloquean la lectura de iconos.
+                            </p>
+                        </div>
+                        <div className="space-y-0.5">
+                            <p className="text-[10px] font-bold flex items-center gap-1.5 text-primary">
+                                <span className="h-1 w-1 rounded-full bg-primary" />
+                                Regla 75%
+                            </p>
+                            <p className="text-muted-foreground text-[9px] leading-tight">
+                                El panel de mandos debe ocupar la mayor parte de la foto.
+                            </p>
+                        </div>
+                    </div>
+                </CardContent>
             </Card>
 
-            {/* MultiPhotoSelector / Dropzone */}
+            {/* MultiPhotoSelector / Dropzone - Slimmer */}
             <div
-                className="border-2 border-dashed border-muted-foreground/20 rounded-3xl p-8 flex flex-col items-center justify-center bg-muted/5 hover:bg-muted/10 transition-colors cursor-pointer group"
+                className="border-2 border-dashed border-primary/20 rounded-3xl p-6 flex flex-col items-center justify-center bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer group"
                 onClick={() => fileInputRef.current?.click()}
             >
                 <input
@@ -231,13 +222,13 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                     multiple
                     onChange={handleFileChange}
                 />
-                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform mb-4">
-                    <Camera className="h-8 w-8" />
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform mb-3">
+                    <Camera className="h-6 w-6" />
                 </div>
                 <div className="text-center">
-                    <p className="font-semibold text-lg">Toca para abrir la cámara o subir fotos</p>
-                    <p className="text-xs text-muted-foreground mt-1 text-balance">
-                        Selecciona hasta 30 fotos de electrodomésticos, manuales o estancias
+                    <p className="font-bold text-sm">Abrir cámara o subir fotos</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Hasta 30 fotos de electrodomésticos o estancias
                     </p>
                 </div>
             </div>
@@ -292,33 +283,31 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                 </div>
             )}
 
-            {/* Replacement Toggle */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-muted/20 rounded-2xl border border-dashed border-muted-foreground/10 group cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setReplaceExisting(!replaceExisting)}>
-                <div className={`h-6 w-11 rounded-full relative transition-colors duration-300 ${replaceExisting ? 'bg-primary' : 'bg-slate-200'}`}>
-                    <div className={`absolute top-1 left-1 bg-white h-4 w-4 rounded-full transition-transform duration-300 ${replaceExisting ? 'translate-x-5' : 'translate-x-0'}`} />
+            {/* Replacement Toggle & Analysis Button Container */}
+            <div className="bg-muted/20 rounded-2xl border border-dashed border-muted-foreground/10 p-4 space-y-4">
+                <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setReplaceExisting(!replaceExisting)}>
+                    <div className={`h-6 w-11 rounded-full relative transition-colors duration-300 ${replaceExisting ? 'bg-primary' : 'bg-slate-200'}`}>
+                        <div className={`absolute top-1 left-1 bg-white h-4 w-4 rounded-full transition-transform duration-300 ${replaceExisting ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-xs font-bold text-slate-700">Actualizar manuales si ya existen</p>
+                        <p className="text-[10px] text-muted-foreground">Si la IA detecta un aparato que ya tienes, lo sustituirá por la nueva versión.</p>
+                    </div>
                 </div>
-                <div className="flex-1">
-                    <p className="text-xs font-bold text-slate-700">Actualizar manuales si ya existen</p>
-                    <p className="text-[10px] text-muted-foreground">Si la IA detecta un aparato que ya tienes, lo sustituirá por la nueva versión.</p>
-                </div>
-            </div>
 
-            {/* FAB - Fixed Action Button Mobile-First */}
-            <div className="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-50 w-full px-4 max-w-md md:bottom-10 md:static md:translate-x-0 md:px-0 md:max-w-none md:flex md:justify-center">
                 <Button
-                    size="lg"
-                    className="w-full md:w-auto md:min-w-[280px] h-14 rounded-full shadow-2xl shadow-primary/40 text-lg font-bold gap-3 animate-in fade-in slide-in-from-bottom-10 duration-700"
+                    className="w-full h-12 rounded-xl shadow-lg shadow-primary/20 font-bold gap-2"
                     disabled={photos.length === 0 || isAnalyzing}
                     onClick={handleAnalyze}
                 >
                     {isAnalyzing ? (
                         <>
-                            <Loader2 className="h-6 w-6 animate-spin" />
+                            <Loader2 className="h-5 w-5 animate-spin" />
                             Analizando estancia...
                         </>
                     ) : (
                         <>
-                            <Sparkles className="h-6 w-6 fill-current" />
+                            <Sparkles className="h-5 w-5 fill-current" />
                             Analizar Estancia con IA
                         </>
                     )}

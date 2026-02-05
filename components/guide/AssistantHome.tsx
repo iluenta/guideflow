@@ -1,0 +1,173 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Search, Sparkles, Bot, MessageSquare, BookOpen, ChevronRight, Wifi, Key, Utensils, MapPin, Info, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+interface AssistantHomeProps {
+    propertyName: string;
+    onExplore: () => void;
+    onChatQuery: (query: string) => void;
+    currentLanguage?: string;
+}
+
+export function AssistantHome({
+    propertyName,
+    onExplore,
+    onChatQuery,
+    currentLanguage = 'es'
+}: AssistantHomeProps) {
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    useEffect(() => {
+        setIsLoaded(true);
+    }, []);
+
+    const chips = [
+        {
+            query: currentLanguage === 'es' ? '¿Cuál es la clave del WiFi?' : 'What is the WiFi password?',
+            label: currentLanguage === 'es' ? 'Clave WiFi' : 'WiFi Password',
+            icon: Wifi,
+            color: 'bg-blue-50 text-blue-600 border-blue-100'
+        },
+        {
+            query: currentLanguage === 'es' ? '¿Cómo funciona la vitrocerámica?' : 'How does the stove work?',
+            label: currentLanguage === 'es' ? 'Uso Vitro' : 'Using Stove',
+            icon: Settings,
+            color: 'bg-orange-50 text-orange-600 border-orange-100'
+        },
+        {
+            query: currentLanguage === 'es' ? '¿Cómo entro al apartamento?' : 'How do I enter the apartment?',
+            label: currentLanguage === 'es' ? 'Cómo entrar' : 'How to enter',
+            icon: Key,
+            color: 'bg-emerald-50 text-emerald-600 border-emerald-100'
+        },
+        {
+            query: currentLanguage === 'es' ? '¿Dónde está mi plaza de garaje?' : 'Where is my parking spot?',
+            label: currentLanguage === 'es' ? 'Garaje' : 'Parking',
+            icon: MapPin,
+            color: 'bg-purple-50 text-purple-600 border-purple-100'
+        },
+        {
+            query: currentLanguage === 'es' ? '¿Dónde puedo comer cerca?' : 'Where can I eat nearby?',
+            label: currentLanguage === 'es' ? 'Comer cerca' : 'Eat nearby',
+            icon: Utensils,
+            color: 'bg-rose-50 text-rose-600 border-rose-100'
+        },
+        {
+            query: currentLanguage === 'es' ? '¿Qué puedo visitar?' : 'What can I visit?',
+            label: currentLanguage === 'es' ? 'Qué visitar' : 'Sightseeing',
+            icon: Info,
+            color: 'bg-indigo-50 text-indigo-600 border-indigo-100'
+        }
+    ];
+
+    return (
+        <div className={`min-h-screen flex flex-col px-6 py-12 transition-all duration-700 ease-out ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+
+            {/* Header: Welcome & Branding hint */}
+            <div className="mb-12 text-center">
+                <h1 className="font-serif text-[42px] leading-tight font-bold text-primary mb-2">
+                    {currentLanguage === 'es' ? 'Hola 👋' : 'Hello 👋'}
+                </h1>
+                <p className="text-[15px] text-text-secondary opacity-80 font-medium leading-relaxed max-w-[280px] mx-auto">
+                    {currentLanguage === 'es'
+                        ? `Estás en el alojamiento ${propertyName}.`
+                        : `You are at ${propertyName}.`}
+                </p>
+            </div>
+
+            {/* Assistant Pitch */}
+            <div className="mb-10 bg-surface/40 backdrop-blur-sm rounded-[32px] p-6 border border-primary/5 shadow-sm text-center">
+                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Bot className="w-6 h-6 text-primary" />
+                </div>
+                <p className="text-[14px] text-primary/80 font-semibold leading-snug">
+                    {currentLanguage === 'es'
+                        ? 'Estoy aquí para que tu estancia sea perfecta y no tengas que buscar ni llamar a nadie.'
+                        : 'I am here to make your stay perfect so you don\'t have to search or call anyone.'}
+                </p>
+            </div>
+
+            {/* Main Search Action */}
+            <div className="mb-12 relative group" onClick={() => onChatQuery('')}>
+                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full opacity-0 group-hover:opacity-10 transition-opacity" />
+                <div className="relative bg-surface rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-primary/10 p-4 h-16 flex items-center gap-4 transition-transform active:scale-[0.98]">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Bot className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="text-[16px] text-text-secondary/50 font-medium flex-1">
+                        {currentLanguage === 'es' ? '¿Qué necesitas ahora?' : 'What do you need now?'}
+                    </span>
+                    <Search className="w-5 h-5 text-primary/30 mr-2" />
+                </div>
+            </div>
+
+            {/* Suggestion Chips */}
+            <div className="mb-12">
+                <h3 className="text-[10px] font-black text-navy/30 uppercase tracking-[0.3em] mb-4 text-center">
+                    {currentLanguage === 'es' ? 'PUEDES PREGUNTARME:' : 'HOW CAN I HELP:'}
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {chips.map((chip, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => onChatQuery(chip.query)}
+                            className={`flex items-center gap-3 p-3 rounded-2xl border text-left transition-all active:scale-[0.96] hover:bg-white shadow-sm hover:shadow-md ${chip.color}`}
+                        >
+                            <div className="shrink-0">
+                                <chip.icon className="w-4 h-4" />
+                            </div>
+                            <span className="text-[12px] font-bold leading-tight">{chip.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* AI Confirmation (For Host Value) */}
+            <div className="mb-16 flex items-start gap-4 p-5 bg-navy/5 rounded-3xl border border-navy/5">
+                <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                </div>
+                <div className="flex flex-col gap-1">
+                    <p className="text-[11px] text-navy/40 font-bold leading-relaxed italic uppercase tracking-wider">
+                        {currentLanguage === 'es'
+                            ? 'Resuelvo tus dudas al instante sin que tengas que llamar al propietario.'
+                            : 'I solve your questions instantly so you don\'t have to call the owner.'}
+                    </p>
+                    <p className="text-[10px] text-navy/30 font-medium leading-relaxed uppercase tracking-widest">
+                        {currentLanguage === 'es'
+                            ? 'Ya conozco este apartamento por dentro y por fuera.'
+                            : 'I know this apartment inside and out.'}
+                    </p>
+                </div>
+            </div>
+
+            {/* Alternate Navigation */}
+            <div className="text-center">
+                <p className="text-[13px] text-navy/40 font-medium mb-4">
+                    {currentLanguage === 'es' ? '¿Prefieres navegar por la guía?' : 'Prefer to browse the guide?'}
+                </p>
+                <Button
+                    variant="outline"
+                    onClick={onExplore}
+                    className="h-14 px-8 rounded-2xl border-primary/20 text-primary font-bold shadow-sm hover:bg-primary/5 transition-all w-full flex items-center justify-between group"
+                >
+                    <div className="flex items-center gap-3">
+                        <BookOpen className="w-5 h-5 opacity-60" />
+                        <span>{currentLanguage === 'es' ? 'Explorar guía completa' : 'Explore full guide'}</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 opacity-30 group-hover:translate-x-1 transition-transform" />
+                </Button>
+            </div>
+
+            {/* Brand Footer */}
+            <div className="mt-auto pt-12 text-center pb-8 opacity-20">
+                <p className="text-[9px] text-navy uppercase font-black tracking-[0.4em]">
+                    Powered by GuideFlow
+                </p>
+            </div>
+
+        </div >
+    );
+}

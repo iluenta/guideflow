@@ -138,13 +138,13 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
 
                 {/* Welcome Title (Polished Fase 5 Style) */}
                 <div className="text-center mb-10 px-4">
-                    <h2 className="font-serif text-[40px] text-navy font-bold tracking-tight mb-1 uppercase leading-tight">
+                    <h2 className="font-serif text-[40px] text-primary font-bold tracking-tight mb-1 uppercase leading-tight">
                         {welcomeData?.title || (currentLanguage === 'es' ? 'BIENVENIDO' : 'WELCOME')}
                     </h2>
-                    <p className="text-[10px] tracking-[0.4em] text-slate font-black mb-4 uppercase opacity-60">
+                    <p className="text-[10px] tracking-[0.4em] text-text-secondary font-black mb-4 uppercase opacity-60">
                         {welcomeData?.host_name || (currentLanguage === 'es' ? 'TU ANFITRIÓN' : 'YOUR HOST')}
                     </p>
-                    <p className="text-[13px] text-slate/70 font-medium italic max-w-[85%] mx-auto leading-relaxed">
+                    <p className="text-[13px] text-text-secondary opacity-70 font-medium italic max-w-[85%] mx-auto leading-relaxed">
                         {welcomeData?.message || (currentLanguage === 'es' ? 'Disfruta de tu estancia en nuestra casa' : 'Please enjoy your stay')}
                     </p>
                 </div>
@@ -155,8 +155,8 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                         <div className="flex items-center gap-3">
                             <span className="text-2xl drop-shadow-sm">{rightNow.emoji}</span>
                             <div className="flex items-center gap-2">
-                                <h3 className="font-sans text-[15px] font-black text-navy/90 tracking-tight">{rightNow.title}</h3>
-                                <span className="text-[11px] text-navy/40 font-bold bg-navy/5 px-2 py-0.5 rounded-full">
+                                <h3 className="font-sans text-[15px] font-black text-primary tracking-tight">{rightNow.title}</h3>
+                                <span className="text-[11px] text-primary/40 font-bold bg-primary/5 px-2 py-0.5 rounded-full">
                                     {currentTime}
                                 </span>
                             </div>
@@ -175,16 +175,16 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                             <button
                                 key={idx}
                                 onClick={() => handleNavigate(item.id, [50, 30, 50])}
-                                className="flex items-center justify-between w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:bg-white/95 p-4 rounded-2xl transition-all active:scale-[0.98] group"
+                                className="flex items-center justify-between w-full bg-surface shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:bg-surface/95 p-4 rounded-2xl transition-all active:scale-[0.98] group"
                             >
                                 <div className="flex items-center gap-4">
                                     <span className="text-xl">{item.emoji}</span>
                                     <div className="flex flex-col text-left">
-                                        <span className="text-[14px] text-navy font-bold leading-none mb-1">{item.label}</span>
-                                        <span className="text-[11px] text-navy/40 font-medium">{item.count}</span>
+                                        <span className="text-[14px] text-primary font-bold leading-none mb-1">{item.label}</span>
+                                        <span className="text-[11px] text-text-muted font-medium">{item.count}</span>
                                     </div>
                                 </div>
-                                <ChevronRight className="w-4 h-4 text-navy/20 group-hover:text-navy/50 transition-all" />
+                                <ChevronRight className="w-4 h-4 text-primary/20 group-hover:text-primary/50 transition-all" />
                             </button>
                         ))}
                     </div>
@@ -204,17 +204,17 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                         LO ESENCIAL
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
-                        <button onClick={() => handleNavigate('check-in', [50, 30, 50])} className="bg-navy text-white rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-navy/20 active:scale-95 transition-all aspect-square">
+                        <button onClick={() => handleNavigate('check-in', [50, 30, 50])} className="bg-primary text-primary-foreground rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-all aspect-square">
                             <Key className="w-6 h-6" strokeWidth={1.5} />
                             <span className="text-[10px] font-black uppercase tracking-widest">Check In</span>
                         </button>
-                        <button onClick={() => handleNavigate('wifi', [50, 30, 50])} className="bg-white text-navy rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-navy/[0.03]">
+                        <button onClick={() => handleNavigate('wifi', [50, 30, 50])} className="bg-surface text-primary rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-primary/5">
                             <Wifi className="w-6 h-6" strokeWidth={1.5} />
                             <span className="text-[10px] font-black uppercase tracking-widest">WiFi</span>
                         </button>
                         <button onClick={() => handleNavigate('emergency', [100, 50, 100])} className="bg-rose-50 text-rose-600 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-rose-100/50">
                             <AlertTriangle className="w-6 h-6" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-center">SOS</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-center text-rose-600">SOS</span>
                         </button>
                     </div>
                 </div>
@@ -233,19 +233,19 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                             <button
                                 key={item.id}
                                 onClick={() => handleNavigate(item.id)}
-                                className="w-full bg-white p-5 rounded-3xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-all border border-navy/[0.02]"
+                                className="w-full bg-surface p-5 rounded-3xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-all border border-primary/5"
                             >
                                 <div className="flex items-center gap-4">
                                     <div className={`w-12 h-12 rounded-2xl ${item.color} flex items-center justify-center shadow-inner`}>
                                         <item.icon className="w-6 h-6" />
                                     </div>
                                     <div className="flex flex-col text-left">
-                                        <span className="text-navy font-black text-[15px]">{item.label}</span>
-                                        <span className="text-[11px] text-navy/40 font-medium">{item.desc}</span>
+                                        <span className="text-primary font-black text-[15px]">{item.label}</span>
+                                        <span className="text-[11px] text-text-muted font-medium">{item.desc}</span>
                                     </div>
                                 </div>
-                                <div className="w-8 h-8 rounded-full bg-navy/[0.03] flex items-center justify-center group-hover:bg-navy/[0.08] transition-colors">
-                                    <ChevronRight className="w-4 h-4 text-navy/30 group-hover:text-navy/60 transition-all" />
+                                <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                                    <ChevronRight className="w-4 h-4 text-primary/30 group-hover:text-primary/60 transition-all" />
                                 </div>
                             </button>
                         ))}
@@ -258,17 +258,17 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                         TU ALOJAMIENTO
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
-                        <button onClick={() => handleNavigate('house-info')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
+                        <button onClick={() => handleNavigate('house-info')} className="bg-surface p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-primary border border-primary/5">
                             <Info className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Info Casa</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">Info Casa</span>
                         </button>
-                        <button onClick={() => handleNavigate('rules')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
+                        <button onClick={() => handleNavigate('rules')} className="bg-surface p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-primary border border-primary/5">
                             <ScrollText className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Normas</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">Normas</span>
                         </button>
-                        <button onClick={() => handleNavigate('manuals')} className="bg-white p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-navy border border-navy/[0.02]">
+                        <button onClick={() => handleNavigate('manuals')} className="bg-surface p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-primary border border-primary/5">
                             <BookOpen className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-navy/60 text-center leading-tight">Guía de USO</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">Guía de USO</span>
                         </button>
                     </div>
                 </div>

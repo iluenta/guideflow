@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { syncWizardDataToRAG } from './rag-sync'
 
 async function getTenantId(supabase: any, user: any) {
     // 1. Try metadata first (fastest)
@@ -244,6 +245,29 @@ export async function getScanUploadUrl(propertyId: string, fileName: string, con
     }
 }
 
+export async function getBrandingUploadUrl(fileName: string, contentType: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const tenant_id = await getTenantId(supabase, user)
+    if (!tenant_id) throw new Error('Usuario sin tenant asignado')
+
+    const path = `${tenant_id}/${Date.now()}_${fileName}`
+
+    const { data, error } = await supabase.storage
+        .from('branding')
+        .createSignedUploadUrl(path)
+
+    if (error) throw error
+
+    return {
+        uploadUrl: data.signedUrl,
+        publicUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/branding/${path}`,
+        path: path
+    }
+}
+
 
 export async function getPropertyManuals(propertyId: string) {
     const supabase = await createClient()
@@ -451,16 +475,19 @@ export async function syncPropertyApplianceList(propertyId: string, tenantId: st
     const { error } = await supabase.from('property_context').upsert({
         property_id: propertyId,
         tenant_id: tenantId,
-        category: 'tech',
-        subcategory: 'appliance_list',
+        category: 'inventory',
         content: {
             text: `Lista de aparatos con manual disponible:\n${applianceIndex}`,
-            appliances: allManuals
-        },
-        updated_at: new Date().toISOString()
-    }, { onConflict: 'property_id,category,subcategory' })
+            items: allManuals
+        }
+    }, { onConflict: 'property_id,category' })
 
-    if (error) console.error('[SYNC] property_context sync error:', error.message)
+    if (error) throw new Error(error.message)
+
+    // Sincronizar RAG
+    await syncWizardDataToRAG(propertyId, tenantId, 'inventory', { text: applianceIndex })
+
+    revalidatePath(`/dashboard/properties/${propertyId}`)
 }
 
 /**

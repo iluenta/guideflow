@@ -42,6 +42,8 @@ export async function saveWizardStep(
                 .select()
                 .single()
             if (error) throw error
+            // Sincronizar RAG
+            await syncWizardDataToRAG(currentPropId, tenantId || '', 'property', stepData)
             return { success: true, property: data }
         } else {
             if (!tenantId) throw new Error('tenant_id es requerido para crear una propiedad')
@@ -51,6 +53,8 @@ export async function saveWizardStep(
                 .select()
                 .single()
             if (error) throw error
+            // Sincronizar RAG
+            await syncWizardDataToRAG(data.id, tenantId, 'property', stepData)
             revalidatePath('/dashboard/properties')
             return { success: true, property: data, isNew: true }
         }
@@ -104,6 +108,27 @@ export async function saveWizardStep(
             )
             if (error) throw error
         }
+
+        // 3. Sincronizar RAG
+        await syncWizardDataToRAG(currentPropId, tenantId || '', 'dining', stepData)
+        return { success: true }
+
+    } else if (category === 'branding') {
+        if (!currentPropId) throw new Error('ID de propiedad requerido para Branding')
+
+        const { error } = await supabase
+            .from('property_branding')
+            .upsert({
+                property_id: currentPropId,
+                tenant_id: tenantId,
+                theme_id: stepData.theme_id,
+                custom_primary_color: stepData.custom_primary_color,
+                custom_logo_url: stepData.custom_logo_url,
+                computed_theme: stepData.computed_theme,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'property_id' })
+
+        if (error) throw error
         return { success: true }
 
     } else {

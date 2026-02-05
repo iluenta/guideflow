@@ -17,9 +17,12 @@ import { CheckInView } from '@/components/guide/CheckInView';
 import { EmergencyView } from '@/components/guide/EmergencyView';
 import { RecommendationsView } from '@/components/guide/RecommendationsView';
 import { HouseInfoView } from '@/components/guide/HouseInfoView';
+import { HamburgerMenu } from '@/components/guide/HamburgerMenu';
+import { AssistantHome } from '@/components/guide/AssistantHome';
 
 interface GuideViewContainerProps {
     property: any;
+    branding?: any;
     sections: any[];
     manuals: any[];
     recommendations: any[];
@@ -27,10 +30,16 @@ interface GuideViewContainerProps {
     context?: any[];
 }
 
-export function GuideViewContainer({ property, sections, manuals, recommendations, faqs = [], context }: GuideViewContainerProps) {
-    const [currentPage, setCurrentPage] = useState<string | null>(null);
+export function GuideViewContainer({ property, branding, sections, manuals, recommendations, faqs = [], context }: GuideViewContainerProps) {
+    const [currentPage, setCurrentPage] = useState<string | null>('assistant');
     const [activeTab, setActiveTab] = useState('home');
     const [language, setLanguage] = useState<string>('es');
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    // DEBUG: Log state changes
+    useEffect(() => {
+        console.log('GuideView: currentPage changed to:', currentPage);
+    }, [currentPage]);
 
     const welcomeData = context?.find(c => c.category === 'welcome')?.content;
 
@@ -46,25 +55,29 @@ export function GuideViewContainer({ property, sections, manuals, recommendation
     }, []);
 
     const handleNavigate = (pageId: string) => {
+        console.log('GuideView: Navigating to:', pageId);
         setCurrentPage(pageId);
         // Map pageIds to tabs if possible
         if (pageId === 'eat' || pageId === 'food') setActiveTab('eat');
         else if (pageId === 'do' || pageId === 'things-do' || pageId === 'leisure') setActiveTab('leisure');
-        else if (pageId === 'shopping' || pageId === 'compras') setActiveTab('leisure'); // Or a new shopping tab if desired
+        else if (pageId === 'shopping' || pageId === 'compras') setActiveTab('leisure');
         else if (pageId === 'manuals' || pageId === 'info' || pageId === 'house-info') setActiveTab('info');
+        else if (pageId === 'profile') setActiveTab('profile');
+        else if (pageId === 'assistant' || pageId === null) setActiveTab('home');
         else setActiveTab('home');
 
         window.scrollTo(0, 0);
     };
 
     const handleBack = () => {
-        setCurrentPage(null);
+        setCurrentPage('assistant');
         setActiveTab('home');
     };
 
     const handleTabChange = (tabId: string) => {
+        console.log('GuideView: Tab changed to:', tabId);
         setActiveTab(tabId);
-        if (tabId === 'home') setCurrentPage(null);
+        if (tabId === 'home') setCurrentPage('assistant');
         else if (tabId === 'eat') setCurrentPage('eat');
         else if (tabId === 'leisure') setCurrentPage('do');
         else if (tabId === 'info') setCurrentPage('manuals');
@@ -73,14 +86,36 @@ export function GuideViewContainer({ property, sections, manuals, recommendation
     };
 
     const handleChatOpen = () => {
-        // Dispatch custom event to open chat (matches original behavior)
         window.dispatchEvent(new CustomEvent('open-guest-chat'));
     };
 
+    const handleChatWithQuery = (query: string) => {
+        if (!query) {
+            window.dispatchEvent(new CustomEvent('open-guest-chat'));
+        } else {
+            window.dispatchEvent(new CustomEvent('open-guest-chat-with-query', { detail: { query } }));
+        }
+    };
+
     const renderCurrentView = () => {
+        // Explicitly handle assistant home state
+        if (currentPage === 'assistant' || currentPage === null || currentPage === '') {
+            return (
+                <AssistantHome
+                    propertyName={property.name}
+                    onExplore={() => {
+                        console.log('GuideView: AssistantHome -> onExplore called');
+                        setCurrentPage('explore');
+                    }}
+                    onChatQuery={handleChatWithQuery}
+                    currentLanguage={language}
+                />
+            );
+        }
+
         switch (currentPage) {
             case 'wifi':
-                const techData = context?.find(c => c.category === 'tech')?.content || {};
+                const techData = context?.find((c: any) => c.category === 'tech')?.content || {};
                 return (
                     <WifiView
                         onBack={handleBack}
@@ -92,8 +127,8 @@ export function GuideViewContainer({ property, sections, manuals, recommendation
                     />
                 );
             case 'rules':
-                const rulesData = context?.find(c => c.category === 'rules')?.content || {};
-                const rulesCheckinData = context?.find(c => c.category === 'checkin')?.content || {};
+                const rulesData = context?.find((c: any) => c.category === 'rules')?.content || {};
+                const rulesCheckinData = context?.find((c: any) => c.category === 'checkin')?.content || {};
                 const rulesSection = sections.find(s => s.title.toLowerCase().includes('normas') || s.title.toLowerCase().includes('reglas'));
                 return (
                     <RulesView
@@ -117,8 +152,8 @@ export function GuideViewContainer({ property, sections, manuals, recommendation
                 );
             case 'check-in':
             case 'checkin':
-                const checkinData = context?.find(c => c.category === 'checkin')?.content || {};
-                const accessData = context?.find(c => c.category === 'access')?.content;
+                const checkinData = context?.find((c: any) => c.category === 'checkin')?.content || {};
+                const accessData = context?.find((c: any) => c.category === 'access')?.content;
                 return (
                     <CheckInView
                         onBack={handleBack}
@@ -129,7 +164,7 @@ export function GuideViewContainer({ property, sections, manuals, recommendation
                     />
                 );
             case 'emergency':
-                const contactsData = context?.find(c => c.category === 'contacts')?.content || {};
+                const contactsData = context?.find((c: any) => c.category === 'contacts')?.content || {};
                 return (
                     <EmergencyView
                         onBack={handleBack}
@@ -176,18 +211,32 @@ export function GuideViewContainer({ property, sections, manuals, recommendation
                         currentLanguage={language}
                     />
                 );
-            default:
+            case 'explore':
                 return (
-                    <div className="min-h-screen bg-beige">
-                        {/* Prototype Header Design (Screenshot 2) */}
-                        <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-md border-b border-border/10 px-4 h-16 flex items-center justify-between">
-                            <button className="p-2 -ml-2 text-navy/70 hover:bg-navy/5 rounded-full transition-colors active:scale-90">
+                    <div className="min-h-screen">
+                        <header className="sticky top-0 z-50 w-full bg-surface/95 backdrop-blur-md border-b border-border/10 px-4 h-16 flex items-center justify-between">
+                            <button
+                                onClick={() => setIsMenuOpen(true)}
+                                className="p-2 -ml-2 text-navy/70 hover:bg-navy/5 rounded-full transition-colors active:scale-90"
+                            >
                                 <Menu className="w-6 h-6" />
                             </button>
 
-                            <h1 className="absolute left-1/2 -translate-x-1/2 font-sans text-base font-bold text-navy tracking-tight max-w-[60%] truncate uppercase">
-                                {property.name}
-                            </h1>
+                            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 max-w-[60%]">
+                                {branding?.custom_logo_url ? (
+                                    <div className="h-10 flex items-center">
+                                        <img
+                                            src={branding.custom_logo_url}
+                                            alt={property.name}
+                                            className="h-full w-auto max-w-[120px] object-contain"
+                                        />
+                                    </div>
+                                ) : (
+                                    <h1 className="font-sans text-base font-bold text-navy tracking-tight truncate uppercase">
+                                        {property.name}
+                                    </h1>
+                                )}
+                            </div>
 
                             <div className="flex items-center">
                                 <LanguageSelector
@@ -197,12 +246,10 @@ export function GuideViewContainer({ property, sections, manuals, recommendation
                             </div>
                         </header>
 
-                        {/* Main Content Area */}
                         <div className="relative z-10 bg-beige">
                             <MenuGrid onNavigate={handleNavigate} welcomeData={welcomeData} imageUrl={property.main_image_url} currentLanguage={language} />
                         </div>
 
-                        {/* Footer Text */}
                         <div className="px-6 pb-24 text-center opacity-30">
                             <p className="text-[9px] text-navy uppercase font-black tracking-[0.4em]">
                                 Powered by GuideFlow Premium
@@ -210,14 +257,33 @@ export function GuideViewContainer({ property, sections, manuals, recommendation
                         </div>
                     </div>
                 );
+            default:
+                // Fallback for any other state
+                return (
+                    <AssistantHome
+                        propertyName={property.name}
+                        onExplore={() => setCurrentPage('explore')}
+                        onChatQuery={handleChatWithQuery}
+                        currentLanguage={language}
+                    />
+                );
         }
     };
 
     return (
-        <main className="w-full max-w-md mx-auto min-h-screen bg-beige shadow-2xl relative overflow-x-hidden">
-            <div>
+        <div className="w-full max-w-md mx-auto min-h-screen bg-background shadow-2xl relative">
+            <HamburgerMenu
+                isOpen={isMenuOpen}
+                onClose={() => setIsMenuOpen(false)}
+                onNavigate={handleNavigate}
+                currentLanguage={language}
+                propertyName={property.name}
+                propertyId={property.id}
+            />
+
+            <main className="overflow-x-hidden pb-24">
                 {renderCurrentView()}
-            </div>
+            </main>
 
             <BottomNav
                 activeTab={activeTab}
@@ -228,9 +294,11 @@ export function GuideViewContainer({ property, sections, manuals, recommendation
             <GuestChat
                 propertyId={property.id}
                 propertyName={property.name}
+                currentLanguage={language}
             />
 
-            <ChatOnboarding onOpenChat={handleChatOpen} />
-        </main>
+            {/* Onboarding removed for Fase 10 flow to reduce friction */}
+            {/* <ChatOnboarding onOpenChat={handleChatOpen} /> */}
+        </div>
     );
 }

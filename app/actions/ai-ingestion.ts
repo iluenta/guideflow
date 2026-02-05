@@ -6,6 +6,7 @@ import axios from 'axios'
 import { geminiREST, analyzeImageWithGemini } from '@/lib/ai/gemini-rest'
 import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/openai'
 import { syncPropertyApplianceList } from './properties'
+import { syncWizardDataToRAG } from './rag-sync'
 import { searchBrave, formatBraveResults } from '@/lib/ai/brave'
 
 /**
@@ -463,6 +464,11 @@ export async function ingestPropertyData(propertyId: string, url: string, option
     }))
 
     await supabase.from('guide_sections').insert(sectionsToInsert)
+
+    // Sincronizar RAG con los datos ingeridos
+    await syncWizardDataToRAG(propertyId, tenant_id, 'property', propertyUpdate)
+    await syncWizardDataToRAG(propertyId, tenant_id, 'welcome', propertyUpdate.theme_config)
+
     revalidatePath(`/dashboard/properties/${propertyId}`)
     return { success: true }
 }

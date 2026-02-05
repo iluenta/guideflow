@@ -19,6 +19,7 @@
     "security:report": "node scripts/validate-security-report.js"
   },
   "dependencies": {
+    "@ctrl/tinycolor": "^4.2.0",
     "@google/generative-ai": "^0.24.1",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^3.10.0",

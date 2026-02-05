@@ -90,20 +90,52 @@ export async function POST(req: Request) {
 
         if (rpcError) console.error('[RPC ERROR]', rpcError);
 
-        // 3. Obtener contexto estructurado (Contexto y FAQs directamente)
-        const [{ data: propertyContext }, { data: propertyFaqs }] = await Promise.all([
+        // 3. Obtener contexto estructurado TOTAL (Propiedad, Branding, Contexto, FAQs y Recomendaciones)
+        const [
+            { data: propertyInfo },
+            { data: propertyBranding },
+            { data: propertyContext },
+            { data: propertyFaqs },
+            { data: propertyRecs }
+        ] = await Promise.all([
+            supabase.from('properties').select('*').eq('id', propertyId).single(),
+            supabase.from('property_branding').select('*').eq('property_id', propertyId).single(),
             supabase.from('property_context').select('category, subcategory, content').eq('property_id', propertyId),
-            supabase.from('property_faqs').select('question, answer').eq('property_id', propertyId)
+            supabase.from('property_faqs').select('question, answer').eq('property_id', propertyId),
+            supabase.from('property_recommendations').select('name, type, description, distance, personal_note, time').eq('property_id', propertyId)
         ]);
 
         // 4. Formatear contexto enriquecido para el modelo
         const formattedContext = [
-            ...(relevantChunks || []).map((c: any) => `[GUÍA TÉCNICA - ${c.metadata?.appliance?.toUpperCase() || 'GENERAL'}]: ${c.content}`),
+            // A. Información base de la propiedad
+            ...(propertyInfo ? [`[ESTADÍSTICAS Y UBICACIÓN DEL ALOJAMIENTO]:
+Nombre: ${propertyInfo.name}
+Descripción: ${propertyInfo.description || ''}
+Dirección: ${propertyInfo.full_address || propertyInfo.location || ''}
+Ubicación: ${propertyInfo.city || ''}, ${propertyInfo.country || ''}
+Capacidad: ${propertyInfo.guests} personas
+Distribución: ${propertyInfo.beds} habitaciones, ${propertyInfo.baths} baños`] : []),
+
+            // B. Host y Branding
+            ...(propertyBranding ? [`[INFORMACIÓN DEL ANFITRIÓN]:
+Anfitrión: ${(propertyBranding as any).host_name || 'El equipo de gestión'}
+Mensaje de bienvenida: ${(propertyBranding as any).welcome_message || ''}`] : []),
+
+            // C. RAG (Fragmentos vectoriales más relevantes: Manuales, etc.)
+            ...(relevantChunks || []).map((c: any) => {
+                const type = c.source_type === 'manual' ? 'GUÍA TÉCNICA' :
+                    c.source_type === 'faq' ? 'PREGUNTA FRECUENTE' :
+                        c.source_type === 'recommendation' ? 'RECOMENDACIÓN' : 'INFO';
+                const label = c.metadata?.appliance ? `${type} - ${c.metadata.appliance.toUpperCase()}` : type;
+                return `[${label}]: ${c.content}`;
+            }),
+
+            // D. Contexto Estructurado (Normas, Acceso, WiFi, etc.)
             ...(propertyContext || []).map((c: any) => {
                 const label = `INFO ${c.category.toUpperCase()}${c.subcategory ? ' - ' + c.subcategory.toUpperCase() : ''}`;
                 let content = typeof c.content === 'string' ? c.content : JSON.stringify(c.content);
 
-                // Si es contacto, resaltar el preferente para el modelo
+                // Tratamiento especial para objetos de contexto conocidos
                 if (c.category === 'contacts' && typeof c.content === 'object' && c.content !== null) {
                     const ctx = c.content as any;
                     if (ctx.preferred_contact_id) {
@@ -120,15 +152,26 @@ export async function POST(req: Request) {
 
                 return `[${label}]: ${content}`;
             }),
+
+            // E. Recomendaciones Locales
+            ...(propertyRecs || []).map((r: any) =>
+                `[RECOMENDACIÓN]: ${r.name}\nTipo: ${r.type}\nDescripción: ${r.description || ''}\nDistancia/Tiempo: ${r.distance || ''} (${r.time || ''})\nNota del anfitrión: ${r.personal_note || ''}`
+            ),
+
+            // F. Preguntas Frecuentes
             ...(propertyFaqs || []).map((f: any) => `[PREGUNTA FRECUENTE]: ${f.question}\n[RESPUESTA]: ${f.answer}`)
         ].join('\n\n---\n\n');
+
+        // G. Tiempo Real (Para evitar alucinaciones temporales)
+        const now = new Date();
+        const currentTimeContext = `[FECHA Y HORA ACTUAL DEL SISTEMA]: ${now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} a las ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
 
         const systemInstruction = `Eres HostBot, el asistente experto de esta propiedad. Tu misión es resolver dudas de los huéspedes usando el CONTEXTO proporcionado.
 
 IMPORTANTE: Estás hablando con un HUÉSPED en un alojamiento que NO es suyo. 
 
 REGLAS DE ORO:
-1. **Verdad Absoluta**: Usa los bloques [GUÍA TÉCNICA], [INFO] y [PREGUNTA FRECUENTE] como base.
+1. **Verdad Absoluta**: Usa los bloques [GUÍA TÉCNICA], [INFO], [RECOMENDACIÓN] y [PREGUNTA FRECUENTE] como base.
 2. **TERMINOLOGÍA PROHIBIDA (CRÍTICO)**: 
     - NUNCA uses las palabras "manual", "manuales" o "documentación técnica" al hablar con el huésped. 
     - En su lugar usa: "Guía del alojamiento", "Normas de la casa", "Instrucciones", "Información de la propiedad" o simplemente "Según la información disponible".
@@ -139,8 +182,15 @@ REGLAS DE ORO:
 4. **Filtro del Huésped**: NO des instrucciones de reparación técnica. Si es algo complejo, recomienda contactar con el anfitrión.
 5. **Soluciones de Usuario**: Céntrate solo en lo que el huésped puede manipular: botones, mandos, termostatos.
 6. **Prioridad Eficiencia**: Recomienda siempre el modo "ECO" o más sostenible si aparece en la información.
-7. **Prioridad de Contacto (NUEVO)**: Si se solicita información de contacto, busca en el bloque [INFO CONTACTS] el campo 'preferred_contact_id'. Presenta SIEMPRE ese contacto en primer lugar y destácalo como el contacto principal de confianza del anfitrión.
-8. **Tono**: Amable, premium, servicial y directo. Usa Markdown.
+7. **Condicionalidad de Contacto (IMPORTANTE)**: SOLO proporciona o sugiere información de contacto en dos casos:
+    - Si el huésped lo solicita EXPLÍCITAMENTE (ej. "¿Cómo contacto al dueño?", "¿Cuál es el número de soporte?").
+    - Si detectas un problema que NO puedes resolver con la información disponible (ej. avería grave, emergencia, objeto perdido).
+    - En consultas rutinarias (recomendaciones, WiFi, normas), NO incluyas contactos al final de la respuesta.
+8. **Temporalidad (CRÍTICO)**: Usa la información de [FECHA Y HORA ACTUAL DEL SISTEMA] para responder con precisión preguntas sobre horarios (check-out, apertura, ruido). NUNCA digas una hora diferente a la proporcionada en ese bloque.
+9. **Tono**: Amable, premium, servicial y directo. Usa Markdown.
+
+CONTEXTO TEMPORAL:
+${currentTimeContext}
 
 CONTEXTO ACTUAL:
 ${formattedContext}`;

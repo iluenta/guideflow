@@ -83,13 +83,13 @@ export function LocalRecommendations({
 
     const openEdit = (rec?: Recommendation) => {
         setEditingRec(rec || {
-            name: '',
-            category: selectedCategory === 'todos' ? 'restaurantes' : selectedCategory,
-            distance: '',
-            time: '',
+            name: 'Restaurante El Mirador',
+            category: 'restaurantes',
+            distance: '500m',
+            time: '10 min',
             price_range: '€€',
-            description: '',
-            personal_note: ''
+            description: 'Ubicación privilegiada con vistas espectaculares y cocina tradicional.',
+            personal_note: 'Pide la tarta de queso, es increíble.'
         })
         setIsDialogOpen(true)
     }
@@ -105,19 +105,19 @@ export function LocalRecommendations({
                 <Button
                     onClick={() => onAISuggest(selectedCategory)}
                     disabled={aiLoading}
-                    className="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 shadow-xl shadow-slate-200 py-4 px-6 rounded-full transition-all hover:scale-105 active:scale-95 group relative overflow-hidden"
+                    variant="outline"
+                    className="w-full sm:w-auto bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 rounded-full h-12 font-bold gap-2"
                 >
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                     {aiLoading ? (
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            <span className="text-xs font-bold uppercase tracking-widest text-white">Generando...</span>
-                        </div>
+                        <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Generando...</span>
+                        </>
                     ) : (
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-purple-400 group-hover:text-purple-200 transition-colors" />
-                            <span className="text-xs font-bold uppercase tracking-widest text-white">Sugerir con IA</span>
-                        </div>
+                        <>
+                            <Sparkles className="w-4 h-4 fill-current" />
+                            <span>Sugerir con IA</span>
+                        </>
                     )}
                 </Button>
             </div>

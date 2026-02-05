@@ -53,7 +53,7 @@ export function RulesView({
     ];
 
     return (
-        <div className="min-h-screen bg-beige font-sans pb-24">
+        <div className="min-h-screen bg-background font-sans pb-24">
             <PageHeader
                 title={currentLanguage === 'es' ? 'Normas de la casa' : 'House Rules'}
                 onBack={onBack}
@@ -68,7 +68,7 @@ export function RulesView({
                         rules.map((rule: any, idx: number) => (
                             <div
                                 key={idx}
-                                className="bg-white rounded-2xl p-5 flex items-center gap-4 shadow-sm border border-navy/5 animate-in fade-in slide-in-from-bottom-2 duration-500"
+                                className="bg-surface rounded-2xl p-5 flex items-center gap-4 shadow-sm border border-primary/5 animate-in fade-in slide-in-from-bottom-2 duration-500"
                                 style={{ animationDelay: `${idx * 100}ms` }}
                             >
                                 <div className={cn(
@@ -77,26 +77,26 @@ export function RulesView({
                                 )}>
                                     {rule.type === 'allowed' ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
                                 </div>
-                                <span className="text-navy/80 font-semibold text-sm leading-tight">
+                                <span className="text-text-primary/80 font-semibold text-sm leading-tight">
                                     {rule.text}
                                 </span>
                             </div>
                         ))
                     ) : (
                         !oldRules && (
-                            <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-navy/5">
-                                <p className="text-navy/40 text-sm italic">No hay normas específicas definidas.</p>
+                            <div className="bg-surface rounded-2xl p-8 text-center shadow-sm border border-primary/5">
+                                <p className="text-text-muted text-sm italic">No hay normas específicas definidas.</p>
                             </div>
                         )
                     )}
 
                     {oldRules && (
-                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-navy/5 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="bg-surface rounded-2xl p-6 shadow-sm border border-primary/5 animate-in fade-in slide-in-from-bottom-2 duration-500">
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="h-1.5 w-6 bg-navy/20 rounded-full" />
-                                <h4 className="text-xs font-bold text-navy/40 uppercase tracking-widest">Información Adicional</h4>
+                                <div className="h-1.5 w-6 bg-primary/20 rounded-full" />
+                                <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest">Información Adicional</h4>
                             </div>
-                            <div className="prose prose-slate prose-sm max-w-none text-navy/70 leading-relaxed font-medium">
+                            <div className="prose prose-slate prose-sm max-w-none text-text-secondary leading-relaxed font-medium">
                                 <p className="whitespace-pre-wrap">{localizedOldRules}</p>
                             </div>
                         </div>
@@ -105,31 +105,31 @@ export function RulesView({
 
                 {/* Schedules Section */}
                 <div className="space-y-4 pt-4">
-                    <h3 className="font-serif text-xl font-bold text-navy px-1">
+                    <h3 className="font-serif text-xl font-bold text-primary px-1">
                         {currentLanguage === 'es' ? 'Horarios' : 'Schedules'}
                     </h3>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-navy/5 overflow-hidden">
+                    <div className="bg-surface rounded-2xl shadow-sm border border-primary/5 overflow-hidden">
                         {schedules.map((item, idx) => (
                             <div
                                 key={idx}
                                 className={cn(
                                     "flex items-center justify-between p-5",
-                                    idx !== schedules.length - 1 && "border-b border-navy/5"
+                                    idx !== schedules.length - 1 && "border-b border-primary/5"
                                 )}
                             >
                                 <div className="flex items-center gap-3">
-                                    <item.icon className="w-4 h-4 text-navy/40" />
-                                    <span className="text-navy/60 font-medium text-sm">{item.label}</span>
+                                    <item.icon className="w-4 h-4 text-text-muted" />
+                                    <span className="text-text-secondary font-medium text-sm">{item.label}</span>
                                 </div>
-                                <span className="text-navy font-bold text-sm">{item.value}</span>
+                                <span className="text-text-primary font-bold text-sm">{item.value}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
                 <div className="pt-8 text-center">
-                    <p className="text-navy/50 font-medium italic text-sm">
+                    <p className="text-text-muted font-medium italic text-sm">
                         {localizedCaution}
                     </p>
                 </div>

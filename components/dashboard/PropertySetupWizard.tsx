@@ -16,7 +16,7 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { saveWizardStep } from '@/app/actions/wizard'
-import { getUploadUrl } from '@/app/actions/properties'
+import { getUploadUrl, getBrandingUploadUrl } from '@/app/actions/properties'
 import { useRef } from 'react'
 import { geocodeAddress, GeocodingResult } from '@/lib/geocoding'
 import { validateLocation, ValidationResult } from '@/lib/geocoding-validation'
@@ -25,6 +25,9 @@ import TransportInfo from './TransportInfo'
 import { VisualScanner } from '@/components/guides/VisualScanner'
 import { LocalRecommendations } from '@/components/guides/LocalRecommendations'
 import { Recommendation } from '@/components/guides/RecommendationCard'
+import { ThemePreviewCard } from './ThemePreviewCard'
+import { PRESET_THEMES, Theme } from '@/lib/themes'
+import { harmonizeThemeFromPrimary } from '@/lib/color-harmonizer'
 
 interface PropertySetupWizardProps {
     propertyId?: string // Opcional para creación
@@ -60,7 +63,13 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         tech: { wifi_ssid: '', wifi_password: '', router_notes: '' },
         inventory: { bathroom: [], bedroom: [], kitchen: [], cleaning: [] },
         dining: [],
-        faqs: []
+        faqs: [],
+        branding: {
+            theme_id: PRESET_THEMES[0].id,
+            custom_primary_color: '',
+            custom_logo_url: '',
+            computed_theme: PRESET_THEMES[0]
+        }
     })
     const [completedSteps, setCompletedSteps] = useState<string[]>([])
     const { toast } = useToast()
@@ -140,7 +149,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
     }, [propertyId, property?.inventory_status])
 
     // Calcular progreso
-    const steps = ['property', 'access', 'welcome', 'contacts', 'checkin', 'rules', 'tech', 'visual-scanner', 'dining', 'faqs']
+    const steps = ['property', 'appearance', 'access', 'welcome', 'contacts', 'checkin', 'rules', 'tech', 'visual-scanner', 'dining', 'faqs']
     const progress = ((steps.indexOf(activeTab) + 1) / steps.length) * 100
 
     // Sincronizar activeTab con la URL
@@ -272,6 +281,27 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                     return newData
                 })
             }
+            const { data: branding, error: brandingError } = await supabase
+                .from('property_branding')
+                .select('*')
+                .eq('property_id', propertyId)
+                .maybeSingle()
+
+            if (brandingError) {
+                console.error('[LOAD] Branding fetch error:', brandingError)
+            } else if (branding) {
+                setData((prev: any) => ({
+                    ...prev,
+                    branding: {
+                        theme_id: branding.theme_id,
+                        custom_primary_color: branding.custom_primary_color || '',
+                        custom_logo_url: branding.custom_logo_url || '',
+                        computed_theme: branding.computed_theme || prev.branding.computed_theme
+                    }
+                }))
+                completed.push('appearance')
+            }
+
             setCompletedSteps([...new Set(completed)])
         }
         loadData()
@@ -387,7 +417,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         };
 
         console.log('[WIZARD] Saving sanitized access data:', sanitizedData);
-        await saveStep('access', sanitizedData);
+        await saveStep('access', sanitizedData, 'welcome');
     };
 
     const saveStep = async (category: string, stepData: any, forcedNextTab?: string) => {
@@ -449,7 +479,8 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                 }
 
                 toast({ title: 'Guardado', description: `${category} actualizado correctamente.` })
-                setCompletedSteps(prev => Array.from(new Set([...prev, category])))
+                const stepKey = category === 'branding' ? 'appearance' : category
+                setCompletedSteps(prev => Array.from(new Set([...prev, stepKey])))
 
                 if (category === 'faqs') {
                     router.push('/dashboard/properties')
@@ -591,6 +622,15 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                             )}
                         >
                             {completedSteps.includes('property') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <HomeIcon className="w-3 h-3 mr-1" />} Propiedad
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="appearance"
+                            className={cn(
+                                "flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all text-[9px] sm:text-[10px] py-1.5 sm:py-2 font-semibold uppercase tracking-wide",
+                                completedSteps.includes('appearance') && "bg-emerald-50/50 text-emerald-700 data-[state=active]:text-primary"
+                            )}
+                        >
+                            {completedSteps.includes('appearance') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <Sparkles className="w-3 h-3 mr-1" />} Apariencia
                         </TabsTrigger>
                         <TabsTrigger
                             value="access"
@@ -810,13 +850,6 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                                 />
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label>Color de marca</Label>
-                                            <div className="flex gap-3">
-                                                <Input type="color" className="p-1 h-11 w-20" value={data.property?.primary_color || '#316263'} onChange={e => setData({ ...data, property: { ...data.property, primary_color: e.target.value } })} />
-                                                <Input value={data.property?.primary_color || '#316263'} className="h-11 font-mono" onChange={e => setData({ ...data, property: { ...data.property, primary_color: e.target.value } })} />
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
@@ -831,7 +864,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                             </CardContent>
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
                                 <Button variant="ghost" onClick={() => router.push('/dashboard/properties')}><ChevronLeft className="mr-2" /> Salir</Button>
-                                <Button onClick={() => saveStep('property', data.property)} disabled={loading}>
+                                <Button onClick={() => saveStep('property', data.property, 'appearance')} disabled={loading}>
                                     {loading ? 'Guardando...' : <><Save className="w-4 h-4 mr-2" /> Guardar y Continuar</>}
                                 </Button>
                             </CardFooter>
@@ -967,8 +1000,8 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                 </div>
                             </CardContent>
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
-                                <Button variant="ghost" onClick={() => handleTabChange('welcome')}><ChevronLeft className="mr-2" /> Anterior</Button>
-                                <Button onClick={() => saveStep('checkin', data.checkin)} disabled={loading}>
+                                <Button variant="ghost" onClick={() => handleTabChange('contacts')}><ChevronLeft className="mr-2" /> Anterior</Button>
+                                <Button onClick={() => saveStep('checkin', data.checkin, 'rules')} disabled={loading}>
                                     {loading ? 'Guardando...' : <><Save className="w-4 h-4 mr-2" /> Guardar y Continuar</>}
                                 </Button>
                             </CardFooter>
@@ -1331,9 +1364,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                             </CardContent>
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
                                 <Button variant="ghost" onClick={() => handleTabChange('welcome')}><ChevronLeft className="mr-2" /> Anterior</Button>
-                                <Button onClick={() => saveStep('contacts', data.contacts, 'checkin')} disabled={loading}>
-                                    {loading ? 'Guardando...' : <><Save className="w-4 h-4 mr-2" /> Guardar y Continuar</>}
-                                </Button>
+                                <Button onClick={() => saveStep('contacts', data.contacts, 'checkin')} disabled={loading}>Guardar y Continuar <ChevronRight className="ml-2" /></Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
@@ -1378,7 +1409,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                             </CardContent>
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
                                 <Button variant="ghost" onClick={() => handleTabChange('access')}><ChevronLeft className="mr-2" /> Anterior</Button>
-                                <Button onClick={() => saveStep('welcome', data.welcome)} disabled={loading}>Guardar y Continuar <ChevronRight className="ml-2" /></Button>
+                                <Button onClick={() => saveStep('welcome', data.welcome, 'contacts')} disabled={loading}>Guardar y Continuar <ChevronRight className="ml-2" /></Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
@@ -1516,7 +1547,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                 />
                             </CardContent>
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
-                                <Button variant="ghost" onClick={() => handleTabChange('property')}><ChevronLeft className="mr-2" /> Anterior</Button>
+                                <Button variant="ghost" onClick={() => handleTabChange('appearance')}><ChevronLeft className="mr-2" /> Anterior</Button>
                                 <Button onClick={handleSaveAccess} disabled={loading}>
                                     {loading ? 'Guardando...' : <><Save className="w-4 h-4 mr-2" /> Guardar y Continuar</>}
                                 </Button>
@@ -1657,7 +1688,183 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                             </CardContent>
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
                                 <Button variant="ghost" onClick={() => handleTabChange('checkin')}><ChevronLeft className="mr-2" /> Anterior</Button>
-                                <Button onClick={() => saveStep('rules', data.rules)} disabled={loading}>
+                                <Button onClick={() => saveStep('rules', data.rules, 'tech')} disabled={loading}>
+                                    {loading ? 'Guardando...' : <><Save className="w-4 h-4 mr-2" /> Guardar y Continuar</>}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </TabsContent>
+
+                    {/* --- APARIENCIA --- */}
+                    <TabsContent value="appearance" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
+                            <CardHeader className="bg-slate-50 border-b py-3 px-4">
+                                <CardTitle className="text-base">Apariencia de tu Guía</CardTitle>
+                                <CardDescription className="text-xs">Elige un tema y personaliza los colores de tu guía mágica.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-6 space-y-8">
+                                <div className="space-y-4">
+                                    <h3 className="px-1 text-[10px] font-black text-navy/30 tracking-[0.2em] uppercase">
+                                        🎨 ELIGE UN TEMA BASE
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {PRESET_THEMES.map((theme) => (
+                                            <ThemePreviewCard
+                                                key={theme.id}
+                                                theme={theme}
+                                                logoUrl={data.branding?.custom_logo_url}
+                                                propertyName={data.property?.name}
+                                                isSelected={data.branding?.theme_id === theme.id}
+                                                onSelect={() => {
+                                                    setData((prev: any) => ({
+                                                        ...prev,
+                                                        branding: {
+                                                            ...prev.branding,
+                                                            theme_id: theme.id,
+                                                            computed_theme: prev.branding?.custom_primary_color
+                                                                ? harmonizeThemeFromPrimary(theme, prev.branding.custom_primary_color)
+                                                                : theme
+                                                        }
+                                                    }))
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t border-navy/5">
+                                    <div className="flex flex-col md:flex-row gap-8">
+                                        <div className="flex-1 space-y-4">
+                                            <h3 className="px-1 text-[10px] font-black text-navy/30 tracking-[0.2em] uppercase">
+                                                🎨 COLOR DE MARCA (OPCIONAL)
+                                            </h3>
+                                            <div className="space-y-3">
+                                                <Label className="text-xs font-bold text-navy">Color Principal</Label>
+                                                <div className="flex items-center gap-4">
+                                                    <div
+                                                        className="h-10 w-10 rounded-xl shadow-inner border border-navy/5 shrink-0"
+                                                        style={{ backgroundColor: data.branding?.custom_primary_color || data.branding?.computed_theme?.colors.primary }}
+                                                    />
+                                                    <Input
+                                                        type="color"
+                                                        className="w-16 h-10 p-1 rounded-lg cursor-pointer bg-white border-navy/10"
+                                                        value={data.branding?.custom_primary_color || data.branding?.computed_theme?.colors.primary || '#000000'}
+                                                        onChange={(e) => {
+                                                            const color = e.target.value
+                                                            const baseTheme = PRESET_THEMES.find(t => t.id === data.branding.theme_id) || PRESET_THEMES[0]
+                                                            const harmonized = harmonizeThemeFromPrimary(baseTheme, color)
+                                                            setData((prev: any) => ({
+                                                                ...prev,
+                                                                branding: {
+                                                                    ...prev.branding,
+                                                                    custom_primary_color: color,
+                                                                    computed_theme: harmonized
+                                                                }
+                                                            }))
+                                                        }}
+                                                    />
+                                                    <Input
+                                                        type="text"
+                                                        className="flex-1 h-10 font-mono text-xs"
+                                                        value={data.branding?.custom_primary_color || data.branding?.computed_theme?.colors.primary}
+                                                        onChange={(e) => {
+                                                            const color = e.target.value
+                                                            if (/^#[0-9A-F]{6}$/i.test(color)) {
+                                                                const baseTheme = PRESET_THEMES.find(t => t.id === data.branding.theme_id) || PRESET_THEMES[0]
+                                                                const harmonized = harmonizeThemeFromPrimary(baseTheme, color)
+                                                                setData((prev: any) => ({
+                                                                    ...prev,
+                                                                    branding: {
+                                                                        ...prev.branding,
+                                                                        custom_primary_color: color,
+                                                                        computed_theme: harmonized
+                                                                    }
+                                                                }))
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                                <p className="text-[10px] text-navy/40 italic">
+                                                    * El sistema ajustará automáticamente los colores secundarios para mantener la armonía visual.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 space-y-4">
+                                            <h3 className="px-1 text-[10px] font-black text-navy/30 tracking-[0.2em] uppercase">
+                                                🖼️ LOGO DE LA PROPIEDAD
+                                            </h3>
+                                            <div className="space-y-3">
+                                                <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-navy/10 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-colors group">
+                                                    {data.branding?.custom_logo_url ? (
+                                                        <div className="relative group">
+                                                            <img
+                                                                src={data.branding.custom_logo_url}
+                                                                alt="Logo"
+                                                                className="max-h-24 object-contain"
+                                                            />
+                                                            <button
+                                                                onClick={() => setData((prev: any) => ({ ...prev, branding: { ...prev.branding, custom_logo_url: '' } }))}
+                                                                className="absolute -top-2 -right-2 p-1 bg-white shadow-md rounded-full text-navy/40 hover:text-red-500"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center">
+                                                            <Upload className="w-8 h-8 text-navy/20 mx-auto mb-2 group-hover:text-primary transition-colors" />
+                                                            <p className="text-xs font-bold text-navy">Sube tu logotipo</p>
+                                                            <p className="text-[10px] text-navy/30">PNG o SVG ligero (Max 500KB)</p>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="mt-4 h-8 text-[10px] font-bold uppercase tracking-wider"
+                                                                onClick={() => {
+                                                                    const input = document.createElement('input');
+                                                                    input.type = 'file';
+                                                                    input.accept = 'image/*';
+                                                                    input.onchange = async (e) => {
+                                                                        const file = (e.target as HTMLInputElement).files?.[0];
+                                                                        if (file) {
+                                                                            // Implement logo upload logic similar to handleImageUpload
+                                                                            try {
+                                                                                setUploading(true);
+                                                                                const { uploadUrl, publicUrl } = await getBrandingUploadUrl(file.name, file.type);
+                                                                                const response = await fetch(uploadUrl, {
+                                                                                    method: 'PUT',
+                                                                                    body: file,
+                                                                                    headers: { 'Content-Type': file.type },
+                                                                                });
+                                                                                if (!response.ok) throw new Error('Error al subir el logo');
+                                                                                setData((prev: any) => ({
+                                                                                    ...prev,
+                                                                                    branding: { ...prev.branding, custom_logo_url: publicUrl }
+                                                                                }));
+                                                                                toast({ title: 'Logo subido', description: 'Tu logotipo se ha guardado.' });
+                                                                            } catch (error) {
+                                                                                console.error('Logo upload error:', error);
+                                                                                toast({ title: 'Error', description: 'No se pudo subir el logo.', variant: 'destructive' });
+                                                                            } finally {
+                                                                                setUploading(false);
+                                                                            }
+                                                                        }
+                                                                    };
+                                                                    input.click();
+                                                                }}
+                                                            >
+                                                                Seleccionar Archivo
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                            <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
+                                <Button variant="ghost" onClick={() => handleTabChange('property')}><ChevronLeft className="mr-2" /> Anterior</Button>
+                                <Button onClick={() => saveStep('branding', data.branding, 'access')} disabled={loading}>
                                     {loading ? 'Guardando...' : <><Save className="w-4 h-4 mr-2" /> Guardar y Continuar</>}
                                 </Button>
                             </CardFooter>
@@ -1673,15 +1880,6 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                         <CardTitle className="text-base">WiFi y Tecnología</CardTitle>
                                         <CardDescription className="text-xs">Datos de conexión e instrucciones de dispositivos.</CardDescription>
                                     </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="bg-primary/5 border-primary/20 text-primary hover:bg-primary/10"
-                                        onClick={() => handleAIFill('tech')}
-                                        disabled={aiLoading === 'tech'}
-                                    >
-                                        {aiLoading === 'tech' ? 'Generando...' : <><Sparkles className="w-4 h-4 mr-2" /> Sugerir con IA</>}
-                                    </Button>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-4 space-y-4">
@@ -1717,8 +1915,8 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                 </div>
                             </CardContent>
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
-                                <Button variant="ghost" onClick={() => setActiveTab('rules')}><ChevronLeft className="mr-2" /> Anterior</Button>
-                                <Button onClick={() => saveStep('tech', data.tech)} disabled={loading}>Guardar y Continuar <ChevronRight className="ml-2" /></Button>
+                                <Button variant="ghost" onClick={() => handleTabChange('rules')}><ChevronLeft className="mr-2" /> Anterior</Button>
+                                <Button onClick={() => saveStep('tech', data.tech, 'visual-scanner')} disabled={loading}>Guardar y Continuar <ChevronRight className="ml-2" /></Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
@@ -1845,8 +2043,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                         </Card>
                     </TabsContent>
                 </Tabs>
-            )
-            }
-        </div >
+            )}
+        </div>
     )
 }

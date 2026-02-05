@@ -46,15 +46,48 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
         .select('*')
         .eq('property_id', property.id)
 
-    const primaryColor = property.theme_config?.primary_color || '#316263'
+    const { data: branding } = await supabase
+        .from('property_branding')
+        .select('*')
+        .eq('property_id', property.id)
+        .single()
+
+    const theme = branding?.computed_theme || {
+        colors: {
+            primary: property.theme_config?.primary_color || '#316263',
+            secondary: '#7c9a92',
+            accent: '#f59e0b',
+            background: '#F0EEE9',
+            surface: '#ffffff',
+            text: { primary: '#1a1a1a', secondary: '#4a4a4a', muted: '#8a8a8a' }
+        }
+    }
 
     return (
         <div
-            className="min-h-screen bg-beige font-sans selection:bg-navy/10"
-            style={{ '--primary': primaryColor, '--primary-foreground': '#F0EEE9' } as React.CSSProperties}
+            className="min-h-screen selection:bg-teal/10"
+            style={{
+                '--color-primary': theme.colors.primary,
+                '--color-primary-foreground': theme.colors.surface,
+                '--color-secondary': theme.colors.secondary,
+                '--color-accent': theme.colors.accent,
+                '--color-background': theme.colors.background,
+                '--color-surface': theme.colors.surface,
+                '--color-text-primary': theme.colors.text.primary,
+                '--color-text-secondary': theme.colors.text.secondary,
+                '--color-muted-foreground': theme.colors.text.muted,
+                '--color-teal': theme.colors.primary, // Legacy compatibility
+                '--color-ink': theme.colors.text.primary,
+                '--color-cloud': theme.colors.background,
+                '--color-beige': theme.colors.background,
+                backgroundColor: 'var(--color-background)',
+                color: 'var(--color-text-primary)',
+                fontFamily: theme.fonts?.body || 'system-ui, sans-serif'
+            } as React.CSSProperties}
         >
             <GuideViewContainer
                 property={property}
+                branding={branding}
                 sections={sections}
                 manuals={manuals}
                 recommendations={recommendations}
