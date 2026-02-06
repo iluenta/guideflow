@@ -38,7 +38,7 @@ export function ManualsView({
     const hasManuals = manuals.length > 0;
 
     return (
-        <div className="min-h-screen bg-beige font-sans pb-12">
+        <div className="min-h-screen bg-stone-50/50 pb-12 font-sans">
             <PageHeader
                 title={currentLanguage === 'es' ? "Guía de Uso" : "How-To Guide"}
                 onBack={onBack}
@@ -46,16 +46,13 @@ export function ManualsView({
                 onLanguageChange={onLanguageChange}
             />
 
-            <div className="p-6 space-y-10">
-                {/* How-To Guides Section (Phase 5 Image 2/3) */}
+            <div className="px-5 pb-10">
+                {/* How-To Guides Section */}
                 {hasFaqs && (
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-4 px-2">
-                            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate/40">
-                                {currentLanguage === 'es' ? "GUÍAS DE USO" : "HOW-TO GUIDES"}
-                            </h2>
-                            <div className="h-[1px] flex-1 bg-navy/5" />
-                        </div>
+                    <div className="mt-6 mb-6">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
+                            {currentLanguage === 'es' ? "GUÍAS DE USO" : "HOW-TO GUIDES"}
+                        </p>
                         <HowToAccordion items={faqs} />
                     </div>
                 )}

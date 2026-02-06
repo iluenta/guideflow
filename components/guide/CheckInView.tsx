@@ -1,14 +1,16 @@
 'use client';
 
-import React from 'react';
-import { ArrowLeft, MapPin, Copy, Phone, ExternalLink, Key, Lock, DoorOpen, Info, Wifi } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { ArrowLeft, MapPin, Copy, Phone, ExternalLink, Key, Lock, DoorOpen, Info, Wifi, Check, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { PageHeader } from './PageHeader';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 interface CheckinStep {
     title: string;
     description: string;
     icon: string;
+    image_url?: string;
 }
 
 interface CheckInViewProps {
@@ -21,11 +23,53 @@ interface CheckInViewProps {
     address: string;
     hostName: string;
     currentLanguage: string;
+    preferredContactName?: string;
+    preferredContactPhone?: string;
+    onLanguageChange?: (lang: string) => void;
 }
 
-export function CheckInView({ onBack, checkinData, address, hostName, currentLanguage }: CheckInViewProps) {
+const containerVars: Variants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+};
+
+const itemVars: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "circOut" } }
+};
+
+export function CheckInView({
+    onBack,
+    checkinData,
+    address,
+    hostName,
+    currentLanguage,
+    preferredContactName,
+    preferredContactPhone,
+    onLanguageChange
+}: CheckInViewProps) {
     const { toast } = useToast();
     const steps = checkinData.steps || [];
+
+    // Use preferred contact if available, fallback to hostName/emergency_phone
+    const displayContactName = preferredContactName || hostName;
+    const displayContactPhone = preferredContactPhone || checkinData.emergency_phone;
+
+    const handleWhatsApp = () => {
+        if (!displayContactPhone) return;
+        const cleanPhone = displayContactPhone.replace(/\s+/g, '').replace('+', '');
+        window.open(`https://wa.me/${cleanPhone}`, '_blank');
+    };
+
+    const handleCall = () => {
+        if (!displayContactPhone) return;
+        window.location.href = `tel:${displayContactPhone}`;
+    };
 
     const getIcon = (iconName: string) => {
         switch (iconName?.toLowerCase()) {
@@ -47,11 +91,13 @@ export function CheckInView({ onBack, checkinData, address, hostName, currentLan
     const handleCopy = (text: string) => {
         const codeMatch = text.match(/Código:\s*([^\s.]+)/) || [null, text];
         const toCopy = codeMatch[1];
-        navigator.clipboard.writeText(toCopy);
-        toast({
-            title: currentLanguage === 'es' ? 'Copiado' : 'Copied',
-            description: currentLanguage === 'es' ? 'Código copiado al portapapeles' : 'Code copied to clipboard',
-        });
+        if (toCopy) {
+            navigator.clipboard.writeText(toCopy);
+            toast({
+                title: currentLanguage === 'es' ? 'Copiado' : 'Copied',
+                description: currentLanguage === 'es' ? 'Código copiado al portapapeles' : 'Code copied to clipboard',
+            });
+        }
     };
 
     const openMaps = () => {
@@ -63,103 +109,137 @@ export function CheckInView({ onBack, checkinData, address, hostName, currentLan
     };
 
     return (
-        <div className="min-h-screen bg-[#F5F0E8] animate-in fade-in duration-300">
-            {/* Header Sticky */}
-            <header className="sticky top-0 z-50 w-full bg-[#F5F0E8]/95 backdrop-blur-sm border-b border-black/5 px-4 h-16 flex items-center gap-4">
-                <button
-                    onClick={onBack}
-                    className="p-2 -ml-2 text-[#1E3A5F] hover:bg-black/5 rounded-full transition-colors active:scale-90"
-                    aria-label="Volver"
-                >
-                    <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
-                </button>
-                <h1 className="font-serif text-xl font-medium text-[#1E3A5F]">
-                    Check In
-                </h1>
-            </header>
+        <div className="min-h-screen bg-background font-sans">
+            <PageHeader
+                title={currentLanguage === 'es' ? 'Llegada' : 'Check In'}
+                onBack={onBack}
+                currentLanguage={currentLanguage}
+                onLanguageChange={onLanguageChange}
+            />
 
-            <div className="p-6 max-w-md mx-auto pb-32">
+            <motion.div
+                className="p-5 max-w-md mx-auto pb-32 space-y-6"
+                variants={containerVars}
+                initial="hidden"
+                animate="show"
+            >
                 {/* Time info card */}
-                <div className="bg-[#FFFDF9] rounded-xl p-5 mb-6 shadow-[0_1px_3px_rgba(30,58,95,0.04)] text-center">
-                    <p className="text-[#6B7B8C] text-[11px] uppercase tracking-wider mb-1 font-sans font-bold">
-                        {currentLanguage === 'es' ? 'CHECK-IN DISPONIBLE' : 'CHECK-IN AVAILABLE'}
+                <motion.div variants={itemVars} className="bg-surface rounded-3xl p-6 shadow-card border border-primary/[0.03] text-center">
+                    <p className="text-text-secondary/60 text-[10px] uppercase tracking-[0.2em] mb-3 font-bold">
+                        {currentLanguage === 'es' ? 'Check-in disponible' : 'Check-in available'}
                     </p>
-                    <p className="font-serif text-2xl text-[#1E3A5F]">
+                    <p className="font-serif text-3xl text-slate-800 font-bold">
                         {checkinData.checkin_time || '15:00 - 22:00'}
                     </p>
-                </div>
+                </motion.div>
 
                 {/* Steps List */}
                 <div className="space-y-4">
                     {/* Step 1: Address (Fixed) */}
-                    <div className="bg-[#FFFDF9] rounded-xl p-5 shadow-[0_1px_3px_rgba(30,58,95,0.04)] flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-full bg-[#1E3A5F] text-[#FFFDF9] flex items-center justify-center font-serif font-semibold shrink-0">
-                            1
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                                <MapPin className="w-4 h-4 text-[#1E3A5F]" strokeWidth={1.5} />
-                                <h3 className="font-medium text-[#1E3A5F]">
-                                    {currentLanguage === 'es' ? 'Dirección' : 'Address'}
-                                </h3>
+                    <motion.div variants={itemVars} className="bg-surface rounded-3xl p-6 shadow-card border border-primary/[0.03] relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/[0.02] rounded-full -mr-16 -mt-16 transition-transform duration-700 group-hover:scale-110" />
+
+                        <div className="flex items-start gap-4 relative z-10">
+                            <div className="w-10 h-10 rounded-2xl bg-primary text-white flex items-center justify-center font-serif text-base font-bold shrink-0 shadow-lg shadow-primary/20">
+                                1
                             </div>
-                            <p className="text-[#6B7B8C] text-sm mb-3">
-                                {address}
-                            </p>
-                            <button
-                                className="flex items-center gap-2 text-xs font-medium text-[#1E3A5F] bg-[#F5F0E8] px-3 py-1.5 rounded-full transition-colors hover:bg-[#E8E0D4]"
-                                onClick={openMaps}
-                            >
-                                <ExternalLink className="w-3 h-3" />
-                                {currentLanguage === 'es' ? 'Ver en mapa' : 'Show on map'}
-                            </button>
+                            <div className="flex-1 pt-0.5">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <MapPin className="w-3.5 h-3.5 text-primary/40" />
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.1em] text-primary/60">
+                                        {currentLanguage === 'es' ? 'Dirección' : 'Address'}
+                                    </h3>
+                                </div>
+                                <p className="font-serif text-lg text-slate-800 font-bold leading-snug mb-4">
+                                    {address}
+                                </p>
+                                <button
+                                    className="flex items-center gap-2 text-xs font-bold text-primary bg-primary/[0.06] px-4 py-2 rounded-xl transition-all hover:bg-primary/[0.1] active:scale-95 shadow-sm"
+                                    onClick={openMaps}
+                                >
+                                    <ExternalLink className="w-3 h-3" />
+                                    {currentLanguage === 'es' ? 'Ver en mapa' : 'Show on map'}
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    </motion.div>
 
                     {/* Dynamic Steps */}
                     {steps.map((step, idx) => {
                         const StepIcon = getIcon(step.icon);
                         return (
-                            <div key={idx} className="bg-[#FFFDF9] rounded-xl p-5 shadow-[0_1px_3px_rgba(30,58,95,0.04)] flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-full bg-[#1E3A5F] text-[#FFFDF9] flex items-center justify-center font-serif font-semibold shrink-0">
-                                    {idx + 2}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <StepIcon className="w-4 h-4 text-[#1E3A5F]" strokeWidth={1.5} />
-                                        <h3 className="font-medium text-[#1E3A5F]">{step.title}</h3>
+                            <motion.div key={idx} variants={itemVars} className="bg-surface rounded-3xl p-6 shadow-card border border-primary/[0.03] relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/[0.02] rounded-full -mr-16 -mt-16 transition-transform duration-700 group-hover:scale-110" />
+
+                                <div className="flex items-start gap-4 relative z-10">
+                                    <div className="w-10 h-10 rounded-2xl bg-surface border border-primary/10 text-primary flex items-center justify-center font-serif text-base font-bold shrink-0 shadow-sm transition-colors group-hover:border-primary/20">
+                                        {idx + 2}
                                     </div>
-                                    <p className="text-[#6B7B8C] text-sm mb-3 whitespace-pre-line">
-                                        {step.description}
-                                    </p>
-                                    {isCode(step.description) && (
-                                        <button
-                                            className="flex items-center gap-2 text-xs font-medium text-[#1E3A5F] bg-[#F5F0E8] px-3 py-1.5 rounded-full transition-colors hover:bg-[#E8E0D4]"
-                                            onClick={() => handleCopy(step.description)}
-                                        >
-                                            <Copy className="w-3 h-3" />
-                                            {currentLanguage === 'es' ? 'Copiar código' : 'Copy code'}
-                                        </button>
-                                    )}
+                                    <div className="flex-1 pt-0.5">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <StepIcon className="w-3.5 h-3.5 text-primary/40" />
+                                            <h3 className="text-[10px] font-black uppercase tracking-[0.1em] text-primary/60">
+                                                {step.title}
+                                            </h3>
+                                        </div>
+                                        <p className="font-serif text-base text-slate-800 font-bold leading-snug mb-4">
+                                            {step.description}
+                                        </p>
+
+                                        {step.image_url && (
+                                            <div className="mb-4 rounded-2xl overflow-hidden border border-primary/5 shadow-inner bg-primary/[0.02]">
+                                                <img
+                                                    src={step.image_url}
+                                                    alt={step.title}
+                                                    className="w-full h-auto object-cover max-h-[300px] transition-transform duration-700 hover:scale-105"
+                                                    loading="lazy"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {isCode(step.description) && (
+                                            <button
+                                                className="flex items-center gap-2 text-xs font-bold text-primary bg-primary/[0.06] px-4 py-2 rounded-xl transition-all hover:bg-primary/[0.1] active:scale-95 shadow-sm"
+                                                onClick={() => handleCopy(step.description)}
+                                            >
+                                                <Copy className="w-3 h-3" />
+                                                {currentLanguage === 'es' ? 'Copiar código' : 'Copy code'}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         );
                     })}
                 </div>
 
                 {/* Help note */}
-                {checkinData.emergency_phone && (
-                    <div className="mt-8 text-center">
-                        <p className="text-[#6B7B8C] text-sm">
+                {displayContactPhone && (
+                    <motion.div variants={itemVars} className="p-5 bg-primary/[0.03] rounded-3xl border border-primary/[0.06] text-center">
+                        <p className="text-primary/60 text-[11px] font-black uppercase tracking-widest mb-4">
                             {currentLanguage === 'es'
-                                ? `¿Problemas para entrar? Llama a ${hostName}:`
-                                : `Problems entering? Call ${hostName}:`}
-                            {' '}
-                            <span className="text-[#1E3A5F] font-bold">{checkinData.emergency_phone}</span>
+                                ? `¿Problemas para entrar? Contacta con ${displayContactName}`
+                                : `Problems entering? Contact ${displayContactName}`}
                         </p>
-                    </div>
+                        <div className="grid grid-cols-2 gap-3 max-w-[260px] mx-auto">
+                            <button
+                                onClick={handleWhatsApp}
+                                className="flex items-center justify-center gap-2 bg-white border border-primary/10 text-primary h-11 rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition-all"
+                            >
+                                <MessageSquare className="w-4 h-4" />
+                                WhatsApp
+                            </button>
+                            <button
+                                onClick={handleCall}
+                                className="flex items-center justify-center gap-2 bg-primary text-white h-11 rounded-2xl font-bold text-xs shadow-md shadow-primary/10 active:scale-95 transition-all"
+                            >
+                                <Phone className="w-4 h-4" />
+                                {currentLanguage === 'es' ? 'Llamar' : 'Call'}
+                            </button>
+                        </div>
+                    </motion.div>
                 )}
-            </div>
+            </motion.div>
         </div>
     );
 }

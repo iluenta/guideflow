@@ -472,3 +472,118 @@ export async function ingestPropertyData(propertyId: string, url: string, option
     revalidatePath(`/dashboard/properties/${propertyId}`)
     return { success: true }
 }
+
+/**
+ * Processes a list of inventory items to generate manuals for those without one. 
+ * Respects existing manuals from scanner and incorporates host context.
+ */
+export async function processInventoryManuals(propertyId: string, items: any[]) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const tenant_id = user.user_metadata.tenant_id
+
+    try {
+        console.log(`[INVENTORY] Starting background processing for ${items.length} items...`)
+
+        // 1. Obtener manuales existentes para no duplicar
+        const { data: existingManuals } = await supabase
+            .from('property_manuals')
+            .select('appliance_name, brand, model')
+            .eq('property_id', propertyId)
+
+        const itemsToProcess = items.filter(item => {
+            if (!item.isPresent) return false
+
+            // Si ya existe un manual con un nombre similar, saltamos (prioridad scanner)
+            const exists = existingManuals?.some(m =>
+                m.appliance_name.toLowerCase().includes(item.id.toLowerCase()) ||
+                item.name.toLowerCase().includes(m.appliance_name.toLowerCase())
+            )
+            return !exists
+        })
+
+        if (itemsToProcess.length === 0) {
+            console.log('[INVENTORY] No new items to process.')
+            return { success: true, processed: 0 }
+        }
+
+        console.log(`[INVENTORY] Generating ${itemsToProcess.length} new manuals...`)
+
+        // Procesar secuencialmente para evitar rate limits de la IA si son muchos
+        for (const item of itemsToProcess) {
+            try {
+                console.log(`[INVENTORY] Generating manual for: ${item.name}...`)
+
+                const prompt = `Genera una guía de uso rápida y amable para un huésped sobre el siguiente elemento: ${item.name}.
+                ${item.customContext ? `Información específica del anfitrión: ${item.customContext}` : ''}
+                
+                REGLAS:
+                1. FORMATO: Markdown estructurado.
+                2. TONO: Útil y directo.
+                3. CONTENIDO: Indica para qué sirve, consejos básicos de uso y dónde suele encontrarse (según el contexto del anfitrión).
+                4. NO inventes especificaciones técnicas de marcas específicas si no se proporcionan.
+                
+                RESPONDE SOLO CON EL TEXTO DEL MANUAL.`
+
+                const genResponse = await geminiREST('gemini-2.0-flash', prompt, {
+                    responseMimeType: 'text/plain',
+                    temperature: 0.7
+                })
+
+                const manualContent = genResponse?.data
+                if (!manualContent) continue
+
+                // Guardar Manual
+                const { data: manual, error: manError } = await supabase.from('property_manuals').insert({
+                    property_id: propertyId,
+                    tenant_id: tenant_id,
+                    appliance_name: item.name,
+                    manual_content: manualContent,
+                    metadata: {
+                        source: 'inventory_selector',
+                        item_id: item.id,
+                        host_context: item.customContext
+                    }
+                }).select().single()
+
+                if (manError) throw manError
+
+                // Vectorización (RAG)
+                const chunks = splitIntoChunks(manualContent, 800)
+                const contextEmbeddings = await Promise.all(chunks.map(async chunk => {
+                    const enrichedContent = `[ELEMENTO: ${item.name}]\n${item.customContext ? `Nota del anfitrión: ${item.customContext}\n` : ''}${chunk}`
+                    const enrichedEmbedding = await generateOpenAIEmbedding(enrichedContent)
+                    return {
+                        property_id: propertyId,
+                        tenant_id: tenant_id,
+                        source_type: 'manual',
+                        source_id: manual.id,
+                        content: enrichedContent,
+                        embedding: enrichedEmbedding,
+                        metadata: {
+                            appliance: item.name,
+                            item_category: item.category
+                        }
+                    }
+                }))
+
+                await supabase.from('context_embeddings').upsert(contextEmbeddings, { onConflict: 'source_id,content' })
+
+            } catch (itemErr: any) {
+                console.error(`[INVENTORY] Error processing ${item.name}:`, itemErr.message)
+            }
+        }
+
+        // Actualizar el listado en property_context
+        await syncPropertyApplianceList(propertyId, tenant_id)
+
+        console.log(`[INVENTORY] Finished. Processed ${itemsToProcess.length} items.`)
+        return { success: true, processed: itemsToProcess.length }
+
+    } catch (error: any) {
+        console.error('[INVENTORY] Fatal processing error:', error.message)
+        return { success: false, error: error.message }
+    }
+}

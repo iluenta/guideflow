@@ -1,10 +1,6 @@
-'use client';
-
-import React from 'react';
+import { motion } from 'framer-motion';
+import { Bed, Bath, Users, Info, MapPin } from 'lucide-react';
 import { PageHeader } from './PageHeader';
-import { Bed, Bath, Users, Ruler, ParkingCircle, Info } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import Image from 'next/image';
 
 interface HouseInfoViewProps {
     onBack: () => void;
@@ -13,42 +9,50 @@ interface HouseInfoViewProps {
     onLanguageChange?: (lang: string) => void;
 }
 
+const container = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.06
+        }
+    }
+};
+
+const item = {
+    hidden: { opacity: 0, y: 12 },
+    show: { opacity: 1, y: 0 }
+};
+
 export function HouseInfoView({ onBack, property, currentLanguage = 'es', onLanguageChange }: HouseInfoViewProps) {
     const features = [
         {
             icon: Bed,
-            label: currentLanguage === 'es' ? `${property.beds || 0} Dormitorios` : `${property.beds || 0} Bedrooms`,
-            detail: property.beds_description || (currentLanguage === 'es' ? 'Camas preparadas' : 'Beds prepared'),
+            label: currentLanguage === 'es' ? `${property.beds || 0} Dormitorio${(property.beds || 0) > 1 ? 's' : ''}` : `${property.beds || 0} Bedroom${(property.beds || 0) > 1 ? 's' : ''}`,
+            sub: currentLanguage === 'es' ? 'Camas preparadas' : 'Beds prepared',
             show: !!property.beds
         },
         {
             icon: Bath,
-            label: currentLanguage === 'es' ? `${property.baths || 0} Baños` : `${property.baths || 0} Bathrooms`,
-            detail: property.baths_description || (currentLanguage === 'es' ? 'Equipados' : 'Fully equipped'),
+            label: currentLanguage === 'es' ? `${property.baths || 0} Baño${(property.baths || 0) > 1 ? 's' : ''}` : `${property.baths || 0} Bathroom${(property.baths || 0) > 1 ? 's' : ''}`,
+            sub: currentLanguage === 'es' ? 'Equipados' : 'Equipped',
             show: !!property.baths
         },
         {
             icon: Users,
             label: currentLanguage === 'es' ? `Hasta ${property.guests || 0} huéspedes` : `Up to ${property.guests || 0} guests`,
-            detail: currentLanguage === 'es' ? 'Ideal para su estancia' : 'Ideal for your stay',
+            sub: currentLanguage === 'es' ? 'Ideal para su estancia' : 'Ideal for your stay',
             show: !!property.guests
-        },
-        {
-            icon: Ruler,
-            label: property.size_sqm ? `${property.size_sqm} m²` : (currentLanguage === 'es' ? 'Espacio amplio' : 'Spacious'),
-            detail: currentLanguage === 'es' ? 'Superficie total' : 'Total area',
-            show: !!property.size_sqm
-        },
-        {
-            icon: ParkingCircle,
-            label: currentLanguage === 'es' ? 'Parking' : 'Parking',
-            detail: property.parking_info || (currentLanguage === 'es' ? 'Consultar disponibilidad' : 'Check availability'),
-            show: !!property.parking_info
         }
     ].filter(f => f.show);
 
     return (
-        <div className="min-h-screen bg-beige pb-10">
+        <motion.div
+            className="flex flex-col min-h-full bg-background"
+            variants={container}
+            initial="hidden"
+            animate="show"
+        >
             <PageHeader
                 title={currentLanguage === 'es' ? "Info Casa" : "House Info"}
                 onBack={onBack}
@@ -56,66 +60,76 @@ export function HouseInfoView({ onBack, property, currentLanguage = 'es', onLang
                 onLanguageChange={onLanguageChange}
             />
 
-            <div className="px-6 pt-6">
-                {/* Hero Image Group (Mockup Image 1) */}
+            <div className="px-6 pb-24 max-w-md mx-auto w-full">
+                {/* Property Image */}
                 {property.main_image_url && (
-                    <div className="rounded-[24px] overflow-hidden mb-8 shadow-card ring-1 ring-navy/[0.03]">
-                        <img
-                            src={property.main_image_url}
-                            alt={property.name}
-                            className="w-full h-52 object-cover"
-                        />
-                    </div>
+                    <motion.div variants={item} className="mt-6 mb-6">
+                        <div className="rounded-3xl overflow-hidden shadow-card h-44 relative group">
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <img
+                                src={property.main_image_url}
+                                alt={property.name}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                        </div>
+                    </motion.div>
                 )}
 
-                {/* Title & Address */}
-                <div className="mb-8">
-                    <h2 className="font-serif text-[28px] text-navy font-bold leading-tight mb-2">
+                {/* Property Name & Address */}
+                <motion.div variants={item} className="mb-8 px-2">
+                    <h1 className="text-2xl font-serif font-bold text-slate-800 mb-2 leading-tight">
                         {property.name}
-                    </h2>
-                    <p className="text-sm text-slate font-medium leading-relaxed opacity-70">
+                    </h1>
+                    <p className="text-[12px] text-primary/50 font-medium uppercase tracking-wider flex items-center gap-1.5">
+                        <MapPin size={12} className="text-primary/30 shrink-0" />
                         {property.full_address}
                     </p>
-                </div>
+                </motion.div>
 
-                {/* Features List */}
-                <div className="space-y-4 mb-10">
+                {/* Feature Cards */}
+                <motion.div variants={item} className="space-y-3 mb-10">
                     {features.map((feature, i) => (
                         <div
                             key={i}
-                            className="bg-cream rounded-2xl p-5 flex items-center gap-5 shadow-card border border-navy/[0.02]"
+                            className="flex items-center gap-5 p-4 rounded-3xl border border-primary/[0.03] bg-surface shadow-sm"
                         >
-                            <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shrink-0 border border-navy/[0.03]">
-                                <feature.icon className="w-6 h-6 text-navy" strokeWidth={1.2} />
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-primary/[0.04] text-primary shrink-0">
+                                <feature.icon size={20} strokeWidth={2} />
                             </div>
-                            <div className="min-w-0">
-                                <p className="font-serif text-[18px] font-bold text-navy leading-tight mb-0.5">{feature.label}</p>
-                                <p className="text-[13px] text-slate font-medium opacity-60 truncate">{feature.detail}</p>
+                            <div className="text-left">
+                                <p className="font-bold text-slate-800 text-[15px] leading-tight">{feature.label}</p>
+                                <p className="text-[11px] text-primary/40 font-black uppercase tracking-widest mt-1">{feature.sub}</p>
                             </div>
                         </div>
                     ))}
-                </div>
+                </motion.div>
 
-                {/* Description Section */}
+                {/* About Section */}
                 {property.description && (
-                    <div className="bg-white rounded-2xl p-6 shadow-card border border-navy/[0.02] mb-8">
-                        <h3 className="font-serif text-xl text-navy font-bold mb-4 flex items-center gap-2">
-                            <Info className="w-5 h-5 text-navy/40" />
-                            {currentLanguage === 'es' ? "Sobre la propiedad" : "About the property"}
-                        </h3>
-                        <p className="text-slate text-[14px] leading-relaxed font-medium whitespace-pre-wrap opacity-80">
-                            {property.description}
-                        </p>
-                    </div>
+                    <motion.div variants={item} className="mb-10">
+                        <div className="bg-primary/[0.02] rounded-3xl p-6 border border-primary/[0.05]">
+                            <div className="flex items-center gap-2.5 mb-4">
+                                <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
+                                    <Info size={14} strokeWidth={3} />
+                                </div>
+                                <h3 className="font-serif font-bold text-slate-800">
+                                    {currentLanguage === 'es' ? 'Sobre la propiedad' : 'About the property'}
+                                </h3>
+                            </div>
+                            <p className="text-[14px] text-slate-800/80 leading-relaxed font-medium text-left">
+                                {property.description}
+                            </p>
+                        </div>
+                    </motion.div>
                 )}
-            </div>
 
-            {/* Mockup powered text */}
-            <div className="px-6 mt-12 text-center opacity-20">
-                <p className="text-[8px] text-navy uppercase font-black tracking-[0.3em]">
-                    Detalles verificados por el anfitrión
-                </p>
+                {/* Footer */}
+                <motion.div variants={item} className="text-center opacity-30">
+                    <p className="text-[10px] font-black text-primary tracking-[0.2em] uppercase">
+                        {currentLanguage === 'es' ? 'Detalles verificados' : 'Verified Details'}
+                    </p>
+                </motion.div>
             </div>
-        </div>
+        </motion.div>
     );
 }

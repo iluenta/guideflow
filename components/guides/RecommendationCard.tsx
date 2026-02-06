@@ -16,6 +16,11 @@ export interface Recommendation {
     description?: string
     personal_note?: string
     category?: string
+    metadata?: {
+        time?: string
+        price_range?: string
+        personal_note?: string
+    }
 }
 
 interface RecommendationCardProps {
@@ -49,6 +54,10 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
     const category = (recommendation.category || recommendation.type || 'restaurantes').toLowerCase()
     const Icon = categoryIcons[category] || Star
     const colorClass = categoryColors[category] || categoryColors.todos
+
+    const price = recommendation.price_range || recommendation.metadata?.price_range
+    const timeStr = recommendation.time || recommendation.metadata?.time
+    const note = recommendation.personal_note || recommendation.metadata?.personal_note
 
     return (
         <Card
@@ -92,15 +101,15 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
                             {recommendation.distance}
                         </div>
                     )}
-                    {recommendation.time && (
+                    {timeStr && (
                         <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
                             <Clock className="w-3 h-3" />
-                            {recommendation.time}
+                            {timeStr}
                         </div>
                     )}
-                    {recommendation.price_range && (
+                    {price && (
                         <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                            <span className="">{recommendation.price_range}</span>
+                            <span className="">{price}</span>
                         </div>
                     )}
                 </div>
@@ -111,9 +120,9 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
                     </p>
                 )}
 
-                {recommendation.personal_note && (
+                {note && (
                     <p className="text-slate-400 text-xs italic font-medium">
-                        "{recommendation.personal_note}"
+                        "{note}"
                     </p>
                 )}
             </CardContent>

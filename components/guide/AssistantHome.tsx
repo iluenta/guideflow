@@ -9,13 +9,19 @@ interface AssistantHomeProps {
     onExplore: () => void;
     onChatQuery: (query: string) => void;
     currentLanguage?: string;
+    manuals?: any[];
+    recommendations?: any[];
+    context?: any[];
 }
 
 export function AssistantHome({
     propertyName,
     onExplore,
     onChatQuery,
-    currentLanguage = 'es'
+    currentLanguage = 'es',
+    manuals = [],
+    recommendations = [],
+    context = []
 }: AssistantHomeProps) {
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -23,44 +29,68 @@ export function AssistantHome({
         setIsLoaded(true);
     }, []);
 
-    const chips = [
+    // Extract relevant data for filtering
+    const techData = context?.find(c => c.category === 'tech')?.content || {};
+    const accessData = context?.find(c => c.category === 'access')?.content || {};
+    const checkinData = context?.find(c => c.category === 'checkin')?.content || {};
+
+    const allChips = [
         {
+            id: 'wifi',
             query: currentLanguage === 'es' ? '¿Cuál es la clave del WiFi?' : 'What is the WiFi password?',
-            label: currentLanguage === 'es' ? 'Clave WiFi' : 'WiFi Password',
+            label: currentLanguage === 'es' ? 'Conexión WiFi' : 'WiFi Connection',
             icon: Wifi,
-            color: 'bg-blue-50 text-blue-600 border-blue-100'
+            color: 'bg-blue-50 text-blue-600 border-blue-100',
+            show: !!(techData.wifi_password || techData.wifi_ssid || techData.router_notes)
         },
         {
-            query: currentLanguage === 'es' ? '¿Cómo funciona la vitrocerámica?' : 'How does the stove work?',
-            label: currentLanguage === 'es' ? 'Uso Vitro' : 'Using Stove',
+            id: 'vitro',
+            query: currentLanguage === 'es' ? '¿Cómo funciona la vitrocerámica o los fuegos?' : 'How does the stove or cooktop work?',
+            label: currentLanguage === 'es' ? 'Cocina / Vitro' : 'Stove / Cooktop',
             icon: Settings,
-            color: 'bg-orange-50 text-orange-600 border-orange-100'
+            color: 'bg-orange-50 text-orange-600 border-orange-100',
+            show: manuals.some(m => {
+                const name = (m.appliance_name || '').toLowerCase();
+                return name.includes('vitro') || name.includes('cocina') || name.includes('horno') ||
+                    name.includes('stove') || name.includes('induction') || name.includes('placa') ||
+                    name.includes('fuego') || name.includes('encimera');
+            })
         },
         {
+            id: 'access',
             query: currentLanguage === 'es' ? '¿Cómo entro al apartamento?' : 'How do I enter the apartment?',
             label: currentLanguage === 'es' ? 'Cómo entrar' : 'How to enter',
             icon: Key,
-            color: 'bg-emerald-50 text-emerald-600 border-emerald-100'
+            color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+            show: !!(checkinData.instructions || accessData.instructions || accessData.entry_code || accessData.checkin_instructions || (checkinData.steps && checkinData.steps.length > 0))
         },
         {
+            id: 'parking',
             query: currentLanguage === 'es' ? '¿Dónde está mi plaza de garaje?' : 'Where is my parking spot?',
-            label: currentLanguage === 'es' ? 'Garaje' : 'Parking',
+            label: currentLanguage === 'es' ? 'Aparcar / Garaje' : 'Parking',
             icon: MapPin,
-            color: 'bg-purple-50 text-purple-600 border-purple-100'
+            color: 'bg-purple-50 text-purple-600 border-purple-100',
+            show: !!(accessData.parking_info || accessData.garage_spot || accessData.parking_instructions || accessData.parking)
         },
         {
+            id: 'eat',
             query: currentLanguage === 'es' ? '¿Dónde puedo comer cerca?' : 'Where can I eat nearby?',
             label: currentLanguage === 'es' ? 'Comer cerca' : 'Eat nearby',
             icon: Utensils,
-            color: 'bg-rose-50 text-rose-600 border-rose-100'
+            color: 'bg-rose-50 text-rose-600 border-rose-100',
+            show: recommendations.some(r => r.group === 'eat')
         },
         {
+            id: 'visit',
             query: currentLanguage === 'es' ? '¿Qué puedo visitar?' : 'What can I visit?',
             label: currentLanguage === 'es' ? 'Qué visitar' : 'Sightseeing',
             icon: Info,
-            color: 'bg-indigo-50 text-indigo-600 border-indigo-100'
+            color: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+            show: recommendations.some(r => r.group === 'do' || r.group === 'visit')
         }
     ];
+
+    const chips = allChips.filter(c => c.show);
 
     return (
         <div className={`min-h-screen flex flex-col px-6 py-12 transition-all duration-700 ease-out ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -104,25 +134,27 @@ export function AssistantHome({
             </div>
 
             {/* Suggestion Chips */}
-            <div className="mb-12">
-                <h3 className="text-[10px] font-black text-navy/30 uppercase tracking-[0.3em] mb-4 text-center">
-                    {currentLanguage === 'es' ? 'PUEDES PREGUNTARME:' : 'HOW CAN I HELP:'}
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                    {chips.map((chip, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => onChatQuery(chip.query)}
-                            className={`flex items-center gap-3 p-3 rounded-2xl border text-left transition-all active:scale-[0.96] hover:bg-white shadow-sm hover:shadow-md ${chip.color}`}
-                        >
-                            <div className="shrink-0">
-                                <chip.icon className="w-4 h-4" />
-                            </div>
-                            <span className="text-[12px] font-bold leading-tight">{chip.label}</span>
-                        </button>
-                    ))}
+            {chips.length > 0 && (
+                <div className="mb-12">
+                    <h3 className="text-[10px] font-black text-navy/30 uppercase tracking-[0.3em] mb-4 text-center">
+                        {currentLanguage === 'es' ? 'PUEDES PREGUNTARME:' : 'HOW CAN I HELP:'}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        {chips.map((chip, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => onChatQuery(chip.query)}
+                                className={`flex items-center gap-3 p-3 rounded-2xl border text-left transition-all active:scale-[0.96] hover:bg-white shadow-sm hover:shadow-md ${chip.color}`}
+                            >
+                                <div className="shrink-0">
+                                    <chip.icon className="w-4 h-4" />
+                                </div>
+                                <span className="text-[12px] font-bold leading-tight">{chip.label}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* AI Confirmation (For Host Value) */}
             <div className="mb-16 flex items-start gap-4 p-5 bg-navy/5 rounded-3xl border border-navy/5">
@@ -151,7 +183,7 @@ export function AssistantHome({
                 <Button
                     variant="outline"
                     onClick={onExplore}
-                    className="h-14 px-8 rounded-2xl border-primary/20 text-primary font-bold shadow-sm hover:bg-primary/5 transition-all w-full flex items-center justify-between group"
+                    className="h-14 px-8 rounded-2xl border-primary/20 text-primary font-bold shadow-sm hover:bg-primary/5 hover:text-primary transition-all w-full flex items-center justify-between group"
                 >
                     <div className="flex items-center gap-3">
                         <BookOpen className="w-5 h-5 opacity-60" />

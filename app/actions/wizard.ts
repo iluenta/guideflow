@@ -99,6 +99,9 @@ export async function saveWizardStep(
                     name: rec.name,
                     description: rec.description || rec.specialty || '',
                     distance: rec.distance || '',
+                    time: rec.time || '',
+                    price_range: rec.price_range || '',
+                    personal_note: rec.personal_note || '',
                     metadata: {
                         time: rec.time,
                         price_range: rec.price_range,
@@ -168,9 +171,12 @@ export async function saveWizardStep(
                 .single()
 
             if (propError) throw propError
+
+            revalidatePath('/', 'layout')
             return { success: true, property: updatedProp }
         }
 
+        revalidatePath('/', 'layout')
         return { success: true }
     }
 }

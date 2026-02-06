@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Home, UtensilsCrossed, Theater, Info, User } from 'lucide-react';
+import { Home, UtensilsCrossed, Theater, Info, BookOpen, MessageSquare } from 'lucide-react';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { cn } from '@/lib/utils';
 
@@ -17,18 +17,19 @@ export function BottomNav({
     currentLanguage = 'es'
 }: BottomNavProps) {
 
-    const { content: labelHome } = useLocalizedContent('Casa', currentLanguage, 'ui_label');
+    const { content: labelHome } = useLocalizedContent('Inicio', currentLanguage, 'ui_label');
     const { content: labelEat } = useLocalizedContent('Comer', currentLanguage, 'ui_label');
     const { content: labelLeisure } = useLocalizedContent('Ocio', currentLanguage, 'ui_label');
     const { content: labelInfo } = useLocalizedContent('Info', currentLanguage, 'ui_label');
-    const { content: labelProfile } = useLocalizedContent('Perfil', currentLanguage, 'ui_label');
+    const { content: labelChat } = useLocalizedContent('Chat', currentLanguage, 'ui_label');
+    const { content: labelAssistant } = useLocalizedContent('IA', currentLanguage, 'ui_label');
 
     const tabs = [
-        { id: 'home', icon: Home, label: labelHome },
+        { id: 'hub', icon: Home, label: labelHome },
         { id: 'eat', icon: UtensilsCrossed, label: labelEat },
         { id: 'leisure', icon: Theater, label: labelLeisure },
         { id: 'info', icon: Info, label: labelInfo },
-        { id: 'profile', icon: User, label: labelProfile }
+        { id: 'chat', icon: MessageSquare, label: labelChat }
     ];
 
     const handleTabClick = (tabId: string) => {

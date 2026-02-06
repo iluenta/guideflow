@@ -19,6 +19,9 @@ import { RecommendationsView } from '@/components/guide/RecommendationsView';
 import { HouseInfoView } from '@/components/guide/HouseInfoView';
 import { HamburgerMenu } from '@/components/guide/HamburgerMenu';
 import { AssistantHome } from '@/components/guide/AssistantHome';
+import { Fase11Welcome } from '@/components/guide/Fase11Welcome';
+import { Fase11Home } from '@/components/guide/Fase11Home';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface GuideViewContainerProps {
     property: any;
@@ -31,8 +34,8 @@ interface GuideViewContainerProps {
 }
 
 export function GuideViewContainer({ property, branding, sections, manuals, recommendations, faqs = [], context }: GuideViewContainerProps) {
-    const [currentPage, setCurrentPage] = useState<string | null>('assistant');
-    const [activeTab, setActiveTab] = useState('home');
+    const [currentPage, setCurrentPage] = useState<string | null>('welcome');
+    const [activeTab, setActiveTab] = useState('hub');
     const [language, setLanguage] = useState<string>('es');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -57,31 +60,36 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
     const handleNavigate = (pageId: string) => {
         console.log('GuideView: Navigating to:', pageId);
         setCurrentPage(pageId);
-        // Map pageIds to tabs if possible
-        if (pageId === 'eat' || pageId === 'food') setActiveTab('eat');
-        else if (pageId === 'do' || pageId === 'things-do' || pageId === 'leisure') setActiveTab('leisure');
-        else if (pageId === 'shopping' || pageId === 'compras') setActiveTab('leisure');
-        else if (pageId === 'manuals' || pageId === 'info' || pageId === 'house-info') setActiveTab('info');
-        else if (pageId === 'profile') setActiveTab('profile');
-        else if (pageId === 'assistant' || pageId === null) setActiveTab('home');
-        else setActiveTab('home');
+
+        // Map pageIds to tabs
+        if (pageId === 'welcome') setActiveTab('hub');
+        else if (pageId === 'home' || pageId === 'assistant') setActiveTab('hub');
+        else if (pageId === 'eat' || pageId === 'food') setActiveTab('eat');
+        else if (pageId === 'do' || pageId === 'things-do' || pageId === 'leisure' || pageId === 'compras' || pageId === 'shopping') setActiveTab('leisure');
+        else if (pageId === 'manuals' || pageId === 'info' || pageId === 'house-info' || pageId === 'wifi' || pageId === 'rules') setActiveTab('info');
+        else setActiveTab('guide');
 
         window.scrollTo(0, 0);
     };
 
     const handleBack = () => {
-        setCurrentPage('assistant');
-        setActiveTab('home');
+        setCurrentPage('home');
+        setActiveTab('guide');
     };
 
     const handleTabChange = (tabId: string) => {
         console.log('GuideView: Tab changed to:', tabId);
+
+        if (tabId === 'chat') {
+            handleChatOpen();
+            return;
+        }
+
         setActiveTab(tabId);
-        if (tabId === 'home') setCurrentPage('assistant');
+        if (tabId === 'hub') setCurrentPage('home');
         else if (tabId === 'eat') setCurrentPage('eat');
         else if (tabId === 'leisure') setCurrentPage('do');
         else if (tabId === 'info') setCurrentPage('manuals');
-        else if (tabId === 'profile') setCurrentPage('profile');
         window.scrollTo(0, 0);
     };
 
@@ -98,17 +106,35 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
     };
 
     const renderCurrentView = () => {
-        // Explicitly handle assistant home state
-        if (currentPage === 'assistant' || currentPage === null || currentPage === '') {
+        // Explicitly handle welcome and home states
+        if (currentPage === 'welcome') {
             return (
-                <AssistantHome
+                <Fase11Welcome
                     propertyName={property.name}
-                    onExplore={() => {
-                        console.log('GuideView: AssistantHome -> onExplore called');
-                        setCurrentPage('explore');
+                    heroImage={property.main_image_url || branding?.hero_image_url || ''}
+                    location={property.city || ''}
+                    onOpenGuide={() => {
+                        setCurrentPage('home');
+                        setActiveTab('guide');
                     }}
+                    onNavigate={handleNavigate}
                     onChatQuery={handleChatWithQuery}
                     currentLanguage={language}
+                />
+            );
+        }
+
+        if (currentPage === 'home' || currentPage === 'assistant' || currentPage === null || currentPage === '') {
+            return (
+                <Fase11Home
+                    propertyName={property.name}
+                    heroImage={property.main_image_url || branding?.hero_image_url || ''}
+                    location={property.city || ''}
+                    onBack={() => setCurrentPage('welcome')}
+                    onNavigate={handleNavigate}
+                    onChatQuery={handleChatWithQuery}
+                    currentLanguage={language}
+                    recommendations={recommendations}
                 />
             );
         }
@@ -151,9 +177,26 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                     />
                 );
             case 'check-in':
-            case 'checkin':
+            case 'checkin': {
                 const checkinData = context?.find((c: any) => c.category === 'checkin')?.content || {};
                 const accessData = context?.find((c: any) => c.category === 'access')?.content;
+                const contactsData = context?.find((c: any) => c.category === 'contacts')?.content || {};
+
+                // Find preferred contact info
+                let prefName = '';
+                let prefPhone = '';
+
+                if (contactsData.preferred_contact_id === 'support') {
+                    prefName = contactsData.support_name || 'Asistencia';
+                    prefPhone = contactsData.support_phone || contactsData.support_mobile || '';
+                } else if (contactsData.custom_contacts) {
+                    const custom = contactsData.custom_contacts.find((cc: any) => cc.id === contactsData.preferred_contact_id);
+                    if (custom) {
+                        prefName = custom.name;
+                        prefPhone = custom.phone;
+                    }
+                }
+
                 return (
                     <CheckInView
                         onBack={handleBack}
@@ -161,9 +204,12 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         address={accessData?.full_address || property.full_address || ''}
                         hostName={welcomeData?.host_name || (language === 'es' ? 'tu anfitrión' : 'your host')}
                         currentLanguage={language}
+                        preferredContactName={prefName}
+                        preferredContactPhone={prefPhone}
                     />
                 );
-            case 'emergency':
+            }
+            case 'emergency': {
                 const contactsData = context?.find((c: any) => c.category === 'contacts')?.content || {};
                 return (
                     <EmergencyView
@@ -173,6 +219,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         currentLanguage={language}
                     />
                 );
+            }
             case 'house-info':
                 return (
                     <HouseInfoView
@@ -189,6 +236,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         recommendations={recommendations}
                         group="eat"
                         currentLanguage={language}
+                        city={property.city}
                     />
                 );
             case 'do':
@@ -199,6 +247,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         recommendations={recommendations}
                         group="do"
                         currentLanguage={language}
+                        city={property.city}
                     />
                 );
             case 'shopping':
@@ -209,6 +258,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         recommendations={recommendations}
                         group="shopping"
                         currentLanguage={language}
+                        city={property.city}
                     />
                 );
             case 'explore':
@@ -265,6 +315,9 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         onExplore={() => setCurrentPage('explore')}
                         onChatQuery={handleChatWithQuery}
                         currentLanguage={language}
+                        manuals={manuals}
+                        recommendations={recommendations}
+                        context={context}
                     />
                 );
         }
@@ -282,7 +335,17 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
             />
 
             <main className="overflow-x-hidden pb-24">
-                {renderCurrentView()}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentPage || 'home'}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.25, ease: 'easeOut' }}
+                    >
+                        {renderCurrentView()}
+                    </motion.div>
+                </AnimatePresence>
             </main>
 
             <BottomNav

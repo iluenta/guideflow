@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import {
     Sparkles, Plus, Trash2, MapPin, Clock, Utensils,
     ShoppingBag, Landmark, Trees, Music, Coffee, Star,
-    Search, ChevronLeft, ChevronRight, Check, Loader2
+    Search, ChevronLeft, ChevronRight, Check, Loader2,
+    Info, Lightbulb
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { RecommendationCard, Recommendation } from './RecommendationCard'
@@ -64,7 +65,8 @@ export function LocalRecommendations({
 
         const recToSave = {
             ...editingRec,
-            category: editingRec.category || (selectedCategory === 'todos' ? 'ocio' : selectedCategory)
+            // Prioritize existing category, then selected category (if not 'todos'), then fallback to 'restaurantes'
+            category: editingRec.category || (selectedCategory !== 'todos' ? selectedCategory : 'restaurantes')
         } as Recommendation
 
         const existingIdx = recommendations.findIndex(r => r.id === recToSave.id && r.id !== undefined)
@@ -82,20 +84,43 @@ export function LocalRecommendations({
     }
 
     const openEdit = (rec?: Recommendation) => {
-        setEditingRec(rec || {
-            name: 'Restaurante El Mirador',
-            category: 'restaurantes',
-            distance: '500m',
-            time: '10 min',
-            price_range: '€€',
-            description: 'Ubicación privilegiada con vistas espectaculares y cocina tradicional.',
-            personal_note: 'Pide la tarta de queso, es increíble.'
-        })
+        if (rec) {
+            // "Flatten" metadata fields if they are missing at the top level
+            setEditingRec({
+                ...rec,
+                time: rec.time || rec.metadata?.time || '',
+                price_range: rec.price_range || rec.metadata?.price_range || '',
+                personal_note: rec.personal_note || rec.metadata?.personal_note || ''
+            })
+        } else {
+            setEditingRec({
+                name: '',
+                category: 'restaurantes',
+                distance: '',
+                time: '',
+                price_range: '',
+                description: '',
+                personal_note: ''
+            })
+        }
         setIsDialogOpen(true)
     }
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Instructions / Tips Section */}
+            <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 sm:p-5 flex gap-4 items-start">
+                <div className="bg-primary/10 p-2 rounded-xl shrink-0">
+                    <Lightbulb className="w-5 h-5 text-primary" />
+                </div>
+                <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-primary italic">Consejo para una guía 5 estrellas</h4>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                        La IA busca sitios de interés turístico real basándose en tu ubicación. Si buscas en una categoría específica (ej: <strong>Cultura</strong>), obtendrás resultados mucho más profundos que en la vista general. ¡Añade tu toque personal editando la nota de cada sitio!
+                    </p>
+                </div>
+            </div>
+
             {/* Header & AI Suggestion Button */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="space-y-1">

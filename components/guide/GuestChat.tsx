@@ -43,23 +43,6 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
     const scrollEndRef = useRef<HTMLDivElement>(null)
     const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-    // Auto-greeting logic (First Message)
-    useEffect(() => {
-        if (isOpen && messages.length === 0 && !isLoading) {
-            // Short delay for natural feel
-            const timer = setTimeout(() => {
-                append({
-                    id: 'welcome-msg',
-                    role: 'assistant',
-                    content: currentLanguage === 'es'
-                        ? `Hola 👋\nYa tengo toda la información de este alojamiento.\n\n¿En qué puedo ayudarte ahora?`
-                        : `Hello 👋\nI already have all the information for this accommodation.\n\nHow can I help you now?`
-                });
-            }, 600);
-            return () => clearTimeout(timer);
-        }
-    }, [isOpen, messages.length, isLoading, append, propertyName, currentLanguage]);
-
     const { content: onlineStatus } = useLocalizedContent('DISPONIBLE AHORA', currentLanguage, 'ui_label');
     const { content: faqLabel } = useLocalizedContent('PUEDO AYUDARTE CON:', currentLanguage, 'ui_label');
     const { content: emptyTitle } = useLocalizedContent('¿Qué necesitas ahora?', currentLanguage, 'ui_label');
@@ -79,14 +62,11 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
     useEffect(() => {
         if (scrollContainerRef.current && isOpen) {
             const container = scrollContainerRef.current;
-            // Si está cargando (streaming de Gemini), usamos scroll instantáneo directo para evitar rebotes
-            // Si no está cargando, usamos scroll suave
             const scrollOptions: ScrollToOptions = {
                 top: container.scrollHeight,
                 behavior: isLoading ? 'auto' : 'smooth'
             };
 
-            // Usamos un pequeño delay para asegurar que el DOM ha calculado el nuevo height del mensaje
             const timeoutId = setTimeout(() => {
                 container.scrollTo(scrollOptions);
             }, 0);
@@ -97,27 +77,24 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
 
     return (
         <>
-            {/* Floating Chat Trigger - Restored as FAB */}
-            {
-                !isOpen && (
-                    <button
-                        onClick={() => {
-                            setIsOpen(true);
-                            if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-                                window.navigator.vibrate([50, 30, 50]);
-                            }
-                        }}
-                        className="fixed bottom-24 right-5 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50 animate-in fade-in zoom-in slide-in-from-bottom-5 duration-500"
-                        aria-label="Abrir asistente de ayuda"
-                    >
-                        <div className="relative">
-                            <Bot className="w-7 h-7" strokeWidth={2.5} />
-                            {/* Status Pulse */}
-                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse shadow-sm" />
-                        </div>
-                    </button>
-                )
-            }
+            {/* Floating Chat Trigger */}
+            {!isOpen && (
+                <button
+                    onClick={() => {
+                        setIsOpen(true);
+                        if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                            window.navigator.vibrate([50, 30, 50]);
+                        }
+                    }}
+                    className="fixed bottom-24 right-5 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50"
+                    aria-label="Abrir asistente de ayuda"
+                >
+                    <div className="relative">
+                        <Bot className="w-7 h-7" strokeWidth={2.5} />
+                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse shadow-sm" />
+                    </div>
+                </button>
+            )}
 
             {/* Chat Backdrop */}
             <div
@@ -164,7 +141,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                     </div>
                 </div>
 
-                {/* Subheader (Expert Bar) */}
+                {/* Subheader */}
                 <div className="bg-white px-6 py-3 border-b border-stone-50 flex items-center gap-3 shrink-0 shadow-sm z-10">
                     <Bot className="w-4 h-4 text-primary/40" />
                     <span className="text-[10px] font-black text-primary/50 uppercase tracking-[0.25em]">EXPERTO EN {propertyName.toUpperCase()}</span>
@@ -176,32 +153,32 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                     className="flex-1 overflow-y-auto bg-white relative"
                 >
                     {messages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-start pt-12 text-center animate-in fade-in slide-in-from-top-4 duration-1000">
+                        <div className="flex flex-col items-center justify-start pt-4 pb-8 text-center animate-in fade-in slide-in-from-top-4 duration-1000">
                             {/* Empty State Icon */}
-                            <div className="w-28 h-28 bg-stone-50 rounded-full flex items-center justify-center mb-10 relative">
+                            <div className="w-16 h-16 bg-stone-50 rounded-full flex items-center justify-center mb-4 relative">
                                 <div className="absolute inset-0 bg-stone-100/50 rounded-full scale-110 animate-pulse" />
-                                <Bot className="w-12 h-12 text-primary/30 relative" />
+                                <Bot className="w-8 h-8 text-primary/30 relative" />
                             </div>
 
                             {/* Empty State Text */}
-                            <h4 className="text-[22px] font-bold text-primary mb-4 px-10 leading-tight font-serif tracking-tight">
+                            <h4 className="text-[18px] font-bold text-primary mb-2 px-10 leading-tight font-serif tracking-tight">
                                 {emptyTitle}
                             </h4>
-                            <p className="text-sm text-slate px-14 leading-relaxed font-medium">
+                            <p className="text-[12px] text-slate px-12 leading-relaxed font-medium opacity-70">
                                 {emptySubtitle}
                             </p>
 
-                            {/* FAQ Section (Stacked as requested) */}
-                            <div className="w-full px-6 mt-16 text-left">
-                                <p className="text-primary/40 text-[10px] font-black uppercase tracking-[0.2em] mb-4 text-center sm:text-left">
+                            {/* FAQ Section */}
+                            <div className="w-full px-5 mt-6 text-left">
+                                <p className="text-primary/40 text-[9px] font-black uppercase tracking-[0.2em] mb-4 text-center">
                                     {faqLabel}
                                 </p>
-                                <div className="flex flex-col gap-3">
+                                <div className="grid grid-cols-2 gap-3">
                                     {quickReplies.map((reply, i) => (
                                         <button
                                             key={i}
                                             onClick={() => append({ role: 'user', content: reply })}
-                                            className="w-full text-[13px] bg-white text-primary/80 px-6 py-3.5 rounded-2xl border border-stone-100 hover:border-primary/20 hover:bg-stone-50 transition-all text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-[0.98] font-semibold"
+                                            className="w-full text-[11px] bg-white text-primary/80 px-4 py-3 rounded-2xl border border-stone-100 hover:border-primary/20 hover:bg-stone-50 transition-all text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-[0.98] font-bold leading-tight"
                                         >
                                             {reply}
                                         </button>
@@ -323,5 +300,5 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                 </div>
             </div>
         </>
-    )
+    );
 }

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Sparkles, Save, BookOpen, ChevronRight, ChevronLeft, Check, Plus, Trash2, MapPin, Clock, Utensils, HelpCircle, ShieldAlert, Wifi, Package, Home as HomeIcon, Upload, X, Loader2, Phone, MessageSquare, AlertCircle } from 'lucide-react'
+import { Sparkles, Save, BookOpen, ChevronRight, ChevronLeft, Check, Plus, Trash2, MapPin, Clock, Utensils, HelpCircle, ShieldAlert, Wifi, Package, Home as HomeIcon, Upload, X, Loader2, Phone, MessageSquare, AlertCircle, Info } from 'lucide-react'
 import Image from 'next/image'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase/client'
@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { saveWizardStep } from '@/app/actions/wizard'
 import { getUploadUrl, getBrandingUploadUrl } from '@/app/actions/properties'
+import { processInventoryManuals } from '@/app/actions/ai-ingestion'
 import { useRef } from 'react'
 import { geocodeAddress, GeocodingResult } from '@/lib/geocoding'
 import { validateLocation, ValidationResult } from '@/lib/geocoding-validation'
@@ -24,7 +25,8 @@ import MapPreview from './MapPreview'
 import TransportInfo from './TransportInfo'
 import { VisualScanner } from '@/components/guides/VisualScanner'
 import { LocalRecommendations } from '@/components/guides/LocalRecommendations'
-import { Recommendation } from '@/components/guides/RecommendationCard'
+import { RecipeCard } from './RecipeCard'
+import { InventorySelector, InventoryItem } from './InventorySelector'
 import { ThemePreviewCard } from './ThemePreviewCard'
 import { PRESET_THEMES, Theme } from '@/lib/themes'
 import { harmonizeThemeFromPrimary } from '@/lib/color-harmonizer'
@@ -61,7 +63,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         },
         rules: { smoking: 'no', pets: 'no', quiet_hours: '22:00 - 08:00', checkout_time: '11:00', rules_items: [] },
         tech: { wifi_ssid: '', wifi_password: '', router_notes: '' },
-        inventory: { bathroom: [], bedroom: [], kitchen: [], cleaning: [] },
+        inventory: { selected_items: [] },
         dining: [],
         faqs: [],
         branding: {
@@ -178,12 +180,12 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
 
             const { data: propDetails } = await supabase
                 .from('properties')
-                .select('*')
+                .select('*, property_manuals(*)')
                 .eq('id', propertyId)
                 .single()
 
             if (propDetails) {
-                setProperty(propDetails)
+                setProperty({ ...propDetails, manuals: propDetails.property_manuals })
                 completed.push('property')
                 // Initialize geocoding refs to avoid redundant triggers on load
                 if (propDetails.full_address) {
@@ -343,6 +345,37 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         }
     }
 
+    const handleStepImageUpload = async (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        try {
+            setUploading(true)
+            const { uploadUrl, publicUrl } = await getUploadUrl(file.name, file.type)
+
+            const response = await fetch(uploadUrl, {
+                method: 'PUT',
+                body: file,
+                headers: {
+                    'Content-Type': file.type,
+                },
+            })
+
+            if (!response.ok) throw new Error('Error al subir la imagen')
+
+            const newSteps = [...data.checkin.steps]
+            newSteps[idx] = { ...newSteps[idx], image_url: publicUrl }
+            setData({ ...data, checkin: { ...data.checkin, steps: newSteps } })
+
+            toast({ title: 'Imagen subida', description: 'La foto se ha añadido al paso.' })
+        } catch (error) {
+            console.error('Upload error:', error)
+            toast({ title: 'Error de subida', description: 'No pudimos subir la imagen.', variant: 'destructive' })
+        } finally {
+            setUploading(false)
+        }
+    }
+
     const handleGeocode = async () => {
         if (!data.access.full_address) {
             toast({ title: 'Atención', description: 'Por favor, introduce una dirección primero.' });
@@ -430,12 +463,19 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         try {
             const currentPropId = propertyId || property?.id
 
-            // Sanitización específica para la categoría tech
+            // Sanitización específica para evitar objetos no planos (componentes React) en Server Actions
             let dataToSave = stepData;
             if (category === 'tech') {
                 const { tv_instructions, ...sanitizedTech } = stepData;
                 dataToSave = sanitizedTech;
                 console.log('[WIZARD] Saving sanitized tech data (removed legacy fields):', dataToSave);
+            } else if (category === 'inventory' && stepData?.selected_items) {
+                // Eliminar el campo 'icon' de los elementos, ya que contiene componentes React no serializables
+                dataToSave = {
+                    ...stepData,
+                    selected_items: stepData.selected_items.map(({ icon, ...rest }: any) => rest)
+                };
+                console.log('[WIZARD] Saving sanitized inventory data (removed React icons):', dataToSave);
             }
 
             const result = await saveWizardStep(
@@ -479,11 +519,29 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
 
                 if (result.isNew) {
                     if (onSuccess) onSuccess(result.property.id)
-                    router.push(`/dashboard/properties/${result.property.id}/setup?tab=access`)
+                    router.push(`/dashboard/properties/${result.property.id}/setup?tab=appearance`)
                     return
                 }
 
                 toast({ title: 'Guardado', description: `${category} actualizado correctamente.` })
+
+                // --- PROCESAMIENTO EN SEGUNDO PLANO PARA INVENTARIO ---
+                if (category === 'inventory' && dataToSave.selected_items) {
+                    // No bloqueamos el UI, lanzamos y avisamos
+                    processInventoryManuals(currentPropId, dataToSave.selected_items).then(res => {
+                        console.log('[INVENTORY] Background processing finished:', res)
+                        if (res.processed && res.processed > 0) {
+                            toast({
+                                title: 'IA: Manuales Generados',
+                                description: `Se han creado ${res.processed} nuevas guías basadas en tu selección.`,
+                                variant: 'default'
+                            })
+                        }
+                    }).catch(err => {
+                        console.error('[INVENTORY] Background processing failed:', err)
+                    })
+                }
+
                 const stepKey = category === 'branding' ? 'appearance' : category
                 setCompletedSteps(prev => Array.from(new Set([...prev, stepKey])))
 
@@ -524,12 +582,23 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         setAiLoading(section)
         const finalAddressToUse = data.access.full_address;
 
-        const payload = {
+        const payload: any = {
             propertyId,
             section,
             existingData: section === 'dining' || section === 'recommendations'
-                ? { address: finalAddressToUse, category }
+                ? {
+                    address: finalAddressToUse,
+                    category,
+                    existingNames: data.dining.map((r: any) => r.name)
+                }
                 : (section === 'transport' ? { address: finalAddressToUse } : undefined)
+        }
+
+        if (section === 'faqs') {
+            payload.existingData = {
+                checkin_time: data.checkin.checkin_time,
+                quiet_hours: data.rules.quiet_hours
+            }
         }
 
         // Registrar la posición que disparó la IA
@@ -554,9 +623,43 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
             }
 
             if (section === 'dining') {
-                setData((prev: any) => ({ ...prev, dining: [...prev.dining, ...result.recommendations] }))
+                const incomingRecs = result.recommendations || [];
+
+                // Deduplicate within the incoming results first (by name)
+                const uniqueIncoming = incomingRecs.reduce((acc: any[], current: any) => {
+                    const exists = acc.find(item => item.name.toLowerCase().trim() === current.name.toLowerCase().trim());
+                    if (!exists) return [...acc, current];
+                    return acc;
+                }, []);
+
+                // Deduplicate against existing data (by name)
+                const newRecs = uniqueIncoming.filter((nr: any) =>
+                    !data.dining.some((er: any) => er.name.toLowerCase().trim() === nr.name.toLowerCase().trim())
+                );
+
+                if (newRecs.length === 0 && incomingRecs.length > 0) {
+                    toast({
+                        title: 'Recomendaciones existentes',
+                        description: 'Las sugerencias generadas ya están en tu lista.',
+                    });
+                } else {
+                    setData((prev: any) => ({ ...prev, dining: [...prev.dining, ...newRecs] }));
+                }
             } else if (section === 'faqs') {
-                setData((prev: any) => ({ ...prev, faqs: [...prev.faqs, ...result.faqs] }))
+                // Filter out duplicates
+                const newFaqs = result.faqs.filter((nf: any) =>
+                    !data.faqs.some((ef: any) => ef.question.toLowerCase().trim() === nf.question.toLowerCase().trim())
+                );
+
+                if (newFaqs.length === 0 && result.faqs && result.faqs.length > 0) {
+                    toast({
+                        title: 'FAQs duplicadas',
+                        description: 'Las preguntas generadas por la IA ya están en tu lista.',
+                        variant: 'default'
+                    });
+                } else {
+                    setData((prev: any) => ({ ...prev, faqs: [...prev.faqs, ...newFaqs] }))
+                }
             } else if (section === 'transport') {
                 setData((prev: any) => ({
                     ...prev,
@@ -696,7 +799,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                             className={cn(
                                 "flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all text-[9px] sm:text-[10px] py-1.5 sm:py-2 font-semibold uppercase tracking-wide transition-all",
                                 property?.inventory_status === 'generating' && "text-red-500 animate-pulse border border-red-100 bg-red-50/30",
-                                completedSteps.includes('inventory') && "bg-emerald-50/50 text-emerald-700 data-[state=active]:text-primary"
+                                completedSteps.includes('scanner') && "bg-emerald-50/50 text-emerald-700 data-[state=active]:text-primary"
                             )}
                         >
                             {property?.inventory_status === 'generating' ? (
@@ -705,8 +808,17 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                     PROCESANDO...
                                 </span>
                             ) : (
-                                <>{completedSteps.includes('inventory') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <Package className="w-3 h-3 mr-1" />} Escáner</>
+                                <>{completedSteps.includes('scanner') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <Package className="w-3 h-3 mr-1" />} Escáner</>
                             )}
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="inventory"
+                            className={cn(
+                                "flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all text-[9px] sm:text-[10px] py-1.5 sm:py-2 font-semibold uppercase tracking-wide",
+                                completedSteps.includes('inventory') && "bg-emerald-50/50 text-emerald-700 data-[state=active]:text-primary"
+                            )}
+                        >
+                            {completedSteps.includes('inventory') ? <Check className="w-3 h-3 mr-1 text-emerald-500" /> : <Package className="w-3 h-3 mr-1" />} Inventario
                         </TabsTrigger>
                         <TabsTrigger
                             value="dining"
@@ -884,29 +996,24 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                 <CardDescription className="text-xs">Define los pasos que debe seguir el huésped para entrar.</CardDescription>
                             </CardHeader>
                             <CardContent className="p-4 space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                                     <div className="space-y-2">
-                                        <Label>Horario de Check-in Disponible</Label>
-                                        <Input
-                                            placeholder="Ej: 15:00 - 22:00"
-                                            value={data.checkin.checkin_time}
-                                            onChange={e => setData({ ...data, checkin: { ...data.checkin, checkin_time: e.target.value } })}
-                                        />
+                                        <Label className="text-sm font-semibold text-slate-700">Horario de Check-in Disponible</Label>
+                                        <div className="relative">
+                                            <Input
+                                                placeholder="Ej: 15:00 - 22:00"
+                                                className="h-11 pl-10 bg-slate-50/50 border-slate-200 focus:bg-white transition-all rounded-xl"
+                                                value={data.checkin.checkin_time}
+                                                onChange={e => setData({ ...data, checkin: { ...data.checkin, checkin_time: e.target.value } })}
+                                            />
+                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>Teléfono de Asistencia (Llamar si hay problemas)</Label>
-                                        <Input
-                                            placeholder="Ej: 666 123 456"
-                                            value={data.contacts.support_phone}
-                                            onChange={e => {
-                                                const val = e.target.value;
-                                                setData({
-                                                    ...data,
-                                                    contacts: { ...data.contacts, support_phone: val },
-                                                    checkin: { ...data.checkin, emergency_phone: val }
-                                                });
-                                            }}
-                                        />
+                                    <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-100 flex items-start gap-3">
+                                        <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                                        <p className="text-[11px] text-blue-700 leading-tight">
+                                            <span className="font-bold">Contacto de asistencia:</span> Sincronizado automáticamente con tu "Contacto Preferente". Puedes cambiarlo en la pestaña anterior.
+                                        </p>
                                     </div>
                                 </div>
 
@@ -972,6 +1079,43 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                                                             setData({ ...data, checkin: { ...data.checkin, steps: newSteps } });
                                                         }}
                                                     />
+
+                                                    {/* Image Upload for Step */}
+                                                    <div className="flex items-center gap-4 pt-2">
+                                                        {step.image_url ? (
+                                                            <div className="relative w-24 h-24 rounded-xl overflow-hidden group/img">
+                                                                <img src={step.image_url} alt="Step preview" className="w-full h-full object-cover" />
+                                                                <button
+                                                                    className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
+                                                                    onClick={() => {
+                                                                        const newSteps = [...data.checkin.steps];
+                                                                        newSteps[idx].image_url = '';
+                                                                        setData({ ...data, checkin: { ...data.checkin, steps: newSteps } });
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="w-5 h-5 text-white" />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div
+                                                                className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-slate-50 transition-colors"
+                                                                onClick={() => document.getElementById(`step-image-${idx}`)?.click()}
+                                                            >
+                                                                <Upload className="w-4 h-4 text-slate-400" />
+                                                                <span className="text-[10px] font-bold text-slate-500">Añadir foto</span>
+                                                                <input
+                                                                    id={`step-image-${idx}`}
+                                                                    type="file"
+                                                                    className="hidden"
+                                                                    accept="image/*"
+                                                                    onChange={(e) => handleStepImageUpload(idx, e)}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        <p className="text-[10px] text-slate-400 max-w-[150px]">
+                                                            Sube una foto del portal, del cajetín de llaves o de la puerta para ayudar al huésped.
+                                                        </p>
+                                                    </div>
                                                 </div>
                                                 <Button
                                                     variant="ghost"
@@ -1948,7 +2092,33 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                             </CardContent>
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
                                 <Button variant="ghost" onClick={() => handleTabChange('tech')}><ChevronLeft className="mr-2" /> Anterior</Button>
-                                <Button onClick={() => handleTabChange('dining')} disabled={loading}>Continuar a Recomendaciones <ChevronRight className="ml-2" /></Button>
+                                <Button onClick={() => {
+                                    setCompletedSteps(prev => Array.from(new Set([...prev, 'scanner'])))
+                                    handleTabChange('inventory')
+                                }} disabled={loading}>Continuar a Inventario <ChevronRight className="ml-2" /></Button>
+                            </CardFooter>
+                        </Card>
+                    </TabsContent>
+
+                    {/* --- INVENTARIO DE LA PROPIEDAD --- */}
+                    <TabsContent value="inventory" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
+                            <CardHeader className="bg-slate-50 border-b py-3 px-4">
+                                <div>
+                                    <CardTitle className="text-base">Inventario y Dotación</CardTitle>
+                                    <CardDescription className="text-xs">Selecciona lo que tienes disponible para que la IA pueda guiar a tus huéspedes.</CardDescription>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-4">
+                                <InventorySelector
+                                    items={data.inventory?.selected_items || []}
+                                    existingManuals={property?.manuals || []}
+                                    onChange={(items) => setData({ ...data, inventory: { ...data.inventory, selected_items: items } })}
+                                />
+                            </CardContent>
+                            <CardFooter className="bg-slate-50 border-t p-6 flex justify-between">
+                                <Button variant="ghost" onClick={() => handleTabChange('visual-scanner')}><ChevronLeft className="mr-2" /> Anterior</Button>
+                                <Button onClick={() => saveStep('inventory', data.inventory, 'dining')} disabled={loading}>Guardar y Continuar <ChevronRight className="ml-2" /></Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>

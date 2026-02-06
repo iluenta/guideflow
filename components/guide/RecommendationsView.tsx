@@ -19,7 +19,9 @@ import {
     Camera,
     Bike,
     Waves,
-    Coffee
+    Coffee,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +35,11 @@ interface Recommendation {
     price_range?: string;
     personal_note?: string;
     map_url?: string;
+    metadata?: {
+        time?: string;
+        price_range?: string;
+        personal_note?: string;
+    };
 }
 
 interface RecommendationsViewProps {
@@ -40,6 +47,7 @@ interface RecommendationsViewProps {
     recommendations: Recommendation[];
     group: 'eat' | 'do' | 'shopping';
     currentLanguage?: string;
+    city?: string;
 }
 
 const categoryConfigs: Record<string, { icon: any, color: string, bgColor: string, activeBg: string, hex: string }> = {
@@ -90,8 +98,9 @@ const groupConfigs = {
     }
 };
 
-export function RecommendationsView({ onBack, recommendations, group, currentLanguage = 'es' }: RecommendationsViewProps) {
+export function RecommendationsView({ onBack, recommendations, group, currentLanguage = 'es', city }: RecommendationsViewProps) {
     const [selectedCategory, setSelectedCategory] = useState('todos');
+    const [expandedId, setExpandedId] = useState<string | null>(null);
     const config = groupConfigs[group];
 
     const filteredRecommendations = useMemo(() => {
@@ -106,10 +115,32 @@ export function RecommendationsView({ onBack, recommendations, group, currentLan
         return items;
     }, [recommendations, group, selectedCategory]);
 
-    const handleOpenMap = (url?: string) => {
-        if (url) {
-            window.open(url, '_blank');
-        }
+    const getMapsUrl = (rec: Recommendation) => {
+        if (rec.map_url && rec.map_url.startsWith('http')) return rec.map_url;
+
+        // Smart URL generation based on name, category and city context
+        const locationContext = city ? ` ${city}` : '';
+        const query = encodeURIComponent(`${rec.name} ${rec.type || ''}${locationContext}`);
+        // Universal Google Maps search URL (works on iOS and Android)
+        return `https://www.google.com/maps/search/?api=1&query=${query}`;
+    };
+
+    const getRecommendationDetails = (rec: Recommendation) => {
+        return {
+            price: rec.price_range || rec.metadata?.price_range,
+            time: rec.time || rec.metadata?.time,
+            note: rec.personal_note || rec.metadata?.personal_note
+        };
+    };
+
+    const handleOpenMap = (e: React.MouseEvent, rec: Recommendation) => {
+        e.stopPropagation();
+        const url = getMapsUrl(rec);
+        window.open(url, '_blank');
+    };
+
+    const toggleExpand = (id: string) => {
+        setExpandedId(prev => prev === id ? null : id);
     };
 
     return (
@@ -173,49 +204,101 @@ export function RecommendationsView({ onBack, recommendations, group, currentLan
                             const catStyle = categoryConfigs[catLabel] || categoryConfigs.todos;
                             const Icon = catStyle.icon;
 
+                            const isExpanded = expandedId === rec.id;
+                            const details = getRecommendationDetails(rec);
+
                             return (
                                 <div
                                     key={rec.id}
-                                    onClick={() => handleOpenMap(rec.map_url)}
-                                    className="bg-white rounded-2xl p-5 shadow-card hover:shadow-card-hover transition-all duration-300 group cursor-pointer flex items-start gap-4"
+                                    onClick={() => toggleExpand(rec.id)}
+                                    className={cn(
+                                        "bg-white rounded-2xl p-5 shadow-card hover:shadow-card-hover transition-all duration-300 group cursor-pointer flex flex-col gap-4 overflow-hidden border border-transparent",
+                                        isExpanded && "border-navy/5 ring-1 ring-navy/5 shadow-lg"
+                                    )}
                                 >
-                                    {/* Icon Box */}
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${catStyle.bgColor} ${catStyle.color}`}>
-                                        <Icon className="w-6 h-6" strokeWidth={1.5} />
-                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        {/* Icon Box */}
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${catStyle.bgColor} ${catStyle.color}`}>
+                                            <Icon className="w-6 h-6" strokeWidth={1.5} />
+                                        </div>
 
-                                    {/* Content */}
-                                    <div className="flex-1 min-w-0 pt-0.5">
-                                        <h3 className="font-serif text-lg text-navy font-bold leading-tight mb-1.5">
-                                            {rec.name}
-                                        </h3>
-                                        {rec.description && (
-                                            <p className="text-[13px] text-slate leading-relaxed mb-4 line-clamp-2">
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0 pt-0.5">
+                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                                <h3 className="font-serif text-lg text-navy font-bold leading-tight truncate">
+                                                    {rec.name}
+                                                </h3>
+                                                {isExpanded ? (
+                                                    <ChevronUp className="w-4 h-4 text-navy/20 shrink-0" />
+                                                ) : (
+                                                    <ChevronDown className="w-4 h-4 text-navy/20 shrink-0" />
+                                                )}
+                                            </div>
+
+                                            <p className={cn(
+                                                "text-[13px] text-slate leading-relaxed transition-all duration-300",
+                                                !isExpanded && "line-clamp-2"
+                                            )}>
                                                 {rec.description}
                                             </p>
-                                        )}
 
-                                        {/* Meta Info */}
-                                        <div className="flex items-center gap-5">
-                                            {rec.distance && (
-                                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
-                                                    <MapPin className="w-3.5 h-3.5 opacity-50" />
-                                                    {rec.distance}
+                                            {isExpanded && (
+                                                <div className="mt-4 space-y-4 pt-4 border-t border-navy/5">
+                                                    {/* Additional Info Row */}
+                                                    <div className="flex flex-wrap gap-4">
+                                                        {details.price && (
+                                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate/80 bg-slate/5 px-2.5 py-1 rounded-lg">
+                                                                <span className="text-navy/40">Precio:</span>
+                                                                <span className="text-primary">{details.price}</span>
+                                                            </div>
+                                                        )}
+                                                        {details.time && (
+                                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate/80 bg-slate/5 px-2.5 py-1 rounded-lg">
+                                                                <Clock className="w-3.5 h-3.5 text-navy/30" />
+                                                                <span className="text-navy/40">Tiempo:</span>
+                                                                <span>{details.time}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {details.note && (
+                                                        <div className="p-4 rounded-xl bg-beige/50 border-l-2 border-primary/20 italic">
+                                                            <p className="text-[13px] text-navy/70 leading-relaxed">
+                                                                "{details.note}"
+                                                            </p>
+                                                            <p className="text-[10px] text-primary/60 font-black uppercase tracking-widest mt-2 not-italic">
+                                                                Consejo del anfitrión
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
-                                            {rec.time && (
-                                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
-                                                    <Clock className="w-3.5 h-3.5 opacity-50" />
-                                                    {rec.time}
-                                                </div>
-                                            )}
+
+                                            {/* Meta Info */}
+                                            <div className="flex items-center gap-5 mt-4">
+                                                {rec.distance && (
+                                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
+                                                        <MapPin className="w-3.5 h-3.5 opacity-50" />
+                                                        {rec.distance}
+                                                    </div>
+                                                )}
+                                                {details.time && (
+                                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
+                                                        <Clock className="w-3.5 h-3.5 opacity-50" />
+                                                        {details.time}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    {/* Action Arrow (Mockup Style) */}
-                                    <div className="self-center">
-                                        <div className="w-8 h-8 rounded-full bg-beige flex items-center justify-center text-navy opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0 duration-300">
-                                            <ArrowRight className="w-4 h-4" />
+                                        {/* Action Arrow (Maps) */}
+                                        <div className="self-start pt-1">
+                                            <button
+                                                onClick={(e) => handleOpenMap(e, rec)}
+                                                className="w-10 h-10 rounded-full bg-beige hover:bg-primary/10 flex items-center justify-center text-navy transition-all active:scale-90"
+                                            >
+                                                <ArrowRight className="w-5 h-5" />
+                                            </button>
                                         </div>
                                     </div>
                                 </div>

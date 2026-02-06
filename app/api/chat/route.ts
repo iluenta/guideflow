@@ -83,7 +83,7 @@ export async function POST(req: Request) {
         // 2. Búsqueda vectorial UNIFICADA
         const { data: relevantChunks, error: rpcError } = await supabase.rpc('match_all_context', {
             query_embedding: questionEmbedding,
-            match_threshold: 0.05,
+            match_threshold: 0.5,
             match_count: 25,
             p_property_id: propertyId
         });
@@ -188,6 +188,7 @@ REGLAS DE ORO:
     - En consultas rutinarias (recomendaciones, WiFi, normas), NO incluyas contactos al final de la respuesta.
 8. **Temporalidad (CRÍTICO)**: Usa la información de [FECHA Y HORA ACTUAL DEL SISTEMA] para responder con precisión preguntas sobre horarios (check-out, apertura, ruido). NUNCA digas una hora diferente a la proporcionada en ese bloque.
 9. **Tono**: Amable, premium, servicial y directo. Usa Markdown.
+10. **Sin Suposiciones (CRÍTICO)**: NO inventes ni supongas ubicaciones físicas de llaves, cajas de seguridad o mandos (ej. NO digas "junto a la puerta" o "en el salón") si no está explícitamente indicado en el [CONTEXTO]. Si falta el dato, indica que no dispones de esa información específica.
 
 CONTEXTO TEMPORAL:
 ${currentTimeContext}
