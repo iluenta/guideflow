@@ -15,42 +15,28 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     const { token } = await searchParams
     const supabase = await createClient()
 
-    // 1. Check Authentication (Host check)
+    // Auth & Security are handled by middleware. Only proceed if you need the user object for host-specific UI.
     const { data: { user } } = await supabase.auth.getUser()
 
-    // 2. Security validation (Backup for middleware)
-    if (!user) {
-        if (!token) {
-            redirect('/access-denied?reason=token_required')
-        }
-
-        const validation = await validateAccessToken(supabase, token)
-        if (!validation.valid) {
-            redirect(`/access-denied?reason=${validation.reason}`)
-        }
-    }
-
     const property = await getPropertyBySlug(slug)
+    if (!property) notFound()
 
-    if (!property) {
-        notFound()
-    }
-
-    const sections = await getGuideSections(property.id)
-    const manuals = await getPropertyManuals(property.id)
-    const recommendations = await getPropertyRecommendations(property.id)
-    const faqs = await getPropertyFaqs(property.id)
-
-    const { data: context } = await supabase
-        .from('property_context')
-        .select('*')
-        .eq('property_id', property.id)
-
-    const { data: branding } = await supabase
-        .from('property_branding')
-        .select('*')
-        .eq('property_id', property.id)
-        .single()
+    // Parallelize all data fetching
+    const [
+        sections,
+        manuals,
+        recommendations,
+        faqs,
+        { data: context },
+        { data: branding }
+    ] = await Promise.all([
+        getGuideSections(property.id),
+        getPropertyManuals(property.id),
+        getPropertyRecommendations(property.id),
+        getPropertyFaqs(property.id),
+        supabase.from('property_context').select('*').eq('property_id', property.id),
+        supabase.from('property_branding').select('*').eq('property_id', property.id).single()
+    ])
 
     const theme = branding?.computed_theme || {
         colors: {

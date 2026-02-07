@@ -17,7 +17,7 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: 'GuideFlow - Gestiona tu Alojamiento Turistico',
   description: 'Plataforma todo en uno para propietarios de alojamientos turisticos. Landing personalizable, calendario de reservas y guia del huesped con IA.',
-  generator: 'v0.app',
+  manifest: '/manifest.json',
   icons: {
     icon: [
       {
@@ -37,6 +37,18 @@ export const metadata: Metadata = {
   },
 }
 
+const SW_SCRIPT = `
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js').then(function(registration) {
+        console.log('SW registered: ', registration);
+      }, function(err) {
+        console.log('SW registration failed: ', err);
+      });
+    });
+  }
+`;
+
 import { Toaster } from "@/components/ui/sonner"
 
 export default function RootLayout({
@@ -50,6 +62,7 @@ export default function RootLayout({
         {children}
         <Analytics />
         <Toaster />
+        <script dangerouslySetInnerHTML={{ __html: SW_SCRIPT }} />
       </body>
     </html>
   )

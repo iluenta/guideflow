@@ -39,12 +39,39 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
     const [language, setLanguage] = useState<string>('es');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    // DEBUG: Log state changes
-    useEffect(() => {
-        console.log('GuideView: currentPage changed to:', currentPage);
-    }, [currentPage]);
+    // --- CACHE & OFFLINE LOGIC ---
+    const cacheKey = `guide_data_${property.id}`;
+    const [localData, setLocalData] = useState<any>(null);
 
-    const welcomeData = context?.find(c => c.category === 'welcome')?.content;
+    // Initial load from cache
+    useEffect(() => {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            try {
+                setLocalData(JSON.parse(cached));
+                console.log('[OFFLINE] Loaded data from LocalStorage');
+            } catch (e) {
+                console.error('[OFFLINE] LocalStorage parse error');
+            }
+        }
+    }, [cacheKey]);
+
+    // Save to cache when props arrive
+    useEffect(() => {
+        if (property && sections && manuals) {
+            const dataToCache = { property, branding, sections, manuals, recommendations, faqs, context, timestamp: Date.now() };
+            localStorage.setItem(cacheKey, JSON.stringify(dataToCache));
+        }
+    }, [property, branding, sections, manuals, recommendations, faqs, context, cacheKey]);
+
+    // Fallback UI data
+    const displayProperty = property || localData?.property;
+    const displayContext = context || localData?.context || [];
+    const displayManuals = manuals || localData?.manuals || [];
+    const displayRecommendations = recommendations || localData?.recommendations || [];
+    const displayFaqs = faqs || localData?.faqs || [];
+
+    const welcomeData = displayContext?.find((c: any) => c.category === 'welcome')?.content;
 
     // Auto-detect browser language
     useEffect(() => {

@@ -271,21 +271,34 @@ RESPONDE SOLO CON EL JSON.`
                         4. **HALLUCINACIÓN**: NUNCA inventes especificaciones técnicas profundas (cilindradas, voltajes, mecánicas complejas) si no son evidentes. Sé descriptivo del uso, no de la ingeniería.
                         5. **FALLOS**: Incluye solo 3-4 consejos prácticos de problemas comunes (ej. "si no sale agua, verifica la llave de paso").`
                     } else {
-                        generationPrompt = `Genera un manual técnico exhaustivo para un ${analysis.brand} ${analysis.model || '(Modelo genérico)'}.
-                        ${isGeneric ? 'NOTA: No se ha identificado el modelo exacto. Genera un "MANUAL UNIVERSAL" basado en las mejores prácticas de este tipo de aparato, con instrucciones seguras y estándar.' : ''}
-                        Contexto web: ${webContext}
+                        generationPrompt = `Genera un manual técnico para un ${analysis.brand} ${analysis.model || ''} (${analysis.appliance_type}).
                         
-                        REGLAS CRÍTICAS PARA LA IA:
-                        1. **DICCIONARIO DE SÍMBOLOS**: Describe físicamente los iconos y su función.
-                        2. **PROHIBICIÓN DE EMOJIS**: No uses emojis.
-                        3. **ESPECIFICACIONES**: Incluye mapa de mandos, mantenimiento y guía de fallos (+15 problemas).
-                        4. **HALLUCINACIÓN**: Si no conoces el modelo, NO inventes una marca o especificaciones técnicas arbitrarias. Sé genérico pero preciso en el uso.`
+                        CONTEXTO VISUAL CRÍTICO:
+                        Analiza minuciosamente la imagen. Si ves un panel de control, una ruleta con programas, o botones específicos, DEBES describirlos.
+                        Ejemplo: Si ves una ruleta con "Rápido 30°", "Algodón", "Lana", descríbelos como programas disponibles.
+                        
+                        REGLAS DE ORO:
+                        1. **PROHIBIDO SER GENÉRICO**: No digas "consulte su manual". TÚ ERES EL MANUAL. Si no sabes el modelo exacto, describe lo que VES en la foto.
+                        2. **DICCIONARIO DE SÍMBOLOS**: Crea una tabla o lista con los iconos/textos que ves en los mandos y explica para qué sirven.
+                        3. **INSTRUCCIONES DE PASO A PASO**: "1. Gira la rueda a X... 2. Pulsa el botón Y...".
+                        4. **MARCA ${analysis.brand}**: Menciona características típicas de esta marca si son visibles.
+                        ${isGeneric ? '\nADVERTENCIA: Aunque el modelo exacto no esté confirmado, NO inventes datos técnicos invisibles. Céntrate 100% en lo que un humano puede ver y operar en el panel de control de la imagen.' : ''}
+                        
+                        Contexto web extra: ${webContext}
+                        
+                        ESTRUCTURA:
+                        - Introducción (Qué es y para qué sirve).
+                        - Guía de Mandos y Programas (Basado estrictamente en lo que se ve en la foto).
+                        - Cómo ponerlo en marcha (Paso a paso).
+                        - Consejos de seguridad y mantenimiento.
+                        - Resolución de problemas comunes.
+                        
+                        Responde en Markdown estructurado, directo y útil.`
                     }
 
-                    const genResponse = await geminiREST('gemini-2.0-flash', generationPrompt, {
-                        responseMimeType: 'text/plain',
-                        temperature: 0.5
-                    })
+                    const genResponse = await analyzeImageWithGemini(url, generationPrompt)
+
+                    // Ajustar parámetros para la generación (analyzeImageWithGemini usa gemini-2.0-flash por defecto)
 
                     const manualContent = genResponse?.data
                     if (!manualContent) {
@@ -367,9 +380,9 @@ RESPONDE SOLO CON EL JSON.`
                         };
                     }));
 
-                    const { error: ctxErr } = await supabase
-                        .from('context_embeddings')
-                        .upsert(contextEmbeddings, { onConflict: 'source_id,content' })
+                    // Borramos posibles restos previos para este source_id antes de insertar (más robusto que upsert con texto largo)
+                    await supabase.from('context_embeddings').delete().eq('source_id', manual.id);
+                    const { error: ctxErr } = await supabase.from('context_embeddings').insert(contextEmbeddings);
 
                     if (ctxErr) console.error('[BATCH] context_embeddings upsert error:', ctxErr.message)
 
@@ -569,7 +582,8 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
                     }
                 }))
 
-                await supabase.from('context_embeddings').upsert(contextEmbeddings, { onConflict: 'source_id,content' })
+                await supabase.from('context_embeddings').delete().eq('source_id', manual.id);
+                await supabase.from('context_embeddings').insert(contextEmbeddings);
 
             } catch (itemErr: any) {
                 console.error(`[INVENTORY] Error processing ${item.name}:`, itemErr.message)
