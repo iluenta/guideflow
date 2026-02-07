@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import './globals.css'
 
 const inter = Inter({
@@ -61,6 +62,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased bg-beige text-navy`}>
         {children}
         <Analytics />
+        <SpeedInsights />
         <Toaster />
         <script dangerouslySetInnerHTML={{ __html: SW_SCRIPT }} />
       </body>
