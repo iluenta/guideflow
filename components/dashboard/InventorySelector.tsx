@@ -59,7 +59,7 @@ const CATEGORIES = [
     { id: 'comfort', name: 'Confort y Limpieza', icon: Refrigerator }, // Using Refrigerator as placeholder for large stuff
 ]
 
-const DEFAULT_ITEMS: Omit<InventoryItem, 'isPresent'>[] = [
+export const DEFAULT_ITEMS: Omit<InventoryItem, 'isPresent'>[] = [
     // Pequeños Electrodomésticos
     { id: 'cafetera', name: 'Cafetera', category: 'small-appliances', icon: Coffee },
     { id: 'tostadora', name: 'Tostadora', category: 'small-appliances', icon: Wind },
@@ -110,21 +110,34 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
     const [editingId, setEditingId] = useState<string | null>(null)
     const [tempContext, setTempContext] = useState('')
 
-    // Initialize items if none provided
-    const displayItems = items.length > 0 ? items : DEFAULT_ITEMS.map(di => ({
-        ...di,
-        isPresent: false,
-        isFromScanner: existingManuals.some(m =>
-            m.appliance_name.toLowerCase().includes(di.id.toLowerCase()) ||
-            di.name.toLowerCase().includes(m.appliance_name.toLowerCase())
-        )
-    }))
+    // Initialize items by merging defaults with current selection and scanner info
+    const displayItems: InventoryItem[] = DEFAULT_ITEMS.map(di => {
+        const existingItem = items.find(i => i.id === di.id)
+        const isFromScanner = existingManuals.some(m => {
+            // Ignore manuals created by the inventory selector itself (not detections)
+            if (m.metadata?.source === 'inventory_selector') return false
+
+            const manualName = (m.appliance_name || '').toLowerCase().trim()
+            if (manualName.length < 3) return false
+            const itemId = di.id.toLowerCase()
+            const itemName = di.name.toLowerCase()
+            return manualName.includes(itemId) ||
+                itemName.includes(manualName)
+        })
+
+        return {
+            ...di,
+            // If it's already in the selection list, use that state.
+            // If not, but it was found by scanner, default to present (but allowed to toggle).
+            isPresent: existingItem ? existingItem.isPresent : isFromScanner,
+            customContext: existingItem?.customContext || '',
+            isFromScanner
+        }
+    })
 
     const handleToggle = (id: string) => {
         const newItems = displayItems.map(item => {
             if (item.id === id) {
-                // If it was from scanner, it's always true/fixed or at least prioritized
-                if (item.isFromScanner) return item
                 return { ...item, isPresent: !item.isPresent }
             }
             return item
@@ -182,18 +195,17 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
                                     key={item.id}
                                     className={cn(
                                         "flex items-center justify-between p-4 rounded-3xl border transition-all duration-300",
-                                        item.isPresent || item.isFromScanner
+                                        item.isPresent
                                             ? "border-primary/20 bg-primary/[0.02] shadow-sm"
-                                            : "border-slate-100 bg-white hover:border-slate-200"
+                                            : "border-slate-100 bg-white hover:border-slate-200 opacity-60 hover:opacity-100"
                                     )}
                                 >
                                     <div className="flex items-center gap-4 flex-1 min-w-0">
                                         <div className="relative flex items-center justify-center">
                                             <Checkbox
                                                 id={item.id}
-                                                checked={item.isPresent || item.isFromScanner}
+                                                checked={item.isPresent}
                                                 onCheckedChange={() => handleToggle(item.id)}
-                                                disabled={item.isFromScanner}
                                                 className="h-6 w-6 rounded-xl border-slate-300 transition-all data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                             />
                                             {item.isFromScanner && (
@@ -207,7 +219,7 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
                                                 htmlFor={item.id}
                                                 className={cn(
                                                     "text-sm font-bold cursor-pointer select-none truncate block transition-colors",
-                                                    (item.isPresent || item.isFromScanner) ? "text-slate-900" : "text-slate-400"
+                                                    item.isPresent ? "text-slate-900" : "text-slate-400"
                                                 )}
                                             >
                                                 {item.name}
@@ -228,7 +240,7 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
                                     </div>
 
                                     <div className="flex items-center gap-2 shrink-0">
-                                        {(item.isPresent || item.isFromScanner) && (
+                                        {item.isPresent && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -239,14 +251,16 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
                                                 <span className="hidden md:inline">Nota</span>
                                             </Button>
                                         )}
-                                        {item.isFromScanner ? (
-                                            <div className="h-7 w-7 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shadow-sm">
-                                                <CheckCircle2 className="w-4 h-4" />
-                                            </div>
-                                        ) : item.isPresent ? (
-                                            <div className="h-7 px-3 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-sm">
-                                                <span className="text-[10px] font-bold uppercase">SÍ</span>
-                                            </div>
+                                        {item.isPresent ? (
+                                            item.isFromScanner ? (
+                                                <div className="h-7 w-7 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shadow-sm">
+                                                    <CheckCircle2 className="w-4 h-4" />
+                                                </div>
+                                            ) : (
+                                                <div className="h-7 px-3 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-sm">
+                                                    <span className="text-[10px] font-bold uppercase">SÍ</span>
+                                                </div>
+                                            )
                                         ) : null}
                                     </div>
                                 </div>

@@ -215,6 +215,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                                             <div className="prose prose-sm max-w-none prose-slate">
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm]}
+                                                    urlTransform={(url) => url}
                                                     components={{
                                                         a: ({ node, href, children, ...props }) => {
                                                             if (href?.startsWith('tel_wa:')) {
@@ -223,10 +224,10 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                                                                 return (
                                                                     <span className="inline-flex items-center gap-1.5 bg-primary/5 px-2 py-0.5 rounded-lg border border-primary/10 font-bold text-primary">
                                                                         {children}
-                                                                        <div className="flex items-center gap-1 ml-1 pl-1 border-l border-primary/20">
+                                                                        <span className="inline-flex items-center gap-1 ml-1 pl-1 border-l border-primary/20">
                                                                             <a
                                                                                 href={`tel:${num}`}
-                                                                                className="p-1 hover:bg-primary/10 rounded-md transition-colors"
+                                                                                className="p-1 hover:bg-primary/10 rounded-md transition-colors inline-flex"
                                                                                 title="Llamar"
                                                                             >
                                                                                 <Phone className="w-3.5 h-3.5" />
@@ -235,12 +236,12 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                                                                                 href={`https://wa.me/${cleanNum}`}
                                                                                 target="_blank"
                                                                                 rel="noopener noreferrer"
-                                                                                className="p-1 hover:bg-green-50 rounded-md transition-colors text-green-600"
+                                                                                className="p-1 hover:bg-green-50 rounded-md transition-colors text-green-600 inline-flex"
                                                                                 title="WhatsApp"
                                                                             >
                                                                                 <MessageCircle className="w-3.5 h-3.5" />
                                                                             </a>
-                                                                        </div>
+                                                                        </span>
                                                                     </span>
                                                                 );
                                                             }

@@ -1,0 +1,486 @@
+La clave: Gemini con web search habilitado puede buscar en tiempo real la información de transporte público que necesitamos.
+
+📦 Implementación Alternativa (Sin APIs de Pago)
+1. Función para Obtener Info de Transporte con Gemini
+typescript// lib/discovery/transit-search.ts
+import { geminiREST } from '@/lib/ai/gemini-rest'
+
+/**
+ * Búsqueda web inteligente de transporte público desde aeropuerto
+ */
+export async function searchAirportTransportOptions(
+    airportCode: string,
+    airportName: string,
+    cityName: string,
+    destinationCoords: [number, number],
+    nearbyMetroStations: Array<{ name: string, lines: string[], distance_m: number }>
+): Promise<{
+    public_transport: Array<{
+        type: 'metro' | 'train' | 'bus' | 'shuttle',
+        name: string,
+        route: string,
+        frequency: string,
+        duration: string,
+        price: string,
+        notes?: string
+    }>,
+    taxi: {
+        price_range: string,
+        duration: string,
+        uber_available: boolean,
+        notes?: string
+    }
+}> {
+    
+    const nearbyStationsText = nearbyMetroStations.length > 0
+        ? `Las estaciones de metro más cercanas al destino son: ${nearbyMetroStations.slice(0, 3).map(s => `${s.name} (${s.distance_m}m, líneas ${s.lines.join('/')})`).join(', ')}`
+        : 'No hay estaciones de metro identificadas cerca del destino'
+    
+    const prompt = `Busca información actualizada sobre cómo llegar desde el aeropuerto ${airportName} (${airportCode}) al centro de ${cityName}.
+
+🎯 **CONTEXTO DEL DESTINO:**
+- Ciudad: ${cityName}
+- ${nearbyStationsText}
+
+📋 **INFORMACIÓN A BUSCAR:**
+
+1. **Transporte Público desde ${airportCode}:**
+   - ¿Qué líneas de metro/tren/autobús conectan el aeropuerto con el centro?
+   - Para cada opción: nombre, ruta, frecuencia, duración, precio
+   - Si hay estaciones de metro cercanas al destino mencionadas arriba, indica cómo conectar
+
+2. **Taxi/VTC desde ${airportCode}:**
+   - Precio estimado al centro de ${cityName}
+   - ¿Hay tarifa plana oficial?
+   - ¿Está disponible Uber/Bolt/Cabify/similar?
+   - Duración estimada del trayecto
+
+🔍 **ESTRATEGIA DE BÚSQUEDA:**
+- Busca en webs oficiales del aeropuerto
+- Busca en autoridades de transporte público de ${cityName}
+- Busca en guías de viaje actualizadas (Wikivoyage, Rome2Rio web, etc.)
+
+📤 **FORMATO DE RESPUESTA (JSON ESTRICTO):**
+{
+  "public_transport": [
+    {
+      "type": "metro",
+      "name": "Metro Línea 8",
+      "route": "Aeropuerto → Nuevos Ministerios",
+      "frequency": "Cada 5-10 minutos",
+      "duration": "15 minutos",
+      "price": "€5.00",
+      "notes": "Suplemento aeropuerto incluido"
+    }
+  ],
+  "taxi": {
+    "price_range": "€30-40",
+    "duration": "25-35 minutos",
+    "uber_available": true,
+    "notes": "Tarifa plana €30 oficial"
+  }
+}
+
+⚠️ **IMPORTANTE:**
+- Si no encuentras información exacta, usa estimaciones razonables basadas en ciudades similares
+- Prioriza fuentes oficiales sobre foros
+- Si los precios han cambiado recientemente, usa los actualizados
+
+RESPONDE SOLO CON EL JSON.`
+
+    try {
+        const response = await geminiREST('gemini-2.0-flash', prompt, {
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+            tools: [{
+                type: 'web_search_20250305' as const,
+                name: 'web_search'
+            }]
+        })
+        
+        const data = response?.data
+        
+        if (!data || !data.public_transport) {
+            console.warn('[Transit Search] No data returned, using fallback')
+            return {
+                public_transport: [{
+                    type: 'bus',
+                    name: 'Autobús del aeropuerto',
+                    route: `${airportCode} → Centro de ${cityName}`,
+                    frequency: 'Consultar horarios',
+                    duration: 'Variable',
+                    price: 'Consultar',
+                    notes: 'Información no disponible. Consultar en el aeropuerto.'
+                }],
+                taxi: {
+                    price_range: 'Consultar en el aeropuerto',
+                    duration: 'Variable según tráfico',
+                    uber_available: false,
+                    notes: 'Verificar disponibilidad localmente'
+                }
+            }
+        }
+        
+        return data
+        
+    } catch (error) {
+        console.error('[Transit Search Error]', error)
+        // Fallback básico
+        return {
+            public_transport: [{
+                type: 'bus',
+                name: 'Transporte público',
+                route: `${airportCode} → ${cityName}`,
+                frequency: 'Consultar',
+                duration: 'Consultar',
+                price: 'Consultar',
+                notes: 'Información no disponible en este momento'
+            }],
+            taxi: {
+                price_range: 'Consultar en el aeropuerto',
+                duration: 'Variable',
+                uber_available: false
+            }
+        }
+    }
+}
+
+/**
+ * Buscar información de autopistas con Gemini
+ */
+export async function searchHighwayInformation(
+    cityName: string,
+    countryCode: string
+): Promise<{
+    main_highways: string[],
+    tolls: boolean,
+    congestion_zones: boolean,
+    notes: string
+}> {
+    
+    const prompt = `Busca información sobre autopistas y accesos por carretera a ${cityName}, ${countryCode}.
+
+📋 **INFORMACIÓN REQUERIDA:**
+1. Principales autopistas/autovías que llegan a la ciudad (con nombres/números)
+2. ¿Hay peajes (tolls) en estas autopistas?
+3. ¿Hay zonas de bajas emisiones o peajes urbanos (congestion charge)?
+4. Notas importantes para conductores (límites velocidad, restricciones, etc.)
+
+📤 **FORMATO JSON:**
+{
+  "main_highways": ["A-1 (Norte)", "A-2 (Barcelona)", "M-30 (Circunvalación)"],
+  "tolls": true,
+  "congestion_zones": false,
+  "notes": "Velocidad máxima 120 km/h en autopistas"
+}
+
+Si no encuentras información específica, usa datos genéricos del país.
+RESPONDE SOLO CON JSON.`
+
+    try {
+        const response = await geminiREST('gemini-2.0-flash', prompt, {
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+            tools: [{
+                type: 'web_search_20250305' as const,
+                name: 'web_search'
+            }]
+        })
+        
+        return response?.data || {
+            main_highways: ['Consultar GPS/Google Maps'],
+            tolls: false,
+            congestion_zones: false,
+            notes: 'Información no disponible'
+        }
+        
+    } catch (error) {
+        return {
+            main_highways: ['Consultar GPS'],
+            tolls: false,
+            congestion_zones: false,
+            notes: ''
+        }
+    }
+}
+
+2. Generador Principal Actualizado
+typescript// lib/arrival/generator-final.ts
+import { geocodeAddress } from '@/lib/maps/mapbox'
+import { discoverNearbyAirports } from '@/lib/discovery/airports'
+import { discoverMainTrainStations, discoverNearbyMetroStations } from '@/lib/discovery/stations'
+import { findParkingNearby } from '@/lib/maps/overpass'
+import { searchAirportTransportOptions, searchHighwayInformation } from '@/lib/discovery/transit-search'
+import { geminiREST } from '@/lib/ai/gemini-rest'
+
+export async function generateArrivalInstructions(address: string) {
+    console.log('[ARRIVAL] Starting generation for:', address)
+    
+    // PASO 1: Geocodificar
+    const geocoded = await geocodeAddress(address)
+    if (!geocoded) throw new Error('No se pudo geocodificar la dirección')
+    
+    const { coordinates, city, country } = geocoded
+    console.log('[ARRIVAL] Location:', city, country)
+    
+    // PASO 2: Descubrir aeropuertos (Wikidata)
+    const nearbyAirports = await discoverNearbyAirports(coordinates, 150)
+    console.log('[ARRIVAL] Airports:', nearbyAirports.map(a => a.code))
+    
+    // PASO 3: Estaciones principales (Overpass)
+    const mainStations = await discoverMainTrainStations(city || '', coordinates)
+    
+    // PASO 4: Metro cercano (Overpass)
+    const nearbyMetro = await discoverNearbyMetroStations(coordinates, 1000)
+    
+    // PASO 5: Parking (Overpass)
+    const parkingInfo = await findParkingNearby(coordinates, 500)
+    
+    // PASO 6: **NUEVO** - Buscar info de transporte con Gemini + Web Search
+    const airportsWithTransit = await Promise.all(
+        nearbyAirports.slice(0, 2).map(async (airport) => {
+            const transitInfo = await searchAirportTransportOptions(
+                airport.code,
+                airport.name,
+                city || airport.city,
+                coordinates,
+                nearbyMetro
+            )
+            
+            return {
+                ...airport,
+                transport: transitInfo
+            }
+        })
+    )
+    
+    // PASO 7: Info de carreteras
+    const highwayInfo = await searchHighwayInformation(city || '', country || '')
+    
+    // PASO 8: Generar guía final
+    const instructions = await generateInstructionsMarkdown({
+        address: geocoded.place_name,
+        city: city || '',
+        country: country || '',
+        airports: airportsWithTransit,
+        mainStations,
+        nearbyMetro,
+        parkingInfo,
+        highwayInfo
+    })
+    
+    return {
+        full_address: geocoded.place_name,
+        coordinates: { lat: coordinates[1], lng: coordinates[0] },
+        city,
+        country_code: country,
+        nearest_airport: nearbyAirports[0] || null,
+        nearest_train_station: mainStations[0] || null,
+        instructions
+    }
+}
+
+3. Prompt Final para Generar Markdown
+typescriptasync function generateInstructionsMarkdown(context: any) {
+    const prompt = `Genera una guía de llegada completa en español para un apartamento turístico.
+
+📍 **UBICACIÓN:** ${context.address}
+
+---
+
+## DATOS RECOPILADOS
+
+### AEROPUERTOS
+
+${context.airports.length > 0 ? context.airports.map((airport: any) => `
+**${airport.name} (${airport.code})** - ${airport.distance_km} km
+
+**Transporte Público:**
+${airport.transport.public_transport.map((t: any) => 
+    `- **${t.name}** (${t.type}): ${t.route}. ${t.duration}, ${t.frequency}. Precio: ${t.price}. ${t.notes || ''}`
+).join('\n')}
+
+**Taxi/VTC:**
+${airport.transport.taxi.price_range} (${airport.transport.taxi.duration})
+${airport.transport.taxi.uber_available ? '✅ Uber/similar disponible' : '❌ Solo taxi tradicional'}
+${airport.transport.taxi.notes || ''}
+`).join('\n') : 'Sin aeropuertos cercanos (<150km)'}
+
+### ESTACIONES DE TREN
+
+${context.mainStations.length > 0 ? context.mainStations.map((s: any) =>
+    `- ${s.name} (${s.distance_km} km) - ${s.type}`
+).join('\n') : 'No se identificaron estaciones principales'}
+
+### METRO CERCANO AL APARTAMENTO
+
+${context.nearbyMetro.length > 0 ? context.nearbyMetro.slice(0, 3).map((m: any) =>
+    `- ${m.name} (${m.distance_m}m) - Líneas: ${m.lines.join(', ')}`
+).join('\n') : 'No hay metro cerca (>1km)'}
+
+### AUTOPISTAS
+
+${context.highwayInfo.main_highways.join(', ')}
+${context.highwayInfo.tolls ? '⚠️ Autopistas de peaje' : '✅ Sin peajes'}
+${context.highwayInfo.congestion_zones ? '⚠️ Zona de bajas emisiones o peaje urbano' : ''}
+
+### PARKING
+
+${context.parkingInfo.has_regulated_parking ? 
+`⚠️ Estacionamiento regulado
+Parkings cercanos: ${context.parkingInfo.parking_zones.slice(0, 2).map((p: any) => p.name || 'Parking').join(', ')}` :
+`✅ Parking libre en la calle`}
+
+---
+
+🎯 **GENERA ESTA ESTRUCTURA:**
+
+# Cómo Llegar al Apartamento
+
+## 1. Llegada en Avión ✈️
+
+${context.airports.length > 0 ? `
+Para cada aeropuerto, crea subsecciones:
+
+### Desde ${context.airports[0].name} (${context.airports[0].code})
+
+#### Opción A: Transporte Público (Recomendado)
+[Usa los datos de "Transporte Público" arriba]
+[IMPORTANTE: Si el destino tiene metro cercano, conecta las rutas. Ejemplo:]
+
+1. Toma [bus/metro/tren del aeropuerto] línea X
+2. Viaja hasta [estación principal o conexión]
+3. ${context.nearbyMetro.length > 0 ? 
+   `Transborda/camina hasta la estación ${context.nearbyMetro[0].name} (líneas ${context.nearbyMetro[0].lines.join('/')})` :
+   'Desde ahí, taxi corto (€5-10) o 15 min a pie'}
+
+- ⏱️ Duración: [suma tiempos]
+- 💰 Precio: [suma precios]
+
+[Si hay varias opciones de transporte, lista la MÁS RÁPIDA y la MÁS ECONÓMICA]
+
+#### Opción B: Taxi/VTC
+[Usa datos de "Taxi/VTC"]
+
+#### Opción C: Coche de Alquiler
+[Menciona parking si aplica]
+` : 'No hay aeropuertos cercanos. Llegar por tren o coche desde otras ciudades.'}
+
+## 2. Llegada en Tren 🚂
+
+${context.mainStations.length > 0 ? `
+### Desde ${context.mainStations[0].name}
+
+[Calcula conexión:]
+${context.nearbyMetro.length > 0 ?
+  `- Metro: Línea X hasta ${context.nearbyMetro[0].name}, luego ${context.nearbyMetro[0].distance_m}m a pie` :
+  '- Taxi/Uber: €X-Y (Z minutos) | A pie: X minutos si <2km'}
+` : 'Consulta estaciones de tren principales de la ciudad'}
+
+## 3. Llegada en Coche 🚗
+
+### Desde Autopistas
+${context.highwayInfo.main_highways.join(', ')}
+${context.highwayInfo.notes}
+
+### Parking
+[Usa datos de "PARKING" arriba]
+
+---
+
+🚫 **REGLAS:**
+- USA solo datos proporcionados
+- Si falta info: "Consultar en el aeropuerto/estación"
+- TONO: Claro, amigable
+- LONGITUD: 600-800 palabras
+
+RESPONDE SOLO CON MARKDOWN.`
+
+    const response = await geminiREST('gemini-2.0-flash', prompt, {
+        responseMimeType: 'text/plain',
+        temperature: 0.3,
+        maxOutputTokens: 3000
+    })
+
+    return response?.data || '# Instrucciones de Llegada\n\n(Error al generar)'
+}
+
+📊 Flujo de Datos Completo
+mermaidgraph TD
+    A[Usuario ingresa dirección] --> B[Mapbox Geocoding]
+    B --> C[Wikidata: Aeropuertos cercanos]
+    C --> D[Overpass: Estaciones/Metro/Parking]
+    D --> E[Gemini Web Search: Transporte desde aeropuerto]
+    E --> F[Gemini Web Search: Autopistas]
+    F --> G[Gemini: Generar Markdown final]
+    G --> H[Guardar en BD + RAG]
+
+🎯 Ventajas de Este Enfoque
+✅ 100% Gratis - Solo APIs abiertas
+✅ Global - Funciona en cualquier país
+✅ Actualizado - Gemini busca precios actuales en web
+✅ Sin mantenimiento - No hay datasets manuales
+✅ Fallback inteligente - Si falla búsqueda, da respuesta genérica útil
+✅ Contextual - Conecta aeropuertos con metro cercano al apartamento
+
+📦 Instalación
+bashnpm install axios
+Variables de entorno:
+envNEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ1...
+# Gemini ya está configurado en tu proyecto
+
+🚀 Resultado Esperado (Londres)
+markdown# Cómo Llegar al Apartamento
+
+## 1. Llegada en Avión ✈️
+
+### Desde London Heathrow (LHR) - 24 km
+
+#### Opción A: Transporte Público
+
+**🚇 MÁS RÁPIDA: Heathrow Express**
+1. Toma el Heathrow Express desde T2-T5
+2. Viaja hasta Paddington Station (15 minutos)
+3. Desde Paddington: Circle Line hasta King's Cross (500m del apartamento)
+
+- ⏱️ Duración: ~30 minutos
+- 💰 Precio: £25-37 + £2.80 metro
+
+**💰 MÁS ECONÓMICA: Piccadilly Line**
+1. Toma el metro Piccadilly Line desde cualquier terminal
+2. Viaja directo hasta King's Cross St Pancras
+3. Camina 5 minutos hasta el apartamento
+
+- ⏱️ Duración: 50-60 minutos
+- 💰 Precio: £5.60 (Oyster/Contactless)
+- 🕐 Frecuencia: Cada 5 minutos
+
+#### Opción B: Taxi/Black Cab
+- 💰 Precio: £60-90 (tarifa fija £80 a zonas centrales)
+- ⏱️ Duración: 45-60 minutos
+- ✅ Uber disponible (precio similar)
+
+## 2. Llegada en Tren 🚂
+
+### Desde London St Pancras International (Eurostar)
+¡Estás muy cerca! El apartamento está a solo 500m de la estación.
+
+- 🚶 A pie: 7 minutos por Pancras Road
+- 🚇 Metro: No necesario (muy cerca)
+
+## 3. Llegada en Coche 🚗
+
+### Desde Autopistas
+- **M1 (Norte)**: Salida hacia A501 (Euston Road)
+- **M25 (Ring Road)**: Junction 23, A1(M) hacia centro
+
+⚠️ **Congestion Charge Zone:** £15/día (7:00-18:00, L-V)
+
+### Parking
+⚠️ **Zona de estacionamiento muy regulado**
+
+**Parkings recomendados:**
+- King's Cross Car Park (400m) - £25/día
+- NCP Euston (600m) - £30/día
+
+💡 **Consejo:** El transporte público es mucho más práctico en Londres.

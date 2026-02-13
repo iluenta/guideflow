@@ -77,134 +77,335 @@ export async function POST(req: Request) {
             return new Response(JSON.stringify({ error: 'Falta identificación de acceso' }), { status: 401 });
         }
 
-        // 1. Generar embedding de la pregunta
-        const questionEmbedding = await generateOpenAIEmbedding(lastMessage);
+        // ═══════════════════════════════════════════════════════
+        // DETECCIÓN INTELIGENTE: Códigos de error y emergencias
+        // ═══════════════════════════════════════════════════════
+        const errorCodePatterns = [
+            /\bE\d{1,2}\b/gi,           // E1, E2, E17
+            /\bF\d{1,2}\b/gi,           // F1, F3, F21
+            /\bEA\d\b/gi,               // EA0
+            /código\s+(\w+)/gi,          // "código E5"
+            /error\s+(\w+)/gi,           // "error E11"
+            /\bd\d{2}\b/gi,             // d01, d21 (lavavajillas)
+        ];
 
-        // 2. Búsqueda vectorial UNIFICADA
+        let detectedErrorCode: string | null = null;
+        for (const pattern of errorCodePatterns) {
+            const match = lastMessage.match(pattern);
+            if (match) {
+                detectedErrorCode = match[0].toUpperCase();
+                break;
+            }
+        }
+
+        const emergencyKeywords = ['humo', 'fuego', 'chispa', 'chispas', 'quema', 'olor a quemado', 'olor extraño', 'fuga grande', 'explota', 'explosión', 'gas', 'cortocircuito'];
+        const isEmergency = emergencyKeywords.some(word => lastMessage.toLowerCase().includes(word));
+
+        const chatStrategy = isEmergency ? 'emergency' : detectedErrorCode ? 'error_code' : 'standard';
+
+        console.log('[CHAT-DEBUG] Detection:', { chatStrategy, detectedErrorCode, isEmergency });
+
+        // ═══════════════════════════════════════════════════════
+        // RAG: Búsqueda vectorial adaptativa
+        // ═══════════════════════════════════════════════════════
+        // Si hay código de error, enriquecemos la query para encontrar la tabla de diagnóstico
+        const ragQuery = detectedErrorCode
+            ? `${lastMessage} código error ${detectedErrorCode} diagnóstico problemas tabla`
+            : lastMessage;
+
+        const questionEmbedding = await generateOpenAIEmbedding(ragQuery);
+
         const { data: relevantChunks, error: rpcError } = await supabase.rpc('match_all_context', {
             query_embedding: questionEmbedding,
-            match_threshold: 0.5,
-            match_count: 25,
+            match_threshold: 0.3,
+            match_count: detectedErrorCode ? 30 : 25, // Más chunks si buscamos código específico
             p_property_id: propertyId
         });
 
         if (rpcError) console.error('[RPC ERROR]', rpcError);
 
-        // 3. Obtener contexto estructurado TOTAL (Propiedad, Branding, Contexto, FAQs y Recomendaciones)
+        console.log('[CHAT-DEBUG] RAG results:', {
+            totalChunks: relevantChunks?.length || 0,
+            enrichedCount: relevantChunks?.filter((c: any) => c.metadata?.enriched === true).length || 0,
+            strategy: chatStrategy,
+            errorCode: detectedErrorCode,
+            propertyId
+        });
+
+        // 3. Obtener información ESTRUCTURADA Crítica (Garantía de datos básicos)
         const [
             { data: propertyInfo },
             { data: propertyBranding },
-            { data: propertyContext },
-            { data: propertyFaqs },
-            { data: propertyRecs }
+            { data: criticalContext }
         ] = await Promise.all([
             supabase.from('properties').select('*').eq('id', propertyId).single(),
             supabase.from('property_branding').select('*').eq('property_id', propertyId).single(),
-            supabase.from('property_context').select('category, subcategory, content').eq('property_id', propertyId),
-            supabase.from('property_faqs').select('question, answer').eq('property_id', propertyId),
-            supabase.from('property_recommendations').select('name, type, description, distance, personal_note, time').eq('property_id', propertyId)
+            supabase.from('property_context')
+                .select('category, content')
+                .eq('property_id', propertyId)
+                .in('category', ['tech', 'rules', 'access', 'contacts', 'notes'])
         ]);
 
-        // 4. Formatear contexto enriquecido para el modelo
+        // Extraer contacto de soporte (support > host; distinguir teléfono fijo vs móvil/WhatsApp)
+        // NOTA: GuestChat.tsx auto-detecta números de teléfono y los convierte en botones de llamada + WhatsApp
+        const contactsData = criticalContext?.find((c: any) => c.category === 'contacts')?.content;
+        let supportContact = 'el personal de soporte';
+        if (contactsData) {
+            const name = contactsData.support_name || 'Soporte';
+            const mobile = contactsData.support_mobile || contactsData.host_mobile || '';
+            const phone = contactsData.support_phone || contactsData.host_phone || '';
+            // Preferir móvil (permite llamada + WhatsApp en el chat)
+            const bestNumber = mobile || phone;
+            if (bestNumber) {
+                supportContact = `${name}: ${bestNumber}`;
+            }
+        }
+
+        // 4. Formatear contexto híbrido (Estructurado + Vectorial)
+        const commonBrands = ['TEKA', 'BALAY', 'BOSCH', 'SIEMENS', 'NEFF', 'BSH', 'SAMSUNG', 'LG', 'BEKO', 'WHIRLPOOL'];
+        const brandRegex = new RegExp(`\\b(${commonBrands.join('|')})\\b`, 'gi');
+
         const formattedContext = [
-            // A. Información base de la propiedad
-            ...(propertyInfo ? [`[ESTADÍSTICAS Y UBICACIÓN DEL ALOJAMIENTO]:
-Nombre: ${propertyInfo.name}
-Descripción: ${propertyInfo.description || ''}
-Dirección: ${propertyInfo.full_address || propertyInfo.location || ''}
-Ubicación: ${propertyInfo.city || ''}, ${propertyInfo.country || ''}
-Capacidad: ${propertyInfo.guests} personas
-Distribución: ${propertyInfo.beds} habitaciones, ${propertyInfo.baths} baños`] : []),
+            // A. Datos Generales
+            ...(propertyInfo ? [`[PROPIEDAD]: "${propertyInfo.name}". Ciudad: ${propertyInfo.city}.`] : []),
 
-            // B. Host y Branding
-            ...(propertyBranding ? [`[INFORMACIÓN DEL ANFITRIÓN]:
-Anfitrión: ${(propertyBranding as any).host_name || 'El equipo de gestión'}
-Mensaje de bienvenida: ${(propertyBranding as any).welcome_message || ''}`] : []),
+            // B. Datos Estructurados (Seguridad de WiFi, Acceso, etc.)
+            ...(criticalContext || []).map((c: any) => {
+                const label = c.category === 'notes' ? 'NOTAS_ANFITRION' : `INFO_${c.category.toUpperCase()}`;
+                let contentString = '';
 
-            // C. RAG (Fragmentos vectoriales más relevantes: Manuales, etc.)
-            ...(relevantChunks || []).map((c: any) => {
-                const type = c.source_type === 'manual' ? 'GUÍA TÉCNICA' :
-                    c.source_type === 'faq' ? 'PREGUNTA FRECUENTE' :
-                        c.source_type === 'recommendation' ? 'RECOMENDACIÓN' : 'INFO';
-                const label = c.metadata?.appliance ? `${type} - ${c.metadata.appliance.toUpperCase()}` : type;
-                return `[${label}]: ${c.content}`;
-            }),
-
-            // D. Contexto Estructurado (Normas, Acceso, WiFi, etc.)
-            ...(propertyContext || []).map((c: any) => {
-                const label = `INFO ${c.category.toUpperCase()}${c.subcategory ? ' - ' + c.subcategory.toUpperCase() : ''}`;
-                let content = typeof c.content === 'string' ? c.content : JSON.stringify(c.content);
-
-                // Tratamiento especial para objetos de contexto conocidos
-                if (c.category === 'contacts' && typeof c.content === 'object' && c.content !== null) {
-                    const ctx = c.content as any;
-                    if (ctx.preferred_contact_id) {
-                        let preferredName = ctx.preferred_contact_id;
-                        if (ctx.preferred_contact_id === 'support') preferredName = ctx.support_name || 'Soporte';
-                        else if (ctx.preferred_contact_id === 'host') preferredName = 'Anfitrión';
-                        else {
-                            const custom = ctx.custom_contacts?.find((cc: any) => cc.id === ctx.preferred_contact_id);
-                            if (custom) preferredName = custom.name;
-                        }
-                        content += `\n[NOTA MODELO]: El contacto preferente/principal es '${preferredName}'. Priorizar siempre su mención y mostrarlo primero.`;
+                if (typeof c.content === 'object' && c.content !== null) {
+                    if (c.category === 'access') {
+                        contentString = `Dirección: ${c.content.full_address || ''}. Parking: ${c.content.parking?.info || 'N/A'}. Transp: ${c.content.from_airport?.instructions || 'N/A'}`;
+                    } else {
+                        contentString = JSON.stringify(c.content);
                     }
+                } else {
+                    contentString = String(c.content);
                 }
 
-                return `[${label}]: ${content}`;
+                // Limpiar marcas
+                return `[${label}]: ${contentString.replace(brandRegex, '')}`;
             }),
 
-            // E. Recomendaciones Locales
-            ...(propertyRecs || []).map((r: any) =>
-                `[RECOMENDACIÓN]: ${r.name}\nTipo: ${r.type}\nDescripción: ${r.description || ''}\nDistancia/Tiempo: ${r.distance || ''} (${r.time || ''})\nNota del anfitrión: ${r.personal_note || ''}`
-            ),
+            // C. RAG (Manuales Técnicos, FAQs, Recomendaciones)
+            ...(relevantChunks || []).map((c: any) => {
+                // ✅ PRIORIZAR MANUALES ENRIQUECIDOS
+                const isEnriched = c.metadata?.enriched === true;
+                let type = c.source_type === 'manual'
+                    ? (isEnriched ? 'GUÍA_PERSONALIZADA_ANFITRIÓN' : 'GUÍA_TÉCNICA')
+                    : c.source_type?.toUpperCase();
 
-            // F. Preguntas Frecuentes
-            ...(propertyFaqs || []).map((f: any) => `[PREGUNTA FRECUENTE]: ${f.question}\n[RESPUESTA]: ${f.answer}`)
-        ].join('\n\n---\n\n');
+                if (isEnriched) {
+                    console.log('[CHAT-DEBUG] Enriched chunk:', {
+                        type,
+                        preview: c.content.substring(0, 100),
+                        metadata: c.metadata
+                    });
+                }
 
-        // G. Tiempo Real (Para evitar alucinaciones temporales)
+                // Limpiar marcas del contenido RAG
+                return `[${type}]: ${c.content.replace(brandRegex, '')}`;
+            })
+        ].join('\n\n\n');
+
+        // ═══════════════════════════════════════════════════════
+        // NIVEL 2: Fallback con búsqueda externa (Brave Search)
+        // ═══════════════════════════════════════════════════════
+        // 🔧 FEATURE FLAG: Cambiar a false para desactivar el fallback
+        const ENABLE_CHAT_GROUNDING_FALLBACK = true;
+
+        let fallbackContext = '';
+        const isProblemRelated = /no funciona|no va|no enciende|no arranca|error|problema|roto|avería|averia|fallo|no calienta|no enfría|gotea|vibra|ruido|olor|bloqueo|código|no desagua|no centrifuga/i.test(lastMessage);
+
+        if (ENABLE_CHAT_GROUNDING_FALLBACK && isProblemRelated && !isEmergency) {
+            // Calcular confianza del RAG: ¿los chunks son relevantes?
+            const bestSimilarity = relevantChunks?.[0]?.similarity || 0;
+            const manualChunks = relevantChunks?.filter((c: any) => c.source_type === 'manual') || [];
+            const ragHasGoodAnswer = bestSimilarity > 0.5 && manualChunks.length >= 2;
+
+            console.log('[CHAT-DEBUG] Fallback check:', { bestSimilarity, manualChunks: manualChunks.length, ragHasGoodAnswer });
+
+            if (!ragHasGoodAnswer) {
+                try {
+                    // Extraer marca/modelo del contexto de la propiedad para búsqueda más precisa
+                    const techContext = criticalContext?.find((c: any) => c.category === 'tech')?.content;
+                    const applianceHint = typeof techContext === 'string' ? techContext.substring(0, 200) : '';
+
+                    const braveQuery = detectedErrorCode
+                        ? `${detectedErrorCode} electrodoméstico solución ${applianceHint}`
+                        : `${lastMessage} solución electrodoméstico`;
+
+                    console.log('[CHAT-DEBUG] Brave fallback search:', braveQuery);
+
+                    const braveResponse = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(braveQuery)}&count=5&extra_snippets=1`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Subscription-Token': process.env.BRAVE_API_KEY || ''
+                        }
+                    });
+
+                    if (braveResponse.ok) {
+                        const braveData = await braveResponse.json();
+                        const results = braveData.web?.results || [];
+
+                        if (results.length > 0) {
+                            fallbackContext = '\n\n---\n\n[SOLUCIONES_EXTERNAS] (búsqueda web - usar como apoyo si el contexto principal no tiene respuesta):\n' +
+                                results.slice(0, 3).map((r: any) => {
+                                    const extra = r.extra_snippets ? ` ${r.extra_snippets.join(' ')}` : '';
+                                    return `- ${r.title}: ${r.description}${extra}`;
+                                }).join('\n');
+
+                            console.log('[CHAT-DEBUG] Brave fallback: found', results.length, 'results');
+                        }
+                    }
+                } catch (err: any) {
+                    console.warn('[CHAT-DEBUG] Brave fallback error (non-blocking):', err.message);
+                }
+            }
+        }
+
+        // Combinar contexto: RAG + fallback externo (si existe)
+        const fullContext = formattedContext + fallbackContext;
+
+        // G. Tiempo Real
         const now = new Date();
-        const currentTimeContext = `[FECHA Y HORA ACTUAL DEL SISTEMA]: ${now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} a las ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+        const currentTimeContext = `${now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} a las ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
 
-        const systemInstruction = `Eres HostBot, el asistente experto de esta propiedad. Tu misión es resolver dudas de los huéspedes usando el CONTEXTO proporcionado.
+        // ═══════════════════════════════════════════════════════
+        // PROMPT DINÁMICO según estrategia detectada
+        // ═══════════════════════════════════════════════════════
+        let systemInstruction: string;
 
-IMPORTANTE: Estás hablando con un HUÉSPED en un alojamiento que NO es suyo. 
+        if (isEmergency) {
+            // ⚠️ EMERGENCIA: Respuesta inmediata de seguridad
+            systemInstruction = `EMERGENCIA DE SEGURIDAD DETECTADA.
 
-REGLAS DE ORO:
-1. **Verdad Absoluta**: Usa los bloques [GUÍA TÉCNICA], [INFO], [RECOMENDACIÓN] y [PREGUNTA FRECUENTE] como base.
-2. **TERMINOLOGÍA PROHIBIDA (CRÍTICO)**: 
-    - NUNCA uses las palabras "manual", "manuales" o "documentación técnica" al hablar con el huésped. 
-    - En su lugar usa: "Guía del alojamiento", "Normas de la casa", "Instrucciones", "Información de la propiedad" o simplemente "Según la información disponible".
-    - NUNCA digas "Según el manual...". Di "Según la guía de uso..." o "He comprobado las indicaciones del anfitrión...".
-3. **Lenguaje Neutral y Apropiado**: 
-    - NUNCA uses "tu" o "tuyo" para referirte a los aparatos (ej. NO digas "tu campana", "tu termo"). Usa artículos neutros: "**la** campana", "**el** termo", "**el** aire acondicionado".
-    - NO repitas el modelo técnico o serie del aparato en el cuerpo de la respuesta. Di simplemente: "Si la campana hace ruido...".
-4. **Filtro del Huésped**: NO des instrucciones de reparación técnica. Si es algo complejo, recomienda contactar con el anfitrión.
-5. **Soluciones de Usuario**: Céntrate solo en lo que el huésped puede manipular: botones, mandos, termostatos.
-6. **Prioridad Eficiencia**: Recomienda siempre el modo "ECO" o más sostenible si aparece en la información.
-7. **Condicionalidad de Contacto (IMPORTANTE)**: SOLO proporciona o sugiere información de contacto en dos casos:
-    - Si el huésped lo solicita EXPLÍCITAMENTE (ej. "¿Cómo contacto al dueño?", "¿Cuál es el número de soporte?").
-    - Si detectas un problema que NO puedes resolver con la información disponible (ej. avería grave, emergencia, objeto perdido).
-    - En consultas rutinarias (recomendaciones, WiFi, normas), NO incluyas contactos al final de la respuesta.
-8. **Temporalidad (CRÍTICO)**: Usa la información de [FECHA Y HORA ACTUAL DEL SISTEMA] para responder con precisión preguntas sobre horarios (check-out, apertura, ruido). NUNCA digas una hora diferente a la proporcionada en ese bloque.
-9. **Tono**: Amable, premium, servicial y directo. Usa Markdown.
-10. **Sin Suposiciones (CRÍTICO)**: NO inventes ni supongas ubicaciones físicas de llaves, cajas de seguridad o mandos (ej. NO digas "junto a la puerta" o "en el salón") si no está explícitamente indicado en el [CONTEXTO]. Si falta el dato, indica que no dispones de esa información específica.
+Responde EXACTAMENTE con este formato, adaptando al aparato mencionado:
 
-CONTEXTO TEMPORAL:
-${currentTimeContext}
+"⚠️ Por seguridad, apaga/desenchufa el aparato AHORA.
 
-CONTEXTO ACTUAL:
-${formattedContext}`;
+Llama inmediatamente a ${supportContact}.
 
-        // 5. Gemini Call (Streaming)
+Esto requiere atención urgente."
+
+No añadas nada más. No intentes diagnosticar. Prioridad absoluta: seguridad del huésped.
+NUNCA menciones "el manual" ni "la documentación" — el huésped no sabe que existen.`;
+
+        } else if (detectedErrorCode) {
+            // 🔧 CÓDIGO DE ERROR: Diagnóstico específico
+            systemInstruction = `Eres el asistente del apartamento "${propertyInfo?.name || 'este apartamento'}". El huésped tiene el código de error: ${detectedErrorCode}.
+
+TU MISIÓN: Busca ESTE código EXACTO (${detectedErrorCode}) en la tabla de diagnóstico del contexto.
+
+# SI ENCUENTRAS EL CÓDIGO EN EL CONTEXTO:
+Responde así (tono natural, como WhatsApp):
+
+"Código ${detectedErrorCode}: [significado del manual]
+
+Solución:
+- [Paso 1 del manual]
+- [Paso 2 si existe]
+
+Prueba esto y me cuentas si se soluciona."
+
+# SI EL MANUAL DICE "Contactar con soporte":
+"Para este problema es mejor que te ayude directamente ${supportContact}."
+
+# SI NO ENCUENTRAS ESE CÓDIGO:
+"No encuentro el código ${detectedErrorCode} en el manual de este aparato.
+
+¿Puedes comprobar que el código sea exactamente ese? A veces se confunde con otros parecidos.
+
+Si persiste, contacta con ${supportContact}."
+
+# REGLAS
+- Respuesta máximo 5 líneas
+- Tono natural, sin viñetas formales
+- SOLO información del contexto, no inventes soluciones
+- ❌ NUNCA digas "consulta el manual", "según el manual", "en la documentación" ni similar — el huésped NO sabe que existen manuales, responde como si TÚ supieras la respuesta
+- 📍 ${currentTimeContext}
+
+# CONTEXTO:
+${fullContext}`;
+
+        } else {
+            // 💬 ESTÁNDAR: Asistente personal del apartamento
+            systemInstruction = `Eres el asistente personal del apartamento "${propertyInfo?.name || 'este apartamento'}". Eres cercano, práctico y resolutivo. Hablas como un anfitrión amable por WhatsApp.
+
+# TU FORMA DE SER
+- Hablas como un amigo que conoce bien el apartamento
+- Das respuestas PRÁCTICAS y ÚTILES, no técnicas
+- Si algo tiene solución sencilla, la das tú sin derivar a soporte
+
+# EXTENSIÓN DE RESPUESTA (MUY IMPORTANTE)
+
+## Para PREGUNTAS SOBRE USO/FUNCIONES ("qué programas tiene", "cómo funciona", "qué opciones tiene"):
+→ Sé COMPLETO: lista TODAS las opciones/programas que tengas en el contexto
+→ Para CADA opción incluye: el SÍMBOLO que verá en el mando (si lo sabes) + PARA QUÉ SIRVE
+→ Al final recomienda la mejor opción o pregunta qué quiere hacer
+→ Extensión: hasta 15 líneas si es necesario para cubrir todas las opciones
+
+Ejemplo BUENO para "¿qué programas tiene el horno?":
+"¡Claro! El horno tiene estas funciones (busca estos símbolos en el mando):
+
+- **Calor arriba y abajo** (═ dos rayas horizontales): el clásico. Ideal para asados, bizcochos y panes
+- **Aire caliente** (ventilador con círculo): reparte el calor uniforme. Perfecto para hornear en varias alturas
+- **Grill** (〰️ línea zigzag arriba): calor intenso desde arriba. Para gratinar pasta, tostar pan o dorar
+- **Grill + aire** (zigzag + ventilador): como un asador. Genial para pollo entero
+- **Función pizza** (ventilador + raya abajo): mucho calor desde abajo. Base súper crujiente
+- **Modo eco** (ventilador con eco): ahorra energía, ideal para cocciones largas
+
+Para una pizza: busca el símbolo del ventilador con raya abajo, ponlo a 220°C unos 12-15 min. ¿Qué vas a preparar?"
+
+Ejemplo MALO: "El horno tiene varias opciones como calor arriba y abajo, grill, etc."
+
+## Para PROBLEMAS TÉCNICOS ("no funciona", "no enciende"):
+→ Sé CONCISO: 3-5 líneas
+→ Pregunta por código de error si no lo mencionan
+→ Da 1-2 soluciones rápidas
+→ Solo deriva a soporte si falla todo
+
+## Para PREGUNTAS DIRECTAS ("dónde está", "cuál es la clave WiFi"):
+→ Respuesta DIRECTA: 1-3 líneas, sin rodeos
+
+# DIAGNÓSTICO ACTIVO (cuando hay problemas)
+1. Si dicen "no funciona" sin código → Pregunta: "¿Aparece algún código en la pantalla?"
+2. Si dan código → Busca en la tabla de diagnóstico → Da la solución
+3. Si persiste → Deriva a ${supportContact}
+
+# SI EL CONTEXTO NO TIENE RESPUESTA COMPLETA
+Si hay sección [SOLUCIONES_EXTERNAS], úsala como apoyo.
+Presenta la info como si TÚ la supieras: "Esto suele pasar cuando..." (nunca digas "he buscado" ni "según internet")
+
+# REGLAS ABSOLUTAS
+- ❌ NUNCA menciones modelos técnicos (3HB4331X0, WMY71433, etc.)
+- ❌ NUNCA digas "consulta el manual", "según el manual", "en la documentación"
+- ❌ NUNCA describas mandos de forma abstracta — describe PARA QUÉ SIRVEN
+- ❌ NO recortes la lista de programas/funciones — muestra TODOS los que tengas en el contexto
+- ❌ NO uses checkmarks (✓✗) ni listas formales tipo informe
+- ✅ Para CADA programa/función, describe el SÍMBOLO/ICONO que verá en el aparato (ej: "copo de nieve", "gota de agua", "ventilador") para que pueda identificarlo
+- ✅ Usa **negrita** para los nombres de programas/funciones
+- ✅ Recomienda la MEJOR opción según lo que quiera hacer
+- ✅ Tono natural, como WhatsApp (¡Perfecto! ¡Claro! ¡Genial!)
+- ✅ Si no tienes info, dilo y da el contacto de ${supportContact}
+- 📍 ${currentTimeContext}
+
+# CONTEXTO:
+📦 Chunks: ${relevantChunks?.length || 0} (Enriquecidos: ${relevantChunks?.filter((c: any) => c.metadata?.enriched === true).length || 0})
+
+${fullContext}`;
+        }
+
+        // 5. Gemini Call (Streaming con 2.0 Flash)
         const geminiMessages = messages.map((m: any) => ({
             role: m.role === 'user' ? 'user' : 'model',
             content: m.content
         }));
 
-        const response = await streamGeminiREST('gemini-3-flash-preview', geminiMessages, {
+        const response = await streamGeminiREST('gemini-2.0-flash', geminiMessages, {
             systemInstruction,
-            temperature: 0.2
+            temperature: isEmergency ? 0.1 : 0.7 // Baja para emergencias, natural para resto
         });
 
         if (!response.ok) {

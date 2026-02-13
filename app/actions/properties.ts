@@ -493,8 +493,8 @@ export async function updateSectionsOrder(propertyId: string, sectionIds: string
 /**
  * Regenera el índice de aparatos en property_context (appliance_list)
  */
-export async function syncPropertyApplianceList(propertyId: string, tenantId: string) {
-    const supabase = await createClient()
+export async function syncPropertyApplianceList(propertyId: string, tenantId: string, customClient?: any, skipRevalidate: boolean = false) {
+    const supabase = customClient || await createClient()
 
     const { data: allManuals } = await supabase
         .from('property_manuals')
@@ -518,9 +518,11 @@ export async function syncPropertyApplianceList(propertyId: string, tenantId: st
     if (error) throw new Error(error.message)
 
     // Sincronizar RAG
-    await syncWizardDataToRAG(propertyId, tenantId, 'inventory', { text: applianceIndex })
+    await syncWizardDataToRAG(propertyId, tenantId, 'inventory', { text: applianceIndex }, supabase)
 
-    revalidatePath(`/dashboard/properties/${propertyId}`)
+    if (!skipRevalidate) {
+        revalidatePath(`/dashboard/properties/${propertyId}`)
+    }
 }
 
 /**

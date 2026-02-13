@@ -91,6 +91,6 @@ export default async (req: Request) => {
 
     } catch (error) {
         console.error('Edge Function Error:', error);
-        return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+        return new Response(JSON.stringify({ error: (error as any).message }), { status: 500 });
     }
 };

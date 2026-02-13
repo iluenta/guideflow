@@ -49,6 +49,8 @@ export async function geminiREST(
         responseMimeType?: 'application/json' | 'text/plain';
         maxOutputTokens?: number;
         responseSchema?: any;
+        systemInstruction?: string;
+        stopSequences?: string[];
     } = {}
 ) {
     const apiKey = process.env.GOOGLE_AI_API_KEY;
@@ -69,16 +71,26 @@ export async function geminiREST(
         })
         : [{ text: input }];
 
+    const isJsonMode = options.responseMimeType === 'application/json' && !options.useGrounding;
+
     const payload: any = {
         contents: [{ role: 'user', parts }],
         generationConfig: {
             temperature: options.temperature ?? 0.1,
-            responseMimeType: options.responseMimeType ?? 'application/json',
+            responseMimeType: isJsonMode ? 'application/json' : 'text/plain',
             maxOutputTokens: options.maxOutputTokens ?? 8192,
-            ...(options.responseSchema ? { response_schema: options.responseSchema } : {})
+            ...(options.responseSchema && isJsonMode ? { response_schema: options.responseSchema } : {}),
+            ...(options.stopSequences && options.stopSequences.length > 0 ? { stopSequences: options.stopSequences } : {})
         },
         safetySettings: DEFAULT_SAFETY_SETTINGS
     };
+
+    // ✅ CORRECCIÓN CRÍTICA: systemInstruction (camelCase)
+    if (options.systemInstruction) {
+        payload.systemInstruction = {
+            parts: [{ text: options.systemInstruction }]
+        };
+    }
 
     if (options.useGrounding) {
         payload.tools = [{ google_search: {} }];
@@ -143,14 +155,9 @@ export async function geminiREST(
 /**
  * Simplified helper for image analysis (Vision)
  */
-export async function analyzeImageWithGemini(imageUrl: string, prompt: string) {
+export async function analyzeImageWithGemini(imageUrl: string, prompt: string, options: { temperature?: number, responseMimeType?: 'application/json' | 'text/plain' } = {}) {
     try {
-        const response = await fetch(imageUrl);
-        if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
-
-        const buffer = await response.arrayBuffer();
-        const base64Data = Buffer.from(buffer).toString('base64');
-        const mimeType = response.headers.get('content-type') || 'image/jpeg';
+        const { mimeType, data: base64Data } = await fetchImageAsBase64(imageUrl);
 
         const input = [
             { inlineData: { mimeType, data: base64Data } },
@@ -158,8 +165,8 @@ export async function analyzeImageWithGemini(imageUrl: string, prompt: string) {
         ];
 
         const { data, usage, error } = await geminiREST('gemini-2.0-flash', input, {
-            temperature: 0.1,
-            responseMimeType: 'application/json'
+            temperature: options.temperature ?? 0.1,
+            responseMimeType: options.responseMimeType ?? 'application/json'
         });
 
         return { data, usage, error };
@@ -167,6 +174,42 @@ export async function analyzeImageWithGemini(imageUrl: string, prompt: string) {
         console.error('[GEMINI-VISION] Error:', error);
         return { data: null, usage: undefined, error: (error as any).message };
     }
+}
+
+/**
+ * Expert Vision Helper (Following User Recommendation)
+ */
+export async function geminiVision(
+    imageUrl: string,
+    prompt: string,
+    options: {
+        systemInstruction?: string,
+        temperature?: number,
+        maxOutputTokens?: number,
+        responseMimeType?: 'application/json' | 'text/plain',
+        stopSequences?: string[]
+    } = {}
+) {
+    const { mimeType, data } = await fetchImageAsBase64(imageUrl);
+
+    return geminiREST('gemini-2.0-flash', [
+        { inlineData: { mimeType, data } },
+        prompt
+    ], options);
+}
+
+/**
+ * Internal helper to fetch image as base64
+ */
+async function fetchImageAsBase64(imageUrl: string): Promise<{ mimeType: string, data: string }> {
+    const response = await fetch(imageUrl);
+    if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
+
+    const buffer = await response.arrayBuffer();
+    const data = Buffer.from(buffer).toString('base64');
+    const mimeType = response.headers.get('content-type') || 'image/jpeg';
+
+    return { mimeType, data };
 }
 
 /**
@@ -197,7 +240,7 @@ export async function streamGeminiREST(
     };
 
     if (options.systemInstruction) {
-        payload.system_instruction = {
+        payload.systemInstruction = {
             parts: [{ text: options.systemInstruction }]
         };
     }

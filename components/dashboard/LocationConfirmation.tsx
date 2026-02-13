@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { MapPreview } from './MapPreview';
+import MapPreview from './MapPreview';
 import { GeocodingResult } from '@/lib/geocoding';
 import { ValidationResult } from '@/lib/geocoding-validation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

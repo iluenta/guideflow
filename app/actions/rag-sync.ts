@@ -6,8 +6,8 @@ import { generateOpenAIEmbedding } from '@/lib/ai/openai'
 /**
  * Synchronizes wizard data (FAQs and Context) to the unified context_embeddings table for RAG.
  */
-export async function syncWizardDataToRAG(propertyId: string, tenantId: string, category: string, data: any) {
-    const supabase = await createClient()
+export async function syncWizardDataToRAG(propertyId: string, tenantId: string, category: string, data: any, customClient?: any) {
+    const supabase = customClient || await createClient()
 
     console.log(`[RAG-SYNC] Syncing ${category} for property ${propertyId}...`)
 
@@ -69,14 +69,21 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string, 
             `Anfitrión: ${data.host_name || ''}`
         metadata = { category: 'bienvenida', type: 'info' }
     } else if (category === 'access') {
+        const fromAirport = data.from_airport?.instructions || (typeof data.from_airport === 'string' ? data.from_airport : '')
+        const fromTrain = data.from_train?.instructions || (typeof data.from_train === 'string' ? data.from_train : '')
+        const parking = data.parking?.info || (typeof data.parking === 'string' ? data.parking : '')
+        const nearby = Array.isArray(data.nearby_transport)
+            ? data.nearby_transport.map((t: any) => `- ${t.type}: ${t.name} (${t.distance})`).join('\n')
+            : (typeof data.nearby_transport === 'string' ? data.nearby_transport : '')
+
         contentToEmbed = `[INSTRUCCIONES DE LLEGADA Y ACCESO]:\n` +
             `Dirección completa: ${data.full_address || ''}\n` +
             `Tipo de entrada: ${data.checkin_type || ''}\n` +
             `Instrucciones de entrada: ${data.checkin_instructions || ''}\n` +
-            `Desde el Aeropuerto: ${data.from_airport || ''}\n` +
-            `Desde el Tren: ${data.from_train || ''}\n` +
-            `Parking: ${data.parking || ''}\n` +
-            `Transporte cercano: ${data.nearby_transport || ''}`
+            `Desde el Aeropuerto: ${fromAirport}\n` +
+            `Desde el Tren: ${fromTrain}\n` +
+            `Parking: ${parking}\n` +
+            `Transporte cercano:\n${nearby}`
         metadata = { category: 'acceso', type: 'llegada' }
     } else if (category === 'rules') {
         const rulesItems = (data.rules_items || []).map((ri: any) => `- ${ri.text} (${ri.type === 'allowed' ? 'Permitido' : 'Prohibido'})`).join('\n')
@@ -107,24 +114,34 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string, 
     }
 
     // 2. Generar embedding (OpenAI 1536)
-    // Para simplificar FAQs las metemos en un solo bloque si no son demasiadas, 
-    // o podríamos dividirlas si superan cierto límite.
     try {
         const embedding = await generateOpenAIEmbedding(contentToEmbed)
 
-        // 3. Insertar en la tabla unificada
-        const { error } = await supabase.from('context_embeddings').insert({
+        // Deterministic source_id per category to avoid collisions
+        // We take the property UUID and replace the last hex chars with a category index
+        const categories = ['property', 'welcome', 'access', 'rules', 'contacts', 'tech', 'inventory', 'faqs', 'dining']
+        const catIndex = categories.indexOf(category) !== -1 ? categories.indexOf(category) : 9
+        const suffix = catIndex.toString(16).padStart(4, '0')
+        const deterministicSourceId = propertyId.substring(0, propertyId.length - 4) + suffix
+
+        // 3. Insertar en la tabla unificada (Patrón Delete-then-Insert para evitar problemas con índices funcionales)
+        await supabase.from('context_embeddings').delete().eq('source_id', deterministicSourceId)
+
+        const { error: insError } = await supabase.from('context_embeddings').insert({
             property_id: propertyId,
             tenant_id: tenantId,
             source_type: sourceType,
-            source_id: propertyId, // Usamos el ID de la propiedad como UUID válido
+            source_id: deterministicSourceId,
             content: contentToEmbed,
             embedding: embedding,
             metadata: metadata
         })
 
-        if (error) console.error(`[RAG-SYNC] Error inserting ${category}:`, error.message)
-        else console.log(`[RAG-SYNC] SUCCESS: ${category} indexed.`)
+        if (insError) {
+            console.error(`[RAG-SYNC] Error indexing ${category}:`, insError.message)
+        } else {
+            console.log(`[RAG-SYNC] SUCCESS: ${category} indexed.`)
+        }
 
     } catch (err: any) {
         console.error(`[RAG-SYNC] Embedding generation failed for ${category}:`, err.message)

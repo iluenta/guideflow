@@ -129,7 +129,7 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
             // 2. Process with AI (Fase 1)
             const result = await processBatchScans(propertyId, uploadedUrls, replaceExisting)
 
-            toast.success(`Análisis completado: Se han generado ${result.count} manuales técnicos`, { id: 'analyze-process' })
+            toast.success(`Análisis completado: Se han generado ${result.identifiedCount} manuales técnicos`, { id: 'analyze-process' })
 
             // Clear photos after success
             setPhotos([])
