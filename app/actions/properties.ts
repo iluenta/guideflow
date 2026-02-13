@@ -106,18 +106,31 @@ export async function getProperty(id: string) {
 export async function getPropertyBySlug(slug: string) {
     const supabase = await createClient()
 
-    const { data, error } = await supabase
+    // 1. Try by slug
+    const { data: bySlug } = await supabase
         .from('properties')
         .select('*')
         .eq('slug', slug)
         .maybeSingle()
 
-    if (error) {
-        console.error('Error fetching property by slug:', error.message)
+    if (bySlug) return bySlug as Property
+
+    // 2. Fallback to ID (for backwards compatibility or when slug isn't yet set)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+    if (!isUUID) return null
+
+    const { data: byId, error: idError } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', slug)
+        .maybeSingle()
+
+    if (idError) {
+        console.error('Error fetching property by id fallback:', idError.message)
         return null
     }
 
-    return data as Property
+    return byId as Property
 }
 
 export async function createProperty(formData: Partial<Property>) {

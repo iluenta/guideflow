@@ -74,12 +74,25 @@ export async function middleware(request: NextRequest) {
 
         const supabaseAdmin = createEdgeAdminClient()
 
-        // 5.1 Identify requested property
-        const { data: requestedProperty, error: propError } = await supabaseAdmin
+        // 5.1 Identify requested property (Try slug first, then ID fallback)
+        let { data: requestedProperty, error: propError } = await supabaseAdmin
             .from('properties')
             .select('id, tenant_id')
             .eq('slug', firstSegment)
-            .single()
+            .maybeSingle()
+
+        if (!requestedProperty) {
+            // Fallback to ID if segment matches UUID pattern
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(firstSegment);
+            if (isUUID) {
+                const { data: byId } = await supabaseAdmin
+                    .from('properties')
+                    .select('id, tenant_id')
+                    .eq('id', firstSegment)
+                    .maybeSingle()
+                requestedProperty = byId
+            }
+        }
 
         // 5.2 Smart Host Bypass: Only owners can bypass token check
         if (user && requestedProperty) {
