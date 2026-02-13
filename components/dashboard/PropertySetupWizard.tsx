@@ -861,7 +861,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
             {!mounted ? (
                 <div className="w-full h-96 bg-slate-50 animate-pulse rounded-3xl" />
             ) : (
-                <main className="flex-1 w-full max-w-4xl mx-auto px-4 pb-32 md:pb-12 mt-4">
+                <main className="flex-1 w-full max-w-4xl mx-auto px-4 pb-48 md:pb-12 mt-4">
                     <AnimatePresence mode="wait" custom={direction}>
                         <motion.div
                             key={activeTab}
