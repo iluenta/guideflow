@@ -17,6 +17,13 @@ export async function POST(req: Request) {
   try {
     const { propertyId, section, existingData } = await req.json();
 
+    if (!propertyId) {
+      return new Response(JSON.stringify({ error: 'ID de propiedad requerido para generar contexto' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // Obtener detalles de la propiedad para el contexto geográfico
     const { data: property, error: propError } = await supabase
       .from('properties')

@@ -28,7 +28,6 @@ import MapPreview from './MapPreview'
 import TransportInfo from './TransportInfo'
 import { VisualScanner } from '@/components/guides/VisualScanner'
 import { LocalRecommendations } from '@/components/guides/LocalRecommendations'
-import { RecipeCard } from './RecipeCard'
 import { InventorySelector, InventoryItem, DEFAULT_ITEMS } from './InventorySelector'
 import { ThemePreviewCard } from './ThemePreviewCard'
 import { PRESET_THEMES, Theme } from '@/lib/themes'
@@ -141,14 +140,43 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         const status = property?.inventory_status
         if (!propertyId || (status !== 'identifying' && status !== 'generating')) return
 
+        const MAX_POLLING_TIME = 5 * 60 * 1000 // 5 minutos de seguridad
+        const startTime = Date.now()
+
         const interval = setInterval(async () => {
-            const { data: prop } = await supabase
+            // Check timeout
+            if (Date.now() - startTime > MAX_POLLING_TIME) {
+                console.warn('[POLLING] Timeout reached for property:', propertyId)
+                clearInterval(interval)
+                return
+            }
+
+            const { data: prop, error } = await supabase
                 .from('properties')
                 .select('inventory_status, property_manuals(*)')
                 .eq('id', propertyId)
                 .single()
 
-            if (prop && (prop.inventory_status !== status || prop.property_manuals?.length !== property?.manuals?.length)) {
+            if (error) {
+                console.error('[POLLING] Error fetching status:', error.message)
+                return
+            }
+
+            // Si el estado ha cambiado o hay nuevos manuales, actualizamos
+            const hasStatusChanged = prop && prop.inventory_status !== status
+            const hasNewManuals = prop && prop.property_manuals?.length !== (property?.manuals?.length || 0)
+
+            if (prop && (hasStatusChanged || hasNewManuals)) {
+                // Si ha fallado, paramos el polling
+                if (prop.inventory_status === 'failed') {
+                    clearInterval(interval)
+                    toast({
+                        title: "Error en la generación",
+                        description: "No se pudieron generar algunos manuales. Por favor, inténtalo de nuevo.",
+                        variant: 'destructive'
+                    })
+                }
+
                 // Sync detection to inventory state automatically
                 const newManuals = prop.property_manuals || []
                 const trulyDetectedManuals = newManuals.filter((m: any) => m.metadata?.source !== 'inventory_selector')
@@ -172,30 +200,14 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                             const existingIndex = updatedSelected.findIndex(i => i.id === matchedItem.id)
                             if (existingIndex === -1) {
                                 // Add as newly detected
-                                updatedSelected.push({
-                                    ...matchedItem,
-                                    isPresent: true,
-                                    isFromScanner: true,
-                                    customContext: ''
-                                })
+                                updatedSelected.push({ ...matchedItem, isPresent: true, isFromScanner: true, customContext: '' })
                             } else if (!updatedSelected[existingIndex].isPresent) {
-                                // Auto-check if it was previously unchecked
-                                updatedSelected[existingIndex] = {
-                                    ...updatedSelected[existingIndex],
-                                    isPresent: true,
-                                    isFromScanner: true
-                                }
+                                updatedSelected[existingIndex] = { ...updatedSelected[existingIndex], isPresent: true, isFromScanner: true }
                             }
                         }
                     })
 
-                    return {
-                        ...prev,
-                        inventory: {
-                            ...prev.inventory,
-                            selected_items: updatedSelected
-                        }
-                    }
+                    return { ...prev, inventory: { ...prev.inventory, selected_items: updatedSelected } }
                 })
 
                 setProperty((prev: any) => ({
@@ -205,12 +217,10 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                 }))
 
                 if (prop.inventory_status === 'generating') {
-                    // Phase 1 finished → appliances identified, inventory populated
                     setCompletedSteps(prev => Array.from(new Set([...prev, 'visual-scanner'])))
                 }
 
                 if (prop.inventory_status === 'completed') {
-                    // Phase 2 finished → all manuals generated
                     setCompletedSteps(prev => Array.from(new Set([...prev, 'visual-scanner', 'inventory'])))
                     toast({
                         title: "¡Manuales generados!",
@@ -221,7 +231,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         }, 5000)
 
         return () => clearInterval(interval)
-    }, [propertyId, property?.inventory_status])
+    }, [propertyId, property?.inventory_status, property?.manuals?.length])
 
     // Calcular progreso
     const steps = ['property', 'appearance', 'access', 'welcome', 'contacts', 'checkin', 'rules', 'tech', 'visual-scanner', 'inventory', 'dining', 'faqs']
@@ -703,11 +713,17 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                 ; (window as any)._aiInterval = interval
         }
 
+        const currentPropId = propertyId || property?.id
+        if (!currentPropId) {
+            console.warn('[WIZARD-AI] Cannot use AI fill without a saved property ID')
+            return
+        }
+
         setAiLoading(section)
         const finalAddressToUse = data.access.full_address;
 
         const payload: any = {
-            propertyId,
+            propertyId: currentPropId,
             section,
             existingData: section === 'dining' || section === 'recommendations'
                 ? {

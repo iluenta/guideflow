@@ -400,10 +400,11 @@ FORMATO DE SALIDA (JSON ESTRICTO):
             }
         }
 
-        // 🔥 Fire-and-forget: Phase 2 runs in background
-        generateManualsInBackground()
+        // Await Phase 2: Manual Generation
+        // In production (Vercel), we must await this to prevent the process from being killed
+        await generateManualsInBackground()
 
-        logT(`[BATCH] Phase 1 complete. Returning to user. Phase 2 running in background.`)
+        logT(`[BATCH] Pipeline complete for ${identifiedAppliances.length} appliances.`)
         return { success: true, identifiedCount: identifiedAppliances.length }
 
     } catch (error: any) {
