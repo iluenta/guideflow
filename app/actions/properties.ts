@@ -4,6 +4,15 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { syncWizardDataToRAG } from './rag-sync'
 
+function generateSlug(name: string): string {
+    return name
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
 async function getTenantId(supabase: any, user: any) {
     // 1. Try metadata first (fastest)
     const metadataId = user.app_metadata?.tenant_id || user.user_metadata?.tenant_id
@@ -146,6 +155,11 @@ export async function createProperty(formData: Partial<Property>) {
         throw new Error('Usuario sin tenant asignado')
     }
 
+    // Auto-generate slug if missing
+    if (!formData.slug && formData.name) {
+        formData.slug = generateSlug(formData.name)
+    }
+
     // Check for slug uniqueness if provided
     if (formData.slug) {
         const { data: existing } = await supabase
@@ -186,7 +200,12 @@ export async function updateProperty(id: string, formData: Partial<Property>) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
 
-    // Check for slug uniqueness if changing it
+    // Auto-generate slug if it's missing (e.g., manually cleared or first-time sync)
+    if (!formData.slug && formData.name) {
+        formData.slug = generateSlug(formData.name)
+    }
+
+    // Check for slug uniqueness if provided
     if (formData.slug) {
         const { data: existing } = await supabase
             .from('properties')

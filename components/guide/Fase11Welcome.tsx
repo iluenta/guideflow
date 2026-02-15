@@ -12,6 +12,8 @@ import {
     Sparkles,
     ArrowRight
 } from 'lucide-react';
+import { LanguageSelector } from '@/components/guide/LanguageSelector';
+import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 
 interface Fase11WelcomeProps {
     propertyName: string;
@@ -21,6 +23,10 @@ interface Fase11WelcomeProps {
     onNavigate: (page: string) => void;
     onChatQuery: (query: string) => void;
     currentLanguage?: string;
+    onLanguageChange: (lang: string) => void;
+    guestName?: string;
+    accessToken?: string;
+    propertyId?: string; // FASE 17
 }
 
 const container: Variants = {
@@ -52,8 +58,31 @@ export function Fase11Welcome({
     onOpenGuide,
     onNavigate,
     onChatQuery,
-    currentLanguage = 'es'
+    currentLanguage = 'es',
+    onLanguageChange,
+    guestName,
+    accessToken,
+    propertyId // FASE 17
 }: Fase11WelcomeProps) {
+    const { content: localizedPropertyName } = useLocalizedContent(propertyName, currentLanguage, 'general', accessToken, propertyId);
+    const { content: welcomeHomeLabel } = useLocalizedContent('Bienvenido a casa', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: greetingLabel } = useLocalizedContent('Hola', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: conciergePlaceholder } = useLocalizedContent('¿En qué puedo ayudarte hoy?', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: conciergeLabel } = useLocalizedContent('Tu concierge digital en', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: commonQuestionsLabel } = useLocalizedContent('Preguntas Frecuentes', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: yourStayLabel } = useLocalizedContent('Tu Estancia', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: houseGuideLabel } = useLocalizedContent('Guía de la Casa', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: everythingYouNeedLabel } = useLocalizedContent('Todo lo que necesitas saber', currentLanguage, 'ui_label', accessToken, propertyId);
+
+    // Chip Labels
+    const { content: labelAcceso } = useLocalizedContent('Acceso', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelParking } = useLocalizedContent('Parking', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelComer } = useLocalizedContent('Comer', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: queryParking } = useLocalizedContent('¿Dónde puedo aparcar?', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: queryComer } = useLocalizedContent('¿Dónde puedo comer cerca?', currentLanguage, 'ui_label', accessToken, propertyId);
+
+    const localizedGreeting = guestName ? `${greetingLabel} ${guestName}` : greetingLabel;
+
     return (
         <motion.div
             className="flex flex-col min-h-full bg-white relative"
@@ -74,17 +103,24 @@ export function Fase11Welcome({
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
+                <div className="absolute top-4 right-4 z-20">
+                    <LanguageSelector 
+                        currentLanguage={currentLanguage} 
+                        onLanguageChange={onLanguageChange} 
+                    />
+                </div>
+
                 <div className="absolute bottom-0 left-0 w-full p-6 pb-12 text-white">
                     <motion.div variants={item}>
                         <p className="text-sm font-medium tracking-widest uppercase opacity-90 mb-2 flex items-center gap-2">
                             <Sparkles size={14} className="text-amber-400" />
-                            {currentLanguage === 'es' ? 'Bienvenido a casa' : 'Welcome home'}
+                            {welcomeHomeLabel}
                         </p>
                         <h1 className="text-4xl font-bold mb-1 font-serif leading-tight">
-                            {currentLanguage === 'es' ? 'Hola' : 'Hello'}
+                            {localizedGreeting}
                         </h1>
                         <p className="text-lg opacity-90 font-light italic font-serif">
-                            {propertyName}
+                            {localizedPropertyName}
                         </p>
                     </motion.div>
                 </div>
@@ -102,7 +138,7 @@ export function Fase11Welcome({
                             <Search size={20} />
                         </div>
                         <div className="w-full h-16 pl-12 pr-14 bg-white flex items-center text-gray-400 text-base">
-                            {currentLanguage === 'es' ? '¿En qué puedo ayudarte hoy?' : 'How can I help you today?'}
+                            {conciergePlaceholder}
                         </div>
 
                         <div className="absolute inset-y-0 right-2 flex items-center">
@@ -114,7 +150,7 @@ export function Fase11Welcome({
                         </div>
                     </div>
                     <p className="text-center text-xs text-gray-400 mt-3 font-medium uppercase tracking-[0.1em]">
-                        {currentLanguage === 'es' ? 'Tu concierge digital en' : 'Your digital concierge in'} {location}
+                        {conciergeLabel} {location}
                     </p>
                 </motion.div>
 
@@ -122,16 +158,16 @@ export function Fase11Welcome({
                 <motion.div variants={item} className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                            {currentLanguage === 'es' ? 'Preguntas Frecuentes' : 'Common Questions'}
+                            {commonQuestionsLabel}
                         </h3>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                         {[
-                            { id: 'wifi', icon: Wifi, label: currentLanguage === 'es' ? 'WiFi' : 'WiFi', type: 'nav', target: 'wifi' },
-                            { id: 'access', icon: Key, label: currentLanguage === 'es' ? 'Acceso' : 'Access', type: 'nav', target: 'checkin' },
-                            { id: 'parking', icon: MapPin, label: currentLanguage === 'es' ? 'Parking' : 'Parking', type: 'chat', query: currentLanguage === 'es' ? '¿Dónde puedo aparcar?' : 'Where can I park?' },
-                            { id: 'eat', icon: Utensils, label: currentLanguage === 'es' ? 'Comer' : 'Food', type: 'chat', query: currentLanguage === 'es' ? '¿Dónde puedo comer cerca?' : 'Where can I eat nearby?' }
+                            { id: 'wifi', icon: Wifi, label: 'WiFi', type: 'nav', target: 'wifi' },
+                            { id: 'access', icon: Key, label: labelAcceso, type: 'nav', target: 'checkin' },
+                            { id: 'parking', icon: MapPin, label: labelParking, type: 'chat', query: queryParking },
+                            { id: 'eat', icon: Utensils, label: labelComer, type: 'chat', query: queryComer }
                         ].map((chip) => (
                             <button
                                 key={chip.id}
@@ -159,13 +195,13 @@ export function Fase11Welcome({
                         <div className="bg-white rounded-xl p-5 border border-primary/5 relative z-10 flex items-center justify-between shadow-sm">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-[#f59e0b] mb-1">
-                                    {currentLanguage === 'es' ? 'Tu Estancia' : 'Your Stay'}
+                                    {yourStayLabel}
                                 </p>
                                 <h3 className="text-xl font-serif font-bold text-gray-900 mb-1">
-                                    {currentLanguage === 'es' ? 'Guía de la Casa' : 'House Guide'}
+                                    {houseGuideLabel}
                                 </h3>
                                 <p className="text-xs text-gray-500">
-                                    {currentLanguage === 'es' ? 'Todo lo que necesitas saber' : 'Everything you need to know'}
+                                    {everythingYouNeedLabel}
                                 </p>
                             </div>
                             <div

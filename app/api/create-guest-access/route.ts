@@ -29,6 +29,14 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Property not found' }, { status: 404 });
         }
 
+        // Security check: Property MUST have a slug configured
+        if (!property.slug) {
+            return NextResponse.json({
+                error: 'slug_missing',
+                message: 'La propiedad no tiene un slug configurado. Por favor, configura el slug en los ajustes de la propiedad antes de generar accesos para huéspedes.'
+            }, { status: 400 });
+        }
+
         const accessToken = generateSecureToken();
 
         // Calculate access windows (UTC based)

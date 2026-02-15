@@ -4,7 +4,12 @@ import { generateOpenAIEmbedding } from '@/lib/ai/openai';
 import { streamGeminiREST } from '@/lib/ai/gemini-rest';
 import { validateAccessToken, generateDeviceFingerprint, logSuspiciousActivity } from '@/lib/security';
 import { RateLimiter } from '@/lib/security/rate-limiter';
+import { TranslationService } from '@/lib/translation-service';
+import { NotificationService } from '@/lib/notifications';
 
+// ═══════════════════════════════════════════════════════
+// FRESH RE-COMPILATION TRIGGER
+// ═══════════════════════════════════════════════════════
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
@@ -20,30 +25,71 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { messages, propertyId: legacyPropertyId, accessToken } = await req.json();
+        const { messages, propertyId: legacyPropertyId, accessToken, language = 'es' } = await req.json();
         const lastMessage = messages[messages.length - 1].content;
         const ip = req.headers.get('x-forwarded-for') || 'unknown';
         const userAgent = req.headers.get('user-agent') || 'unknown';
 
         let propertyId = legacyPropertyId;
+        let propertyTier: 'standard' | 'premium' | 'enterprise' = 'standard';
+
+        // 0. FETCH PROPERTY STATUS (FASE 22)
+        const { data: propertyStatus, error: propError } = await supabase
+            .from('properties')
+            .select('id, tier, is_halted, halt_expires_at, halt_reason')
+            .eq('id', propertyId)
+            .single();
+
+        if (propError || !propertyStatus) {
+            console.error('[CHAT] Property status check failed:', propError?.message);
+        } else {
+            propertyTier = (propertyStatus.tier as any) || 'standard';
+            
+            // Check for active halt
+            if (propertyStatus.is_halted) {
+                const now = new Date();
+                const expiresAt = propertyStatus.halt_expires_at ? new Date(propertyStatus.halt_expires_at) : null;
+                
+                if (!expiresAt || now < expiresAt) {
+                    console.warn(`[SECURITY] 🛡️ Request blocked for Halted Property: ${propertyId}. Reason: ${propertyStatus.halt_reason}`);
+                    return new Response(JSON.stringify({ 
+                        error: 'Servicio temporalmente pausado por seguridad',
+                        reason: 'property_halted',
+                        haltReason: propertyStatus.halt_reason,
+                        resetAt: expiresAt
+                    }), { status: 403 });
+                } else {
+                    // Auto-cooldown expired: Reset status in background
+                    supabase.from('properties').update({ is_halted: false }).eq('id', propertyId);
+                }
+            }
+        }
 
         // 1. VALIDACIÓN DE SEGURIDAD (FASE 4)
         if (accessToken) {
             // 1.1. Validar Token y Ventana Temporal
-            const tokenValidation = await validateAccessToken(supabase, accessToken);
+            const tokenValidation = await validateAccessToken(supabase, accessToken, legacyPropertyId);
             if (!tokenValidation.valid) {
+                // If the reason is property mismatch, log it explicitly
+                if (tokenValidation.reason === 'invalid_token' && legacyPropertyId) {
+                   await logSuspiciousActivity(supabase, accessToken, {
+                       type: 'property_mismatch_attempt',
+                       details: { providedPropertyId: legacyPropertyId, ip },
+                       ip
+                   });
+                }
+                
                 return new Response(JSON.stringify({
                     error: 'Acceso denegado',
-                    reason: tokenValidation.reason,
-                    resetAt: (tokenValidation as any).availableFrom || (tokenValidation as any).availableTo
+                    reason: tokenValidation.reason
                 }), { status: 403 });
             }
 
             propertyId = tokenValidation.access.property_id;
 
-            // 1.2. Rate Limiting Multi-Nivel
+            // 1.2. Rate Limiting Multi-Nivel (FASE 22: Tiered)
             const deviceFingerprint = await generateDeviceFingerprint(ip, userAgent);
-            const rateLimit = await RateLimiter.checkChatRateLimit(accessToken, ip, deviceFingerprint);
+            const rateLimit = await RateLimiter.checkChatRateLimit(accessToken, ip, deviceFingerprint, propertyId, propertyTier);
 
             if (!rateLimit.allowed) {
                 await logSuspiciousActivity(supabase, accessToken, {
@@ -51,6 +97,25 @@ export async function POST(req: Request) {
                     details: { reason: rateLimit.reason, ip },
                     ip
                 });
+
+                // FASE 22: Check if we should trigger an EMERGENCY_HALT due to volume anomaly
+                // We define an anomaly as > 30% of the daily limit in 10 minutes, OR just > 300 requests/hour
+                if (rateLimit.reason === 'property_limit_exceeded') {
+                    const haltReason = 'Consumo anómalo detectado (Posible abuso/bot)';
+                    await supabase.from('properties').update({
+                        is_halted: true,
+                        halt_reason: haltReason,
+                        halt_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour cooldown
+                    }).eq('id', propertyId);
+
+                    // MANDATORY NOTIFICATION
+                    await NotificationService.notifyEmergencyHalt({
+                        propertyId,
+                        type: 'EMERGENCY_HALT',
+                        reason: haltReason,
+                        details: { rateLimitReason: rateLimit.reason, ip }
+                    });
+                }
 
                 return new Response(JSON.stringify({
                     error: rateLimit.message,
@@ -109,9 +174,32 @@ export async function POST(req: Request) {
         // RAG: Búsqueda vectorial adaptativa
         // ═══════════════════════════════════════════════════════
         // Si hay código de error, enriquecemos la query para encontrar la tabla de diagnóstico
-        const ragQuery = detectedErrorCode
+        let ragQuery = detectedErrorCode
             ? `${lastMessage} código error ${detectedErrorCode} diagnóstico problemas tabla`
             : lastMessage;
+
+        // FASE 11: Si el idioma no es español, traducimos la query para el RAG 
+        // ya que el contenido de los manuales/recomendaciones está principalmente indexado en español.
+        // Esto mejora drásticamente la relevancia de los resultados vectoriales cross-lingual.
+        if (language !== 'es') {
+            try {
+                const { text: translatedQuery, metrics } = await TranslationService.translate(
+                    ragQuery,
+                    language,
+                    'es',
+                    { propertyId, context: 'rag_query' }
+                );
+
+                console.log(`[TRANSLATION] RAG Query Translation:`, {
+                    cacheHit: metrics.cacheHit,
+                    cacheLevel: metrics.cacheLevel,
+                    timeMs: metrics.translationTimeMs
+                });
+                ragQuery = translatedQuery;
+            } catch (err: any) {
+                console.warn('[TRANSLATION] RAG Query Translation failed, using original:', err.message);
+            }
+        }
 
         const questionEmbedding = await generateOpenAIEmbedding(ragQuery);
 
@@ -133,6 +221,7 @@ export async function POST(req: Request) {
         });
 
         // 3. Obtener información ESTRUCTURADA Crítica (Garantía de datos básicos)
+        // NOTA: Movemos esto arriba para usarlo en la validación anti-alucinaciones
         const [
             { data: propertyInfo },
             { data: propertyBranding },
@@ -146,20 +235,21 @@ export async function POST(req: Request) {
                 .in('category', ['tech', 'rules', 'access', 'contacts', 'notes'])
         ]);
 
-        // Extraer contacto de soporte (support > host; distinguir teléfono fijo vs móvil/WhatsApp)
-        // NOTA: GuestChat.tsx auto-detecta números de teléfono y los convierte en botones de llamada + WhatsApp
+        // Extraer contacto de soporte
         const contactsData = criticalContext?.find((c: any) => c.category === 'contacts')?.content;
         let supportContact = 'el personal de soporte';
         if (contactsData) {
             const name = contactsData.support_name || 'Soporte';
             const mobile = contactsData.support_mobile || contactsData.host_mobile || '';
             const phone = contactsData.support_phone || contactsData.host_phone || '';
-            // Preferir móvil (permite llamada + WhatsApp en el chat)
             const bestNumber = mobile || phone;
             if (bestNumber) {
                 supportContact = `${name}: ${bestNumber}`;
             }
         }
+
+
+
 
         // 4. Formatear contexto híbrido (Estructurado + Vectorial)
         const commonBrands = ['TEKA', 'BALAY', 'BOSCH', 'SIEMENS', 'NEFF', 'BSH', 'SAMSUNG', 'LG', 'BEKO', 'WHIRLPOOL'];
@@ -270,7 +360,24 @@ export async function POST(req: Request) {
 
         // G. Tiempo Real
         const now = new Date();
-        const currentTimeContext = `${now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} a las ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+        const currentTimeContext = `${now.toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })} a las ${now.toLocaleTimeString(language === 'es' ? 'es-ES' : 'en-US', { hour: '2-digit', minute: '2-digit' })}`;
+
+        const getLanguageName = (code: string) => {
+            const names: Record<string, string> = {
+                es: 'Spanish (Español)',
+                en: 'English',
+                fr: 'French (Français)',
+                de: 'German (Deutsch)',
+                it: 'Italian (Italiano)',
+                pt: 'Portuguese (Português)'
+            };
+            return names[code] || 'English';
+        };
+
+        // FASE 15: Si el idioma no es español, forzamos que Gemini responda en español 
+        // para que la caché de traducción (ES -> Usuario) funcione correctamente.
+        const responseLanguage = language === 'es' ? 'Spanish (Español)' : 'Spanish';
+        const targetLanguageName = getLanguageName(language);
 
         // ═══════════════════════════════════════════════════════
         // PROMPT DINÁMICO según estrategia detectada
@@ -280,14 +387,10 @@ export async function POST(req: Request) {
         if (isEmergency) {
             // ⚠️ EMERGENCIA: Respuesta inmediata de seguridad
             systemInstruction = `EMERGENCIA DE SEGURIDAD DETECTADA.
-
-Responde EXACTAMENTE con este formato, adaptando al aparato mencionado:
-
-"⚠️ Por seguridad, apaga/desenchufa el aparato AHORA.
-
-Llama inmediatamente a ${supportContact}.
-
-Esto requiere atención urgente."
+            
+# LANGUAGE RULE:
+- ALWAYS respond ENTIRELY in ${responseLanguage}. No exceptions.
+- Use ONLY natural Spanish expressions.
 
 No añadas nada más. No intentes diagnosticar. Prioridad absoluta: seguridad del huésped.
 NUNCA menciones "el manual" ni "la documentación" — el huésped no sabe que existen.`;
@@ -295,14 +398,14 @@ NUNCA menciones "el manual" ni "la documentación" — el huésped no sabe que e
         } else if (detectedErrorCode) {
             // 🔧 CÓDIGO DE ERROR: Diagnóstico específico
             systemInstruction = `Eres el asistente del apartamento "${propertyInfo?.name || 'este apartamento'}". El huésped tiene el código de error: ${detectedErrorCode}.
+            
+# LANGUAGE RULE:
+- ALWAYS respond ENTIRELY in ${responseLanguage}. No exceptions.
+- Use only pure ${responseLanguage}.
 
 TU MISIÓN: Busca ESTE código EXACTO (${detectedErrorCode}) en la tabla de diagnóstico del contexto.
 
 # SI ENCUENTRAS EL CÓDIGO EN EL CONTEXTO:
-Responde así (tono natural, como WhatsApp):
-
-"Código ${detectedErrorCode}: [significado del manual]
-
 Solución:
 - [Paso 1 del manual]
 - [Paso 2 si existe]
@@ -321,9 +424,9 @@ Si persiste, contacta con ${supportContact}."
 
 # REGLAS
 - Respuesta máximo 5 líneas
-- Tono natural, sin viñetas formales
+- Tono natural en ${targetLanguageName}
 - SOLO información del contexto, no inventes soluciones
-- ❌ NUNCA digas "consulta el manual", "según el manual", "en la documentación" ni similar — el huésped NO sabe que existen manuales, responde como si TÚ supieras la respuesta
+- ❌ NUNCA digas "consulta el manual" ni similar.
 - 📍 ${currentTimeContext}
 
 # CONTEXTO:
@@ -331,81 +434,61 @@ ${fullContext}`;
 
         } else {
             // 💬 ESTÁNDAR: Asistente personal del apartamento
-            systemInstruction = `Eres el asistente personal del apartamento "${propertyInfo?.name || 'este apartamento'}". Eres cercano, práctico y resolutivo. Hablas como un anfitrión amable por WhatsApp.
-
-# TU FORMA DE SER
-- Hablas como un amigo que conoce bien el apartamento
-- Das respuestas PRÁCTICAS y ÚTILES, no técnicas
-- Si algo tiene solución sencilla, la das tú sin derivar a soporte
-
-# EXTENSIÓN DE RESPUESTA (MUY IMPORTANTE)
-
-## Para PREGUNTAS SOBRE USO/FUNCIONES ("qué programas tiene", "cómo funciona", "qué opciones tiene"):
-→ Sé COMPLETO: lista TODAS las opciones/programas que tengas en el contexto
-→ Para CADA opción incluye: el SÍMBOLO que verá en el mando (si lo sabes) + PARA QUÉ SIRVE
-→ Al final recomienda la mejor opción o pregunta qué quiere hacer
-→ Extensión: hasta 15 líneas si es necesario para cubrir todas las opciones
-
-Ejemplo BUENO para "¿qué programas tiene el horno?":
-"¡Claro! El horno tiene estas funciones (busca estos símbolos en el mando):
-
-- **Calor arriba y abajo** (═ dos rayas horizontales): el clásico. Ideal para asados, bizcochos y panes
-- **Aire caliente** (ventilador con círculo): reparte el calor uniforme. Perfecto para hornear en varias alturas
-- **Grill** (〰️ línea zigzag arriba): calor intenso desde arriba. Para gratinar pasta, tostar pan o dorar
-- **Grill + aire** (zigzag + ventilador): como un asador. Genial para pollo entero
-- **Función pizza** (ventilador + raya abajo): mucho calor desde abajo. Base súper crujiente
-- **Modo eco** (ventilador con eco): ahorra energía, ideal para cocciones largas
-
-Para una pizza: busca el símbolo del ventilador con raya abajo, ponlo a 220°C unos 12-15 min. ¿Qué vas a preparar?"
-
-Ejemplo MALO: "El horno tiene varias opciones como calor arriba y abajo, grill, etc."
-
-## Para PROBLEMAS TÉCNICOS ("no funciona", "no enciende"):
-→ Sé CONCISO: 3-5 líneas
-→ Pregunta por código de error si no lo mencionan
-→ Da 1-2 soluciones rápidas
-→ Solo deriva a soporte si falla todo
-
-## Para PREGUNTAS DIRECTAS ("dónde está", "cuál es la clave WiFi"):
-→ Respuesta DIRECTA: 1-3 líneas, sin rodeos
-
-# DIAGNÓSTICO ACTIVO (cuando hay problemas)
-1. Si dicen "no funciona" sin código → Pregunta: "¿Aparece algún código en la pantalla?"
-2. Si dan código → Busca en la tabla de diagnóstico → Da la solución
-3. Si persiste → Deriva a ${supportContact}
-
-# SI EL CONTEXTO NO TIENE RESPUESTA COMPLETA
-Si hay sección [SOLUCIONES_EXTERNAS], úsala como apoyo.
-Presenta la info como si TÚ la supieras: "Esto suele pasar cuando..." (nunca digas "he buscado" ni "según internet")
-
-# REGLAS ABSOLUTAS
-- ❌ NUNCA menciones modelos técnicos (3HB4331X0, WMY71433, etc.)
-- ❌ NUNCA digas "consulta el manual", "según el manual", "en la documentación"
-- ❌ NUNCA describas mandos de forma abstracta — describe PARA QUÉ SIRVEN
-- ❌ NO recortes la lista de programas/funciones — muestra TODOS los que tengas en el contexto
-- ❌ NO uses checkmarks (✓✗) ni listas formales tipo informe
-- ✅ Para CADA programa/función, describe el SÍMBOLO/ICONO que verá en el aparato (ej: "copo de nieve", "gota de agua", "ventilador") para que pueda identificarlo
-- ✅ Usa **negrita** para los nombres de programas/funciones
-- ✅ Recomienda la MEJOR opción según lo que quiera hacer
-- ✅ Tono natural, como WhatsApp (¡Perfecto! ¡Claro! ¡Genial!)
-- ✅ Si no tienes info, dilo y da el contacto de ${supportContact}
-- 📍 ${currentTimeContext}
+            // FASE 16: Grounding ultra-estricto y ejemplos anti-alucinación
+            const groundingRules = `
+# REGLAS DE SEGURIDAD E INFORMACIÓN:
+1. Eres un sistema de información CERRADO. SOLO puedes usar el CONTEXTO proporcionado.
+2. Si el usuario pregunta por algo que NO está en el CONTEXTO -> Responde amigablemente indicando que no tienes esa información y sugiérele contactar con ${supportContact}.
+3. NO inventes instrucciones genéricas.
+4. Tu prioridad es la precisión basada en los datos del apartamento.
+5. Responde siempre en Español.
 
 # CONTEXTO:
-📦 Chunks: ${relevantChunks?.length || 0} (Enriquecidos: ${relevantChunks?.filter((c: any) => c.metadata?.enriched === true).length || 0})
-
 ${fullContext}`;
+
+            systemInstruction = language === 'es' 
+              ? `Eres el asistente personal del apartamento "${propertyInfo?.name || 'este apartamento'}".
+              
+# TU FORMA DE SER
+- Hablas como un amigo que conoce bien el apartamento.
+- Das respuestas PRÁCTICAS y ÚTILES, no técnicas.
+${groundingRules}
+
+# REGLAS ABSOLUTAS
+- ❌ NUNCA menciones modelos técnicos ni "el manual".
+- ✅ Tono natural, como WhatsApp.
+- ✅ Si no tienes info, dilo y da el contacto de ${supportContact}.
+- 📍 ${currentTimeContext}`
+              : `Eres un asistente de procesamiento interno. 
+              
+# REGLA CRÍTICA: 
+- Debes responder EXCLUSIVAMENTE en Español. 
+- Tu respuesta será traducida automáticamente por un sistema posterior.
+- Si respondes en inglés o cualquier otro idioma, el sistema fallará.
+${groundingRules}
+
+# MISIÓN:
+- Eres el asistente del apartamento "${propertyInfo?.name || 'este apartamento'}".
+- Da consejos prácticos y amigables (siempre en español).
+- NO menciones el manual.
+- PROHIBIDO INVENTAR: Si el aparato no está en el CONTEXTO, indica que no tienes info y da el contacto con ${supportContact} (en español).
+- Fecha y hora: ${currentTimeContext}`;
         }
 
         // 5. Gemini Call (Streaming con 2.0 Flash)
-        const geminiMessages = messages.map((m: any) => ({
-            role: m.role === 'user' ? 'user' : 'model',
-            content: m.content
-        }));
+        const geminiMessages = messages.map((m: any, index: number) => {
+            if (language !== 'es' && index === messages.length - 1 && m.role === 'user') {
+                return { role: 'user', content: ragQuery };
+            }
+            return {
+                role: m.role === 'user' ? 'user' : 'model',
+                content: m.content
+            };
+        });
 
         const response = await streamGeminiREST('gemini-2.0-flash', geminiMessages, {
             systemInstruction,
-            temperature: isEmergency ? 0.1 : 0.7 // Baja para emergencias, natural para resto
+            temperature: 0.0 // 🛡️ Set to 0.0 for maximum determinism and cache hits
         });
 
         if (!response.ok) {
@@ -421,6 +504,7 @@ ${fullContext}`;
 
                 const decoder = new TextDecoder();
                 let buffer = '';
+                let accumulatedText = '';
 
                 try {
                     while (true) {
@@ -437,15 +521,75 @@ ${fullContext}`;
                                     const json = JSON.parse(line.substring(6));
                                     const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
                                     if (text) {
-                                        controller.enqueue(new TextEncoder().encode(text));
+                                        if (language === 'es') {
+                                            // Normal flow for Spanish
+                                            controller.enqueue(new TextEncoder().encode(text));
+                                        } else {
+                                            // Translation flow for other languages
+                                            accumulatedText += text;
+                                            
+                                            // OPTIMIZED CHUNKING:
+                                            // 1. Split by \n (no space required)
+                                            // 2. Split by .!? followed by whitespace
+                                            // 3. Split BEFORE a list marker (e.g., " 1. ", " * ")
+                                            const boundaryRegex = /(\n|[\.!?]\s+|\s[\*\-]\s|\s\d+\.\s)/g;
+                                            let match;
+                                            
+                                            while ((match = boundaryRegex.exec(accumulatedText)) !== null) {
+                                                const breakPoint = match.index + (match[0].startsWith(' ') ? 0 : 1);
+                                                const chunkToTranslate = accumulatedText.substring(0, breakPoint).trim();
+                                                
+                                                if (chunkToTranslate) {
+                                                    const { text: translatedChunk } = await TranslationService.translate(
+                                                        chunkToTranslate,
+                                                        'es',
+                                                        language,
+                                                        { propertyId, context: 'chat' }
+                                                    );
+                                                    controller.enqueue(new TextEncoder().encode(translatedChunk + ' '));
+                                                }
+                                                
+                                                accumulatedText = accumulatedText.substring(breakPoint).trimStart();
+                                                boundaryRegex.lastIndex = 0; 
+                                            }
+
+                                            // Fallback: If a single sentence is too long (> 200 chars), force split
+                                            if (accumulatedText.length > 200) {
+                                                const lastSpace = accumulatedText.lastIndexOf(' ', 200);
+                                                const breakPoint = lastSpace !== -1 ? lastSpace : 200;
+                                                const chunkToTranslate = accumulatedText.substring(0, breakPoint).trim();
+
+                                                const { text: translatedChunk } = await TranslationService.translate(
+                                                    chunkToTranslate,
+                                                    'es',
+                                                    language,
+                                                    { propertyId, context: 'chat' }
+                                                );
+                                                controller.enqueue(new TextEncoder().encode(translatedChunk + ' '));
+                                                accumulatedText = accumulatedText.substring(breakPoint).trimStart();
+                                            }
+                                        }
                                     }
                                 } catch (e) {
-                                    // Ignore partial or non-json data lines
+                                    // Ignore partial lines
                                 }
                             }
                         }
                     }
+
+                    // Flush remaining text for non-Spanish
+                    if (language !== 'es' && accumulatedText.trim()) {
+                        const { text: translatedChunk } = await TranslationService.translate(
+                            accumulatedText,
+                            'es',
+                            language,
+                            { propertyId, context: 'chat' }
+                        );
+                        controller.enqueue(new TextEncoder().encode(translatedChunk));
+                    }
+
                 } catch (e) {
+                    console.error('[CHAT] Streaming error:', e);
                     controller.error(e);
                 } finally {
                     controller.close();

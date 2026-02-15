@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { cn } from '@/lib/utils';
+import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { motion, Variants } from 'framer-motion';
 
 interface EmergencyContact {
@@ -38,6 +39,89 @@ interface EmergencyViewProps {
     hostName?: string;
     currentLanguage?: string;
     onLanguageChange?: (lang: string) => void;
+    accessToken?: string;
+    propertyId?: string; // FASE 17
+}
+
+function ContactItem({ 
+    contact, 
+    idx, 
+    currentLanguage, 
+    accessToken, 
+    getIcon, 
+    handleDirections, 
+    handleCall,
+    isCustom = false,
+    propertyId // FASE 17
+}: { 
+    contact: any, 
+    idx: number, 
+    currentLanguage: string, 
+    accessToken?: string,
+    getIcon: (type: string) => any,
+    handleDirections: (name: string, address?: string) => void,
+    handleCall: (phone: string) => void,
+    isCustom?: boolean,
+    propertyId?: string // FASE 17
+}) {
+    const { content: localizedName } = useLocalizedContent(contact.name, currentLanguage, 'contact_name', accessToken, propertyId);
+    const { content: localizedDistance } = useLocalizedContent(contact.distance || '', currentLanguage, 'contact_distance', accessToken, propertyId);
+
+    if (isCustom) {
+        return (
+            <div
+                key={`${contact.id}-${idx}`}
+                className="bg-surface rounded-3xl p-4 shadow-sm border border-primary/[0.01] flex items-center justify-between group"
+            >
+                <div className="flex flex-col text-left">
+                    <span className="text-slate-800 font-bold text-sm tracking-tight">{localizedName}</span>
+                    <span className="text-[11px] text-primary/40 font-medium mt-0.5">{contact.phone}</span>
+                </div>
+                <button
+                    onClick={() => handleCall(contact.phone)}
+                    className="w-9 h-9 bg-primary/[0.04] text-primary rounded-full flex items-center justify-center hover:bg-primary/[0.08] transition-all active:scale-95 shrink-0"
+                >
+                    <Phone className="w-4 h-4" strokeWidth={2} />
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div
+            key={`${contact.id}-${idx}`}
+            className="bg-surface rounded-3xl p-4 shadow-sm border border-primary/[0.01] flex items-center justify-between group"
+        >
+            <div className="flex items-center gap-4 overflow-hidden">
+                <div className="w-11 h-11 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 transition-colors group-hover:bg-blue-100/50">
+                    {getIcon(contact.type)}
+                </div>
+                <div className="flex flex-col overflow-hidden text-left">
+                    <span className="text-slate-800 font-bold text-sm leading-tight truncate font-sans">{localizedName}</span>
+                    {localizedDistance && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <Clock className="w-3 h-3 text-primary/20" />
+                            <span className="text-[10px] text-primary/40 font-bold tracking-tight">{localizedDistance}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+            <div className="flex items-center gap-2 relative z-10">
+                <button
+                    onClick={() => handleDirections(contact.name, contact.address)}
+                    className="w-9 h-9 bg-primary/[0.04] text-primary rounded-full flex items-center justify-center hover:bg-primary/[0.08] transition-all active:scale-95 shrink-0 shadow-sm"
+                >
+                    <MapPin className="w-4 h-4" strokeWidth={2} />
+                </button>
+                <button
+                    onClick={() => handleCall(contact.phone)}
+                    className="w-9 h-9 bg-primary/10 text-primary rounded-full flex items-center justify-center hover:bg-primary/20 transition-all active:scale-95 shrink-0"
+                >
+                    <Phone className="w-4 h-4" strokeWidth={2} />
+                </button>
+            </div>
+        </div>
+    );
 }
 
 const containerVars: Variants = {
@@ -60,9 +144,20 @@ export function EmergencyView({
     contactsData,
     hostName,
     currentLanguage = 'es',
-    onLanguageChange
+    onLanguageChange,
+    accessToken,
+    propertyId // FASE 17
 }: EmergencyViewProps) {
     const isEs = currentLanguage === 'es';
+
+    // Localize UI Labels
+    const { content: labelEmergencyTitle } = useLocalizedContent('Emergencias', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelNationalService } = useLocalizedContent('Servicio Nacional', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelEmergencyCall112 } = useLocalizedContent('En caso de emergencia, llama al 112', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelDirectSupport } = useLocalizedContent('Soporte Directo', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelGuestSupport } = useLocalizedContent('Atención al huésped', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelLocalServices } = useLocalizedContent('Servicios Locales', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelOtherContacts } = useLocalizedContent('Otros Contactos', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const getIcon = (type: string) => {
         switch (type) {
@@ -97,7 +192,7 @@ export function EmergencyView({
     return (
         <div className="min-h-screen bg-background font-sans">
             <PageHeader
-                title={isEs ? 'Emergencias' : 'Emergency'}
+                title={labelEmergencyTitle}
                 onBack={onBack}
                 currentLanguage={currentLanguage}
                 onLanguageChange={onLanguageChange}
@@ -119,10 +214,10 @@ export function EmergencyView({
                     </div>
                     <div className="text-left">
                         <h2 className="text-rose-600 font-black text-[10px] uppercase tracking-widest mb-0.5">
-                            {isEs ? 'Servicio Nacional' : 'National Service'}
+                            {labelNationalService}
                         </h2>
                         <p className="text-rose-900 font-serif text-base font-bold leading-tight">
-                            {isEs ? 'En caso de emergencia, llama al 112' : 'In case of emergency, call 112'}
+                            {labelEmergencyCall112}
                         </p>
                     </div>
                 </motion.div>
@@ -131,7 +226,7 @@ export function EmergencyView({
                 {(contactsData.support_phone || contactsData.support_mobile) && (
                     <motion.div variants={itemVars} className="space-y-3">
                         <h3 className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em] px-2">
-                            {isEs ? 'Soporte Directo' : 'Direct Support'}
+                            {labelDirectSupport}
                         </h3>
                         <div className="bg-surface rounded-3xl p-5 shadow-card border border-primary/[0.02] flex items-center justify-between group overflow-hidden relative">
                             <div className="absolute inset-0 bg-primary/[0.01] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -144,7 +239,7 @@ export function EmergencyView({
                                         {contactsData.support_name || 'Bianca'}
                                     </span>
                                     <span className="text-[11px] text-primary/50 font-medium uppercase tracking-wider mt-0.5">
-                                        {isEs ? 'Atención al huésped' : 'Guest support'}
+                                        {labelGuestSupport}
                                     </span>
                                 </div>
                             </div>
@@ -170,43 +265,21 @@ export function EmergencyView({
                 {contactsData.emergency_contacts && contactsData.emergency_contacts.length > 0 && (
                     <motion.div variants={itemVars} className="space-y-3">
                         <h3 className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em] px-2">
-                            {isEs ? 'Servicios Locales' : 'Local Services'}
+                            {labelLocalServices}
                         </h3>
                         <div className="space-y-3">
-                            {contactsData.emergency_contacts.map((contact) => (
-                                <div
-                                    key={contact.id}
-                                    className="bg-surface rounded-3xl p-4 shadow-sm border border-primary/[0.01] flex items-center justify-between group"
-                                >
-                                    <div className="flex items-center gap-4 overflow-hidden">
-                                        <div className="w-11 h-11 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 transition-colors group-hover:bg-blue-100/50">
-                                            {getIcon(contact.type)}
-                                        </div>
-                                        <div className="flex flex-col overflow-hidden text-left">
-                                            <span className="text-slate-800 font-bold text-sm leading-tight truncate font-sans">{contact.name}</span>
-                                            {contact.distance && (
-                                                <div className="flex items-center gap-1.5 mt-1">
-                                                    <Clock className="w-3 h-3 text-primary/20" />
-                                                    <span className="text-[10px] text-primary/40 font-bold tracking-tight">{contact.distance}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 relative z-10">
-                                        <button
-                                            onClick={() => handleDirections(contact.name, contact.address)}
-                                            className="w-9 h-9 bg-primary/[0.04] text-primary rounded-full flex items-center justify-center hover:bg-primary/[0.08] transition-all active:scale-95 shrink-0 shadow-sm"
-                                        >
-                                            <MapPin className="w-4 h-4" strokeWidth={2} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleCall(contact.phone)}
-                                            className="w-9 h-9 bg-primary/10 text-primary rounded-full flex items-center justify-center hover:bg-primary/20 transition-all active:scale-95 shrink-0"
-                                        >
-                                            <Phone className="w-4 h-4" strokeWidth={2} />
-                                        </button>
-                                    </div>
-                                </div>
+                            {(contactsData.emergency_contacts || []).map((contact, idx) => (
+                                <ContactItem 
+                                    key={`${contact.id}-${idx}`}
+                                    contact={contact}
+                                    idx={idx}
+                                    currentLanguage={currentLanguage}
+                                    accessToken={accessToken}
+                                    propertyId={propertyId}
+                                    getIcon={getIcon}
+                                    handleDirections={handleDirections}
+                                    handleCall={handleCall}
+                                />
                             ))}
                         </div>
                     </motion.div>
@@ -216,25 +289,22 @@ export function EmergencyView({
                 {contactsData.custom_contacts && contactsData.custom_contacts.length > 0 && (
                     <motion.div variants={itemVars} className="space-y-3">
                         <h3 className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em] px-2">
-                            {isEs ? 'Otros Contactos' : 'Other Contacts'}
+                            {labelOtherContacts}
                         </h3>
                         <div className="grid grid-cols-1 gap-3">
-                            {contactsData.custom_contacts.map((contact) => (
-                                <div
-                                    key={contact.id}
-                                    className="bg-surface rounded-3xl p-4 shadow-sm border border-primary/[0.01] flex items-center justify-between group"
-                                >
-                                    <div className="flex flex-col text-left">
-                                        <span className="text-slate-800 font-bold text-sm tracking-tight">{contact.name}</span>
-                                        <span className="text-[11px] text-primary/40 font-medium mt-0.5">{contact.phone}</span>
-                                    </div>
-                                    <button
-                                        onClick={() => handleCall(contact.phone)}
-                                        className="w-9 h-9 bg-primary/[0.04] text-primary rounded-full flex items-center justify-center hover:bg-primary/[0.08] transition-all active:scale-95 shrink-0"
-                                    >
-                                        <Phone className="w-4 h-4" strokeWidth={2} />
-                                    </button>
-                                </div>
+                            {(contactsData.custom_contacts || []).map((contact, idx) => (
+                                <ContactItem 
+                                    key={`${contact.id}-${idx}`}
+                                    contact={contact}
+                                    idx={idx}
+                                    currentLanguage={currentLanguage}
+                                    accessToken={accessToken}
+                                    propertyId={propertyId}
+                                    getIcon={getIcon}
+                                    handleDirections={handleDirections}
+                                    handleCall={handleCall}
+                                    isCustom={true}
+                                />
                             ))}
                         </div>
                     </motion.div>

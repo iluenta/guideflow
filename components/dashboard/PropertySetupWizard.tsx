@@ -587,7 +587,6 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
             nearby_transport: access.nearby_transport
         };
 
-        console.log('[WIZARD] Saving sanitized access data:', sanitizedData);
         await saveStep('access', sanitizedData, 'welcome');
     };
 
@@ -601,14 +600,12 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
             if (category === 'tech') {
                 const { tv_instructions, ...sanitizedTech } = stepData;
                 dataToSave = sanitizedTech;
-                console.log('[WIZARD] Saving sanitized tech data (removed legacy fields):', dataToSave);
             } else if (category === 'inventory' && stepData?.selected_items) {
                 // Eliminar el campo 'icon' de los elementos, ya que contiene componentes React no serializables
                 dataToSave = {
                     ...stepData,
                     selected_items: stepData.selected_items.map(({ icon, ...rest }: any) => rest)
                 };
-                console.log('[WIZARD] Saving sanitized inventory data (removed React icons):', dataToSave);
             }
 
             const result = await saveWizardStep(
@@ -662,7 +659,6 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                 if (category === 'inventory' && dataToSave.selected_items) {
                     // No bloqueamos el UI, lanzamos y avisamos
                     processInventoryManuals(currentPropId, dataToSave.selected_items).then(res => {
-                        console.log('[INVENTORY] Background processing finished:', res)
                         if (res.processed && res.processed > 0) {
                             toast({
                                 title: 'IA: Manuales Generados',
@@ -745,8 +741,6 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
         if (isTransport && geocodingResult) {
             lastAIPositionRef.current = `${geocodingResult.lat},${geocodingResult.lng}`;
         }
-
-        console.log(`[WIZARD-AI] Requesting AI Fill for ${section}:`, payload)
 
         try {
             const res = await fetch('/api/ai-fill-context', {

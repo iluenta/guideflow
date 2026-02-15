@@ -20,8 +20,18 @@ export function useUserProfile() {
 
   useEffect(() => {
     let isMounted = true
+    
+    // FETCH GUARD: Prevent multiple redundant calls on rapid remounts
+    const lastFetch = window.sessionStorage.getItem('last_profile_fetch')
+    const now = Date.now()
+    if (lastFetch && now - parseInt(lastFetch) < 2000) {
+      console.log('[DEBUG-USER] Skipping fetch, too soon (throttle)')
+      return
+    }
 
     async function loadProfile() {
+      if (loading === false && profile) return // Don't reload if already have profile
+      window.sessionStorage.setItem('last_profile_fetch', Date.now().toString())
       try {
         // Get profile from server API route (uses cookies HTTP-only)
         const response = await fetch('/api/auth/profile', {
@@ -95,16 +105,18 @@ export function useUserProfile() {
 
     loadProfile()
 
-    // Poll for profile changes every 30 seconds
+    // Temporarily disabled polling to identify loop source
+    /*
     const interval = setInterval(() => {
       if (isMounted) {
         loadProfile()
       }
     }, 30000)
+    */
 
     return () => {
       isMounted = false
-      clearInterval(interval)
+      // clearInterval(interval)
     }
   }, [])
 

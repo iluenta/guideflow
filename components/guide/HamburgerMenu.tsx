@@ -28,6 +28,7 @@ interface HamburgerMenuProps {
     currentLanguage?: string;
     propertyName: string;
     propertyId: string;
+    accessToken?: string;
 }
 
 export function HamburgerMenu({
@@ -36,35 +37,47 @@ export function HamburgerMenu({
     onNavigate,
     currentLanguage = 'es',
     propertyName,
-    propertyId
+    propertyId,
+    accessToken
 }: HamburgerMenuProps) {
-    const { content: labelWifi } = useLocalizedContent('Conexión WiFi', currentLanguage, 'ui_label');
-    const { content: labelRules } = useLocalizedContent('Normas y Salida', currentLanguage, 'ui_label');
-    const { content: labelHowto } = useLocalizedContent('Guías de Uso', currentLanguage, 'ui_label');
-    const { content: labelEmergency } = useLocalizedContent('Emergencias', currentLanguage, 'ui_label');
-    const { content: labelEat } = useLocalizedContent('Dónde Comer', currentLanguage, 'ui_label');
-    const { content: labelDo } = useLocalizedContent('Qué Hacer', currentLanguage, 'ui_label');
-    const { content: labelShop } = useLocalizedContent('Compras', currentLanguage, 'ui_label');
+    // Only pass text for translation if the menu is open to save API requests and reduce initial load burst
+    const t = (text: string, type: string = 'ui_label') => isOpen ? text : '';
+
+    const { content: labelWifi } = useLocalizedContent(t('Conexión WiFi'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelRules } = useLocalizedContent(t('Normas y Salida'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelHowto } = useLocalizedContent(t('Guías de Uso'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelEmergency } = useLocalizedContent(t('Emergencias'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelEat } = useLocalizedContent(t('Dónde Comer'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelDo } = useLocalizedContent(t('Qué Hacer'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelShop } = useLocalizedContent(t('Compras'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelAccess } = useLocalizedContent(t('Llegada y Llaves'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelAbout } = useLocalizedContent(t('Sobre la Casa'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelMenuHint } = useLocalizedContent(t('Menú de Ayuda'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelSupportHint } = useLocalizedContent(t('Soporte 24/7 disponible via Chat IA'), currentLanguage, 'ui_label', accessToken, propertyId);
+
+    const { content: groupEssentials } = useLocalizedContent(t('IMPRESCINDIBLE'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: groupStay } = useLocalizedContent(t('TU ESTANCIA'), currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: groupExplore } = useLocalizedContent(t('EXPLORA'), currentLanguage, 'ui_label', accessToken, propertyId);
 
     const menuGroups = [
         {
-            title: currentLanguage === 'es' ? 'IMPRESCINDIBLE' : 'ESSENTIALS',
+            title: groupEssentials,
             items: [
                 { id: 'wifi', icon: Wifi, label: labelWifi, color: 'text-blue-500' },
                 { id: 'rules', icon: Clock, label: labelRules, color: 'text-orange-500' },
-                { id: 'checkin', icon: Key, label: currentLanguage === 'es' ? 'Llegada y Llaves' : 'Access & Keys', color: 'text-green-500' },
+                { id: 'checkin', icon: Key, label: labelAccess, color: 'text-green-500' },
             ]
         },
         {
-            title: currentLanguage === 'es' ? 'TU ESTANCIA' : 'YOUR STAY',
+            title: groupStay,
             items: [
                 { id: 'manuals', icon: BookOpen, label: labelHowto, color: 'text-purple-500' },
-                { id: 'house-info', icon: HelpCircle, label: currentLanguage === 'es' ? 'Sobre la Casa' : 'About the House', color: 'text-teal-500' },
+                { id: 'house-info', icon: HelpCircle, label: labelAbout, color: 'text-teal-500' },
                 { id: 'emergency', icon: ShieldAlert, label: labelEmergency, color: 'text-rose-500' },
             ]
         },
         {
-            title: currentLanguage === 'es' ? 'EXPLORA' : 'EXPLORE',
+            title: groupExplore,
             items: [
                 { id: 'eat', icon: Utensils, label: labelEat, color: 'text-navy/60' },
                 { id: 'do', icon: Theater, label: labelDo, color: 'text-navy/60' },
@@ -100,7 +113,7 @@ export function HamburgerMenu({
                                 {propertyName}
                             </h2>
                             <p className="text-[10px] font-black text-navy/30 tracking-[0.2em] uppercase">
-                                {currentLanguage === 'es' ? 'Menú de Ayuda' : 'Help Menu'}
+                                {labelMenuHint}
                             </p>
                         </div>
                         <button
@@ -152,9 +165,7 @@ export function HamburgerMenu({
                                 <ShieldAlert className="w-4 h-4 text-navy" />
                             </div>
                             <p className="text-[10px] font-bold text-navy uppercase leading-tight">
-                                {currentLanguage === 'es'
-                                    ? 'Soporte 24/7 disponible via Chat IA'
-                                    : '24/7 Support available via AI Chat'}
+                                {labelSupportHint}
                             </p>
                         </div>
                     </div>

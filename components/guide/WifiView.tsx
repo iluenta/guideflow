@@ -13,6 +13,8 @@ interface WifiViewProps {
     notes?: string;
     currentLanguage?: string;
     onLanguageChange?: (lang: string) => void;
+    accessToken?: string;
+    propertyId?: string; // FASE 17
 }
 
 export function WifiView({
@@ -21,12 +23,14 @@ export function WifiView({
     password = "...",
     notes,
     currentLanguage = 'es',
-    onLanguageChange
+    onLanguageChange,
+    accessToken,
+    propertyId // FASE 17
 }: WifiViewProps) {
     const [copied, setCopied] = useState<'network' | 'password' | null>(null);
-    const { content: localizedNotes, isTranslating: notesLoading } = useLocalizedContent(notes || '', currentLanguage || 'es', 'wifi_notes');
-    const { content: localizedNetLabel } = useLocalizedContent("NOMBRE DE LA RED", currentLanguage || 'es', 'ui_label');
-    const { content: localizedPassLabel } = useLocalizedContent("CONTRASEÑA", currentLanguage || 'es', 'ui_label');
+    const { content: localizedNotes, isTranslating: notesLoading } = useLocalizedContent(notes || '', currentLanguage || 'es', 'wifi_notes', accessToken, propertyId);
+    const { content: localizedNetLabel } = useLocalizedContent("NOMBRE DE LA RED", currentLanguage || 'es', 'ui_label', accessToken, propertyId);
+    const { content: localizedPassLabel } = useLocalizedContent("CONTRASEÑA", currentLanguage || 'es', 'ui_label', accessToken, propertyId);
 
     const copyToClipboard = (text: string, type: 'network' | 'password') => {
         if (!text || text === "..." || text === "Cargando...") return;

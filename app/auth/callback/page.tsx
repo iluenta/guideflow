@@ -40,16 +40,6 @@ function CallbackContent() {
       const queryAccessToken = effectiveParams.get('access_token') // Por si viene desde login
       const queryRefreshToken = effectiveParams.get('refresh_token') // Por si viene desde login
 
-      // Log para debugging en producción (ayuda a diagnosticar problemas de parámetros)
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Auth Callback Params:', {
-          hasHashTokens: !!(accessToken && refreshToken),
-          hasCode: !!code,
-          hasTokenHash: !!tokenHash,
-          type
-        })
-      }
-
       // PRIORIDAD 1: Si hay tokens en el hash, procesarlos primero (ignorar errores en query params)
       // Caso 1: Tokens en hash (magic link/recovery directo de Supabase)
       // Necesitamos enviarlos al servidor para establecer cookies HTTP-only

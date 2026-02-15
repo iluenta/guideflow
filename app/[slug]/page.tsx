@@ -15,11 +15,17 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     const { token } = await searchParams
     const supabase = await createClient()
 
-    // Auth & Security are handled by middleware. Only proceed if you need the user object for host-specific UI.
-    const { data: { user } } = await supabase.auth.getUser()
-
     const property = await getPropertyBySlug(slug)
     if (!property) notFound()
+
+    // 2. Validate token and get guest info if available
+    let guestName = ''
+    if (token) {
+        const { valid, access } = await validateAccessToken(supabase, token, property.id)
+        if (valid && access) {
+            guestName = access.guest_name
+        }
+    }
 
     // Parallelize all data fetching
     const [
@@ -79,6 +85,8 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
                 recommendations={recommendations}
                 faqs={faqs}
                 context={context || []}
+                guestName={guestName}
+                accessToken={token}
             />
         </div>
     )

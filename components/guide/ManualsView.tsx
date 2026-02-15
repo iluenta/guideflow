@@ -25,6 +25,8 @@ interface ManualsViewProps {
     faqs?: Faq[];
     currentLanguage?: string;
     onLanguageChange?: (lang: string) => void;
+    accessToken?: string;
+    propertyId?: string; // FASE 17
 }
 
 export function ManualsView({
@@ -32,15 +34,22 @@ export function ManualsView({
     manuals,
     faqs = [],
     currentLanguage = 'es',
-    onLanguageChange
+    onLanguageChange,
+    accessToken,
+    propertyId // FASE 17
 }: ManualsViewProps) {
     const hasFaqs = faqs.length > 0;
     const hasManuals = manuals.length > 0;
 
+    const { content: labelGuiaUso } = useLocalizedContent('Guía de Uso', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelGuiasUsoCaps } = useLocalizedContent('GUÍAS DE USO', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelSinGuias } = useLocalizedContent('Sin guías disponibles', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelNoGuiasDesc } = useLocalizedContent('El anfitrión aún no ha añadido guías o manuales para esta propiedad.', currentLanguage, 'ui_label', accessToken, propertyId);
+
     return (
         <div className="min-h-screen bg-stone-50/50 pb-12 font-sans">
             <PageHeader
-                title={currentLanguage === 'es' ? "Guía de Uso" : "How-To Guide"}
+                title={labelGuiaUso}
                 onBack={onBack}
                 currentLanguage={currentLanguage}
                 onLanguageChange={onLanguageChange}
@@ -51,9 +60,14 @@ export function ManualsView({
                 {hasFaqs && (
                     <div className="mt-6 mb-6">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
-                            {currentLanguage === 'es' ? "GUÍAS DE USO" : "HOW-TO GUIDES"}
+                            {labelGuiasUsoCaps}
                         </p>
-                        <HowToAccordion items={faqs} />
+                        <HowToAccordion 
+                            items={faqs} 
+                            currentLanguage={currentLanguage}
+                            accessToken={accessToken}
+                            propertyId={propertyId}
+                        />
                     </div>
                 )}
 
@@ -65,12 +79,10 @@ export function ManualsView({
                             <BookOpen className="w-10 h-10 text-navy/20" strokeWidth={1} />
                         </div>
                         <h3 className="font-serif text-xl font-bold text-navy mb-2">
-                            {currentLanguage === 'es' ? "Sin guías disponibles" : "No guides available"}
+                            {labelSinGuias}
                         </h3>
                         <p className="text-slate text-sm font-medium leading-relaxed">
-                            {currentLanguage === 'es'
-                                ? "El anfitrión aún no ha añadido guías o manuales para esta propiedad."
-                                : "The host hasn't added any guides or manuals for this property yet."}
+                            {labelNoGuiasDesc}
                         </p>
                     </div>
                 )}

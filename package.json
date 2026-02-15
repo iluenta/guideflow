@@ -16,7 +16,11 @@
     "dev:admin": "node scripts/dev-admin-login.js",
     "dev:admin:create": "node scripts/create-dev-admin.js",
     "dev:admin:link": "node scripts/dev-admin-login.js",
-    "security:report": "node scripts/validate-security-report.js"
+    "security:report": "node scripts/validate-security-report.js",
+    "clean": "rm -rf .next .turbo node_modules/.cache",
+    "fresh": "npm run clean && npm run dev",
+    "translation:stats": "npx tsx scripts/translation-maintenance.ts stats",
+    "translation:cleanup": "npx tsx scripts/translation-maintenance.ts cleanup"
   },
   "dependencies": {
     "@ctrl/tinycolor": "^4.2.0",

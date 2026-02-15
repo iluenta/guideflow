@@ -12,14 +12,44 @@ interface GuestChatProps {
     propertyId: string
     propertyName: string
     currentLanguage?: string
+    accessToken?: string
 }
 
-export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: GuestChatProps) {
+function QuickReplyButton({ 
+    reply, 
+    currentLanguage, 
+    accessToken, 
+    propertyId, // FASE 17
+    onClick 
+}: { 
+    reply: string, 
+    currentLanguage: string, 
+    accessToken?: string,
+    propertyId?: string, // FASE 17
+    onClick: (reply: string) => void 
+}) {
+    const { content: localizedReply } = useLocalizedContent(reply, currentLanguage, 'chat_quick_reply', accessToken, propertyId);
+    
+    return (
+        <button
+            onClick={() => onClick(localizedReply)}
+            className="w-full text-[11px] bg-white text-primary/80 px-4 py-3 rounded-2xl border border-stone-100 hover:border-primary/20 hover:bg-stone-50 transition-all text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-[0.98] font-bold leading-tight"
+        >
+            {localizedReply}
+        </button>
+    );
+}
+
+export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', accessToken }: GuestChatProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
         api: '/api/chat',
-        body: { propertyId },
+        body: { 
+            propertyId, 
+            language: currentLanguage,
+            accessToken
+        },
     })
 
     useEffect(() => {
@@ -43,14 +73,22 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
     const scrollEndRef = useRef<HTMLDivElement>(null)
     const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-    const { content: onlineStatus } = useLocalizedContent('DISPONIBLE AHORA', currentLanguage, 'ui_label');
-    const { content: faqLabel } = useLocalizedContent('PUEDO AYUDARTE CON:', currentLanguage, 'ui_label');
-    const { content: emptyTitle } = useLocalizedContent('¿Qué necesitas ahora?', currentLanguage, 'ui_label');
+    const { content: onlineStatus } = useLocalizedContent('DISPONIBLE AHORA', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: faqLabel } = useLocalizedContent('PUEDO AYUDARTE CON:', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: emptyTitle } = useLocalizedContent('¿Qué necesitas ahora?', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: emptySubtitle } = useLocalizedContent(
-        currentLanguage === 'es' ? 'Ya conozco este apartamento por dentro y por fuera.' : 'I know this apartment inside and out.',
+        'Ya conozco este apartamento por dentro y por fuera.',
         currentLanguage,
-        'ui_label'
+        'ui_label',
+        accessToken,
+        propertyId
     );
+    const { content: assistantLabel } = useLocalizedContent('Asistente de', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: expertLabel } = useLocalizedContent('EXPERTO EN', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: placeholderLabel } = useLocalizedContent('Escribe tu duda aquí...', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: triggerAriaLabel } = useLocalizedContent('Abrir asistente de ayuda', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: callTitle } = useLocalizedContent('Llamar', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: whatsappTitle } = useLocalizedContent('WhatsApp', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const quickReplies = [
         '¿Cómo funciona la lavadora?',
@@ -87,7 +125,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                         }
                     }}
                     className="fixed bottom-24 right-5 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50"
-                    aria-label="Abrir asistente de ayuda"
+                    aria-label={triggerAriaLabel}
                 >
                     <div className="relative">
                         <Bot className="w-7 h-7" strokeWidth={2.5} />
@@ -122,7 +160,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                             <div>
                                 <div className="flex items-center gap-3">
                                     <h3 className="font-serif text-xl font-bold tracking-tight">
-                                        {currentLanguage === 'es' ? 'Asistente de' : 'Assistant for'}
+                                        {assistantLabel}
                                     </h3>
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/10 shrink-0 whitespace-nowrap">
                                         <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
@@ -144,7 +182,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                 {/* Subheader */}
                 <div className="bg-white px-6 py-3 border-b border-stone-50 flex items-center gap-3 shrink-0 shadow-sm z-10">
                     <Bot className="w-4 h-4 text-primary/40" />
-                    <span className="text-[10px] font-black text-primary/50 uppercase tracking-[0.25em]">EXPERTO EN {propertyName.toUpperCase()}</span>
+                    <span className="text-[10px] font-black text-primary/50 uppercase tracking-[0.25em]">{expertLabel} {propertyName.toUpperCase()}</span>
                 </div>
 
                 {/* Main Content Area */}
@@ -175,13 +213,14 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                                 </p>
                                 <div className="grid grid-cols-2 gap-3">
                                     {quickReplies.map((reply, i) => (
-                                        <button
+                                        <QuickReplyButton 
                                             key={i}
-                                            onClick={() => append({ role: 'user', content: reply })}
-                                            className="w-full text-[11px] bg-white text-primary/80 px-4 py-3 rounded-2xl border border-stone-100 hover:border-primary/20 hover:bg-stone-50 transition-all text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-[0.98] font-bold leading-tight"
-                                        >
-                                            {reply}
-                                        </button>
+                                            reply={reply}
+                                            currentLanguage={currentLanguage}
+                                            accessToken={accessToken}
+                                            propertyId={propertyId}
+                                            onClick={(localizedContent) => append({ role: 'user', content: localizedContent })}
+                                        />
                                     ))}
                                 </div>
                             </div>
@@ -228,7 +267,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                                                                             <a
                                                                                 href={`tel:${num}`}
                                                                                 className="p-1 hover:bg-primary/10 rounded-md transition-colors inline-flex"
-                                                                                title="Llamar"
+                                                                                title={callTitle}
                                                                             >
                                                                                 <Phone className="w-3.5 h-3.5" />
                                                                             </a>
@@ -237,7 +276,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                                                                                 target="_blank"
                                                                                 rel="noopener noreferrer"
                                                                                 className="p-1 hover:bg-green-50 rounded-md transition-colors text-green-600 inline-flex"
-                                                                                title="WhatsApp"
+                                                                                title={whatsappTitle}
                                                                             >
                                                                                 <MessageCircle className="w-3.5 h-3.5" />
                                                                             </a>
@@ -284,7 +323,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es' }: 
                         <input
                             value={input}
                             onChange={handleInputChange}
-                            placeholder="Escribe tu duda aquí..."
+                            placeholder={placeholderLabel}
                             className="w-full bg-stone-50 border-none rounded-2xl h-14 pl-5 pr-14 focus-visible:ring-2 focus-visible:ring-primary/5 text-sm font-medium placeholder:text-slate-400 transition-all focus:bg-white focus:shadow-sm"
                         />
                         <button

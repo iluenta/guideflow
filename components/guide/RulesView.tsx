@@ -11,6 +11,35 @@ interface RulesViewProps {
     oldRules?: string;
     currentLanguage?: string;
     onLanguageChange?: (lang: string) => void;
+    accessToken?: string;
+    propertyId?: string; // FASE 17
+}
+
+function RuleItem({ rule, currentLanguage, accessToken, propertyId }: { rule: any, currentLanguage: string, accessToken?: string, propertyId?: string }) {
+    const { content: localizedText } = useLocalizedContent(rule.text, currentLanguage, 'house_rule', accessToken, propertyId);
+    
+    return (
+        <motion.div
+            variants={item}
+            className="flex items-start gap-4 p-5 rounded-3xl bg-surface border border-primary/[0.03] shadow-sm"
+        >
+            <div
+                className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5",
+                    rule.type === 'allowed' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
+                )}
+            >
+                {rule.type === 'allowed' ? (
+                    <Check size={16} strokeWidth={3} />
+                ) : (
+                    <X size={16} strokeWidth={3} />
+                )}
+            </div>
+            <p className="text-[14px] text-slate-800 font-medium leading-relaxed">
+                {localizedText}
+            </p>
+        </motion.div>
+    );
 }
 
 const container = {
@@ -34,28 +63,38 @@ export function RulesView({
     checkinData,
     oldRules,
     currentLanguage = 'es',
-    onLanguageChange
+    onLanguageChange,
+    accessToken,
+    propertyId // FASE 17
 }: RulesViewProps) {
     const rules = rulesData?.rules_items || [];
     const { content: localizedCaution } = useLocalizedContent(
         "Gracias por respetar estas normas 🙏",
         currentLanguage || 'es',
-        'house_rules_footer'
+        'house_rules_footer',
+        accessToken,
+        propertyId
     );
+
+    const { content: labelRulesTitle } = useLocalizedContent('Normas de la Casa', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelQuietHours } = useLocalizedContent('Silencio', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelCheckin } = useLocalizedContent('Check-in', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelCheckout } = useLocalizedContent('Check-out', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelSchedules } = useLocalizedContent('Horarios', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const schedules = [
         {
-            label: currentLanguage === 'es' ? 'Silencio' : 'Quiet Hours',
+            label: labelQuietHours,
             icon: Clock,
             time: rulesData?.quiet_hours || '23:00 - 08:00'
         },
         {
-            label: currentLanguage === 'es' ? 'Check-in' : 'Check-in',
+            label: labelCheckin,
             icon: Key,
             time: checkinData?.checkin_time || '15:00 - 20:00'
         },
         {
-            label: currentLanguage === 'es' ? 'Check-out' : 'Check-out',
+            label: labelCheckout,
             icon: LogOut,
             time: rulesData?.checkout_time || '11:00'
         },
@@ -69,7 +108,7 @@ export function RulesView({
             animate="show"
         >
             <PageHeader
-                title={currentLanguage === 'es' ? 'Normas de la Casa' : 'House Rules'}
+                title={labelRulesTitle}
                 onBack={onBack}
                 currentLanguage={currentLanguage}
                 onLanguageChange={onLanguageChange}
@@ -79,34 +118,20 @@ export function RulesView({
                 {/* Rules List */}
                 <div className="mt-6 space-y-3">
                     {rules.map((rule: any, i: number) => (
-                        <motion.div
-                            key={i}
-                            variants={item}
-                            className="flex items-start gap-4 p-5 rounded-3xl bg-surface border border-primary/[0.03] shadow-sm"
-                        >
-                            <div
-                                className={cn(
-                                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5",
-                                    rule.type === 'allowed' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
-                                )}
-                            >
-                                {rule.type === 'allowed' ? (
-                                    <Check size={16} strokeWidth={3} />
-                                ) : (
-                                    <X size={16} strokeWidth={3} />
-                                )}
-                            </div>
-                            <p className="text-[14px] text-slate-800 font-medium leading-relaxed">
-                                {rule.text}
-                            </p>
-                        </motion.div>
+                        <RuleItem 
+                            key={i} 
+                            rule={rule} 
+                            currentLanguage={currentLanguage} 
+                            accessToken={accessToken} 
+                            propertyId={propertyId} 
+                        />
                     ))}
                 </div>
 
                 {/* Schedules Section */}
                 <motion.div variants={item} className="mt-10 mb-10">
                     <h3 className="text-lg font-serif font-bold mb-5 text-slate-800 text-left px-2">
-                        {currentLanguage === 'es' ? 'Horarios' : 'Schedules'}
+                        {labelSchedules}
                     </h3>
                     <div className="bg-surface rounded-3xl border border-primary/[0.03] shadow-card overflow-hidden">
                         {schedules.map((schedule, i) => (

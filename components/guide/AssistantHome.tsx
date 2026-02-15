@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Sparkles, Bot, MessageSquare, BookOpen, ChevronRight, Wifi, Key, Utensils, MapPin, Info, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 
 interface AssistantHomeProps {
     propertyName: string;
@@ -12,6 +13,9 @@ interface AssistantHomeProps {
     manuals?: any[];
     recommendations?: any[];
     context?: any[];
+    guestName?: string;
+    accessToken?: string;
+    propertyId?: string; // FASE 17
 }
 
 export function AssistantHome({
@@ -21,7 +25,10 @@ export function AssistantHome({
     currentLanguage = 'es',
     manuals = [],
     recommendations = [],
-    context = []
+    context = [],
+    guestName,
+    accessToken,
+    propertyId // FASE 17
 }: AssistantHomeProps) {
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -33,6 +40,17 @@ export function AssistantHome({
     const techData = context?.find(c => c.category === 'tech')?.content || {};
     const accessData = context?.find(c => c.category === 'access')?.content || {};
     const checkinData = context?.find(c => c.category === 'checkin')?.content || {};
+
+    const { content: localizedPropertyName } = useLocalizedContent(propertyName, currentLanguage, 'general', accessToken, propertyId);
+    const { content: greetingLabel } = useLocalizedContent('Hola', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: subtitleLabel } = useLocalizedContent('Estás en el alojamiento', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: pitchLabel } = useLocalizedContent('Estoy aquí para que tu estancia sea perfecta y no tengas que buscar ni llamar a nadie.', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: searchPlaceholder } = useLocalizedContent('¿Qué necesitas ahora?', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: sectionTitle } = useLocalizedContent('PUEDES PREGUNTARME:', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: valueTitle } = useLocalizedContent('Resuelvo tus dudas al instante sin que tengas que llamar al propietario.', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: valueSubtitle } = useLocalizedContent('Ya conozco este apartamento por dentro y por fuera.', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: browseLabel } = useLocalizedContent('¿Prefieres navegar por la guía?', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: exploreFullLabel } = useLocalizedContent('Explorar guía completa', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const allChips = [
         {
@@ -98,12 +116,10 @@ export function AssistantHome({
             {/* Header: Welcome & Branding hint */}
             <div className="mb-12 text-center">
                 <h1 className="font-serif text-[42px] leading-tight font-bold text-primary mb-2">
-                    {currentLanguage === 'es' ? 'Hola 👋' : 'Hello 👋'}
+                    {guestName ? `${greetingLabel} ${guestName} 👋` : `${greetingLabel} 👋`}
                 </h1>
                 <p className="text-[15px] text-text-secondary opacity-80 font-medium leading-relaxed max-w-[280px] mx-auto">
-                    {currentLanguage === 'es'
-                        ? `Estás en el alojamiento ${propertyName}.`
-                        : `You are at ${propertyName}.`}
+                    {subtitleLabel} {localizedPropertyName}.
                 </p>
             </div>
 
@@ -113,9 +129,7 @@ export function AssistantHome({
                     <Bot className="w-6 h-6 text-primary" />
                 </div>
                 <p className="text-[14px] text-primary/80 font-semibold leading-snug">
-                    {currentLanguage === 'es'
-                        ? 'Estoy aquí para que tu estancia sea perfecta y no tengas que buscar ni llamar a nadie.'
-                        : 'I am here to make your stay perfect so you don\'t have to search or call anyone.'}
+                    {pitchLabel}
                 </p>
             </div>
 
@@ -127,7 +141,7 @@ export function AssistantHome({
                         <Bot className="w-5 h-5 text-primary" />
                     </div>
                     <span className="text-[16px] text-text-secondary/50 font-medium flex-1">
-                        {currentLanguage === 'es' ? '¿Qué necesitas ahora?' : 'What do you need now?'}
+                        {searchPlaceholder}
                     </span>
                     <Search className="w-5 h-5 text-primary/30 mr-2" />
                 </div>
@@ -137,7 +151,7 @@ export function AssistantHome({
             {chips.length > 0 && (
                 <div className="mb-12">
                     <h3 className="text-[10px] font-black text-navy/30 uppercase tracking-[0.3em] mb-4 text-center">
-                        {currentLanguage === 'es' ? 'PUEDES PREGUNTARME:' : 'HOW CAN I HELP:'}
+                        {sectionTitle}
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                         {chips.map((chip, idx) => (
@@ -163,14 +177,10 @@ export function AssistantHome({
                 </div>
                 <div className="flex flex-col gap-1">
                     <p className="text-[11px] text-navy/40 font-bold leading-relaxed italic uppercase tracking-wider">
-                        {currentLanguage === 'es'
-                            ? 'Resuelvo tus dudas al instante sin que tengas que llamar al propietario.'
-                            : 'I solve your questions instantly so you don\'t have to call the owner.'}
+                        {valueTitle}
                     </p>
                     <p className="text-[10px] text-navy/30 font-medium leading-relaxed uppercase tracking-widest">
-                        {currentLanguage === 'es'
-                            ? 'Ya conozco este apartamento por dentro y por fuera.'
-                            : 'I know this apartment inside and out.'}
+                        {valueSubtitle}
                     </p>
                 </div>
             </div>
@@ -178,7 +188,7 @@ export function AssistantHome({
             {/* Alternate Navigation */}
             <div className="text-center">
                 <p className="text-[13px] text-navy/40 font-medium mb-4">
-                    {currentLanguage === 'es' ? '¿Prefieres navegar por la guía?' : 'Prefer to browse the guide?'}
+                    {browseLabel}
                 </p>
                 <Button
                     variant="outline"
@@ -187,7 +197,7 @@ export function AssistantHome({
                 >
                     <div className="flex items-center gap-3">
                         <BookOpen className="w-5 h-5 opacity-60" />
-                        <span>{currentLanguage === 'es' ? 'Explorar guía completa' : 'Explore full guide'}</span>
+                        <span>{exploreFullLabel}</span>
                     </div>
                     <ChevronRight className="w-4 h-4 opacity-30 group-hover:translate-x-1 transition-transform" />
                 </Button>
@@ -200,6 +210,6 @@ export function AssistantHome({
                 </p>
             </div>
 
-        </div >
+        </div>
     );
 }

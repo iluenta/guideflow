@@ -41,11 +41,7 @@ export const metadata: Metadata = {
 const SW_SCRIPT = `
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      navigator.serviceWorker.register('/sw.js').then(function(registration) {
-        console.log('SW registered: ', registration);
-      }, function(err) {
-        console.log('SW registration failed: ', err);
-      });
+      navigator.serviceWorker.register('/sw.js');
     });
   }
 `;

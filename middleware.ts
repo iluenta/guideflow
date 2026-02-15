@@ -98,19 +98,16 @@ export async function middleware(request: NextRequest) {
         if (user && requestedProperty) {
             const userTenantId = user.app_metadata?.tenant_id || user.user_metadata?.tenant_id
             if (requestedProperty.tenant_id === userTenantId) {
-                console.log(`[SECURITY] HOST BYPASS: Owner access granted for ${firstSegment}`);
                 return response
             }
         }
 
         // Guests (and users accessing other communities) MUST have a token
         if (!token) {
-            console.log(`[SECURITY] REJECTED: No token provided for path ${pathname}`);
             return NextResponse.redirect(new URL('/access-denied?reason=token_required', request.url))
         }
 
         const cleanToken = token.trim();
-        console.log(`[SECURITY] Validating token for path: ${pathname}`);
 
         // 5.3 Validate Token with Strict Property Binding
         const { data: access, error: dbError } = await supabaseAdmin
@@ -145,11 +142,8 @@ export async function middleware(request: NextRequest) {
         }
 
         if (now.getTime() > validUntil.getTime()) {
-            console.warn(`[SECURITY] Access denied: Expired. Until: ${validUntil.toISOString()}, Now: ${now.toISOString()}`);
             return NextResponse.redirect(new URL('/access-denied?reason=expired', request.url))
         }
-
-        console.log(`[SECURITY] ACCESS GRANTED: Guest ${access.guest_name}`);
     }
 
     return response

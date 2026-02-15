@@ -31,9 +31,11 @@ interface GuideViewContainerProps {
     recommendations: any[];
     faqs?: any[];
     context?: any[];
+    guestName?: string;
+    accessToken?: string;
 }
 
-export function GuideViewContainer({ property, branding, sections, manuals, recommendations, faqs = [], context }: GuideViewContainerProps) {
+export function GuideViewContainer({ property, branding, sections, manuals, recommendations, faqs = [], context, guestName, accessToken }: GuideViewContainerProps) {
     const [currentPage, setCurrentPage] = useState<string | null>('welcome');
     const [activeTab, setActiveTab] = useState('hub');
     const [language, setLanguage] = useState<string>('es');
@@ -49,7 +51,6 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
         if (cached) {
             try {
                 setLocalData(JSON.parse(cached));
-                console.log('[OFFLINE] Loaded data from LocalStorage');
             } catch (e) {
                 console.error('[OFFLINE] LocalStorage parse error');
             }
@@ -85,7 +86,6 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
     }, []);
 
     const handleNavigate = (pageId: string) => {
-        console.log('GuideView: Navigating to:', pageId);
         setCurrentPage(pageId);
 
         // Map pageIds to tabs
@@ -105,7 +105,6 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
     };
 
     const handleTabChange = (tabId: string) => {
-        console.log('GuideView: Tab changed to:', tabId);
 
         if (tabId === 'chat') {
             handleChatOpen();
@@ -147,6 +146,10 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                     onNavigate={handleNavigate}
                     onChatQuery={handleChatWithQuery}
                     currentLanguage={language}
+                    onLanguageChange={setLanguage}
+                    guestName={guestName}
+                    accessToken={accessToken}
+                    propertyId={property.id}
                 />
             );
         }
@@ -161,7 +164,11 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                     onNavigate={handleNavigate}
                     onChatQuery={handleChatWithQuery}
                     currentLanguage={language}
+                    onLanguageChange={setLanguage}
                     recommendations={recommendations}
+                    guestName={guestName}
+                    accessToken={accessToken}
+                    propertyId={property.id}
                 />
             );
         }
@@ -177,6 +184,8 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         notes={techData.router_notes}
                         currentLanguage={language}
                         onLanguageChange={setLanguage}
+                        accessToken={accessToken}
+                        propertyId={property.id}
                     />
                 );
             case 'rules':
@@ -191,6 +200,8 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         oldRules={rulesSection?.data?.text}
                         currentLanguage={language}
                         onLanguageChange={setLanguage}
+                        accessToken={accessToken}
+                        propertyId={property.id}
                     />
                 );
             case 'manuals':
@@ -201,6 +212,8 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         faqs={faqs}
                         currentLanguage={language}
                         onLanguageChange={setLanguage}
+                        accessToken={accessToken}
+                        propertyId={property.id}
                     />
                 );
             case 'check-in':
@@ -233,6 +246,8 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         currentLanguage={language}
                         preferredContactName={prefName}
                         preferredContactPhone={prefPhone}
+                        accessToken={accessToken}
+                        propertyId={property.id}
                     />
                 );
             }
@@ -244,6 +259,9 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         contactsData={contactsData}
                         hostName={welcomeData?.host_name || (language === 'es' ? 'tu anfitrión' : 'your host')}
                         currentLanguage={language}
+                        onLanguageChange={setLanguage}
+                        accessToken={accessToken}
+                        propertyId={property.id}
                     />
                 );
             }
@@ -253,7 +271,8 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         onBack={handleBack}
                         property={property}
                         currentLanguage={language}
-                        onLanguageChange={setLanguage}
+                        accessToken={accessToken}
+                        propertyId={property.id}
                     />
                 );
             case 'eat':
@@ -263,7 +282,10 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         recommendations={recommendations}
                         group="eat"
                         currentLanguage={language}
+                        onLanguageChange={setLanguage}
                         city={property.city}
+                        accessToken={accessToken}
+                        propertyId={property.id}
                     />
                 );
             case 'do':
@@ -274,7 +296,10 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         recommendations={recommendations}
                         group="do"
                         currentLanguage={language}
+                        onLanguageChange={setLanguage}
                         city={property.city}
+                        accessToken={accessToken}
+                        propertyId={property.id}
                     />
                 );
             case 'shopping':
@@ -285,7 +310,10 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         recommendations={recommendations}
                         group="shopping"
                         currentLanguage={language}
+                        onLanguageChange={setLanguage}
                         city={property.city}
+                        accessToken={accessToken}
+                        propertyId={property.id}
                     />
                 );
             case 'explore':
@@ -324,7 +352,14 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         </header>
 
                         <div className="relative z-10 bg-beige">
-                            <MenuGrid onNavigate={handleNavigate} welcomeData={welcomeData} imageUrl={property.main_image_url} currentLanguage={language} />
+                            <MenuGrid 
+                                onNavigate={handleNavigate} 
+                                welcomeData={welcomeData} 
+                                imageUrl={property.main_image_url} 
+                                currentLanguage={language}
+                                accessToken={accessToken}
+                                propertyId={property.id}
+                            />
                         </div>
 
                         <div className="px-6 pb-24 text-center opacity-30">
@@ -339,12 +374,15 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                 return (
                     <AssistantHome
                         propertyName={property.name}
-                        onExplore={() => setCurrentPage('explore')}
+                        onExplore={() => setCurrentPage('home')}
                         onChatQuery={handleChatWithQuery}
                         currentLanguage={language}
                         manuals={manuals}
                         recommendations={recommendations}
                         context={context}
+                        guestName={guestName}
+                        accessToken={accessToken}
+                        propertyId={property.id}
                     />
                 );
         }
@@ -359,6 +397,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                 currentLanguage={language}
                 propertyName={property.name}
                 propertyId={property.id}
+                accessToken={accessToken}
             />
 
             <main className="overflow-x-hidden pb-24">
@@ -379,12 +418,15 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
                 currentLanguage={language}
+                accessToken={accessToken}
+                propertyId={property.id}
             />
 
             <GuestChat
                 propertyId={property.id}
                 propertyName={property.name}
                 currentLanguage={language}
+                accessToken={accessToken}
             />
 
             {/* Onboarding removed for Fase 10 flow to reduce friction */}

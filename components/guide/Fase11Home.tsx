@@ -18,6 +18,9 @@ import {
     Star
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { LanguageSelector } from '@/components/guide/LanguageSelector';
+import { useLocalizedContent } from '@/hooks/useLocalizedContent';
+import { cn } from '@/lib/utils';
 
 interface Fase11HomeProps {
     propertyName: string;
@@ -27,7 +30,11 @@ interface Fase11HomeProps {
     onNavigate: (screen: string) => void;
     onChatQuery: (query: string) => void;
     currentLanguage?: string;
+    onLanguageChange: (lang: string) => void;
     recommendations?: any[];
+    guestName?: string;
+    accessToken?: string;
+    propertyId?: string; // FASE 17
 }
 
 const container = {
@@ -53,18 +60,29 @@ export function Fase11Home({
     onNavigate,
     onChatQuery,
     currentLanguage = 'es',
-    recommendations = []
+    onLanguageChange,
+    recommendations = [],
+    guestName,
+    accessToken,
+    propertyId // FASE 17
 }: Fase11HomeProps) {
 
+    // Dynamic Translations
+    const { content: localizedPropertyName } = useLocalizedContent(propertyName, currentLanguage, 'general', accessToken, propertyId);
+
     // Logic for Tip of the Day
+    const { content: labelBuenosDias } = useLocalizedContent('BUENOS DÍAS', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelBuenasTardes } = useLocalizedContent('BUENAS TARDES', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelBuenasNoches } = useLocalizedContent('BUENAS NOCHES', currentLanguage, 'ui_label', accessToken, propertyId);
+
     const timeInfo = useMemo(() => {
         const hour = new Date().getHours();
         const timeStr = new Date().toLocaleTimeString(currentLanguage === 'es' ? 'es-ES' : 'en-US', { hour: '2-digit', minute: '2-digit' });
 
-        if (hour >= 5 && hour < 12) return { greeting: currentLanguage === 'es' ? 'BUENOS DÍAS' : 'GOOD MORNING', time: timeStr, category: 'desayuno' };
-        if (hour >= 12 && hour < 20) return { greeting: currentLanguage === 'es' ? 'BUENAS TARDES' : 'GOOD AFTERNOON', time: timeStr, category: 'restaurantes' };
-        return { greeting: currentLanguage === 'es' ? 'BUENAS NOCHES' : 'GOOD EVENING', time: timeStr, category: 'restaurantes' };
-    }, [currentLanguage]);
+        if (hour >= 5 && hour < 12) return { greeting: labelBuenosDias, time: timeStr, category: 'desayuno' };
+        if (hour >= 12 && hour < 20) return { greeting: labelBuenasTardes, time: timeStr, category: 'restaurantes' };
+        return { greeting: labelBuenasNoches, time: timeStr, category: 'restaurantes' };
+    }, [currentLanguage, labelBuenosDias, labelBuenasTardes, labelBuenasNoches]);
 
     const tipRecommendation = useMemo(() => {
         const filtered = recommendations.filter(r => r.type === timeInfo.category || r.category === timeInfo.category);
@@ -72,7 +90,28 @@ export function Fase11Home({
         return recommendations[0]; // Fallback
     }, [recommendations, timeInfo.category]);
 
+    const { content: localizedTipName } = useLocalizedContent(tipRecommendation?.name || '', currentLanguage, 'recommendations', accessToken, propertyId);
+    const { content: localizedTipDesc } = useLocalizedContent(tipRecommendation?.personal_note || tipRecommendation?.description || '', currentLanguage, 'recommendations', accessToken, propertyId);
+
+    const { content: labelTuGuia } = useLocalizedContent('Tu Guía', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelRecomendacion } = useLocalizedContent('RECOMENDACIÓN', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelExploraZona } = useLocalizedContent('Explora la zona', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelDescubreRincones } = useLocalizedContent('Descubre los mejores rincones cerca de ti.', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelVerRecomendaciones } = useLocalizedContent('Ver recomendaciones', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelLoIndispensable } = useLocalizedContent('Lo Indispensable', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelSobreCasa } = useLocalizedContent('Sobre la Casa', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelGastronomia } = useLocalizedContent('Gastronomía', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelRestaurantesLocales } = useLocalizedContent('Restaurantes locales', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelQueHacer } = useLocalizedContent('Qué Hacer', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelActividades } = useLocalizedContent('Actividades', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelCompras } = useLocalizedContent('Compras', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelTiendas } = useLocalizedContent('Tiendas y mercados', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelInfo } = useLocalizedContent('Info', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelNormas } = useLocalizedContent('Normas', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelManual } = useLocalizedContent('Manual', currentLanguage, 'ui_label', accessToken, propertyId);
+
     const locationName = location.split(',')[0].trim();
+    const { content: labelDescubreLocation } = useLocalizedContent(`Descubre ${locationName}`, currentLanguage, 'ui_label', accessToken, propertyId);
 
     return (
         <motion.div
@@ -98,17 +137,21 @@ export function Fase11Home({
                     >
                         <ArrowLeft size={20} />
                     </button>
-                    <div className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest">
-                        {currentLanguage.toUpperCase()}
-                    </div>
+                    <LanguageSelector 
+                        currentLanguage={currentLanguage} 
+                        onLanguageChange={onLanguageChange} 
+                    />
                 </div>
 
                 <div className="absolute bottom-10 left-6 text-white">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-1">
-                        {currentLanguage === 'es' ? 'Tu Guía' : 'Your Guide'}
+                        {guestName ? (currentLanguage === 'es' ? `Hola ${guestName}` : `Hello ${guestName}`) : labelTuGuia}
                     </p>
-                    <h1 className="text-2xl font-serif font-bold tracking-tight">
-                        {propertyName}
+                    <h1 className={cn(
+                        "text-2xl font-serif font-bold tracking-tight",
+                        !localizedPropertyName && "h-8 w-48 bg-white/20 animate-pulse rounded-lg mt-1"
+                    )}>
+                        {localizedPropertyName}
                     </h1>
                 </div>
             </div>
@@ -126,26 +169,42 @@ export function Fase11Home({
                                     </span>
                                 </div>
                                 <span className="px-2 py-0.5 bg-[#f59e0b] text-white text-[9px] font-black rounded-full uppercase tracking-wider">
-                                    {currentLanguage === 'es' ? 'RECOMENDACIÓN' : 'FEATURED'}
+                                    {labelRecomendacion}
                                 </span>
                             </div>
 
                             {tipRecommendation ? (
                                 <>
-                                    <h3 className="text-xl font-serif font-bold text-gray-900 mb-2 leading-tight">
-                                        {tipRecommendation.name}
+                                    <h3 className={cn(
+                                        "text-xl font-serif font-bold text-gray-900 mb-2 leading-tight",
+                                        !localizedTipName && "h-7 w-40 bg-gray-100 animate-pulse rounded-md"
+                                    )}>
+                                        {localizedTipName}
                                     </h3>
-                                    <p className="text-[13px] text-gray-500 mb-4 leading-relaxed line-clamp-2">
-                                        {tipRecommendation.personal_note || tipRecommendation.description || (currentLanguage === 'es' ? 'Un lugar especial seleccionado para ti.' : 'A special place selected for you.')}
-                                    </p>
+                                    <div className={cn(
+                                        "text-[13px] text-gray-500 mb-4 leading-relaxed line-clamp-2",
+                                        !localizedTipDesc && "space-y-2"
+                                    )}>
+                                        {localizedTipDesc ? (
+                                            localizedTipDesc
+                                        ) : (
+                                            <>
+                                                <div className="h-3 w-full bg-gray-50 animate-pulse rounded-sm" />
+                                                <div className="h-3 w-3/4 bg-gray-50 animate-pulse rounded-sm" />
+                                            </>
+                                        )}
+                                    </div>
                                 </>
                             ) : (
                                 <>
-                                    <h3 className="text-xl font-serif font-bold text-gray-900 mb-2 leading-tight">
-                                        {currentLanguage === 'es' ? 'Explora la zona' : 'Explore the area'}
+                                    <h3 className={cn(
+                                        "text-xl font-serif font-bold text-gray-900 mb-2 leading-tight",
+                                        !localizedTipName && "h-7 w-40 bg-gray-100 animate-pulse rounded-md"
+                                    )}>
+                                        {labelExploraZona}
                                     </h3>
                                     <p className="text-[13px] text-gray-500 mb-4 leading-relaxed">
-                                        {currentLanguage === 'es' ? 'Descubre los mejores rincones cerca de ti.' : 'Discover the best spots near you.'}
+                                        {labelDescubreRincones}
                                     </p>
                                 </>
                             )}
@@ -154,7 +213,7 @@ export function Fase11Home({
                                 onClick={() => onNavigate('eat')}
                                 className="text-xs font-black text-primary flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-widest"
                             >
-                                {currentLanguage === 'es' ? 'Ver recomendaciones' : 'See recommendations'} <ChevronRight size={14} strokeWidth={3} />
+                                {labelVerRecomendaciones} <ChevronRight size={14} strokeWidth={3} />
                             </button>
                         </div>
                     </Card>
@@ -164,7 +223,7 @@ export function Fase11Home({
                 <motion.div variants={item} className="mb-10">
                     <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                         <Star size={12} className="text-[#f59e0b]" fill="currentColor" />
-                        {currentLanguage === 'es' ? 'Lo Indispensable' : 'The Essentials'}
+                        {labelLoIndispensable}
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
                         <button
@@ -200,13 +259,13 @@ export function Fase11Home({
                 {/* Explore Section */}
                 <motion.div variants={item} className="mb-10">
                     <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
-                        {currentLanguage === 'es' ? `Descubre ${locationName}` : `Discover ${locationName}`}
+                        {labelDescubreLocation}
                     </h3>
                     <div className="space-y-3">
                         {[
-                            { id: 'eat', icon: Utensils, label: currentLanguage === 'es' ? 'Gastronomía' : 'Gastronomy', sub: currentLanguage === 'es' ? 'Restaurantes locales' : 'Local restaurants' },
-                            { id: 'leisure', icon: Calendar, label: currentLanguage === 'es' ? 'Qué Hacer' : 'Things to Do', sub: currentLanguage === 'es' ? 'Actividades' : 'Activities' },
-                            { id: 'shopping', icon: ShoppingBag, label: currentLanguage === 'es' ? 'Compras' : 'Shopping', sub: currentLanguage === 'es' ? 'Tiendas y mercados' : 'Markets and shops' }
+                            { id: 'eat', icon: Utensils, label: labelGastronomia, sub: labelRestaurantesLocales },
+                            { id: 'leisure', icon: Calendar, label: labelQueHacer, sub: labelActividades },
+                            { id: 'shopping', icon: ShoppingBag, label: labelCompras, sub: labelTiendas }
                         ].map((action) => (
                             <div
                                 key={action.id}
@@ -233,13 +292,13 @@ export function Fase11Home({
                 {/* Accommodation Info */}
                 <motion.div variants={item} className="mb-8">
                     <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
-                        {currentLanguage === 'es' ? 'Sobre la Casa' : 'About the House'}
+                        {labelSobreCasa}
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
                         {[
-                            { id: 'house-info', icon: Info, label: currentLanguage === 'es' ? 'Info' : 'Info' },
-                            { id: 'rules', icon: FileText, label: currentLanguage === 'es' ? 'Normas' : 'Rules' },
-                            { id: 'manuals', icon: Book, label: currentLanguage === 'es' ? 'Manual' : 'Manual' }
+                            { id: 'house-info', icon: Info, label: labelInfo },
+                            { id: 'rules', icon: FileText, label: labelNormas },
+                            { id: 'manuals', icon: Book, label: labelManual }
                         ].map((navItem) => (
                             <button
                                 key={navItem.id}

@@ -29,9 +29,11 @@ interface MenuGridProps {
     };
     imageUrl?: string;
     currentLanguage?: string;
+    accessToken?: string;
+    propertyId?: string;
 }
 
-export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 'es' }: MenuGridProps) {
+export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 'es', accessToken, propertyId }: MenuGridProps) {
     const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('afternoon');
     const [currentTime, setCurrentTime] = useState('');
     const [isLoaded, setIsLoaded] = useState(false);
@@ -131,6 +133,25 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
         onNavigate(pageId);
     };
 
+    // UI Translations
+    const { content: labelEssentials } = useLocalizedContent('LO ESENCIAL', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelExplore } = useLocalizedContent('EXPLORA', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelAccommodation } = useLocalizedContent('TU ALOJAMIENTO', currentLanguage, 'ui_label', accessToken, propertyId);
+    
+    const { content: labelHouseInfo } = useLocalizedContent('Info Casa', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelRulesShort } = useLocalizedContent('Normas', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelManualShort } = useLocalizedContent('Guía de USO', currentLanguage, 'ui_label', accessToken, propertyId);
+    
+    // Quick Actions
+    const { content: labelEatNearby } = useLocalizedContent('Dónde Comer', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelEatDesc } = useLocalizedContent('Restaurantes y cafeterías locales', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelDoNearby } = useLocalizedContent('Qué Hacer', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelDoDesc } = useLocalizedContent('Actividades y lugares de interés', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelShopNearby } = useLocalizedContent('Compras', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelShopDesc } = useLocalizedContent('Tiendas, mercados y más', currentLanguage, 'ui_label', accessToken, propertyId);
+
+    const { content: labelAllSuggestions } = useLocalizedContent('Ver todas las sugerencias', currentLanguage, 'ui_label', accessToken, propertyId);
+
     return (
         <div className={`transition-all duration-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
 
@@ -193,7 +214,7 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                         onClick={() => handleNavigate('leisure', [50, 30, 50])}
                         className={`w-full text-center text-[13px] font-bold ${rightNow.accentColor} hover:opacity-70 flex items-center justify-center gap-1.5 transition-opacity`}
                     >
-                        Ver todas las sugerencias
+                        {labelAllSuggestions}
                         <ChevronRight className="w-3.5 h-3.5" strokeWidth={3} />
                     </button>
                 </div>
@@ -201,7 +222,7 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                 {/* Essentials Section */}
                 <div className="mb-10 section-essential-anim">
                     <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
-                        LO ESENCIAL
+                        {labelEssentials}
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
                         <button onClick={() => handleNavigate('check-in', [50, 30, 50])} className="bg-primary text-primary-foreground rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-all aspect-square">
@@ -222,13 +243,13 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                 {/* Explore Section */}
                 <div className="mb-10 section-explore-anim">
                     <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
-                        EXPLORA
+                        {labelExplore}
                     </h3>
                     <div className="space-y-3">
                         {[
-                            { id: 'eat', label: 'Dónde Comer', icon: UtensilsCrossed, color: 'bg-orange-50 text-orange-600', desc: 'Restaurantes y cafeterías locales' },
-                            { id: 'leisure', label: 'Qué Hacer', icon: CalendarDays, color: 'bg-blue-50 text-blue-600', desc: 'Actividades y lugares de interés' },
-                            { id: 'shopping', label: 'Compras', icon: ShoppingBag, color: 'bg-emerald-50 text-emerald-600', desc: 'Tiendas, mercados y más' }
+                            { id: 'eat', label: labelEatNearby, icon: UtensilsCrossed, color: 'bg-orange-50 text-orange-600', desc: labelEatDesc },
+                            { id: 'leisure', label: labelDoNearby, icon: CalendarDays, color: 'bg-blue-50 text-blue-600', desc: labelDoDesc },
+                            { id: 'shopping', label: labelShopNearby, icon: ShoppingBag, color: 'bg-emerald-50 text-emerald-600', desc: labelShopDesc }
                         ].map((item) => (
                             <button
                                 key={item.id}
@@ -255,20 +276,20 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                 {/* Apartment Section */}
                 <div className="mb-10 section-apartment-anim">
                     <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
-                        TU ALOJAMIENTO
+                        {labelAccommodation}
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
                         <button onClick={() => handleNavigate('house-info')} className="bg-surface p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-primary border border-primary/5">
                             <Info className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">Info Casa</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">{labelHouseInfo}</span>
                         </button>
                         <button onClick={() => handleNavigate('rules')} className="bg-surface p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-primary border border-primary/5">
                             <ScrollText className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">Normas</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">{labelRulesShort}</span>
                         </button>
                         <button onClick={() => handleNavigate('manuals')} className="bg-surface p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-primary border border-primary/5">
                             <BookOpen className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">Guía de USO</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">{labelManualShort}</span>
                         </button>
                     </div>
                 </div>

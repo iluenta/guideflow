@@ -1,12 +1,15 @@
 import { motion } from 'framer-motion';
 import { Bed, Bath, Users, Info, MapPin } from 'lucide-react';
 import { PageHeader } from './PageHeader';
+import { useLocalizedContent } from '@/hooks/useLocalizedContent';
+import { cn } from '@/lib/utils';
 
 interface HouseInfoViewProps {
     onBack: () => void;
     property: any;
     currentLanguage?: string;
-    onLanguageChange?: (lang: string) => void;
+    accessToken?: string;
+    propertyId?: string; // FASE 17
 }
 
 const container = {
@@ -24,24 +27,42 @@ const item = {
     show: { opacity: 1, y: 0 }
 };
 
-export function HouseInfoView({ onBack, property, currentLanguage = 'es', onLanguageChange }: HouseInfoViewProps) {
+export function HouseInfoView({ 
+    onBack, 
+    property, 
+    currentLanguage = 'es', 
+    accessToken,
+    propertyId // FASE 17
+}: HouseInfoViewProps) {
+    const { content: labelHouseInfoTitle } = useLocalizedContent('Info Casa', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelAboutProperty } = useLocalizedContent('Sobre la propiedad', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelVerifiedDetails } = useLocalizedContent('Detalles verificados', currentLanguage, 'ui_label', accessToken, propertyId);
+
+    // Feature Labels (Dynamic)
+    const { content: labelDormitorios } = useLocalizedContent(`${property.beds || 0} Dormitorio${(property.beds || 0) > 1 ? 's' : ''}`, currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: subCamas } = useLocalizedContent('Camas preparadas', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelBanos } = useLocalizedContent(`${property.baths || 0} Baño${(property.baths || 0) > 1 ? 's' : ''}`, currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: subEquipados } = useLocalizedContent('Equipados', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelGuests } = useLocalizedContent(`Hasta ${property.guests || 0} huéspedes`, currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: subIdeal } = useLocalizedContent('Ideal para su estancia', currentLanguage, 'ui_label', accessToken, propertyId);
+
     const features = [
         {
             icon: Bed,
-            label: currentLanguage === 'es' ? `${property.beds || 0} Dormitorio${(property.beds || 0) > 1 ? 's' : ''}` : `${property.beds || 0} Bedroom${(property.beds || 0) > 1 ? 's' : ''}`,
-            sub: currentLanguage === 'es' ? 'Camas preparadas' : 'Beds prepared',
+            label: labelDormitorios,
+            sub: subCamas,
             show: !!property.beds
         },
         {
             icon: Bath,
-            label: currentLanguage === 'es' ? `${property.baths || 0} Baño${(property.baths || 0) > 1 ? 's' : ''}` : `${property.baths || 0} Bathroom${(property.baths || 0) > 1 ? 's' : ''}`,
-            sub: currentLanguage === 'es' ? 'Equipados' : 'Equipped',
+            label: labelBanos,
+            sub: subEquipados,
             show: !!property.baths
         },
         {
             icon: Users,
-            label: currentLanguage === 'es' ? `Hasta ${property.guests || 0} huéspedes` : `Up to ${property.guests || 0} guests`,
-            sub: currentLanguage === 'es' ? 'Ideal para su estancia' : 'Ideal for your stay',
+            label: labelGuests,
+            sub: subIdeal,
             show: !!property.guests
         }
     ].filter(f => f.show);
@@ -54,10 +75,9 @@ export function HouseInfoView({ onBack, property, currentLanguage = 'es', onLang
             animate="show"
         >
             <PageHeader
-                title={currentLanguage === 'es' ? "Info Casa" : "House Info"}
+                title={labelHouseInfoTitle}
                 onBack={onBack}
                 currentLanguage={currentLanguage}
-                onLanguageChange={onLanguageChange}
             />
 
             <div className="px-6 pb-24 max-w-md mx-auto w-full">
@@ -77,8 +97,11 @@ export function HouseInfoView({ onBack, property, currentLanguage = 'es', onLang
 
                 {/* Property Name & Address */}
                 <motion.div variants={item} className="mb-8 px-2">
-                    <h1 className="text-2xl font-serif font-bold text-slate-800 mb-2 leading-tight">
-                        {property.name}
+                    <h1 className={cn(
+                        "text-2xl font-serif font-bold text-slate-800 mb-2 leading-tight",
+                        !localizedName && "h-8 w-56 bg-slate-100 animate-pulse rounded-lg"
+                    )}>
+                        {localizedName}
                     </h1>
                     <p className="text-[12px] text-primary/50 font-medium uppercase tracking-wider flex items-center gap-1.5">
                         <MapPin size={12} className="text-primary/30 shrink-0" />
@@ -113,12 +136,23 @@ export function HouseInfoView({ onBack, property, currentLanguage = 'es', onLang
                                     <Info size={14} strokeWidth={3} />
                                 </div>
                                 <h3 className="font-serif font-bold text-slate-800">
-                                    {currentLanguage === 'es' ? 'Sobre la propiedad' : 'About the property'}
+                                    {labelAboutProperty}
                                 </h3>
                             </div>
-                            <p className="text-[14px] text-slate-800/80 leading-relaxed font-medium text-left">
-                                {property.description}
-                            </p>
+                            <div className={cn(
+                                "text-[14px] text-slate-800/80 leading-relaxed font-medium text-left",
+                                !localizedDescription && "space-y-2"
+                            )}>
+                                {localizedDescription ? (
+                                    localizedDescription
+                                ) : (
+                                    <>
+                                        <div className="h-4 w-full bg-primary/5 animate-pulse rounded-md" />
+                                        <div className="h-4 w-11/12 bg-primary/5 animate-pulse rounded-md" />
+                                        <div className="h-4 w-4/5 bg-primary/5 animate-pulse rounded-md" />
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </motion.div>
                 )}
@@ -126,7 +160,7 @@ export function HouseInfoView({ onBack, property, currentLanguage = 'es', onLang
                 {/* Footer */}
                 <motion.div variants={item} className="text-center opacity-30">
                     <p className="text-[10px] font-black text-primary tracking-[0.2em] uppercase">
-                        {currentLanguage === 'es' ? 'Detalles verificados' : 'Verified Details'}
+                        {labelVerifiedDetails}
                     </p>
                 </motion.div>
             </div>

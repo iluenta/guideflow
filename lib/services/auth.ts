@@ -14,8 +14,8 @@ export async function signUpWithMagicLink(email: string, fullName: string) {
   const supabase = createClient()
   // For magic link signup, we need to use signUp with a temporary password
   // The password will never be used since user only authenticates via magic link
-  // Generate a secure random password
-  const tempPassword = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+  // Generate a secure random password using Web Crypto API
+  const tempPassword = Array.from(globalThis.crypto.getRandomValues(new Uint8Array(32)))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')
   
