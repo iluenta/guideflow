@@ -359,6 +359,10 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                                 currentLanguage={language}
                                 accessToken={accessToken}
                                 propertyId={property.id}
+                                manuals={displayManuals}
+                                recommendations={displayRecommendations}
+                                context={displayContext}
+                                sections={sections}
                             />
                         </div>
 
@@ -398,6 +402,10 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                 propertyName={property.name}
                 propertyId={property.id}
                 accessToken={accessToken}
+                manuals={displayManuals}
+                recommendations={displayRecommendations}
+                context={displayContext}
+                sections={sections}
             />
 
             <main className="overflow-x-hidden pb-24">
@@ -420,6 +428,10 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                 currentLanguage={language}
                 accessToken={accessToken}
                 propertyId={property.id}
+                manuals={displayManuals}
+                recommendations={displayRecommendations}
+                context={displayContext}
+                sections={sections}
             />
 
             <GuestChat

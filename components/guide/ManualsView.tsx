@@ -1,5 +1,6 @@
 import React from 'react';
 import { BookOpen } from 'lucide-react';
+import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { PageHeader } from './PageHeader';
 import { ManualsList } from './ManualsList';
 import { HowToAccordion } from './HowToAccordion';

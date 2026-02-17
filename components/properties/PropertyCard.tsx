@@ -67,7 +67,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
                         onComplete={() => { }}
                     />
                     <Button variant="secondary" className="gap-2 text-xs" asChild>
-                        <Link href={`/${property.slug}`} target="_blank">
+                        <Link href={`/${property.slug || property.id}`} target="_blank">
                             <ExternalLink className="h-3.5 w-3.5" />
                             Ver Guía
                         </Link>

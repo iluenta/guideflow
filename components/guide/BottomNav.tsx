@@ -17,8 +17,12 @@ export function BottomNav({
     onTabChange,
     currentLanguage = 'es',
     accessToken,
-    propertyId
-}: BottomNavProps & { propertyId?: string }) {
+    propertyId,
+    manuals = [],
+    recommendations = [],
+    context = [],
+    sections = []
+}: BottomNavProps & { propertyId?: string, manuals?: any[], recommendations?: any[], context?: any[], sections?: any[] }) {
 
     const { content: labelHome } = useLocalizedContent('Inicio', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelEat } = useLocalizedContent('Comer', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -26,13 +30,18 @@ export function BottomNav({
     const { content: labelInfo } = useLocalizedContent('Info', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelChat } = useLocalizedContent('Chat', currentLanguage, 'ui_label', accessToken, propertyId);
 
+    // Visibility Logic
+    const hasManuals = manuals.length > 0;
+    const hasEat = recommendations.filter(r => r.type === 'restaurant' || r.type === 'cafe' || r.type === 'bar').length > 0;
+    const hasLeisure = recommendations.filter(r => r.type === 'activity' || r.type === 'park' || r.type === 'museum' || r.type === 'landmark').length > 0;
+
     const tabs = [
-        { id: 'hub', icon: Home, label: labelHome },
-        { id: 'eat', icon: UtensilsCrossed, label: labelEat },
-        { id: 'leisure', icon: Theater, label: labelLeisure },
-        { id: 'info', icon: Info, label: labelInfo },
-        { id: 'chat', icon: MessageSquare, label: labelChat }
-    ];
+        { id: 'hub', icon: Home, label: labelHome, show: true },
+        { id: 'eat', icon: UtensilsCrossed, label: labelEat, show: hasEat },
+        { id: 'leisure', icon: Theater, label: labelLeisure, show: hasLeisure },
+        { id: 'info', icon: Info, label: labelInfo, show: hasManuals },
+        { id: 'chat', icon: MessageSquare, label: labelChat, show: true }
+    ].filter(tab => tab.show);
 
     const handleTabClick = (tabId: string) => {
         if (onTabChange) {

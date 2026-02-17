@@ -16,9 +16,11 @@ import {
     Moon,
     Sun,
     Coffee,
-    Sparkles,
-    ShoppingBag
+    ShoppingBag,
+    Sparkles
 } from 'lucide-react';
+import { useLocalizedContent } from '@/hooks/useLocalizedContent';
+import { cn } from '@/lib/utils';
 
 interface MenuGridProps {
     onNavigate: (pageId: string) => void;
@@ -31,9 +33,24 @@ interface MenuGridProps {
     currentLanguage?: string;
     accessToken?: string;
     propertyId?: string;
+    manuals?: any[];
+    recommendations?: any[];
+    context?: any[];
+    sections?: any[];
 }
 
-export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 'es', accessToken, propertyId }: MenuGridProps) {
+export function MenuGrid({ 
+    onNavigate, 
+    welcomeData, 
+    imageUrl, 
+    currentLanguage = 'es', 
+    accessToken, 
+    propertyId,
+    manuals = [],
+    recommendations = [],
+    context = [],
+    sections = []
+}: MenuGridProps) {
     const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('afternoon');
     const [currentTime, setCurrentTime] = useState('');
     const [isLoaded, setIsLoaded] = useState(false);
@@ -121,6 +138,18 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
     };
 
     const rightNow = getRightNowContent();
+
+    // Visibility Logic
+    const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
+    const hasRules = !!context?.find(c => c.category === 'rules')?.content || 
+                     !!context?.find(c => c.category === 'checkin')?.content ||
+                     !!sections?.find(s => s.title?.toLowerCase().includes('normas') || s.title?.toLowerCase().includes('reglas'));
+    const hasManuals = manuals.length > 0;
+    const hasCheckin = !!context?.find(c => c.category === 'checkin')?.content?.steps?.length;
+    
+    const eatRecs = recommendations.filter(r => r.type === 'restaurant' || r.type === 'cafe' || r.type === 'bar');
+    const doRecs = recommendations.filter(r => r.type === 'activity' || r.type === 'park' || r.type === 'museum' || r.type === 'landmark');
+    const shopRecs = recommendations.filter(r => r.type === 'shopping' || r.type === 'market' || r.type === 'pharmacy');
 
     const triggerHaptic = (pattern: number | number[] = 10) => {
         if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
@@ -225,14 +254,18 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                         {labelEssentials}
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
-                        <button onClick={() => handleNavigate('check-in', [50, 30, 50])} className="bg-primary text-primary-foreground rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-all aspect-square">
-                            <Key className="w-6 h-6" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Check In</span>
-                        </button>
-                        <button onClick={() => handleNavigate('wifi', [50, 30, 50])} className="bg-surface text-primary rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-primary/5">
-                            <Wifi className="w-6 h-6" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest">WiFi</span>
-                        </button>
+                        {hasCheckin && (
+                            <button onClick={() => handleNavigate('check-in', [50, 30, 50])} className="bg-primary text-primary-foreground rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-all aspect-square">
+                                <Key className="w-6 h-6" strokeWidth={1.5} />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-center">Check In</span>
+                            </button>
+                        )}
+                        {hasWifi && (
+                            <button onClick={() => handleNavigate('wifi', [50, 30, 50])} className="bg-surface text-primary rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-primary/5">
+                                <Wifi className="w-6 h-6" strokeWidth={1.5} />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-center">WiFi</span>
+                            </button>
+                        )}
                         <button onClick={() => handleNavigate('emergency', [100, 50, 100])} className="bg-rose-50 text-rose-600 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-all aspect-square border border-rose-100/50">
                             <AlertTriangle className="w-6 h-6" strokeWidth={1.5} />
                             <span className="text-[10px] font-black uppercase tracking-widest text-center text-rose-600">SOS</span>
@@ -241,37 +274,39 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                 </div>
 
                 {/* Explore Section */}
-                <div className="mb-10 section-explore-anim">
-                    <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
-                        {labelExplore}
-                    </h3>
-                    <div className="space-y-3">
-                        {[
-                            { id: 'eat', label: labelEatNearby, icon: UtensilsCrossed, color: 'bg-orange-50 text-orange-600', desc: labelEatDesc },
-                            { id: 'leisure', label: labelDoNearby, icon: CalendarDays, color: 'bg-blue-50 text-blue-600', desc: labelDoDesc },
-                            { id: 'shopping', label: labelShopNearby, icon: ShoppingBag, color: 'bg-emerald-50 text-emerald-600', desc: labelShopDesc }
-                        ].map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => handleNavigate(item.id)}
-                                className="w-full bg-surface p-5 rounded-3xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-all border border-primary/5"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-2xl ${item.color} flex items-center justify-center shadow-inner`}>
-                                        <item.icon className="w-6 h-6" />
+                {(eatRecs.length > 0 || doRecs.length > 0 || shopRecs.length > 0) && (
+                    <div className="mb-10 section-explore-anim">
+                        <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
+                            {labelExplore}
+                        </h3>
+                        <div className="space-y-3">
+                            {[
+                                { id: 'eat', label: labelEatNearby, icon: UtensilsCrossed, color: 'bg-orange-50 text-orange-600', desc: labelEatDesc, show: eatRecs.length > 0 },
+                                { id: 'leisure', label: labelDoNearby, icon: CalendarDays, color: 'bg-blue-50 text-blue-600', desc: labelDoDesc, show: doRecs.length > 0 },
+                                { id: 'shopping', label: labelShopNearby, icon: ShoppingBag, color: 'bg-emerald-50 text-emerald-600', desc: labelShopDesc, show: shopRecs.length > 0 }
+                            ].filter(item => item.show).map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => handleNavigate(item.id)}
+                                    className="w-full bg-surface p-5 rounded-3xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-all border border-primary/5"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-2xl ${item.color} flex items-center justify-center shadow-inner`}>
+                                            <item.icon className="w-6 h-6" />
+                                        </div>
+                                        <div className="flex flex-col text-left">
+                                            <span className="text-primary font-black text-[15px]">{item.label}</span>
+                                            <span className="text-[11px] text-text-muted font-medium">{item.desc}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col text-left">
-                                        <span className="text-primary font-black text-[15px]">{item.label}</span>
-                                        <span className="text-[11px] text-text-muted font-medium">{item.desc}</span>
+                                    <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                                        <ChevronRight className="w-4 h-4 text-primary/30 group-hover:text-primary/60 transition-all" />
                                     </div>
-                                </div>
-                                <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                                    <ChevronRight className="w-4 h-4 text-primary/30 group-hover:text-primary/60 transition-all" />
-                                </div>
-                            </button>
-                        ))}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Apartment Section */}
                 <div className="mb-10 section-apartment-anim">
@@ -283,14 +318,18 @@ export function MenuGrid({ onNavigate, welcomeData, imageUrl, currentLanguage = 
                             <Info className="w-6 h-6 opacity-60" strokeWidth={1.5} />
                             <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">{labelHouseInfo}</span>
                         </button>
-                        <button onClick={() => handleNavigate('rules')} className="bg-surface p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-primary border border-primary/5">
-                            <ScrollText className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">{labelRulesShort}</span>
-                        </button>
-                        <button onClick={() => handleNavigate('manuals')} className="bg-surface p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-primary border border-primary/5">
-                            <BookOpen className="w-6 h-6 opacity-60" strokeWidth={1.5} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">{labelManualShort}</span>
-                        </button>
+                        {hasRules && (
+                            <button onClick={() => handleNavigate('rules')} className="bg-surface p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-primary border border-primary/5">
+                                <ScrollText className="w-6 h-6 opacity-60" strokeWidth={1.5} />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">{labelRulesShort}</span>
+                            </button>
+                        )}
+                        {hasManuals && (
+                            <button onClick={() => handleNavigate('manuals')} className="bg-surface p-5 rounded-3xl shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all text-primary border border-primary/5">
+                                <BookOpen className="w-6 h-6 opacity-60" strokeWidth={1.5} />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center leading-tight">{labelManualShort}</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

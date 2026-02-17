@@ -109,10 +109,15 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
     const [searchTerm, setSearchTerm] = useState('')
     const [editingId, setEditingId] = useState<string | null>(null)
     const [tempContext, setTempContext] = useState('')
+    
+    // Ensure items is always an array
+    const safeItems = Array.isArray(items) 
+        ? items 
+        : ((items as any)?.items || (items as any)?.inventory || [])
 
     // Initialize items by merging defaults with current selection and scanner info
     const displayItems: InventoryItem[] = DEFAULT_ITEMS.map(di => {
-        const existingItem = items.find(i => i.id === di.id)
+        const existingItem = safeItems.find((i: any) => i.id === di.id)
         const isFromScanner = existingManuals.some(m => {
             // Ignore manuals created by the inventory selector itself (not detections)
             if (m.metadata?.source === 'inventory_selector') return false

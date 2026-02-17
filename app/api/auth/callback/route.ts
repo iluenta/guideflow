@@ -16,10 +16,6 @@ export async function POST(request: Request) {
       })
 
       if (error) {
-        // Log del error para debugging (sin exponer tokens)
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Error setting session:', error.message, error.status)
-        }
         return NextResponse.json(
           { error: error.message || 'Error al establecer la sesión' },
           { status: 400 }
@@ -42,15 +38,12 @@ export async function POST(request: Request) {
       if (process.env.NODE_ENV === 'development') {
         console.log('Verifying OTP:', { type, token_hash: token_hash.substring(0, 10) + '...' })
       }
-      const { error } = await supabase.auth.verifyOtp({
+      const { data, error } = await supabase.auth.verifyOtp({
         token_hash,
         type: type as 'email' | 'recovery' | 'magiclink',
       })
 
       if (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('OTP Verification Error:', error.message, error.status)
-        }
         let errorMessage = 'Error al verificar el token'
 
         if (error.message.includes('expired') || error.message.includes('invalid')) {
@@ -70,7 +63,7 @@ export async function POST(request: Request) {
 
     // Caso 3: code (OAuth normal)
     if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code)
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
       if (error) {
         let errorMessage = 'Error al intercambiar el código'

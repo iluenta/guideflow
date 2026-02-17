@@ -46,6 +46,9 @@ export function HouseInfoView({
     const { content: labelGuests } = useLocalizedContent(`Hasta ${property.guests || 0} huéspedes`, currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: subIdeal } = useLocalizedContent('Ideal para su estancia', currentLanguage, 'ui_label', accessToken, propertyId);
 
+    const { content: localizedName } = useLocalizedContent(property.name, currentLanguage, 'property_name', accessToken, propertyId);
+    const { content: localizedDescription } = useLocalizedContent(property.description, currentLanguage, 'property_description', accessToken, propertyId);
+
     const features = [
         {
             icon: Bed,

@@ -85,10 +85,16 @@ export function Fase11Home({
     }, [currentLanguage, labelBuenosDias, labelBuenasTardes, labelBuenasNoches]);
 
     const tipRecommendation = useMemo(() => {
+        if (!recommendations || recommendations.length === 0) return null;
         const filtered = recommendations.filter(r => r.type === timeInfo.category || r.category === timeInfo.category);
         if (filtered.length > 0) return filtered[0];
         return recommendations[0]; // Fallback
     }, [recommendations, timeInfo.category]);
+
+    const hasRecommendations = recommendations && recommendations.length > 0;
+    const eatRecs = recommendations.filter(r => r.type === 'restaurant' || r.type === 'cafe' || r.type === 'bar');
+    const doRecs = recommendations.filter(r => r.type === 'activity' || r.type === 'park' || r.type === 'museum' || r.type === 'landmark');
+    const shopRecs = recommendations.filter(r => r.type === 'shopping' || r.type === 'market' || r.type === 'pharmacy');
 
     const { content: localizedTipName } = useLocalizedContent(tipRecommendation?.name || '', currentLanguage, 'recommendations', accessToken, propertyId);
     const { content: localizedTipDesc } = useLocalizedContent(tipRecommendation?.personal_note || tipRecommendation?.description || '', currentLanguage, 'recommendations', accessToken, propertyId);
@@ -158,66 +164,68 @@ export function Fase11Home({
 
             <div className="px-5 pb-10 -mt-6 relative z-10">
                 {/* Time-based Suggestion */}
-                <motion.div variants={item} className="mb-8">
-                    <Card className="overflow-hidden border-none shadow-[0_10px_30px_rgba(0,0,0,0.08)] bg-white">
-                        <div className="p-5">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2 text-primary">
-                                    <Clock size={14} strokeWidth={2.5} />
-                                    <span className="text-[10px] font-black tracking-widest uppercase">
-                                        {timeInfo.time} • {timeInfo.greeting}
+                {hasRecommendations && (
+                    <motion.div variants={item} className="mb-8">
+                        <Card className="overflow-hidden border-none shadow-[0_10px_30px_rgba(0,0,0,0.08)] bg-white">
+                            <div className="p-5">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2 text-primary">
+                                        <Clock size={14} strokeWidth={2.5} />
+                                        <span className="text-[10px] font-black tracking-widest uppercase">
+                                            {timeInfo.time} • {timeInfo.greeting}
+                                        </span>
+                                    </div>
+                                    <span className="px-2 py-0.5 bg-[#f59e0b] text-white text-[9px] font-black rounded-full uppercase tracking-wider">
+                                        {labelRecomendacion}
                                     </span>
                                 </div>
-                                <span className="px-2 py-0.5 bg-[#f59e0b] text-white text-[9px] font-black rounded-full uppercase tracking-wider">
-                                    {labelRecomendacion}
-                                </span>
+
+                                {tipRecommendation ? (
+                                    <>
+                                        <h3 className={cn(
+                                            "text-xl font-serif font-bold text-gray-900 mb-2 leading-tight",
+                                            !localizedTipName && "h-7 w-40 bg-gray-100 animate-pulse rounded-md"
+                                        )}>
+                                            {localizedTipName}
+                                        </h3>
+                                        <div className={cn(
+                                            "text-[13px] text-gray-500 mb-4 leading-relaxed line-clamp-2",
+                                            !localizedTipDesc && "space-y-2"
+                                        )}>
+                                            {localizedTipDesc ? (
+                                                localizedTipDesc
+                                            ) : (
+                                                <>
+                                                    <div className="h-3 w-full bg-gray-50 animate-pulse rounded-sm" />
+                                                    <div className="h-3 w-3/4 bg-gray-50 animate-pulse rounded-sm" />
+                                                </>
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 className={cn(
+                                            "text-xl font-serif font-bold text-gray-900 mb-2 leading-tight",
+                                            !localizedTipName && "h-7 w-40 bg-gray-100 animate-pulse rounded-md"
+                                        )}>
+                                            {labelExploraZona}
+                                        </h3>
+                                        <p className="text-[13px] text-gray-500 mb-4 leading-relaxed">
+                                            {labelDescubreRincones}
+                                        </p>
+                                    </>
+                                )}
+
+                                <button
+                                    onClick={() => onNavigate('eat')}
+                                    className="text-xs font-black text-primary flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-widest"
+                                >
+                                    {labelVerRecomendaciones} <ChevronRight size={14} strokeWidth={3} />
+                                </button>
                             </div>
-
-                            {tipRecommendation ? (
-                                <>
-                                    <h3 className={cn(
-                                        "text-xl font-serif font-bold text-gray-900 mb-2 leading-tight",
-                                        !localizedTipName && "h-7 w-40 bg-gray-100 animate-pulse rounded-md"
-                                    )}>
-                                        {localizedTipName}
-                                    </h3>
-                                    <div className={cn(
-                                        "text-[13px] text-gray-500 mb-4 leading-relaxed line-clamp-2",
-                                        !localizedTipDesc && "space-y-2"
-                                    )}>
-                                        {localizedTipDesc ? (
-                                            localizedTipDesc
-                                        ) : (
-                                            <>
-                                                <div className="h-3 w-full bg-gray-50 animate-pulse rounded-sm" />
-                                                <div className="h-3 w-3/4 bg-gray-50 animate-pulse rounded-sm" />
-                                            </>
-                                        )}
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <h3 className={cn(
-                                        "text-xl font-serif font-bold text-gray-900 mb-2 leading-tight",
-                                        !localizedTipName && "h-7 w-40 bg-gray-100 animate-pulse rounded-md"
-                                    )}>
-                                        {labelExploraZona}
-                                    </h3>
-                                    <p className="text-[13px] text-gray-500 mb-4 leading-relaxed">
-                                        {labelDescubreRincones}
-                                    </p>
-                                </>
-                            )}
-
-                            <button
-                                onClick={() => onNavigate('eat')}
-                                className="text-xs font-black text-primary flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-widest"
-                            >
-                                {labelVerRecomendaciones} <ChevronRight size={14} strokeWidth={3} />
-                            </button>
-                        </div>
-                    </Card>
-                </motion.div>
+                        </Card>
+                    </motion.div>
+                )}
 
                 {/* Essentials Grid */}
                 <motion.div variants={item} className="mb-10">
@@ -257,37 +265,39 @@ export function Fase11Home({
                 </motion.div>
 
                 {/* Explore Section */}
-                <motion.div variants={item} className="mb-10">
-                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
-                        {labelDescubreLocation}
-                    </h3>
-                    <div className="space-y-3">
-                        {[
-                            { id: 'eat', icon: Utensils, label: labelGastronomia, sub: labelRestaurantesLocales },
-                            { id: 'leisure', icon: Calendar, label: labelQueHacer, sub: labelActividades },
-                            { id: 'shopping', icon: ShoppingBag, label: labelCompras, sub: labelTiendas }
-                        ].map((action) => (
-                            <div
-                                key={action.id}
-                                onClick={() => onNavigate(action.id)}
-                                className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between cursor-pointer hover:border-primary/20 transition-all hover:bg-gray-50/50 group"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                                        <action.icon size={18} />
+                {(eatRecs.length > 0 || doRecs.length > 0 || shopRecs.length > 0) && (
+                    <motion.div variants={item} className="mb-10">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
+                            {labelDescubreLocation}
+                        </h3>
+                        <div className="space-y-3">
+                            {[
+                                { id: 'eat', icon: Utensils, label: labelGastronomia, sub: labelRestaurantesLocales, show: eatRecs.length > 0 },
+                                { id: 'leisure', icon: Calendar, label: labelQueHacer, sub: labelActividades, show: doRecs.length > 0 },
+                                { id: 'shopping', icon: ShoppingBag, label: labelCompras, sub: labelTiendas, show: shopRecs.length > 0 }
+                            ].filter(a => a.show).map((action) => (
+                                <div
+                                    key={action.id}
+                                    onClick={() => onNavigate(action.id)}
+                                    className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between cursor-pointer hover:border-primary/20 transition-all hover:bg-gray-50/50 group"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                            <action.icon size={18} />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-gray-900 text-sm">
+                                                {action.label}
+                                            </p>
+                                            <p className="text-[11px] text-gray-400">{action.sub}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-bold text-gray-900 text-sm">
-                                            {action.label}
-                                        </p>
-                                        <p className="text-[11px] text-gray-400">{action.sub}</p>
-                                    </div>
+                                    <ChevronRight size={16} className="text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
                                 </div>
-                                <ChevronRight size={16} className="text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                            </div>
-                        ))}
-                    </div>
-                </motion.div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Accommodation Info */}
                 <motion.div variants={item} className="mb-8">

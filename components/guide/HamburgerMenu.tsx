@@ -29,6 +29,10 @@ interface HamburgerMenuProps {
     propertyName: string;
     propertyId: string;
     accessToken?: string;
+    manuals?: any[];
+    recommendations?: any[];
+    context?: any[];
+    sections?: any[];
 }
 
 export function HamburgerMenu({
@@ -38,7 +42,11 @@ export function HamburgerMenu({
     currentLanguage = 'es',
     propertyName,
     propertyId,
-    accessToken
+    accessToken,
+    manuals = [],
+    recommendations = [],
+    context = [],
+    sections = []
 }: HamburgerMenuProps) {
     // Only pass text for translation if the menu is open to save API requests and reduce initial load burst
     const t = (text: string, type: string = 'ui_label') => isOpen ? text : '';
@@ -59,32 +67,44 @@ export function HamburgerMenu({
     const { content: groupStay } = useLocalizedContent(t('TU ESTANCIA'), currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: groupExplore } = useLocalizedContent(t('EXPLORA'), currentLanguage, 'ui_label', accessToken, propertyId);
 
+    // Visibility Logic
+    const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
+    const hasRules = !!context?.find(c => c.category === 'rules')?.content || 
+                     !!context?.find(c => c.category === 'checkin')?.content ||
+                     !!sections?.find(s => s.title?.toLowerCase().includes('normas') || s.title?.toLowerCase().includes('reglas'));
+    const hasManuals = manuals.length > 0;
+    const hasCheckin = !!context?.find(c => c.category === 'checkin')?.content?.steps?.length;
+    
+    const eatRecs = recommendations.filter(r => r.type === 'restaurant' || r.type === 'cafe' || r.type === 'bar');
+    const doRecs = recommendations.filter(r => r.type === 'activity' || r.type === 'park' || r.type === 'museum' || r.type === 'landmark');
+    const shopRecs = recommendations.filter(r => r.type === 'shopping' || r.type === 'market' || r.type === 'pharmacy');
+
     const menuGroups = [
         {
             title: groupEssentials,
             items: [
-                { id: 'wifi', icon: Wifi, label: labelWifi, color: 'text-blue-500' },
-                { id: 'rules', icon: Clock, label: labelRules, color: 'text-orange-500' },
-                { id: 'checkin', icon: Key, label: labelAccess, color: 'text-green-500' },
-            ]
+                { id: 'wifi', icon: Wifi, label: labelWifi, color: 'text-blue-500', show: hasWifi },
+                { id: 'rules', icon: Clock, label: labelRules, color: 'text-orange-500', show: hasRules },
+                { id: 'checkin', icon: Key, label: labelAccess, color: 'text-green-500', show: hasCheckin },
+            ].filter(i => i.show)
         },
         {
             title: groupStay,
             items: [
-                { id: 'manuals', icon: BookOpen, label: labelHowto, color: 'text-purple-500' },
-                { id: 'house-info', icon: HelpCircle, label: labelAbout, color: 'text-teal-500' },
-                { id: 'emergency', icon: ShieldAlert, label: labelEmergency, color: 'text-rose-500' },
-            ]
+                { id: 'manuals', icon: BookOpen, label: labelHowto, color: 'text-purple-500', show: hasManuals },
+                { id: 'house-info', icon: HelpCircle, label: labelAbout, color: 'text-teal-500', show: true },
+                { id: 'emergency', icon: ShieldAlert, label: labelEmergency, color: 'text-rose-500', show: true },
+            ].filter(i => i.show)
         },
         {
             title: groupExplore,
             items: [
-                { id: 'eat', icon: Utensils, label: labelEat, color: 'text-navy/60' },
-                { id: 'do', icon: Theater, label: labelDo, color: 'text-navy/60' },
-                { id: 'shopping', icon: ShoppingBag, label: labelShop, color: 'text-navy/60' },
-            ]
+                { id: 'eat', icon: Utensils, label: labelEat, color: 'text-navy/60', show: eatRecs.length > 0 },
+                { id: 'do', icon: Theater, label: labelDo, color: 'text-navy/60', show: doRecs.length > 0 },
+                { id: 'shopping', icon: ShoppingBag, label: labelShop, color: 'text-navy/60', show: shopRecs.length > 0 },
+            ].filter(i => i.show)
         }
-    ];
+    ].filter(g => g.items.length > 0);
 
 
     return (

@@ -32,14 +32,38 @@ export async function middleware(request: NextRequest) {
                     return request.cookies.get(name)?.value
                 },
                 set(name: string, value: string, options: CookieOptions) {
-                    request.cookies.set({ name, value, ...options })
-                    response = NextResponse.next({ request: { headers: request.headers } })
-                    response.cookies.set({ name, value, ...options })
+                    request.cookies.set({
+                        name,
+                        value,
+                        ...options,
+                    })
+                    response = NextResponse.next({
+                        request: {
+                            headers: request.headers,
+                        },
+                    })
+                    response.cookies.set({
+                        name,
+                        value,
+                        ...options,
+                    })
                 },
                 remove(name: string, options: CookieOptions) {
-                    request.cookies.set({ name, value: '', ...options })
-                    response = NextResponse.next({ request: { headers: request.headers } })
-                    response.cookies.set({ name, value: '', ...options })
+                    request.cookies.set({
+                        name,
+                        value: '',
+                        ...options,
+                    })
+                    response = NextResponse.next({
+                        request: {
+                            headers: request.headers,
+                        },
+                    })
+                    response.cookies.set({
+                        name,
+                        value: '',
+                        ...options,
+                    })
                 },
             },
         }
@@ -94,16 +118,36 @@ export async function middleware(request: NextRequest) {
             }
         }
 
+        // IMPORTANT: If no property found, it's NOT a guide route. Early return.
+        if (!requestedProperty) {
+            return response
+        }
+
         // 5.2 Smart Host Bypass: Only owners can bypass token check
-        if (user && requestedProperty) {
-            const userTenantId = user.app_metadata?.tenant_id || user.user_metadata?.tenant_id
-            if (requestedProperty.tenant_id === userTenantId) {
+        if (user) {
+            let userTenantId = user.app_metadata?.tenant_id || user.user_metadata?.tenant_id
+            
+            // Fallback to database if metadata is missing (e.g. dev login script)
+            if (!userTenantId) {
+                const { data: profile } = await supabaseAdmin
+                    .from('profiles')
+                    .select('tenant_id')
+                    .eq('id', user.id)
+                    .single()
+                userTenantId = profile?.tenant_id
+            }
+
+            console.log(`[ACL] Host Check: PropTenant=${requestedProperty.tenant_id}, UserTenant=${userTenantId}`);
+
+            if (userTenantId && requestedProperty.tenant_id === userTenantId) {
+                console.log(`[ACL] BYPASS SUCCESS for user ${user.id}`);
                 return response
             }
         }
 
         // Guests (and users accessing other communities) MUST have a token
         if (!token) {
+            console.warn(`[ACL] ACCESS DENIED: No token for ${pathname}`);
             return NextResponse.redirect(new URL('/access-denied?reason=token_required', request.url))
         }
 
@@ -114,14 +158,15 @@ export async function middleware(request: NextRequest) {
             .from('guest_access_tokens')
             .select('*')
             .eq('access_token', cleanToken)
-            .eq('property_id', requestedProperty?.id) // BINDING: Must match propertyId
+            .eq('property_id', requestedProperty.id) // BINDING: Must match propertyId
             .single()
 
         if (dbError || !access) {
-            console.error(`[SECURITY] INVALID: Token "${cleanToken}" for property "${firstSegment}"`);
+            console.error(`[SECURITY] INVALID: Token "${cleanToken}" for property "${requestedProperty.id}"`);
             return NextResponse.redirect(new URL(`/access-denied?reason=invalid`, request.url))
         }
-
+        
+        // ... remaining original logic for date validation ...
         if (!access.is_active) {
             return NextResponse.redirect(new URL('/access-denied?reason=inactive', request.url))
         }

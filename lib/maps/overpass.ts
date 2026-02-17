@@ -89,25 +89,39 @@ export async function findNearbyParking(lat: number, lon: number, radius: number
     }, { has_regulated_parking: false, parking_zones: [] });
 }
 
-async function retryOverpass(query: string, transform: (elements: any[]) => any, fallback: any, retries: number = 2) {
+const MIRRORS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://lz4.overpass-api.de/api/interpreter',
+    'https://z.overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter'
+];
+
+async function retryOverpass(query: string, transform: (elements: any[]) => any, fallback: any, retries: number = 3) {
     let attempt = 0;
     while (attempt <= retries) {
+        // Rotate through mirrors based on attempt
+        const mirrorUrl = MIRRORS[attempt % MIRRORS.length];
+        
         try {
-            const response = await axios.post(OVERPASS_URL, `data=${encodeURIComponent(query)}`, {
+            const response = await axios.post(mirrorUrl, `data=${encodeURIComponent(query)}`, {
                 timeout: 30000,
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
             return transform(response.data.elements || []);
         } catch (error: any) {
-            const isTimeout = error.code === 'ECONNABORTED' || error.response?.status === 504 || error.response?.status === 429;
-            if (isTimeout && attempt < retries) {
+            const isRetryable = error.code === 'ECONNABORTED' || 
+                               error.response?.status === 504 || 
+                               error.response?.status === 503 || 
+                               error.response?.status === 429;
+            
+            if (isRetryable && attempt < retries) {
                 attempt++;
-                const delay = attempt * 1500;
-                console.warn(`[OVERPASS] Error ${error.response?.status || error.code}. Retrying in ${delay}ms... (Attempt ${attempt}/${retries})`);
+                const delay = attempt * 1000;
+                console.warn(`[OVERPASS] Error ${error.response?.status || error.code} on ${mirrorUrl}. Retrying with another mirror in ${delay}ms... (Attempt ${attempt}/${retries})`);
                 await new Promise(r => setTimeout(r, delay));
                 continue;
             }
-            console.error('[OVERPASS] Final failure:', error.message);
+            console.error(`[OVERPASS] Final failure on ${mirrorUrl}:`, error.message);
             return fallback;
         }
     }
