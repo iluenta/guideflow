@@ -328,7 +328,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                             </button>
 
                             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 max-w-[60%]">
-                                {branding?.custom_logo_url ? (
+                                {branding?.custom_logo_url && branding.custom_logo_url.trim() !== '' ? (
                                     <div className="h-10 flex items-center">
                                         <img
                                             src={branding.custom_logo_url}

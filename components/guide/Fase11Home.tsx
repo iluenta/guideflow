@@ -92,9 +92,24 @@ export function Fase11Home({
     }, [recommendations, timeInfo.category]);
 
     const hasRecommendations = recommendations && recommendations.length > 0;
-    const eatRecs = recommendations.filter(r => r.type === 'restaurant' || r.type === 'cafe' || r.type === 'bar');
-    const doRecs = recommendations.filter(r => r.type === 'activity' || r.type === 'park' || r.type === 'museum' || r.type === 'landmark');
-    const shopRecs = recommendations.filter(r => r.type === 'shopping' || r.type === 'market' || r.type === 'pharmacy');
+    const eatRecs = recommendations.filter(r =>
+        r.type === 'restaurant' || r.type === 'restaurante' || r.type === 'restaurantes' ||
+        r.type === 'cafe' || r.type === 'bar' || r.type === 'food' || r.type === 'comida'
+    );
+    const doRecs = recommendations.filter(r =>
+        r.type === 'activity' || r.type === 'actividad' || r.type === 'actividades' ||
+        r.type === 'park' || r.type === 'parque' ||
+        r.type === 'museum' || r.type === 'museo' ||
+        r.type === 'landmark' || r.type === 'cultura' ||
+        r.type === 'naturaleza' || r.type === 'ocio' || r.type === 'relax' ||
+        r.type === 'experiencias' || r.type === 'experience'
+    );
+    const shopRecs = recommendations.filter(r =>
+        r.type === 'shopping' || r.type === 'compras' ||
+        r.type === 'market' || r.type === 'mercado' ||
+        r.type === 'pharmacy' || r.type === 'farmacia' ||
+        r.type === 'supermarket' || r.type === 'supermercado'
+    );
 
     const { content: localizedTipName } = useLocalizedContent(tipRecommendation?.name || '', currentLanguage, 'recommendations', accessToken, propertyId);
     const { content: localizedTipDesc } = useLocalizedContent(tipRecommendation?.personal_note || tipRecommendation?.description || '', currentLanguage, 'recommendations', accessToken, propertyId);
@@ -128,11 +143,17 @@ export function Fase11Home({
         >
             {/* Header with Hero Image */}
             <div className="relative h-48 w-full overflow-hidden">
-                <img
-                    src={heroImage}
-                    alt={propertyName}
-                    className="w-full h-full object-cover"
-                />
+                {heroImage && heroImage.trim() !== '' ? (
+                    <img
+                        src={heroImage}
+                        alt={propertyName}
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
+                        <Star className="opacity-20" size={32} />
+                    </div>
+                )}
 
                 <div className="absolute inset-0 bg-black/40" />
 

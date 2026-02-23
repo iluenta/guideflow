@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getDistanceMeters } from '../maps/overpass';
+import { discoverNearbyAirportsFallback } from './airports-fallback';
 
 /**
  * Commercial airport discovery using Wikidata
@@ -28,8 +29,12 @@ export async function discoverNearbyAirports(coords: [number, number], radiusKm:
     try {
         const response = await axios.get(WIKIDATA_SPARQL_URL, {
             params: { query, format: 'json' },
-            headers: { 'Accept': 'application/sparql-results+json' }
+            headers: { 
+                'Accept': 'application/sparql-results+json',
+                'User-Agent': 'GuideFlow/1.0 (https://guideflow.vercel.app; support@guideflow.com) Axios/1.6.0'
+            }
         });
+
 
         const results = response.data.results.bindings || [];
 
@@ -52,6 +57,8 @@ export async function discoverNearbyAirports(coords: [number, number], radiusKm:
 
     } catch (error) {
         console.error('[WIKIDATA] Error discovering airports:', error);
-        return [];
+        console.log('[WIKIDATA] Falling back to Spanish airports database...');
+        // Fallback to Spanish airports database when Wikidata fails
+        return await discoverNearbyAirportsFallback(coords, radiusKm);
     }
 }

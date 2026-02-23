@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'supabase';
 
 // Note: environment variables must be configured in Supabase dashboard
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -65,7 +65,7 @@ export default async (req: Request) => {
         try {
             const cleanedJson = responseText.replace(/```json|```/g, '').trim();
             technicalData = JSON.parse(cleanedJson);
-        } catch (e) {
+        } catch (_e) {
             console.error('Failed to parse Gemini JSON:', responseText);
             return new Response(JSON.stringify({ status: 'error', error: 'Invalid JSON from AI' }));
         }
@@ -91,6 +91,6 @@ export default async (req: Request) => {
 
     } catch (error) {
         console.error('Edge Function Error:', error);
-        return new Response(JSON.stringify({ error: (error as any).message }), { status: 500 });
+        return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), { status: 500 });
     }
 };
