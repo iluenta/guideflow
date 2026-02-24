@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { validateAccessToken } from '@/lib/security'
 import { redirect } from 'next/navigation'
 import { GuideViewContainer } from '@/components/guide/GuideViewContainer'
+import { getLayoutTheme } from '@/lib/themes'
 
 interface GuidePageProps {
     params: Promise<{ slug: string }>
@@ -44,37 +45,43 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
         supabase.from('property_branding').select('*').eq('property_id', property.id).single()
     ])
 
-    const theme = branding?.computed_theme || {
-        colors: {
-            primary: property.theme_config?.primary_color || '#316263',
-            secondary: '#7c9a92',
-            accent: '#f59e0b',
-            background: '#F0EEE9',
-            surface: '#ffffff',
-            text: { primary: '#1a1a1a', secondary: '#4a4a4a', muted: '#8a8a8a' }
-        }
-    }
+    // ── Resolve the visual theme ──────────────────────────────────────────────
+    // layout_theme_id is the new single source of truth.
+    // Falls back to: old theme_config.primary_color, then default 'modern'.
+    const layoutThemeId = branding?.layout_theme_id || 'modern'
+    const layoutTheme = getLayoutTheme(layoutThemeId)
+
+    // The computed_theme in DB may be stale/legacy.
+    // Always use the forced palette from the LayoutTheme definition.
+    const palette = layoutTheme.colors
 
     return (
         <div
+            data-theme={layoutThemeId}
             className="min-h-screen selection:bg-teal/10"
             style={{
-                '--color-primary': theme.colors.primary,
-                '--color-primary-foreground': theme.colors.surface,
-                '--color-secondary': theme.colors.secondary,
-                '--color-accent': theme.colors.accent,
-                '--color-background': theme.colors.background,
-                '--color-surface': theme.colors.surface,
-                '--color-text-primary': theme.colors.text.primary,
-                '--color-text-secondary': theme.colors.text.secondary,
-                '--color-muted-foreground': theme.colors.text.muted,
-                '--color-teal': theme.colors.primary, // Legacy compatibility
-                '--color-ink': theme.colors.text.primary,
-                '--color-cloud': theme.colors.background,
-                '--color-beige': theme.colors.background,
-                backgroundColor: 'var(--color-background)',
-                color: 'var(--color-text-primary)',
-                fontFamily: theme.fonts?.body || 'system-ui, sans-serif'
+                // Forwarded CSS custom properties — consumed by all guide components
+                '--color-primary': palette.primary,
+                '--color-primary-foreground': palette.surface,
+                '--color-secondary': palette.secondary,
+                '--color-accent': palette.accent,
+                '--color-background': palette.background,
+                '--color-surface': palette.surface,
+                '--color-text-primary': palette.text.primary,
+                '--color-text-secondary': palette.text.secondary,
+                '--color-muted-foreground': palette.text.muted,
+                // Legacy aliases used by older guide components
+                '--color-teal': palette.primary,
+                '--color-ink': palette.text.primary,
+                '--color-cloud': palette.background,
+                '--color-beige': palette.background,
+                // Typography
+                '--font-heading': layoutTheme.fonts.heading,
+                '--font-body': layoutTheme.fonts.body,
+                // Theme background applied directly so no flash
+                backgroundColor: palette.background,
+                color: palette.text.primary,
+                fontFamily: layoutTheme.fonts.body,
             } as React.CSSProperties}
         >
             <GuideViewContainer

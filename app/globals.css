@@ -59,3 +59,57 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── Guest Guide Theme Overrides ────────────────────────────────────────────
+ * Applied via the data-theme attribute on the guide wrapper div in
+ * app/[slug]/page.tsx. Only affects the guest guide — does not touch
+ * the dashboard UI.
+ * ─────────────────────────────────────────────────────────────────────── */
+
+/* Urban Dark — dark mode, Oswald headings */
+[data-theme="urban"] {
+  color-scheme: dark;
+
+  /* Override Tailwind bg/text utilities that read from CSS vars */
+  --color-border: #27272a;
+  --color-input: #27272a;
+  --color-ring: #00d4ff;
+  --color-muted: #18181b;
+  --color-muted-foreground: #a1a1aa;
+  --color-accent: #f59e0b;
+  --color-accent-foreground: #09090b;
+
+  /* Headings use Oswald */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-oswald), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+}
+
+/* Coastal Breeze — Nunito font, rounded elements */
+[data-theme="coastal"] {
+  /* Boost border-radius for a friendlier feel */
+  --radius-sm: 1rem;
+  --radius-md: 1.25rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+
+  --color-ring: #0ea5e9;
+  --color-border: #bae6fd;
+  --color-muted: #e0f2fe;
+  --color-muted-foreground: #0369a1;
+
+  /* All text uses Nunito */
+  h1, h2, h3, h4, h5, h6, body, p, span, button, input {
+    font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+/* Modern Minimal — no special overrides needed (uses default Inter) */
+[data-theme="modern"] {
+  --color-ring: #3b82f6;
+  --color-border: #e4e4e7;
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717a;
+}

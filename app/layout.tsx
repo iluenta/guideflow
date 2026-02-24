@@ -1,6 +1,6 @@
 import React from "react"
 import type { Metadata } from 'next'
-import { Inter, Playfair_Display } from 'next/font/google'
+import { Inter, Playfair_Display, Oswald, Nunito } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import './globals.css'
@@ -13,6 +13,18 @@ const inter = Inter({
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: '--font-playfair'
+});
+
+const oswald = Oswald({
+  subsets: ["latin"],
+  variable: '--font-oswald',
+  display: 'swap',
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  variable: '--font-nunito',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -55,7 +67,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${playfair.variable} font-sans antialiased bg-beige text-navy`}>
+      <body className={`${inter.variable} ${playfair.variable} ${oswald.variable} ${nunito.variable} font-sans antialiased bg-beige text-navy`}>
         {children}
         <Analytics />
         <SpeedInsights />

@@ -125,6 +125,7 @@ export async function saveWizardStep(
         if (!currentPropId) throw new Error('ID de propiedad requerido para Branding')
 
         const sanitizedThemeId = stepData.theme_id && stepData.theme_id.trim() !== '' ? stepData.theme_id : null
+        const sanitizedLayoutThemeId = stepData.layout_theme_id && stepData.layout_theme_id.trim() !== '' ? stepData.layout_theme_id : 'modern'
 
         const { error } = await supabase
             .from('property_branding')
@@ -132,6 +133,7 @@ export async function saveWizardStep(
                 property_id: currentPropId,
                 tenant_id: currentTenantId,
                 theme_id: sanitizedThemeId,
+                layout_theme_id: sanitizedLayoutThemeId,
                 custom_primary_color: stepData.custom_primary_color,
                 custom_logo_url: stepData.custom_logo_url,
                 computed_theme: stepData.computed_theme,
