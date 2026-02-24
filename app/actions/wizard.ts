@@ -127,16 +127,23 @@ export async function saveWizardStep(
         const sanitizedThemeId = stepData.theme_id && stepData.theme_id.trim() !== '' ? stepData.theme_id : null
         const sanitizedLayoutThemeId = stepData.layout_theme_id && stepData.layout_theme_id.trim() !== '' ? stepData.layout_theme_id : 'modern'
 
+        // NOTE: layout_theme_id is stored inside computed_theme JSONB until
+        // migration 031_add_layout_theme_id.sql is applied to the DB.
+        // Once the column exists, add layout_theme_id back to the upsert below.
+        const computedThemeWithId = stepData.computed_theme
+            ? { ...stepData.computed_theme, _layout_theme_id: sanitizedLayoutThemeId }
+            : { _layout_theme_id: sanitizedLayoutThemeId }
+
         const { error } = await supabase
             .from('property_branding')
             .upsert({
                 property_id: currentPropId,
                 tenant_id: currentTenantId,
                 theme_id: sanitizedThemeId,
-                layout_theme_id: sanitizedLayoutThemeId,
+                // layout_theme_id: sanitizedLayoutThemeId, // ← add when migration 031 is applied
                 custom_primary_color: stepData.custom_primary_color,
                 custom_logo_url: stepData.custom_logo_url,
-                computed_theme: stepData.computed_theme,
+                computed_theme: computedThemeWithId,
                 updated_at: new Date().toISOString()
             }, { onConflict: 'property_id' })
 

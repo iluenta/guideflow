@@ -46,9 +46,13 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     ])
 
     // ── Resolve the visual theme ──────────────────────────────────────────────
-    // layout_theme_id is the new single source of truth.
-    // Falls back to: old theme_config.primary_color, then default 'modern'.
-    const layoutThemeId = branding?.layout_theme_id || 'modern'
+    // Preferred: branding.layout_theme_id column (after migration 031 is applied)
+    // Fallback:  computed_theme._layout_theme_id stored in JSONB (before migration)
+    // Final:     default to 'modern'
+    const layoutThemeId: string =
+        (branding as any)?.layout_theme_id ||
+        (branding?.computed_theme as any)?._layout_theme_id ||
+        'modern'
     const layoutTheme = getLayoutTheme(layoutThemeId)
 
     // The computed_theme in DB may be stale/legacy.
