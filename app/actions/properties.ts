@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { syncWizardDataToRAG } from './rag-sync'
+import { sanitizeUUID } from '@/lib/utils'
 
 function generateSlug(name: string): string {
     return name
@@ -96,12 +97,15 @@ export async function getProperties() {
 export async function getProperty(id: string) {
     const supabase = await createClient()
 
+    const currentPropId = sanitizeUUID(id)
+    if (!currentPropId) return null
+
     // We allow public read for guides if viewing by ID or slug, 
     // but the management actions still check for user.
     const { data, error } = await supabase
         .from('properties')
         .select('*')
-        .eq('id', id)
+        .eq('id', currentPropId)
         .single()
 
     if (error) {
@@ -125,13 +129,14 @@ export async function getPropertyBySlug(slug: string) {
     if (bySlug) return bySlug as Property
 
     // 2. Fallback to ID (for backwards compatibility or when slug isn't yet set)
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
-    if (!isUUID) return null
+    const currentPropId = sanitizeUUID(slug)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentPropId || '');
+    if (!currentPropId || !isUUID) return null
 
     const { data: byId, error: idError } = await supabase
         .from('properties')
         .select('*')
-        .eq('id', slug)
+        .eq('id', currentPropId)
         .maybeSingle()
 
     if (idError) {
@@ -219,11 +224,14 @@ export async function updateProperty(id: string, formData: Partial<Property>) {
         }
     }
 
+    const currentPropId = sanitizeUUID(id)
+    if (!currentPropId) throw new Error('ID de propiedad inválido')
+
     // In Next.js Server Actions, even with RLS, we should be explicit
     const { data, error } = await supabase
         .from('properties')
         .update(formData)
-        .eq('id', id)
+        .eq('id', currentPropId)
         .select()
         .maybeSingle()
 
@@ -251,10 +259,13 @@ export async function deleteProperty(id: string) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
 
+    const currentPropId = sanitizeUUID(id)
+    if (!currentPropId) throw new Error('ID de propiedad inválido')
+
     const { error } = await supabase
         .from('properties')
         .delete()
-        .eq('id', id)
+        .eq('id', currentPropId)
 
     if (error) {
         console.error('Error deleting property:', error.message)
@@ -337,10 +348,13 @@ export async function getBrandingUploadUrl(fileName: string, contentType: string
 export async function getPropertyManuals(propertyId: string) {
     const supabase = await createClient()
 
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) return []
+
     const { data, error } = await supabase
         .from('property_manuals')
         .select('*')
-        .eq('property_id', propertyId)
+        .eq('property_id', currentPropId)
         .order('created_at', { ascending: false })
 
     if (error) {
@@ -358,6 +372,9 @@ export async function deleteManual(manualId: string, propertyId: string) {
 
     const tenant_id = await getTenantId(supabase, user)
 
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) throw new Error('propertyId es requerido')
+
     // 1. Delete manual
     const { error } = await supabase
         .from('property_manuals')
@@ -371,16 +388,19 @@ export async function deleteManual(manualId: string, propertyId: string) {
 
     // 3. Sync appliance list in property_context
     if (tenant_id) {
-        await syncPropertyApplianceList(propertyId, tenant_id)
+        await syncPropertyApplianceList(currentPropId, tenant_id)
     }
 
-    revalidatePath(`/dashboard/properties/${propertyId}`)
+    revalidatePath(`/dashboard/properties/${currentPropId}`)
 }
 
 export async function updateManualContent(manualId: string, propertyId: string, content: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
+
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) throw new Error('propertyId es requerido')
 
     const { error } = await supabase
         .from('property_manuals')
@@ -391,7 +411,7 @@ export async function updateManualContent(manualId: string, propertyId: string, 
 
     const tenant_id = await getTenantId(supabase, user)
     if (tenant_id) {
-        await syncPropertyApplianceList(propertyId, tenant_id)
+        await syncPropertyApplianceList(currentPropId, tenant_id)
     }
 
     // Trigger RAG update (simplified: delete and re-insert is handled in manual-enrichment, 
@@ -404,17 +424,20 @@ export async function updateManualContent(manualId: string, propertyId: string, 
     // and ideally we'd have a 'reindex' button or auto-sync.
     await supabase.from('context_embeddings').delete().eq('source_id', manualId)
 
-    revalidatePath(`/dashboard/properties/${propertyId}`)
+    revalidatePath(`/dashboard/properties/${currentPropId}`)
 }
 
 // Guide Sections Actions
 export async function getGuideSections(propertyId: string) {
     const supabase = await createClient()
 
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) return []
+
     const { data, error } = await supabase
         .from('guide_sections')
         .select('*')
-        .eq('property_id', propertyId)
+        .eq('property_id', currentPropId)
         .order('order_index', { ascending: true })
 
     if (error) {
@@ -428,10 +451,13 @@ export async function getGuideSections(propertyId: string) {
 export async function getPropertyRecommendations(propertyId: string) {
     const supabase = await createClient()
 
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) return []
+
     const { data, error } = await supabase
         .from('property_recommendations')
         .select('*')
-        .eq('property_id', propertyId)
+        .eq('property_id', currentPropId)
         .order('created_at', { ascending: false })
 
     if (error) {
@@ -445,10 +471,13 @@ export async function getPropertyRecommendations(propertyId: string) {
 export async function getPropertyFaqs(propertyId: string) {
     const supabase = await createClient()
 
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) return []
+
     const { data, error } = await supabase
         .from('property_faqs')
         .select('*')
-        .eq('property_id', propertyId)
+        .eq('property_id', currentPropId)
         .order('created_at', { ascending: true })
 
     if (error) {
@@ -467,12 +496,16 @@ export async function saveGuideSection(propertyId: string, section: Partial<Guid
     const tenant_id = await getTenantId(supabase, user)
     if (!tenant_id) throw new Error('Usuario sin tenant')
 
+    const currentPropId = sanitizeUUID(propertyId)
+    const currentTenantId = sanitizeUUID(tenant_id)
+    if (!currentPropId || !currentTenantId) throw new Error('IDs requeridos')
+
     const { data, error } = await supabase
         .from('guide_sections')
         .upsert({
             ...section,
-            property_id: propertyId,
-            tenant_id: tenant_id
+            property_id: currentPropId,
+            tenant_id: currentTenantId
         })
         .select()
         .single()
@@ -488,10 +521,14 @@ export async function deleteGuideSection(sectionId: string, propertyId: string) 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
 
+    const currentSectionId = sanitizeUUID(sectionId)
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentSectionId || !currentPropId) throw new Error('IDs requeridos')
+
     const { error } = await supabase
         .from('guide_sections')
         .delete()
-        .eq('id', sectionId)
+        .eq('id', currentSectionId)
 
     if (error) throw new Error(error.message)
 
@@ -502,14 +539,15 @@ export async function updateSectionsOrder(propertyId: string, sectionIds: string
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
-
     const tenant_id = await getTenantId(supabase, user)
-    if (!tenant_id) throw new Error('Usuario sin tenant')
+    const currentPropId = sanitizeUUID(propertyId)
+    const currentTenantId = sanitizeUUID(tenant_id)
+    if (!currentPropId || !currentTenantId) throw new Error('IDs requeridos')
 
     const updates = sectionIds.map((id, index) => ({
-        id,
+        id: sanitizeUUID(id) || id, // Fallback safe
         order_index: index,
-        tenant_id: tenant_id
+        tenant_id: currentTenantId
     }))
 
     const { error } = await supabase
@@ -518,7 +556,7 @@ export async function updateSectionsOrder(propertyId: string, sectionIds: string
 
     if (error) throw new Error(error.message)
 
-    revalidatePath(`/dashboard/properties/${propertyId}`)
+    revalidatePath(`/dashboard/properties/${currentPropId}`)
 }
 
 
@@ -528,19 +566,27 @@ export async function updateSectionsOrder(propertyId: string, sectionIds: string
 export async function syncPropertyApplianceList(propertyId: string, tenantId: string, customClient?: any, skipRevalidate: boolean = false) {
     const supabase = customClient || await createClient()
 
+    const currentPropId = sanitizeUUID(propertyId)
+    const currentTenantId = sanitizeUUID(tenantId)
+
+    if (!currentPropId || !currentTenantId) {
+        console.error('[SYNC-LIST] ID inválido:', { propertyId, tenantId })
+        return
+    }
+
     const { data: allManuals } = await supabase
         .from('property_manuals')
         .select('appliance_name, brand, model')
-        .eq('property_id', propertyId)
+        .eq('property_id', currentPropId)
 
     if (!allManuals) return
 
-    const applianceIndex = allManuals.map(m => `- ${m.appliance_name.toUpperCase()}: ${m.brand} ${m.model || ''}`).join('\n')
+    const applianceIndex = allManuals.map((m: { appliance_name: string; brand: string; model?: string }) => `- ${m.appliance_name.toUpperCase()}: ${m.brand} ${m.model || ''}`).join('\n')
 
     const { error } = await supabase.from('property_context').upsert({
-        property_id: propertyId,
-        tenant_id: tenantId,
-        category: 'inventory',
+        property_id: currentPropId,
+        tenant_id: currentTenantId,
+        category: 'inventory_manuals', // FIX: no sobreescribir selección del wizard
         content: {
             text: `Lista de aparatos con manual disponible:\n${applianceIndex}`,
             items: allManuals
@@ -550,7 +596,7 @@ export async function syncPropertyApplianceList(propertyId: string, tenantId: st
     if (error) throw new Error(error.message)
 
     // Sincronizar RAG
-    await syncWizardDataToRAG(propertyId, tenantId, 'inventory', { text: applianceIndex }, supabase)
+    await syncWizardDataToRAG(currentPropId, currentTenantId, 'inventory', { text: applianceIndex }, supabase)
 
     if (!skipRevalidate) {
         revalidatePath(`/dashboard/properties/${propertyId}`)
@@ -561,11 +607,14 @@ export async function syncPropertyApplianceList(propertyId: string, tenantId: st
  * Actualiza el estado del inventario para feedback visual
  */
 export async function updateInventoryStatus(propertyId: string, status: 'idle' | 'generating' | 'completed' | 'failed') {
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) return { success: false, error: 'ID inválido' }
+
     const supabase = await createClient()
     const { error } = await supabase
         .from('properties')
         .update({ inventory_status: status })
-        .eq('id', propertyId)
+        .eq('id', currentPropId)
 
     if (error) console.error('[STATUS] Error updating inventory status:', error.message)
     revalidatePath(`/dashboard/properties/${propertyId}`)

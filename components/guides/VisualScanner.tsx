@@ -39,9 +39,18 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
     const [replaceExisting, setReplaceExisting] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
+    // Validate propertyId before allowing operations
+    const isValidPropertyId = propertyId && propertyId.trim() !== '' && propertyId !== 'undefined'
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || [])
         if (files.length === 0) return
+
+        // Check if propertyId is valid before allowing photos
+        if (!isValidPropertyId) {
+            toast.error('Debes guardar la propiedad primero antes de usar el escáner visual')
+            return
+        }
 
         // Limit to 30 photos total
         const remainingSlots = 30 - photos.length
@@ -81,6 +90,11 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
     }
 
     const handleAnalyze = async () => {
+        if (!isValidPropertyId) {
+            toast.error('Debes guardar la propiedad primero antes de analizar fotos')
+            return
+        }
+
         if (photos.length === 0) {
             toast.error('Selecciona al menos una foto para analizar')
             return
@@ -160,6 +174,41 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                 </p>
             </div>
 
+            {/* Property ID Validation Warning */}
+            {!isValidPropertyId && (
+                <Card className="border-amber-200 bg-amber-50 rounded-2xl overflow-hidden">
+                    <CardContent className="p-4 space-y-3">
+                        <div className="flex items-start gap-3">
+                            <div className="h-8 w-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+                                <Info className="h-4 w-4" />
+                            </div>
+                            <div className="space-y-2">
+                                <h4 className="text-sm font-semibold text-amber-800">Guarda la propiedad primero</h4>
+                                <p className="text-xs text-amber-700 leading-relaxed">
+                                    Para usar el escáner visual, primero debes guardar la información básica de la propiedad.
+                                    Una vez guardada, podrás subir fotos para que la IA analice los aparatos y servicios.
+                                </p>
+                                <div className="text-xs text-amber-600 font-medium">
+                                    💡 Guarda la propiedad en la pestaña "Información Básica" y vuelve aquí
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Debug Info - Remove in production */}
+            {process.env.NODE_ENV === 'development' && (
+                <Card className="border-blue-200 bg-blue-50 rounded-2xl overflow-hidden">
+                    <CardContent className="p-3">
+                        <div className="text-xs space-y-1">
+                            <div><strong>PropertyID:</strong> {propertyId || 'NULL'}</div>
+                            <div><strong>IsValid:</strong> {isValidPropertyId ? 'YES' : 'NO'}</div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Photo Tips - Always Visible & Compact */}
             <Card className="border-primary/10 bg-primary/5 rounded-2xl overflow-hidden shadow-none border">
                 <div className="p-3 border-b border-primary/10 bg-primary/5 flex items-center gap-2 text-primary">
@@ -210,8 +259,12 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
 
             {/* MultiPhotoSelector / Dropzone - Slimmer */}
             <div
-                className="border-2 border-dashed border-primary/20 rounded-3xl p-6 flex flex-col items-center justify-center bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer group"
-                onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-3xl p-6 flex flex-col items-center justify-center transition-all cursor-pointer group ${
+                    !isValidPropertyId 
+                        ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50' 
+                        : 'border-primary/20 bg-primary/5 hover:bg-primary/10'
+                }`}
+                onClick={() => isValidPropertyId && fileInputRef.current?.click()}
             >
                 <input
                     type="file"
@@ -221,14 +274,22 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                     capture="environment"
                     multiple
                     onChange={handleFileChange}
+                    disabled={!isValidPropertyId}
                 />
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform mb-3">
+                <div className={`h-12 w-12 rounded-full flex items-center justify-center text-primary group-hover:scale-110 transition-transform mb-3 ${
+                    !isValidPropertyId ? 'bg-gray-200 text-gray-400' : 'bg-primary/10'
+                }`}>
                     <Camera className="h-6 w-6" />
                 </div>
                 <div className="text-center">
-                    <p className="font-bold text-sm">Abrir cámara o subir fotos</p>
+                    <p className={`font-bold text-sm ${!isValidPropertyId ? 'text-gray-500' : ''}`}>
+                        {isValidPropertyId ? 'Abrir cámara o subir fotos' : 'Guarda la propiedad primero'}
+                    </p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
-                        Hasta 30 fotos de electrodomésticos o estancias
+                        {isValidPropertyId 
+                            ? 'Hasta 30 fotos de electrodomésticos o estancias'
+                            : 'El escáner visual está deshabilitado hasta guardar la propiedad'
+                        }
                     </p>
                 </div>
             </div>
@@ -297,13 +358,18 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
 
                 <Button
                     className="w-full h-12 rounded-xl shadow-lg shadow-primary/20 font-bold gap-2"
-                    disabled={photos.length === 0 || isAnalyzing}
+                    disabled={photos.length === 0 || isAnalyzing || !isValidPropertyId}
                     onClick={handleAnalyze}
                 >
                     {isAnalyzing ? (
                         <>
                             <Loader2 className="h-5 w-5 animate-spin" />
                             Analizando estancia...
+                        </>
+                    ) : !isValidPropertyId ? (
+                        <>
+                            <Info className="h-5 w-5" />
+                            Guarda la propiedad primero
                         </>
                     ) : (
                         <>

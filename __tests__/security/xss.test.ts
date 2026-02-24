@@ -172,8 +172,7 @@ describe('XSS Tests', () => {
       }
     });
 
-    it('debería sanitizar URLs en fetchListingContent', async () => {
-      // Verificar que las URLs se validan antes de hacer fetch
+    it('debería rechazar URLs con protocolos peligrosos', () => {
       const maliciousUrls = [
         'javascript:alert("XSS")',
         'data:text/html,<script>alert("XSS")</script>',
@@ -181,7 +180,6 @@ describe('XSS Tests', () => {
       ];
 
       for (const url of maliciousUrls) {
-        // Verificar que la URL no se usa directamente sin validación
         const urlPattern = /^https?:\/\//;
         expect(urlPattern.test(url)).toBe(false);
       }

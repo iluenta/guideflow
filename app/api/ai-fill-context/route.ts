@@ -2,24 +2,40 @@ import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { generateArrivalInstructions } from '@/lib/arrival/generator-final';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const getSupabase = () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error('Credenciales de Supabase no configuradas');
+    return createClient(url, key);
+};
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
+const getGenAI = () => {
+    const key = process.env.GOOGLE_AI_API_KEY;
+    if (!key) throw new Error('Google AI API Key no configurada');
+    return new GoogleGenerativeAI(key);
+};
 
 export async function POST(req: Request) {
   try {
     const { propertyId, section, existingData } = await req.json();
+    console.log(`[AI-API] Request received. Property: ${propertyId}, Section: ${section}`);
 
-    if (!propertyId) {
-      return new Response(JSON.stringify({ error: 'ID de propiedad requerido para generar contexto' }), {
+    // Validación básica de propertyId (evitar strings no-UUID que rompen Supabase)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyId);
+    
+    if (!isUuid || propertyId === 'address-only') {
+      return new Response(JSON.stringify({ 
+        error: 'ID de propiedad inválido o no guardado',
+        debug: 'ROUTE_UUID_CHECK_FAIL',
+        receivedId: propertyId 
+      }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
+    const supabase = getSupabase();
+    
     // Obtener detalles de la propiedad para el contexto geográfico
     const { data: property, error: propError } = await supabase
       .from('properties')
@@ -28,7 +44,11 @@ export async function POST(req: Request) {
       .single();
 
     if (propError || !property) {
-      throw new Error('Propiedad no encontrada');
+      console.error('[AI-FILL] Property not found:', propertyId, propError);
+      return new Response(JSON.stringify({ error: 'Propiedad no encontrada en la base de datos' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const fullAddress = existingData?.address || `${property.city}${property.neighborhood ? `, ${property.neighborhood}` : ''}${property.country ? `, ${property.country}` : ''}`;
@@ -63,11 +83,22 @@ export async function POST(req: Request) {
     if (isTransport) {
       try {
         const subSection = section === 'transport' ? undefined : section as any;
-        const result = await generateArrivalInstructions(fullAddress, subSection);
-        return Response.json(result);
+        const coordinates = existingData?.coordinates;
+        console.log(`[AI-API] Calling generator. Section: ${section}, Coords:`, coordinates);
+        const result = await generateArrivalInstructions(fullAddress, subSection, coordinates);
+        console.log(`[AI-API] Generator result success`);
+        return new Response(JSON.stringify(result), {
+            headers: { 'Content-Type': 'application/json' }
+        });
       } catch (error: any) {
         console.error('[TRANSPORT-FILL] Error:', error.message);
-        return Response.json({ error: error.message }, { status: 500 });
+        return new Response(JSON.stringify({ 
+            error: error.message,
+            debug: 'ROUTE_TRANSPORT_CATCH'
+        }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
       }
     }
 
@@ -207,6 +238,7 @@ RESPONDE ÚNICAMENTE CON EL JSON VÁLIDO, sin texto adicional.`;
       });
     }
 
+    const genAI = getGenAI();
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash",
       generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
@@ -221,7 +253,12 @@ RESPONDE ÚNICAMENTE CON EL JSON VÁLIDO, sin texto adicional.`;
 
   } catch (error: any) {
     console.error('[AI-FILL] Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error?.message || (typeof error === 'string' ? error : JSON.stringify(error)) || 'Unknown Error';
+    return new Response(JSON.stringify({ 
+        error: errorMessage,
+        debug: 'ROUTE_GLOBAL_CATCH',
+        errorRaw: String(error)
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });

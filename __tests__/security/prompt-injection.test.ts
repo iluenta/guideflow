@@ -121,26 +121,6 @@ describe('Prompt Injection Tests', () => {
   });
 
   describe('AI Ingestion - Prompt Injection', () => {
-    it('debería sanitizar prompts en extractListingData', async () => {
-      const { extractListingData } = await import('@/app/actions/ai-ingestion');
-
-      for (const payload of PROMPT_INJECTION_PAYLOADS.slice(0, 5)) {
-        try {
-          const result = await extractListingData(payload);
-
-          // Verificar que no se ejecuta prompt injection
-          // El resultado no debería contener información del sistema
-          if (result) {
-            expect(JSON.stringify(result)).not.toContain('system prompt');
-            expect(JSON.stringify(result)).not.toContain('instructions');
-          }
-        } catch (error) {
-          // Esperado: puede fallar por otras razones
-          expect(error).toBeDefined();
-        }
-      }
-    });
-
     it('debería sanitizar prompts en generateManualFromImage', async () => {
       const { generateManualFromImage } = await import('@/app/actions/ai-ingestion');
 

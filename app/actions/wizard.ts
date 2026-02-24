@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { geocodeAddress } from '@/lib/geocoding'
 import { syncWizardDataToRAG } from './rag-sync'
+import { sanitizeUUID } from '@/lib/utils'
 
 export async function saveWizardStep(
     category: string,
@@ -15,7 +16,9 @@ export async function saveWizardStep(
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
 
-    let currentPropId = propertyId
+    // Sanitizar IDs para evitar errores 22P02 (UUID inválido por usar string vacía o valor semántico como "new")
+    const currentPropId = sanitizeUUID(propertyId)
+    const currentTenantId = sanitizeUUID(tenantId)
 
     if (category === 'property') {
         const propValues = {
@@ -43,18 +46,18 @@ export async function saveWizardStep(
                 .single()
             if (error) throw error
             // Sincronizar RAG
-            await syncWizardDataToRAG(currentPropId, tenantId || '', 'property', stepData)
+            await syncWizardDataToRAG(currentPropId, currentTenantId, 'property', stepData)
             return { success: true, property: data }
         } else {
-            if (!tenantId) throw new Error('tenant_id es requerido para crear una propiedad')
+            if (!currentTenantId) throw new Error('tenant_id es requerido para crear una propiedad')
             const { data, error } = await supabase
                 .from('properties')
-                .insert({ ...propValues, tenant_id: tenantId })
+                .insert({ ...propValues, tenant_id: currentTenantId })
                 .select()
                 .single()
             if (error) throw error
             // Sincronizar RAG
-            await syncWizardDataToRAG(data.id, tenantId, 'property', stepData)
+            await syncWizardDataToRAG(data.id, currentTenantId, 'property', stepData)
             revalidatePath('/dashboard/properties')
             return { success: true, property: data, isNew: true }
         }
@@ -69,7 +72,7 @@ export async function saveWizardStep(
             const { error } = await supabase.from('property_faqs').insert(
                 stepData.map((faq: any) => ({
                     property_id: currentPropId,
-                    tenant_id: tenantId,
+                    tenant_id: currentTenantId,
                     question: faq.question,
                     answer: faq.answer,
                     category: faq.category,
@@ -80,7 +83,7 @@ export async function saveWizardStep(
         }
 
         // 3. Sincronizar RAG
-        await syncWizardDataToRAG(currentPropId, tenantId || '', 'faqs', stepData)
+        await syncWizardDataToRAG(currentPropId, currentTenantId, 'faqs', stepData)
         return { success: true }
 
     } else if (category === 'dining') {
@@ -94,7 +97,7 @@ export async function saveWizardStep(
             const { error } = await supabase.from('property_recommendations').insert(
                 stepData.map((rec: any) => ({
                     property_id: currentPropId,
-                    tenant_id: tenantId,
+                    tenant_id: currentTenantId,
                     type: rec.category || rec.type || 'restaurant',
                     name: rec.name,
                     description: rec.description || rec.specialty || '',
@@ -113,18 +116,22 @@ export async function saveWizardStep(
         }
 
         // 3. Sincronizar RAG
-        await syncWizardDataToRAG(currentPropId, tenantId || '', 'dining', stepData)
+        await syncWizardDataToRAG(currentPropId, currentTenantId, 'dining', stepData)
         return { success: true }
 
-    } else if (category === 'branding') {
+    } else if (category === 'branding' || category === 'appearance') {
+        // FIX: 'appearance' es el nombre del tab en el wizard, 'branding' es el nombre interno.
+        // Ambos deben guardar en property_branding, no en property_context.
         if (!currentPropId) throw new Error('ID de propiedad requerido para Branding')
+
+        const sanitizedThemeId = stepData.theme_id && stepData.theme_id.trim() !== '' ? stepData.theme_id : null
 
         const { error } = await supabase
             .from('property_branding')
             .upsert({
                 property_id: currentPropId,
-                tenant_id: tenantId,
-                theme_id: stepData.theme_id,
+                tenant_id: currentTenantId,
+                theme_id: sanitizedThemeId,
                 custom_primary_color: stepData.custom_primary_color,
                 custom_logo_url: stepData.custom_logo_url,
                 computed_theme: stepData.computed_theme,
@@ -141,6 +148,7 @@ export async function saveWizardStep(
             .from('property_context')
             .upsert({
                 property_id: currentPropId,
+                tenant_id: currentTenantId,
                 category: category,
                 content: stepData
             }, { onConflict: 'property_id,category' })
@@ -148,7 +156,7 @@ export async function saveWizardStep(
         if (error) throw error
 
         // Sincronizar RAG para contexto
-        await syncWizardDataToRAG(currentPropId, tenantId || '', category, stepData)
+        await syncWizardDataToRAG(currentPropId, currentTenantId, category, stepData)
 
         // IF it's the 'access' category, update main property table
         if (category === 'access') {

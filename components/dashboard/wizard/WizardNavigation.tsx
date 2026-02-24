@@ -4,24 +4,22 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, CheckCircle, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useWizard, steps } from './WizardContext';
 
-interface WizardNavigationProps {
-    onNext: () => void;
-    onBack: () => void;
-    isFirstStep: boolean;
-    isLastStep: boolean;
-    loading?: boolean;
-    canContinue?: boolean;
-}
+export function WizardNavigation() {
+    const { 
+        activeTab, 
+        handleNext, 
+        handleBack, 
+        loading,
+        propertyId
+    } = useWizard()
 
-export function WizardNavigation({
-    onNext,
-    onBack,
-    isFirstStep,
-    isLastStep,
-    loading = false,
-    canContinue = true
-}: WizardNavigationProps) {
+    const currentIndex = steps.indexOf(activeTab)
+    const isFirstStep = currentIndex === 0
+    const isLastStep = currentIndex === steps.length - 1
+    const canContinue = propertyId || isFirstStep
+
     return (
         <div className="fixed bottom-24 left-0 right-0 md:sticky md:bottom-0 bg-transparent md:bg-white md:border-t md:border-slate-100 md:rounded-b-2xl md:mt-8 z-40 px-6 md:p-4">
             <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
@@ -29,7 +27,7 @@ export function WizardNavigation({
                     {!isFirstStep && (
                         <Button
                             variant="outline"
-                            onClick={onBack}
+                            onClick={handleBack}
                             disabled={loading}
                             className="w-11 h-11 md:w-auto md:h-auto md:px-0 md:py-0 md:border-none md:bg-transparent rounded-full md:rounded-none bg-white text-slate-500 hover:text-navy shadow-lg md:shadow-none border-slate-200"
                         >
@@ -41,7 +39,7 @@ export function WizardNavigation({
 
                 <div className="flex-1 flex justify-end">
                     <Button
-                        onClick={onNext}
+                        onClick={handleNext}
                         disabled={loading || !canContinue}
                         className={cn(
                             "rounded-full md:rounded-xl shadow-xl transition-all duration-300 w-14 h-14 md:w-auto md:min-w-[200px] md:h-11",

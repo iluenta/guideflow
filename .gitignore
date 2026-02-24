@@ -47,3 +47,4 @@ Thumbs.db
 # No subir scripts con credenciales
 scripts/dev-admin-login.js
 scripts/create-dev-admin.js
+env.local

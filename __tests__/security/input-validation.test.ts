@@ -150,13 +150,9 @@ describe('Input Validation Tests', () => {
   });
 
   describe('URL Validation', () => {
-    it('debería validar URLs en fetchListingContent', async () => {
-      const { ingestPropertyData } = await import('@/app/actions/ai-ingestion');
-
+    it('debería rechazar URLs no seguras (protocolos peligrosos)', () => {
       for (const url of INPUT_VALIDATION_PAYLOADS.url) {
-        // Verificar que no son URLs HTTP/HTTPS válidas y seguras
         const isValidHttpUrl = /^https?:\/\//.test(url);
-        // Solo verificar URLs que definitivamente no son válidas
         if (url.startsWith('javascript:') || url.startsWith('data:') || url.startsWith('file://')) {
           expect(isValidHttpUrl).toBe(false);
         }

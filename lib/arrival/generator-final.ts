@@ -1,4 +1,4 @@
-import { geocodeAddress } from '../geocoding';
+import { geocodeAddress, GeocodingResult } from '../geocoding';
 import { discoverNearbyAirports } from '../discovery/airports';
 import { discoverNearbyAirportsFallback } from '../discovery/airports-fallback';
 import { discoverMainTrainStations, discoverNearbyMetroStations } from '../discovery/stations';
@@ -14,16 +14,20 @@ import { createClient } from '../supabase/server';
  * we skip expensive external API chains and use a single Gemini call instead.
  * This reduces latency from ~30s to ~5s in corporate proxy environments.
  */
-export async function generateArrivalInstructions(address: string, section?: 'plane' | 'train' | 'road') {
+export async function generateArrivalInstructions(address: string, section?: 'plane' | 'train' | 'road', manualGeo?: GeocodingResult) {
     console.log('[ARRIVAL] Starting generation for:', address, section ? `(Section: ${section})` : '');
 
-    // 1. Geocode (always needed — fast, uses Mapbox)
-    const geo = await geocodeAddress(address);
-    if (!geo) throw new Error('No se pudo geocodificar la dirección');
+    // 1. Geocode (always needed — fast, uses Mapbox, now supports manual override)
+    const geo = manualGeo || await geocodeAddress(address);
+    if (!geo) {
+        console.error('[ARRIVAL] Geocoding failed for:', address);
+        throw new Error('No se pudo geocodificar la dirección');
+    }
 
     const coordinates: [number, number] = [geo.lng, geo.lat];
     const city = geo.city || '';
     const countryCode = geo.countryCode || 'ES';
+    console.log(`[ARRIVAL] Logic start: Coords=${coordinates} City=${city} Country=${countryCode}`);
 
     // ─── FAST PATH: Section-specific request ─────────────────────────────────
     // When a specific section is requested, skip all external API discovery
@@ -119,7 +123,7 @@ export async function generateArrivalInstructions(address: string, section?: 'pl
     }
 
     console.log('[ARRIVAL] Generating final structured JSON...');
-    return generateArrivalJSON({
+    const finalResult = await generateArrivalJSON({
         address: geo.formattedAddress,
         city,
         airports: airportsWithTransit,
@@ -129,6 +133,9 @@ export async function generateArrivalInstructions(address: string, section?: 'pl
         highwayInfo: highwayInfo || { main_highways: [], notes: '' },
         section: undefined
     });
+
+    console.log(`[ARRIVAL] Full path generated: ${JSON.stringify(finalResult).substring(0, 100)}...`);
+    return finalResult;
 }
 
 // ─── Fast path: single Gemini call for one section ────────────────────────────

@@ -2,14 +2,24 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { generateOpenAIEmbedding } from '@/lib/ai/openai'
+import { sanitizeUUID } from '@/lib/utils'
 
 /**
  * Synchronizes wizard data (FAQs and Context) to the unified context_embeddings table for RAG.
  */
-export async function syncWizardDataToRAG(propertyId: string, tenantId: string, category: string, data: any, customClient?: any) {
+export async function syncWizardDataToRAG(propertyId: string, tenantId: string | null | undefined, category: string, data: any, customClient?: any) {
     const supabase = customClient || await createClient()
 
-    console.log(`[RAG-SYNC] Syncing ${category} for property ${propertyId}...`)
+    // 🛡️ Defensa contra 22P02 (UUID inválido: string vacía O strings semánticos como "new")
+    const currentPropId = sanitizeUUID(propertyId)
+    const currentTenantId = sanitizeUUID(tenantId)
+
+    if (!currentPropId) {
+        console.warn(`[RAG-SYNC] Sincronización saltada: propertyId inválido para categoría ${category}`)
+        return
+    }
+
+    console.log(`[RAG-SYNC] Syncing ${category} for property ${currentPropId}...`)
 
     // Mapeo de source_type según la categoría
     const sourceTypeMap: Record<string, string> = {
@@ -30,7 +40,7 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string, 
     // pero filtramos por tipo y categoría específica en metadata para no borrar otros.
     await supabase.from('context_embeddings')
         .delete()
-        .eq('property_id', propertyId)
+        .eq('property_id', currentPropId)
         .eq('source_type', sourceType)
         .filter('metadata->>category', 'eq', category === 'faqs' ? 'guía_uso' : category === 'dining' ? 'ocio' : category)
 
@@ -119,17 +129,21 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string, 
 
         // Deterministic source_id per category to avoid collisions
         // We take the property UUID and replace the last hex chars with a category index
+        if (!currentPropId || currentPropId.length < 32) {
+            console.error(`[RAG-SYNC] Invalid currentPropId: ${currentPropId}`);
+            return;
+        }
         const categories = ['property', 'welcome', 'access', 'rules', 'contacts', 'tech', 'inventory', 'faqs', 'dining']
         const catIndex = categories.indexOf(category) !== -1 ? categories.indexOf(category) : 9
         const suffix = catIndex.toString(16).padStart(4, '0')
-        const deterministicSourceId = propertyId.substring(0, propertyId.length - 4) + suffix
+        const deterministicSourceId = currentPropId.substring(0, currentPropId.length - 4) + suffix
 
         // 3. Insertar en la tabla unificada (Patrón Delete-then-Insert para evitar problemas con índices funcionales)
         await supabase.from('context_embeddings').delete().eq('source_id', deterministicSourceId)
 
         const { error: insError } = await supabase.from('context_embeddings').insert({
-            property_id: propertyId,
-            tenant_id: tenantId,
+            property_id: currentPropId,
+            tenant_id: currentTenantId || null,
             source_type: sourceType,
             source_id: deterministicSourceId,
             content: contentToEmbed,

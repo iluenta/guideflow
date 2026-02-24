@@ -18,9 +18,11 @@ import {
     MapPin,
     Utensils,
     HelpCircle,
-    BookOpen
+    BookOpen,
+    Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useWizard } from './WizardContext';
 
 export type Step = {
     id: string;
@@ -43,17 +45,15 @@ export const STEPS: Step[] = [
     { id: 'faqs', label: 'Guía', icon: BookOpen },
 ];
 
-interface WizardStepperProps {
-    activeTab: string;
-    onStepClick: (stepId: string) => void;
-    completedSteps: string[];
-}
+export function WizardStepper() {
+    const { 
+        activeTab, 
+        handleTabChange, 
+        completedSteps, 
+        propertyId 
+    } = useWizard()
 
-export function WizardStepper({
-    activeTab,
-    onStepClick,
-    completedSteps
-}: WizardStepperProps) {
+    const isLocked = !propertyId
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const currentStepIndex = STEPS.findIndex(s => s.id === activeTab);
     const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
@@ -76,6 +76,14 @@ export function WizardStepper({
                     />
                 </div>
 
+                {/* Banner de bloqueo */}
+                {isLocked && (
+                    <div className="mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium px-3 py-2 rounded-xl">
+                        <Lock className="w-3.5 h-3.5 shrink-0" />
+                        <span>Guarda el <strong>Paso 1 – Propiedad</strong> para desbloquear el resto de pasos.</span>
+                    </div>
+                )}
+
                 {/* Desktop Stepper (md+) */}
                 <div className="hidden md:flex items-start justify-between relative">
                     {/* Connecting Line Background */}
@@ -92,23 +100,28 @@ export function WizardStepper({
                     {STEPS.map((step, index) => {
                         const isCompleted = completedSteps.includes(step.id) || index < currentStepIndex;
                         const isCurrent = index === currentStepIndex;
+                        const isStepLocked = isLocked && step.id !== 'property';
                         const Icon = step.icon;
 
                         return (
                             <button
                                 key={step.id}
-                                onClick={() => onStepClick(step.id)}
-                                className="group flex flex-col items-center focus:outline-none transition-all duration-300 cursor-pointer"
+                                onClick={() => !isStepLocked && handleTabChange(step.id)}
+                                title={isStepLocked ? 'Guarda el Paso 1 primero' : step.label}
+                                className={cn(
+                                    "group flex flex-col items-center focus:outline-none transition-all duration-300",
+                                    isStepLocked ? "cursor-not-allowed opacity-35" : "cursor-pointer"
+                                )}
                             >
                                 <div
                                     className={cn(
                                         "flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-300 bg-white",
-                                        isCompleted ? "bg-primary border-primary text-white" : "",
+                                        isCompleted && !isStepLocked ? "bg-primary border-primary text-white" : "",
                                         isCurrent && !isCompleted ? "border-primary text-primary scale-110 ring-4 ring-primary/10" : "",
                                         !isCompleted && !isCurrent ? "border-slate-200 text-slate-400" : ""
                                     )}
                                 >
-                                    {isCompleted ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                                    {isStepLocked ? <Lock className="w-3 h-3" /> : isCompleted ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
                                 </div>
                                 <span
                                     className={cn(
@@ -160,27 +173,31 @@ export function WizardStepper({
                                     {STEPS.map((step, index) => {
                                         const isCompleted = completedSteps.includes(step.id) || index < currentStepIndex;
                                         const isCurrent = index === currentStepIndex;
+                                        const isStepLocked = isLocked && step.id !== 'property';
                                         return (
                                             <button
                                                 key={step.id}
                                                 onClick={() => {
-                                                    onStepClick(step.id);
-                                                    setIsMobileMenuOpen(false);
+                                                    if (!isStepLocked) {
+                                                        handleTabChange(step.id);
+                                                        setIsMobileMenuOpen(false);
+                                                    }
                                                 }}
                                                 className={cn(
-                                                    "w-full flex items-center gap-3 p-3 rounded-lg transition-colors cursor-pointer",
-                                                    isCurrent ? "bg-primary/5" : "hover:bg-slate-50"
+                                                    "w-full flex items-center gap-3 p-3 rounded-lg transition-colors",
+                                                    isCurrent ? "bg-primary/5" : "hover:bg-slate-50",
+                                                    isStepLocked ? "cursor-not-allowed opacity-40" : "cursor-pointer"
                                                 )}
                                             >
                                                 <div
                                                     className={cn(
                                                         "flex items-center justify-center w-8 h-8 rounded-full border text-[10px] font-bold",
-                                                        isCompleted ? "bg-primary border-primary text-white" : "",
+                                                        isCompleted && !isStepLocked ? "bg-primary border-primary text-white" : "",
                                                         isCurrent && !isCompleted ? "border-primary text-primary" : "",
                                                         !isCompleted && !isCurrent ? "border-slate-200 text-slate-400" : ""
                                                     )}
                                                 >
-                                                    {isCompleted ? <Check className="w-4 h-4" /> : index + 1}
+                                                    {isStepLocked ? <Lock className="w-3 h-3" /> : isCompleted ? <Check className="w-4 h-4" /> : index + 1}
                                                 </div>
                                                 <span className={cn("text-xs font-bold uppercase tracking-wide", isCurrent ? "text-primary" : "text-slate-600")}>
                                                     {step.label}
@@ -188,6 +205,11 @@ export function WizardStepper({
                                                 {isCurrent && (
                                                     <span className="ml-auto text-[9px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-full uppercase tracking-tighter">
                                                         Actual
+                                                    </span>
+                                                )}
+                                                {isStepLocked && (
+                                                    <span className="ml-auto text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-full uppercase tracking-tighter">
+                                                        Bloqueado
                                                     </span>
                                                 )}
                                             </button>
@@ -202,3 +224,4 @@ export function WizardStepper({
         </div>
     );
 }
+

@@ -143,7 +143,7 @@ export async function POST(req: Request) {
         }
 
         // ═══════════════════════════════════════════════════════
-        // DETECCIÓN INTELIGENTE: Códigos de error y emergencias
+        // DETECCIÓN INTELIGENTE: Códigos de error, emergencias Y RECOMENDACIONES
         // ═══════════════════════════════════════════════════════
         const errorCodePatterns = [
             /\bE\d{1,2}\b/gi,           // E1, E2, E17
@@ -166,17 +166,64 @@ export async function POST(req: Request) {
         const emergencyKeywords = ['humo', 'fuego', 'chispa', 'chispas', 'quema', 'olor a quemado', 'olor extraño', 'fuga grande', 'explota', 'explosión', 'gas', 'cortocircuito'];
         const isEmergency = emergencyKeywords.some(word => lastMessage.toLowerCase().includes(word));
 
-        const chatStrategy = isEmergency ? 'emergency' : detectedErrorCode ? 'error_code' : 'standard';
+        // ✅ NUEVO: Detectar preguntas sobre recomendaciones
+        const isRecommendationQuery = /restaurante|comer|cenar|desayuno|almuerzo|tapas|bar|cafetería|café|comida|dónde.*comer|sitio.*comer|lugar.*comer|ocio|visitar|qué ver|qué hacer|cosas que hacer|actividad|turismo|museo|parque|compra|tienda/i.test(lastMessage);
+        const isApplianceQuery = /funciona|enciende|calienta|lava|centrifuga|error|problema|no va|roto|avería|código|fallo|ruido|vibra|gotea|desagua/i.test(lastMessage);
+        // Detect usage/how-to queries ("quiero hacerme un te", "cómo uso el hervidor", "poner la lavadora", etc.)
+        // NOTE: checked BEFORE isRecommendationQuery in chatStrategy to avoid false positives
+        const isApplianceUsageQuery = /hacerme|hagarme|preparar|calentar agua|hacer (un |el )?(té|te|café|cafe|pasta|arroz|sopa)|cómo (uso|utilizo|pongo|enciendo|arranco)|poner (el |la |un |una )?(lavadora|lavavajilla|microondas|horno|hervidor|cafetera|tostadora)|encender|arrancar/i.test(lastMessage);
 
-        console.log('[CHAT-DEBUG] Detection:', { chatStrategy, detectedErrorCode, isEmergency });
+        const chatStrategy = isEmergency ? 'emergency' : 
+                            detectedErrorCode ? 'error_code' : 
+                            // isApplianceUsageQuery checked BEFORE isRecommendationQuery to avoid
+                            // "hacer" in "hacerme un te" falsely triggering recommendation logic
+                            (isApplianceQuery || isApplianceUsageQuery) ? 'appliance' :
+                            isRecommendationQuery ? 'recommendation' :
+                            'standard';
+
+        console.log('[CHAT-DEBUG] Detection:', { 
+            chatStrategy, 
+            detectedErrorCode, 
+            isEmergency,
+            isRecommendationQuery,
+            isApplianceQuery,
+            isApplianceUsageQuery
+        });
 
         // ═══════════════════════════════════════════════════════
         // RAG: Búsqueda vectorial adaptativa
         // ═══════════════════════════════════════════════════════
-        // Si hay código de error, enriquecemos la query para encontrar la tabla de diagnóstico
-        let ragQuery = detectedErrorCode
-            ? `${lastMessage} código error ${detectedErrorCode} diagnóstico problemas tabla`
-            : lastMessage;
+        // ✅ MEJORADO: Query expansion según tipo de pregunta
+        let ragQuery = lastMessage;
+
+        if (detectedErrorCode) {
+            ragQuery = `${lastMessage} código error ${detectedErrorCode} diagnóstico problemas tabla`;
+        } else if (isRecommendationQuery) {
+            // Expandir query para mejorar matching con recomendaciones
+            const expansionTerms = [];
+            
+            if (/restaurante|comer|cenar|comida|almuerzo/i.test(lastMessage)) {
+                expansionTerms.push('restaurantes', 'comer', 'cenar', 'tapas', 'menú', 'cocina');
+            }
+            if (/desayuno|café|cafetería/i.test(lastMessage)) {
+                expansionTerms.push('desayuno', 'café', 'cafetería', 'brunch', 'panadería');
+            }
+            if (/ocio|visitar|ver|hacer|turismo|museo/i.test(lastMessage)) {
+                expansionTerms.push('ocio', 'visitar', 'lugares', 'actividades', 'turismo', 'museos', 'parques');
+            }
+            if (/compra|tienda|shopping/i.test(lastMessage)) {
+                expansionTerms.push('compras', 'tiendas', 'comercios', 'mercado');
+            }
+            
+            ragQuery = `${lastMessage} ${expansionTerms.join(' ')} recomendaciones lugares zona`;
+            
+            console.log('[CHAT-DEBUG] Expanded recommendation query:', ragQuery);
+        } else if (isApplianceUsageQuery) {
+            // Expand usage queries to bridge the semantic gap:
+            // "quiero hacerme un te" -> adds appliance/action terms so the kettle manual surfaces
+            ragQuery = `${lastMessage} usar electrodoméstico instrucciones pasos hervidor cafetera microondas horno preparar calentar`;
+            console.log('[CHAT-DEBUG] Expanded appliance usage query:', ragQuery);
+        }
 
         // FASE 11: Si el idioma no es español, traducimos la query para el RAG 
         // ya que el contenido de los manuales/recomendaciones está principalmente indexado en español.
@@ -203,21 +250,51 @@ export async function POST(req: Request) {
 
         const questionEmbedding = await generateOpenAIEmbedding(ragQuery);
 
+        // ✅ Threshold adaptativo según tipo de pregunta
+        const matchThreshold = isRecommendationQuery ? 0.18 :  // Más permisivo para recomendaciones
+                              isApplianceQuery ? 0.35 :         // Más estricto para problemas técnicos
+                              isApplianceUsageQuery ? 0.22 :    // Permisivo para uso/how-to (bridging semántico)
+                              detectedErrorCode ? 0.3 :          // Estricto para códigos de error
+                              0.28;                              // Default ligeramente más permisivo
+
+        const matchCount = detectedErrorCode ? 30 :
+                          isRecommendationQuery ? 15 :
+                          isApplianceUsageQuery ? 20 :  // Wider net for usage queries
+                          25;
+
+        console.log('[CHAT-DEBUG] RAG Config:', { 
+            isRecommendationQuery, 
+            isApplianceQuery, 
+            matchThreshold, 
+            matchCount,
+            queryLength: ragQuery.length
+        });
+
         const { data: relevantChunks, error: rpcError } = await supabase.rpc('match_all_context', {
             query_embedding: questionEmbedding,
-            match_threshold: 0.3,
-            match_count: detectedErrorCode ? 30 : 25, // Más chunks si buscamos código específico
+            match_threshold: matchThreshold,
+            match_count: matchCount,
             p_property_id: propertyId
         });
 
         if (rpcError) console.error('[RPC ERROR]', rpcError);
 
+        // ✅ MEJORADO: Logging más detallado
         console.log('[CHAT-DEBUG] RAG results:', {
             totalChunks: relevantChunks?.length || 0,
             enrichedCount: relevantChunks?.filter((c: any) => c.metadata?.enriched === true).length || 0,
+            recommendationCount: relevantChunks?.filter((c: any) => 
+                c.source_type === 'recommendation' || c.source_type === 'recommendations'
+            ).length || 0,
             strategy: chatStrategy,
             errorCode: detectedErrorCode,
-            propertyId
+            propertyId,
+            threshold: matchThreshold,
+            topSimilarities: relevantChunks?.slice(0, 3).map((c: any) => ({
+                type: c.source_type,
+                similarity: c.similarity?.toFixed(3),
+                preview: c.content.substring(0, 60) + '...'
+            })) || []
         });
 
         // 3. Obtener información ESTRUCTURADA Crítica (Garantía de datos básicos)
@@ -280,20 +357,39 @@ export async function POST(req: Request) {
 
             // C. RAG (Manuales Técnicos, FAQs, Recomendaciones)
             ...(relevantChunks || []).map((c: any) => {
-                // ✅ PRIORIZAR MANUALES ENRIQUECIDOS
                 const isEnriched = c.metadata?.enriched === true;
-                let type = c.source_type === 'manual'
-                    ? (isEnriched ? 'GUÍA_PERSONALIZADA_ANFITRIÓN' : 'GUÍA_TÉCNICA')
-                    : c.source_type?.toUpperCase();
-
-                if (isEnriched) {
-                    console.log('[CHAT-DEBUG] Enriched chunk:', {
+                const sourceType = c.source_type?.toLowerCase() || '';
+                
+                let type: string;
+                
+                // ✅ MEJORADO: Reconocer todos los tipos de contenido
+                if (sourceType === 'manual') {
+                    type = isEnriched ? 'GUÍA_PERSONALIZADA_ANFITRIÓN' : 'GUÍA_TÉCNICA';
+                } else if (sourceType === 'recommendation' || sourceType === 'recommendations') {
+                    // Determinar subtipo de recomendación
+                    const category = c.metadata?.category || c.metadata?.type || '';
+                    type = category === 'ocio' ? 'LUGARES_Y_ACTIVIDADES' : 
+                           category === 'dining' ? 'RESTAURANTES_Y_BARES' :
+                           'RECOMENDACIONES_LOCALES';
+                } else if (sourceType === 'arrival_instructions' || sourceType === 'access') {
+                    type = 'INSTRUCCIONES_LLEGADA';
+                } else if (sourceType === 'property' || sourceType === 'welcome') {
+                    type = 'INFO_APARTAMENTO';
+                } else {
+                    type = sourceType.toUpperCase();
+                }
+                
+                // ✅ MEJORADO: Log detallado para debugging
+                if (isEnriched || sourceType.includes('recommendation')) {
+                    console.log('[CHAT-DEBUG] Special chunk included:', {
                         type,
+                        sourceType,
+                        similarity: c.similarity?.toFixed(3),
                         preview: c.content.substring(0, 100),
                         metadata: c.metadata
                     });
                 }
-
+                
                 // Limpiar marcas del contenido RAG
                 return `[${type}]: ${c.content.replace(brandRegex, '')}`;
             })
@@ -446,6 +542,18 @@ ${fullContext}`;
 # CONTEXTO:
 ${fullContext}`;
 
+            // ✅ NUEVO: Instrucciones específicas para recomendaciones
+            const recommendationGuidance = isRecommendationQuery ? `
+
+# GUÍA ESPECIAL PARA RECOMENDACIONES:
+- Si hay [RESTAURANTES_Y_BARES] o [LUGARES_Y_ACTIVIDADES] en el contexto, úsalos SIEMPRE como prioridad.
+- Da 2-3 opciones concretas con nombres específicos del contexto.
+- Incluye distancia aproximada si está disponible en los datos.
+- Formato amigable: "Te recomiendo [Nombre], que está a [distancia]. [Breve descripción del contexto]."
+- Si NO hay recomendaciones específicas en el contexto, di: "No tengo recomendaciones específicas guardadas para esta zona, pero ${supportContact} puede darte los mejores consejos locales."
+- NUNCA inventes nombres de restaurantes o lugares que no estén en el contexto.
+` : '';
+
             systemInstruction = language === 'es' 
               ? `Eres el asistente personal del apartamento "${propertyInfo?.name || 'este apartamento'}".
               
@@ -453,6 +561,7 @@ ${fullContext}`;
 - Hablas como un amigo que conoce bien el apartamento.
 - Das respuestas PRÁCTICAS y ÚTILES, no técnicas.
 ${groundingRules}
+${recommendationGuidance}
 
 # REGLAS ABSOLUTAS
 - ❌ NUNCA menciones modelos técnicos ni "el manual".
@@ -466,6 +575,7 @@ ${groundingRules}
 - Tu respuesta será traducida automáticamente por un sistema posterior.
 - Si respondes en inglés o cualquier otro idioma, el sistema fallará.
 ${groundingRules}
+${recommendationGuidance}
 
 # MISIÓN:
 - Eres el asistente del apartamento "${propertyInfo?.name || 'este apartamento'}".
@@ -522,8 +632,9 @@ ${groundingRules}
                                     const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
                                     if (text) {
                                         if (language === 'es') {
-                                            // Normal flow for Spanish
-                                            controller.enqueue(new TextEncoder().encode(text));
+                                            // Normal flow for Spanish - format as Vercel AI SDK data stream protocol
+                                            const chunk = `0:${JSON.stringify(text)}\n`;
+                                            controller.enqueue(new TextEncoder().encode(chunk));
                                         } else {
                                             // Translation flow for other languages
                                             accumulatedText += text;
@@ -546,7 +657,8 @@ ${groundingRules}
                                                         language,
                                                         { propertyId, context: 'chat' }
                                                     );
-                                                    controller.enqueue(new TextEncoder().encode(translatedChunk + ' '));
+                                                    const chunk = `0:${JSON.stringify(translatedChunk + ' ')}\n`;
+                                                    controller.enqueue(new TextEncoder().encode(chunk));
                                                 }
                                                 
                                                 accumulatedText = accumulatedText.substring(breakPoint).trimStart();
@@ -565,7 +677,8 @@ ${groundingRules}
                                                     language,
                                                     { propertyId, context: 'chat' }
                                                 );
-                                                controller.enqueue(new TextEncoder().encode(translatedChunk + ' '));
+                                                const chunkFmt = `0:${JSON.stringify(translatedChunk + ' ')}\n`;
+                                                controller.enqueue(new TextEncoder().encode(chunkFmt));
                                                 accumulatedText = accumulatedText.substring(breakPoint).trimStart();
                                             }
                                         }
@@ -585,7 +698,8 @@ ${groundingRules}
                             language,
                             { propertyId, context: 'chat' }
                         );
-                        controller.enqueue(new TextEncoder().encode(translatedChunk));
+                        const flushChunk = `0:${JSON.stringify(translatedChunk)}\n`;
+                        controller.enqueue(new TextEncoder().encode(flushChunk));
                     }
 
                 } catch (e) {
@@ -597,7 +711,12 @@ ${groundingRules}
             }
         });
 
-        return new StreamingTextResponse(stream);
+        return new Response(stream, {
+            headers: {
+                'Content-Type': 'text/plain; charset=utf-8',
+                'X-Vercel-AI-Data-Stream': 'v1',
+            }
+        });
     } catch (error: any) {
         console.error('[CHAT ERROR]', error);
         return new Response(JSON.stringify({ error: error.message }), { status: 500 });

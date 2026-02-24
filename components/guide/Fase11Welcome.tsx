@@ -92,14 +92,18 @@ export function Fase11Welcome({
         >
             {/* Hero Section */}
             <div className="relative h-[45vh] w-full overflow-hidden">
-                <motion.img
-                    initial={{ scale: 1.1 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 1.5, ease: 'easeOut' }}
-                    src={heroImage}
-                    alt={propertyName}
-                    className="w-full h-full object-cover"
-                />
+                {heroImage && heroImage.trim() !== '' ? (
+                    <motion.img
+                        initial={{ scale: 1.1 }}
+                        animate={{ scale: 1 }}
+                        transition={{ duration: 1.5, ease: 'easeOut' }}
+                        src={heroImage}
+                        alt={propertyName}
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-700" />
+                )}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 

@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -8,6 +8,7 @@ import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/openai'
 import { syncPropertyApplianceList } from './properties'
 import { syncWizardDataToRAG } from './rag-sync'
 import { searchBrave, formatBraveResults } from '@/lib/ai/brave'
+import { sanitizeUUID } from '@/lib/utils'
 
 /**
  * Utility for timestamps in logs [HH:MM:SS]
@@ -18,72 +19,6 @@ function logT(msg: string) {
 }
 
 /**
- * Robustly fetches content from a URL using a reader service (like Jina Reader)
- */
-async function fetchListingContent(url: string, retryCount = 0): Promise<string> {
-    const MAX_RETRIES = 1
-    try {
-        console.log(`Scraping attempt ${retryCount + 1} for: ${url}`)
-        const response = await axios.get(`https://r.jina.ai/${encodeURIComponent(url.trim())}`, {
-            timeout: 45000,
-            headers: {
-                'X-Return-Format': 'markdown'
-            }
-        })
-        return response.data
-    } catch (error: any) {
-        if (retryCount < MAX_RETRIES) {
-            console.warn(`Scraping timeout or error, retrying... (${retryCount + 1}/${MAX_RETRIES})`)
-            await new Promise(resolve => setTimeout(resolve, 2000))
-            return fetchListingContent(url, retryCount + 1)
-        }
-        const isTimeout = error.code === 'ECONNABORTED' || error.message.includes('timeout')
-        if (isTimeout) {
-            throw new Error('El servidor de extracciÃ³n tardÃ³ demasiado en responder (Timeout).')
-        }
-        throw new Error('No se pudo acceder a la URL.')
-    }
-}
-
-/**
- * Extracts structured guide data from raw text using Gemini
- */
-export async function extractListingData(content: string) {
-    console.log('Extracting listing data with Gemini...')
-
-    const prompt = `
-    Analiza la informaciÃ³n de este anuncio para crear una guÃ­a digital.
-    
-    FORMATO DE SALIDA (JSON ESTRICTO):
-    {
-      "host_name": "Nombre completo de la persona",
-      "welcome_message": "Mensaje completo y literal del anfitriÃ³n",
-      "description": "Resumen corto de la propiedad (mÃ¡x 200 caracteres)",
-      "sections": [
-        {
-          "title": "WiFi",
-          "data": { "text": "Red y contraseÃ±a..." }
-        }
-      ]
-    }
-
-    CONTENIDO DEL ANUNCIO:
-    ${content.substring(0, 40000)}
-    `
-
-    try {
-        const response = await geminiREST('gemini-2.0-flash', prompt, {
-            temperature: 0.1,
-            responseMimeType: 'application/json'
-        });
-        return response?.data;
-    } catch (error: any) {
-        console.error('Gemini Extraction Error:', error.message)
-        throw new Error(`Error en el procesamiento de IA: ${error.message}`)
-    }
-}
-
-/**
  * Analyzes an image (appliance, etc.) and generates a technical manual using Gemini
  */
 export async function generateManualFromImage(propertyId: string, imageUrl: string) {
@@ -91,7 +26,9 @@ export async function generateManualFromImage(propertyId: string, imageUrl: stri
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
 
-    const tenant_id = user.user_metadata.tenant_id
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) throw new Error('ID de propiedad requerido para generar manuales')
+    const tenant_id = user.user_metadata.tenant_id || null
 
     const prompt = "Analiza esta imagen de un electrodomÃ©stico y genera un manual de uso simplificado en espaÃ±ol. Devuelve SOLO el texto del manual en Markdown."
 
@@ -101,7 +38,7 @@ export async function generateManualFromImage(propertyId: string, imageUrl: stri
     const { data, error } = await supabase
         .from('property_manuals')
         .insert({
-            property_id: propertyId,
+            property_id: currentPropId,
             tenant_id: tenant_id,
             appliance_name: 'ElectrodomÃ©stico',
             manual_content: manualText,
@@ -112,7 +49,7 @@ export async function generateManualFromImage(propertyId: string, imageUrl: stri
 
     if (error) throw new Error(error.message)
 
-    revalidatePath(`/dashboard/properties/${propertyId}`)
+    revalidatePath(`/dashboard/properties/${currentPropId}`)
     return data
 }
 
@@ -124,7 +61,9 @@ export async function processBatchScans(propertyId: string, imageUrls: string[],
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
 
-    const tenant_id = user.user_metadata.tenant_id
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) throw new Error('ID de propiedad requerido para escaneo por lotes')
+    const tenant_id = user.user_metadata.tenant_id || null
 
     try {
         logT(`[BATCH] Starting TWO-PHASE analysis for ${imageUrls.length} images (Replace: ${replaceExisting})...`)
@@ -139,7 +78,7 @@ export async function processBatchScans(propertyId: string, imageUrls: string[],
                 inventory_status: 'identifying',
                 inventory_last_scan_at: new Date().toISOString()
             })
-            .eq('id', propertyId)
+            .eq('id', currentPropId)
 
         const CONCURRENCY_LIMIT = 5; // Higher concurrency for fast identification
 
@@ -194,7 +133,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
 
                 // Save identification record
                 const { data: imgRecord } = await supabase.from('appliance_images').insert({
-                    property_id: propertyId,
+                    property_id: currentPropId,
                     image_url: url,
                     analysis_result: analysis,
                     status: 'identified',
@@ -238,11 +177,11 @@ FORMATO DE SALIDA (JSON ESTRICTO):
         await supabase
             .from('properties')
             .update({ inventory_status: 'generating' })
-            .eq('id', propertyId)
+            .eq('id', currentPropId)
 
         // Sync inventory list so InventorySelector can show detected items
-        await syncPropertyApplianceList(propertyId, tenant_id)
-        revalidatePath(`/dashboard/properties/${propertyId}`)
+        await syncPropertyApplianceList(currentPropId, tenant_id)
+        revalidatePath(`/dashboard/properties/${currentPropId}`)
 
         // ═══════════════════════════════════════════════════════════
         // PHASE 2: BACKGROUND MANUAL GENERATION (fire-and-forget)
@@ -281,7 +220,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                             const { data: existingManuals } = await supabase
                                 .from('property_manuals')
                                 .select('id, appliance_name, brand, model')
-                                .eq('property_id', propertyId)
+                                .eq('property_id', currentPropId)
 
                             const duplicate = existingManuals?.find(m => {
                                 const existingType = (m.appliance_name || '').toUpperCase().trim()
@@ -322,7 +261,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                             const enrichedContent = `[APARATO: ${analysis.appliance_type || ''}]\n${chunk}`
                             const enrichedEmbedding = await generateOpenAIEmbedding(enrichedContent)
                             return {
-                                property_id: propertyId,
+                                property_id: currentPropId,
                                 tenant_id: tenant_id,
                                 source_type: 'manual',
                                 source_id: manual.id,
@@ -384,11 +323,11 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                 logT(`[PHASE2] ✅ All manuals generated. Success: ${succeeded}, Failed: ${failed}`)
 
                 // Finalize
-                await syncPropertyApplianceList(propertyId, tenant_id, supabase, true)
+                await syncPropertyApplianceList(currentPropId, tenant_id, supabase, true)
                 await supabase
                     .from('properties')
                     .update({ inventory_status: 'completed' })
-                    .eq('id', propertyId)
+                    .eq('id', currentPropId)
 
                 logT(`[BATCH] Completed full pipeline for property ${propertyId}`)
             } catch (error: any) {
@@ -396,7 +335,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                 await supabase
                     .from('properties')
                     .update({ inventory_status: 'failed' })
-                    .eq('id', propertyId)
+                    .eq('id', currentPropId)
             }
         }
 
@@ -412,62 +351,16 @@ FORMATO DE SALIDA (JSON ESTRICTO):
         await supabase
             .from('properties')
             .update({ inventory_status: 'failed' })
-            .eq('id', propertyId)
+            .eq('id', currentPropId)
         throw error
     }
 }
 
-
-
 /**
- * Main Auto-Build action
+ * Auto-Build desde URL (scraping) deshabilitado. Se mantiene la firma para no romper la UI.
  */
 export async function ingestPropertyData(propertyId: string, url: string, options: { overwrite: boolean }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
-
-    const tenant_id = user.user_metadata.tenant_id
-
-    if (!options.overwrite) {
-        const { count } = await supabase.from('guide_sections').select('*', { count: 'exact', head: true }).eq('property_id', propertyId)
-        if (count && count > 0) return { requiresConfirmation: true, sectionCount: count }
-    }
-
-    if (options.overwrite) {
-        await supabase.from('guide_sections').delete().eq('property_id', propertyId)
-    }
-
-    const rawContent = await fetchListingContent(url)
-    const structuredData = await extractListingData(rawContent)
-    if (!structuredData) throw new Error('No data')
-
-    const propertyUpdate: any = {
-        description: structuredData.description,
-        theme_config: {
-            host_name: structuredData.host_name,
-            welcome_message: structuredData.welcome_message,
-            welcome_title: `Bienvenidos`
-        }
-    }
-
-    await supabase.from('properties').update(propertyUpdate).eq('id', propertyId)
-
-    const sectionsToInsert = structuredData.sections.map((s: any, index: number) => ({
-        ...s,
-        property_id: propertyId,
-        tenant_id: tenant_id,
-        order_index: index
-    }))
-
-    await supabase.from('guide_sections').insert(sectionsToInsert)
-
-    // Sincronizar RAG con los datos ingeridos
-    await syncWizardDataToRAG(propertyId, tenant_id, 'property', propertyUpdate)
-    await syncWizardDataToRAG(propertyId, tenant_id, 'welcome', propertyUpdate.theme_config)
-
-    revalidatePath(`/dashboard/properties/${propertyId}`)
-    return { success: true }
+    throw new Error('La ingesta desde URL (Airbnb/Booking) está deshabilitada.')
 }
 
 /**
@@ -479,7 +372,9 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
 
-    const tenant_id = user.user_metadata.tenant_id
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) throw new Error('ID de propiedad requerido para procesar inventario')
+    const tenant_id = user.user_metadata.tenant_id || null
 
     try {
         console.log(`[INVENTORY] Starting background processing for ${items.length} items...`)
@@ -488,7 +383,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
         const { data: existingManuals } = await supabase
             .from('property_manuals')
             .select('appliance_name, brand, model')
-            .eq('property_id', propertyId)
+            .eq('property_id', currentPropId)
 
         const itemsToProcess = items.filter(item => {
             if (!item.isPresent) return false
@@ -535,7 +430,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
 
                 // Guardar Manual
                 const { data: manual, error: manError } = await supabase.from('property_manuals').insert({
-                    property_id: propertyId,
+                    property_id: currentPropId,
                     tenant_id: tenant_id,
                     appliance_name: item.name,
                     manual_content: manualContent,
@@ -554,7 +449,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
                     const enrichedContent = `[ELEMENTO: ${item.name}]\n${item.customContext ? `Nota del anfitriÃ³n: ${item.customContext}\n` : ''}${chunk}`
                     const enrichedEmbedding = await generateOpenAIEmbedding(enrichedContent)
                     return {
-                        property_id: propertyId,
+                        property_id: currentPropId,
                         tenant_id: tenant_id,
                         source_type: 'manual',
                         source_id: manual.id,
@@ -576,7 +471,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
         }
 
         // Actualizar el listado en property_context
-        await syncPropertyApplianceList(propertyId, tenant_id)
+        await syncPropertyApplianceList(currentPropId, tenant_id)
 
         console.log(`[INVENTORY] Finished. Processed ${itemsToProcess.length} items.`)
         return { success: true, processed: itemsToProcess.length }

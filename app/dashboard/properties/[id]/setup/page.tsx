@@ -1,4 +1,4 @@
-import { PropertySetupHub } from '@/components/dashboard/PropertySetupHub'
+import { PropertySetupWizard } from '@/components/dashboard/PropertySetupWizard'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
@@ -19,10 +19,10 @@ export default async function PropertySetupPage({ params }: { params: Promise<{ 
     if (!property) redirect('/dashboard/properties')
 
     return (
-        <div className="min-h-screen bg-[#FDFCF9]">
-            <div className="container max-w-7xl py-8">
-                <Suspense fallback={<div className="w-full h-96 bg-white animate-pulse rounded-[32px] shadow-sm" />}>
-                    <PropertySetupHub propertyId={id} tenantId={property?.tenant_id} />
+        <div className="min-h-screen bg-slate-50/50">
+            <div className="container max-w-7xl py-4">
+                <Suspense fallback={<div className="w-full h-96 bg-white animate-pulse rounded-3xl shadow-sm" />}>
+                    <PropertySetupWizard propertyId={id} tenantId={property?.tenant_id} />
                 </Suspense>
             </div>
         </div>
