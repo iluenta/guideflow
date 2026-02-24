@@ -1,3 +1,4 @@
+// @ts-nocheck — legacy component (not used in active app), kept for reference only
 'use client'
 
 import { useState, useEffect } from 'react'

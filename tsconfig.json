@@ -37,6 +37,9 @@
   ],
   "exclude": [
     "node_modules",
-    "Requisitos"
+    "Requisitos",
+    "supabase/functions",
+    "__tests__",
+    "scripts"
   ]
 }

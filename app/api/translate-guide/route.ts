@@ -14,6 +14,10 @@ const translateSchema = z.object({
 });
 
 export async function POST(req: Request) {
+    // Declared outside try so they're accessible in catch for error logging
+    let isAuthenticated = false;
+    let propertyId: string | undefined;
+
     try {
         const body = await req.json();
         const ip = req.headers.get('x-forwarded-for') || 'unknown';
@@ -29,9 +33,6 @@ export async function POST(req: Request) {
 
         const { text, targetLanguage, sourceLanguage, contextType, accessToken } = result.data;
         const bodyPropertyId = (body as any).propertyId;
-
-        let isAuthenticated = false;
-        let propertyId: string | undefined;
 
         // Initialize Supabase Admin safely for Edge Runtime
         const { createEdgeAdminClient } = await import('@/lib/supabase/edge');
