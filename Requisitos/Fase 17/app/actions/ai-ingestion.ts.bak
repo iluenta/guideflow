@@ -1,0 +1,1275 @@
+﻿'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
+import axios from 'axios'
+import { geminiREST, analyzeImageWithGemini, geminiVision } from '@/lib/ai/gemini-rest'
+import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/openai'
+import { syncPropertyApplianceList } from './properties'
+import { syncWizardDataToRAG } from './rag-sync'
+import { searchBrave, formatBraveResults } from '@/lib/ai/brave'
+
+/**
+ * Utility for timestamps in logs [HH:MM:SS]
+ */
+function logT(msg: string) {
+    const time = new Date().toLocaleTimeString('es-ES', { hour12: false });
+    console.log(`[${time}] ${msg}`);
+}
+
+/**
+ * Robustly fetches content from a URL using a reader service (like Jina Reader)
+ */
+async function fetchListingContent(url: string, retryCount = 0): Promise<string> {
+    const MAX_RETRIES = 1
+    try {
+        console.log(`Scraping attempt ${retryCount + 1} for: ${url}`)
+        const response = await axios.get(`https://r.jina.ai/${encodeURIComponent(url.trim())}`, {
+            timeout: 45000,
+            headers: {
+                'X-Return-Format': 'markdown'
+            }
+        })
+        return response.data
+    } catch (error: any) {
+        if (retryCount < MAX_RETRIES) {
+            console.warn(`Scraping timeout or error, retrying... (${retryCount + 1}/${MAX_RETRIES})`)
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            return fetchListingContent(url, retryCount + 1)
+        }
+        const isTimeout = error.code === 'ECONNABORTED' || error.message.includes('timeout')
+        if (isTimeout) {
+            throw new Error('El servidor de extracciÃ³n tardÃ³ demasiado en responder (Timeout).')
+        }
+        throw new Error('No se pudo acceder a la URL.')
+    }
+}
+
+/**
+ * Extracts structured guide data from raw text using Gemini
+ */
+export async function extractListingData(content: string) {
+    console.log('Extracting listing data with Gemini...')
+
+    const prompt = `
+    Analiza la informaciÃ³n de este anuncio para crear una guÃ­a digital.
+    
+    FORMATO DE SALIDA (JSON ESTRICTO):
+    {
+      "host_name": "Nombre completo de la persona",
+      "welcome_message": "Mensaje completo y literal del anfitriÃ³n",
+      "description": "Resumen corto de la propiedad (mÃ¡x 200 caracteres)",
+      "sections": [
+        {
+          "title": "WiFi",
+          "data": { "text": "Red y contraseÃ±a..." }
+        }
+      ]
+    }
+
+    CONTENIDO DEL ANUNCIO:
+    ${content.substring(0, 40000)}
+    `
+
+    try {
+        const response = await geminiREST('gemini-2.0-flash', prompt, {
+            temperature: 0.1,
+            responseMimeType: 'application/json'
+        });
+        return response?.data;
+    } catch (error: any) {
+        console.error('Gemini Extraction Error:', error.message)
+        throw new Error(`Error en el procesamiento de IA: ${error.message}`)
+    }
+}
+
+/**
+ * Analyzes an image (appliance, etc.) and generates a technical manual using Gemini
+ */
+export async function generateManualFromImage(propertyId: string, imageUrl: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const tenant_id = user.user_metadata.tenant_id
+
+    const prompt = "Analiza esta imagen de un electrodomÃ©stico y genera un manual de uso simplificado en espaÃ±ol. Devuelve SOLO el texto del manual en Markdown."
+
+    const response = await analyzeImageWithGemini(imageUrl, prompt, { responseMimeType: 'text/plain' })
+    const manualText = response?.data
+
+    const { data, error } = await supabase
+        .from('property_manuals')
+        .insert({
+            property_id: propertyId,
+            tenant_id: tenant_id,
+            appliance_name: 'ElectrodomÃ©stico',
+            manual_content: manualText,
+            metadata: { source: 'single_image_legacy', usage: response?.usage }
+        })
+        .select()
+        .single()
+
+    if (error) throw new Error(error.message)
+
+    revalidatePath(`/dashboard/properties/${propertyId}`)
+    return data
+}
+
+/**
+ * Processes a batch of images to identify appliances and generate manuals/notes using Gemini and Brave
+ */
+export async function processBatchScans(propertyId: string, imageUrls: string[], replaceExisting: boolean = false) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const tenant_id = user.user_metadata.tenant_id
+
+    try {
+        logT(`[BATCH] Starting analysis for ${imageUrls.length} images (Replace: ${replaceExisting})...`)
+
+        await supabase
+            .from('properties')
+            .update({
+                inventory_status: 'generating',
+                inventory_last_scan_at: new Date().toISOString()
+            })
+            .eq('id', propertyId)
+
+        for (const [index, url] of imageUrls.entries()) {
+            const startTime = new Date().toISOString()
+            try {
+                logT(`[PROCESS] [${index + 1}/${imageUrls.length}] Starting analysis: ${url}`)
+
+                // PASO 1: AnÃ¡lisis Visual Inicial (IdentificaciÃ³n)
+                logT(`[PROCESS] [${index + 1}] Step 1: Initial identification...`)
+                const analysisPrompt = `ActÃºa como un experto en electrodomÃ©sticos y equipamiento de hogar con gran agudeza visual.
+Analiza la imagen e identifica el objeto mÃ¡s prominente (lavadora, cafetera, tv, etc.).
+
+REGLA DE ORO #1: Es ESCANEABLE cualquier electrodomÃ©stico, aparato electrÃ³nico o su mando a distancia. 
+REGLA DE ORO #2: Si hay varios aparatos, identifÃ­calo el MÃS PROMINENTE o CENTRAL.
+REGLA DE ORO #3: NO omitas elementos como Cafeteras, Hervidores, Tostadoras o Microondas solo porque no veas una etiqueta tÃ©cnica. Su presencia fÃ­sica es suficiente.
+REGLA DE ORO #4: El idioma del "appliance_type" debe ser OBLIGATORIAMENTE ESPAÃ‘OL y en MAYÃšSCULAS.
+
+FORMATO DE SALIDA (JSON ESTRICTO):
+{
+  "appliance_type": "CAFETERA | HERVIDOR | TV | HORNO | LAVADORA | CAMPANA | AIRE ACONDICIONADO | etc.",
+  "is_scannable": true,
+  "brand": "Marca detectada",
+  "model": "Modelo exacto si se ve cÃ³digo, o nombre de la lÃ­nea (ej: Barista) o descripciÃ³n fÃ­sica",
+  "is_remote_control": true | false,
+  "confidence": 0.0-1.0,
+  "reasoning_spanish": "Por quÃ© has decidido que es este aparato"
+}`
+                const geminiResponse = await analyzeImageWithGemini(url, analysisPrompt)
+                const analysisText = geminiResponse?.data
+
+                let analysis: any;
+                if (typeof analysisText === 'object' && analysisText !== null) {
+                    analysis = analysisText;
+                } else if (typeof analysisText === 'string') {
+                    const jsonMatch = analysisText.match(/\[?\{[\s\S]*\}?\]/);
+                    const rawJson = jsonMatch ? jsonMatch[0] : '{}';
+                    analysis = JSON.parse(rawJson);
+                }
+                analysis = Array.isArray(analysis) ? analysis[0] : analysis;
+
+                if (!analysis || !analysis.is_scannable || (analysis.confidence || 0) < 0.3) {
+                    logT(`[PROCESS] [${index + 1}] Skipping: Not a scannable appliance.`)
+                    continue
+                }
+
+                // Guardar Log Inicial de la imagen
+                const { data: imgRecord } = await supabase.from('appliance_images').insert({
+                    property_id: propertyId,
+                    image_url: url,
+                    analysis_result: analysis,
+                    status: 'completed',
+                    analysis_started_at: startTime,
+                    analysis_finished_at: new Date().toISOString(),
+                    ai_model: 'gemini-2.0-flash',
+                    tokens_prompt: geminiResponse?.usage?.prompt_tokens,
+                    tokens_completion: geminiResponse?.usage?.candidates_tokens
+                }).select().single()
+
+                // PASO 1.5: BÃºsqueda de Datos (Grounding SOLO TEXTO - Muy rÃ¡pido)
+                logT(`[PROCESS] [${index + 1}] Step 1.5: Fetching technical data via text-only grounding...`)
+                const groundingData = await fetchGroundingData(analysis.brand, analysis.model, analysis.appliance_type)
+                logT(`[PROCESS] [${index + 1}] Obtained ${groundingData?.length || 0} chars of technical context.`)
+
+                // PASO 2: GeneraciÃ³n Final (VisiÃ³n + Datos, sin Grounding para evitar lentitud y truncado)
+                logT(`[PROCESS] [${index + 1}] Step 2: Final Manual Generation (Vision + Context)...`)
+                const manualContent = await generateManualSinglePass(url, analysis, groundingData)
+
+                logT(`[PROCESS] [${index + 1}] Manual content length: ${manualContent?.length || 0} chars`)
+
+                if (!manualContent || manualContent.length < 300) {
+                    logT(`[PROCESS] [${index + 1}] ERROR: Manual content too short.`)
+                    throw new Error('Generated manual too short/empty')
+                }
+
+                // PASO 3: ValidaciÃ³n de Calidad (Ya realizada internamente por validateAndCleanManual)
+                logT(`[PROCESS] [${index + 1}] Quality validation passed.`)
+
+                // PASO 6: Guardar y Vectorizar
+                logT(`[PROCESS] [${index + 1}] Step 6: Saving to database...`)
+
+                if (replaceExisting) {
+                    const normalizedTargetType = (analysis.appliance_type || '').toUpperCase().trim()
+                    const { data: existingManuals } = await supabase
+                        .from('property_manuals')
+                        .select('id, appliance_name, brand, model')
+                        .eq('property_id', propertyId)
+
+                    const duplicate = existingManuals?.find(m => {
+                        const existingType = (m.appliance_name || '').toUpperCase().trim()
+                        return existingType === normalizedTargetType
+                    })
+
+                    if (duplicate) {
+                        logT(`[PROCESS] [${index + 1}] Replacing existing: ${duplicate.id}`)
+                        await supabase.from('property_manuals').delete().eq('id', duplicate.id)
+                        await supabase.from('context_embeddings').delete().eq('source_id', duplicate.id)
+                    }
+                }
+
+                const { data: manual, error: manError } = await supabase.from('property_manuals').insert({
+                    property_id: propertyId,
+                    tenant_id: tenant_id,
+                    appliance_name: analysis.appliance_type || 'Aparato',
+                    brand: analysis.brand,
+                    model: analysis.model,
+                    manual_content: manualContent,
+                    metadata: {
+                        confidence: 'high',
+                        has_pdf: false,
+                        has_web: false,
+                        visual: analysis
+                    }
+                }).select().single()
+
+                if (manError) throw manError
+                if (imgRecord) await supabase.from('appliance_images').update({ manual_id: manual.id }).eq('id', imgRecord.id)
+
+                // VectorizaciÃ³n RAG
+                const chunks = splitIntoChunks(manualContent, 800)
+                const contextEmbeddings = await Promise.all(chunks.map(async chunk => {
+                    const enrichedContent = `[APARATO: ${analysis.appliance_type || ''}]\n${chunk}`
+                    const enrichedEmbedding = await generateOpenAIEmbedding(enrichedContent)
+                    return {
+                        property_id: propertyId,
+                        tenant_id: tenant_id,
+                        source_type: 'manual',
+                        source_id: manual.id,
+                        content: enrichedContent,
+                        embedding: enrichedEmbedding,
+                        metadata: {
+                            appliance: analysis.appliance_type,
+                            brand: analysis.brand
+                        }
+                    }
+                }))
+
+                await supabase.from('context_embeddings').delete().eq('source_id', manual.id)
+                await supabase.from('context_embeddings').insert(contextEmbeddings)
+
+                logT(`[PROCESS] [${index + 1}] âœ… SUCCESS`)
+
+            } catch (err: any) {
+                logT(`[PROCESS] [${index + 1}] ERROR: ${err.message}`)
+                await supabase.from('appliance_images').insert({
+                    property_id: propertyId,
+                    image_url: url,
+                    status: 'failed',
+                    error_log: err.message,
+                    analysis_started_at: startTime,
+                    analysis_finished_at: new Date().toISOString()
+                })
+            } finally {
+                // Cleanup Storage
+                try {
+                    const urlMatch = url.match(/property_scans\/(.+)$/)
+                    if (urlMatch) {
+                        await supabase.storage.from('property_scans').remove([urlMatch[1]])
+                    }
+                } catch (cleanupErr) {
+                    console.error(`[PROCESS] [${index + 1}] Cleanup error:`, cleanupErr)
+                }
+            }
+
+            // Rate limit 3s entre imÃ¡genes
+            if (index < imageUrls.length - 1) {
+                await new Promise(res => setTimeout(res, 3000))
+            }
+        }
+
+        // Finalizar lote
+        await syncPropertyApplianceList(propertyId, tenant_id)
+        await supabase
+            .from('properties')
+            .update({ inventory_status: 'completed' })
+            .eq('id', propertyId)
+
+        logT(`[BATCH] Completed batch processing for property ${propertyId}`)
+        revalidatePath(`/dashboard/properties/${propertyId}`)
+        return { success: true }
+
+    } catch (error: any) {
+        console.error('[BATCH] Fatal error:', error.message)
+        await supabase
+            .from('properties')
+            .update({ inventory_status: 'failed' })
+            .eq('id', propertyId)
+        throw error
+    }
+}
+
+/**
+ * Main Auto-Build action
+ */
+export async function ingestPropertyData(propertyId: string, url: string, options: { overwrite: boolean }) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const tenant_id = user.user_metadata.tenant_id
+
+    if (!options.overwrite) {
+        const { count } = await supabase.from('guide_sections').select('*', { count: 'exact', head: true }).eq('property_id', propertyId)
+        if (count && count > 0) return { requiresConfirmation: true, sectionCount: count }
+    }
+
+    if (options.overwrite) {
+        await supabase.from('guide_sections').delete().eq('property_id', propertyId)
+    }
+
+    const rawContent = await fetchListingContent(url)
+    const structuredData = await extractListingData(rawContent)
+    if (!structuredData) throw new Error('No data')
+
+    const propertyUpdate: any = {
+        description: structuredData.description,
+        theme_config: {
+            host_name: structuredData.host_name,
+            welcome_message: structuredData.welcome_message,
+            welcome_title: `Bienvenidos`
+        }
+    }
+
+    await supabase.from('properties').update(propertyUpdate).eq('id', propertyId)
+
+    const sectionsToInsert = structuredData.sections.map((s: any, index: number) => ({
+        ...s,
+        property_id: propertyId,
+        tenant_id: tenant_id,
+        order_index: index
+    }))
+
+    await supabase.from('guide_sections').insert(sectionsToInsert)
+
+    // Sincronizar RAG con los datos ingeridos
+    await syncWizardDataToRAG(propertyId, tenant_id, 'property', propertyUpdate)
+    await syncWizardDataToRAG(propertyId, tenant_id, 'welcome', propertyUpdate.theme_config)
+
+    revalidatePath(`/dashboard/properties/${propertyId}`)
+    return { success: true }
+}
+
+/**
+ * Processes a list of inventory items to generate manuals for those without one. 
+ * Respects existing manuals from scanner and incorporates host context.
+ */
+export async function processInventoryManuals(propertyId: string, items: any[]) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const tenant_id = user.user_metadata.tenant_id
+
+    try {
+        console.log(`[INVENTORY] Starting background processing for ${items.length} items...`)
+
+        // 1. Obtener manuales existentes para no duplicar
+        const { data: existingManuals } = await supabase
+            .from('property_manuals')
+            .select('appliance_name, brand, model')
+            .eq('property_id', propertyId)
+
+        const itemsToProcess = items.filter(item => {
+            if (!item.isPresent) return false
+
+            // Si ya existe un manual con un nombre similar, saltamos (prioridad scanner)
+            const exists = existingManuals?.some(m =>
+                m.appliance_name.toLowerCase().includes(item.id.toLowerCase()) ||
+                item.name.toLowerCase().includes(m.appliance_name.toLowerCase())
+            )
+            return !exists
+        })
+
+        if (itemsToProcess.length === 0) {
+            console.log('[INVENTORY] No new items to process.')
+            return { success: true, processed: 0 }
+        }
+
+        console.log(`[INVENTORY] Generating ${itemsToProcess.length} new manuals...`)
+
+        // Procesar secuencialmente para evitar rate limits de la IA si son muchos
+        for (const item of itemsToProcess) {
+            try {
+                console.log(`[INVENTORY] Generating manual for: ${item.name}...`)
+
+                const prompt = `Genera una guÃ­a de uso rÃ¡pida y amable para un huÃ©sped sobre el siguiente elemento: ${item.name}.
+                ${item.customContext ? `InformaciÃ³n especÃ­fica del anfitriÃ³n: ${item.customContext}` : ''}
+                
+                REGLAS:
+                1. FORMATO: Markdown estructurado.
+                2. TONO: Ãštil y directo.
+                3. CONTENIDO: Indica para quÃ© sirve, consejos bÃ¡sicos de uso y dÃ³nde suele encontrarse (segÃºn el contexto del anfitriÃ³n).
+                4. NO inventes especificaciones tÃ©cnicas de marcas especÃ­ficas si no se proporcionan.
+                
+                RESPONDE SOLO CON EL TEXTO DEL MANUAL.`
+
+                const genResponse = await geminiREST('gemini-2.0-flash', prompt, {
+                    responseMimeType: 'text/plain',
+                    temperature: 0.7
+                })
+
+                const manualContent = genResponse?.data
+                if (!manualContent) continue
+
+                // Guardar Manual
+                const { data: manual, error: manError } = await supabase.from('property_manuals').insert({
+                    property_id: propertyId,
+                    tenant_id: tenant_id,
+                    appliance_name: item.name,
+                    manual_content: manualContent,
+                    metadata: {
+                        source: 'inventory_selector',
+                        item_id: item.id,
+                        host_context: item.customContext
+                    }
+                }).select().single()
+
+                if (manError) throw manError
+
+                // VectorizaciÃ³n (RAG)
+                const chunks = splitIntoChunks(manualContent, 800)
+                const contextEmbeddings = await Promise.all(chunks.map(async chunk => {
+                    const enrichedContent = `[ELEMENTO: ${item.name}]\n${item.customContext ? `Nota del anfitriÃ³n: ${item.customContext}\n` : ''}${chunk}`
+                    const enrichedEmbedding = await generateOpenAIEmbedding(enrichedContent)
+                    return {
+                        property_id: propertyId,
+                        tenant_id: tenant_id,
+                        source_type: 'manual',
+                        source_id: manual.id,
+                        content: enrichedContent,
+                        embedding: enrichedEmbedding,
+                        metadata: {
+                            appliance: item.name,
+                            item_category: item.category
+                        }
+                    }
+                }))
+
+                await supabase.from('context_embeddings').delete().eq('source_id', manual.id);
+                await supabase.from('context_embeddings').insert(contextEmbeddings);
+
+            } catch (itemErr: any) {
+                console.error(`[INVENTORY] Error processing ${item.name}:`, itemErr.message)
+            }
+        }
+
+        // Actualizar el listado en property_context
+        await syncPropertyApplianceList(propertyId, tenant_id)
+
+        console.log(`[INVENTORY] Finished. Processed ${itemsToProcess.length} items.`)
+        return { success: true, processed: itemsToProcess.length }
+
+    } catch (error: any) {
+        console.error('[INVENTORY] Fatal processing error:', error.message)
+        return { success: false, error: error.message }
+    }
+}
+
+/**
+ * PHASE 12: Robust Manual Generation System
+ */
+
+/**
+ * Helper: Extract text from PDF using Jina
+ */
+async function extractPDFManual(pdfUrl: string): Promise<string> {
+    try {
+        console.log(`[PDF EXTRACT] Fetching: ${pdfUrl}`)
+        const response = await axios.get(`https://r.jina.ai/${encodeURIComponent(pdfUrl)}`, {
+            timeout: 30000,
+            headers: { 'X-Return-Format': 'markdown' }
+        })
+        return response.data
+    } catch (error) {
+        console.error(`[PDF EXTRACT] Failed for ${pdfUrl}:`, error)
+        return ""
+    }
+}
+
+/**
+ * Strategy 1: Smart Search for Official PDF or Web Documentation
+ */
+async function findOfficialManual(brand: string, model: string, appliance_type: string): Promise<{
+    pdfUrl?: string,
+    webDocs: string[],
+    confidence: 'high' | 'medium' | 'low'
+}> {
+    const strategies = [
+        `"${brand}" "${model}" manual instrucciones filetype:pdf`,
+        `"${model}" "E-Nr" manual usuario filetype:pdf`,
+        `site:${getOfficialDomain(brand)} "${model}" manual`,
+        `"${normalizeModel(model)}" manual pdf`,
+        `"${brand}" ${appliance_type} manual instrucciones pdf`,
+        `site:manualslib.com OR site:manualscat.com "${brand}" "${model}"`
+    ]
+
+    let pdfUrl: string | undefined
+    let webDocs: string[] = []
+    let bestConfidence: 'high' | 'medium' | 'low' = 'low'
+
+    for (const [index, query] of strategies.entries()) {
+        console.log(`[MANUAL SEARCH] Strategy ${index + 1}: ${query}`)
+        try {
+            const results = await searchBrave(query)
+            if (!results.web?.results) continue
+
+            const pdfs = results.web.results
+                .filter((r: any) => r.url.toLowerCase().endsWith('.pdf'))
+                .map((r: any) => r.url)
+
+            if (pdfs.length > 0) {
+                pdfUrl = pdfs[0]
+                bestConfidence = index < 2 ? 'high' : 'medium'
+                console.log(`[MANUAL SEARCH] âœ… Found PDF: ${pdfUrl}`)
+                break
+            }
+
+            const relevantDocs = results.web.results
+                .filter((r: any) =>
+                    r.url.includes(brand.toLowerCase()) ||
+                    r.url.includes('manual') ||
+                    (r.description && r.description.toLowerCase().includes(model.toLowerCase()))
+                )
+                .slice(0, 3)
+                .map((r: any) => r.url)
+
+            webDocs.push(...relevantDocs)
+        } catch (error) {
+            console.error(`[MANUAL SEARCH] Strategy ${index + 1} failed:`, error)
+        }
+        await new Promise(res => setTimeout(res, 1000))
+    }
+
+    return {
+        pdfUrl,
+        webDocs: [...new Set(webDocs)],
+        confidence: pdfUrl ? bestConfidence : 'low'
+    }
+}
+
+function getOfficialDomain(brand: string): string {
+    const domains: Record<string, string> = {
+        'balay': 'balay.es',
+        'bosch': 'bosch-home.es',
+        'siemens': 'siemens-home.bsh-group.com',
+        'teka': 'teka.com',
+        'whirlpool': 'whirlpool.es',
+        'lg': 'lg.com',
+        'samsung': 'samsung.com'
+    }
+    return domains[brand.toLowerCase()] || `${brand.toLowerCase()}.com`
+}
+
+function normalizeModel(model: string): string {
+    return model.replace(/[\/\-\s]/g, '').toUpperCase()
+}
+
+/**
+ * Strategy 2: Scraping Fragmented Documentation
+ */
+async function scrapeManualContent(urls: string[]): Promise<string> {
+    let aggregatedContent = ''
+    for (const url of urls.slice(0, 3)) {
+        try {
+            console.log(`[WEB SCRAPE] Fetching: ${url}`)
+            const response = await axios.get(`https://r.jina.ai/${encodeURIComponent(url)}`, {
+                timeout: 20000,
+                headers: { 'X-Return-Format': 'markdown' }
+            })
+            const content = response.data
+            const relevantSections = extractRelevantSections(content)
+            aggregatedContent += `\n\n## Fuente: ${url}\n${relevantSections}`
+        } catch (error) {
+            console.error(`[WEB SCRAPE] Failed for ${url}:`, error)
+        }
+    }
+    return aggregatedContent
+}
+
+function extractRelevantSections(markdown: string): string {
+    const keywords = [
+        'funciÃ³n', 'sÃ­mbolo', 'programa', 'temperatura',
+        'mando', 'panel', 'control', 'uso', 'instrucciÃ³n',
+        'modo', 'cocciÃ³n', 'nivel', 'accesorio'
+    ]
+    const lines = markdown.split('\n')
+    let relevantContent = ''
+    let buffer: string[] = []
+    let isRelevant = false
+
+    for (const line of lines) {
+        const lowerLine = line.toLowerCase()
+        if (keywords.some(kw => lowerLine.includes(kw))) {
+            isRelevant = true
+        }
+        if (isRelevant && (line.trim() === '' || line.startsWith('#'))) {
+            if (buffer.length > 0) {
+                relevantContent += buffer.join('\n') + '\n\n'
+                buffer = []
+            }
+            isRelevant = line.startsWith('#') && keywords.some(kw => lowerLine.includes(kw))
+        }
+        if (isRelevant) {
+            buffer.push(line)
+        }
+    }
+    return relevantContent + buffer.join('\n')
+}
+
+/**
+ * AnÃ¡lisis visual en 2 fases MEJORADO - con validaciÃ³n de respuesta
+ */
+async function analyzeControlPanelVisually(imageUrl: string): Promise<{
+    brand?: string,
+    estimatedModel?: string,
+    controls: any,
+    layout: any
+}> {
+
+    // FASE 1: IdentificaciÃ³n BÃ¡sica
+    const identificationPrompt = `Analiza detenidamente esta imagen de un panel de control de electrodomÃ©stico.
+
+ðŸŽ¯ TAREAS OBLIGATORIAS:
+
+1. **Identificar la marca:**
+   - Busca logos, texto, tipografÃ­a
+   - Si ves "Balay", "Bosch", etc., indÃ­calo
+   - Si no hay marca visible, pon "desconocida"
+
+2. **Tipo de aparato:**
+   - Â¿Horno? Â¿Microondas? Â¿Placa? Â¿Lavavajillas?
+   - Razona por los sÃ­mbolos que ves
+
+3. **CaracterÃ­sticas del panel:**
+   - Â¿Hay pantalla digital? Â¿QuÃ© nÃºmeros/texto muestra?
+   - Â¿CuÃ¡ntos mandos hay?
+   - Â¿QuÃ© rango de temperatura se ve en el mando derecho?
+
+RESPONDE SOLO CON ESTE JSON (SIN MARKDOWN, SIN EXPLICACIONES):
+{
+  "brand": "marca vista o desconocida",
+  "confidence_brand": 0.8,
+  "appliance_type": "HORNO",
+  "panel_type": "digital_mixto",
+  "has_retractable_knobs": false,
+  "temperature_range": "50-250",
+  "display_shows": "11:49",
+  "reasoning": "Se ve logo Balay, display digital con reloj, mandos giratorios"
+}`
+
+    let phase1Response
+    try {
+        phase1Response = await analyzeImageWithGemini(imageUrl, identificationPrompt, {
+            responseMimeType: 'application/json' as any,
+            temperature: 0.2
+        } as any)
+    } catch (err: any) {
+        console.error('[VISUAL ANALYSIS] Phase 1 failed:', err.message)
+        return {
+            brand: 'desconocida',
+            controls: {},
+            layout: { appliance_type: 'HORNO', confidence_brand: 0 }
+        }
+    }
+
+    const phase1 = phase1Response?.data || {}
+    console.log('[VISUAL ANALYSIS] Phase 1 result:', JSON.stringify(phase1, null, 2))
+
+    // FASE 2: Mapeo DETALLADO de Controles
+    const controlMappingPrompt = `Ahora ENUMERA CADA SÃMBOLO/CONTROL visible en la imagen.
+
+ðŸ” MANDO IZQUIERDO (selector de funciones):
+Recorre el mando en sentido horario desde las 12 y lista TODOS los sÃ­mbolos/iconos que veas.
+
+Ejemplo de formato esperado:
+- PosiciÃ³n 12h: "sÃ­mbolo de bombilla" (iluminaciÃ³n)
+- PosiciÃ³n 1h: "ventilador con cÃ­rculo" (aire caliente)
+- PosiciÃ³n 3h: "dos lÃ­neas horizontales" (calor superior/inferior)
+... (continÃºa hasta completar el cÃ­rculo)
+
+ðŸ” MANDO DERECHO (temperatura):
+- Â¿QuÃ© nÃºmeros ves? (ej: 50, 100, 150, 200, 250)
+- Â¿Hay marcas intermedias?
+
+ðŸ” PANTALLA DIGITAL:
+- Â¿QuÃ© muestra actualmente? (ej: "11:49")
+- Â¿QuÃ© botones/iconos hay a su alrededor? (campana, +, -, reloj, etc.)
+
+RESPONDE SOLO CON ESTE JSON (COMPLETA TODOS LOS CAMPOS):
+{
+  "left_knob": {
+    "type": "selector_funciones",
+    "symbols": [
+      {
+        "position": "12h",
+        "description": "bombilla o luz",
+        "likely_meaning": "IluminaciÃ³n interior"
+      },
+      {
+        "position": "1h",
+        "description": "describe lo que VES",
+        "likely_meaning": "interpreta segÃºn sÃ­mbolo estÃ¡ndar"
+      }
+    ]
+  },
+  "right_knob": {
+    "type": "temperatura",
+    "visible_numbers": ["50", "100", "150", "200", "250"],
+    "min_value": "50",
+    "max_value": "250",
+    "has_intermediate_marks": true
+  },
+  "digital_display": {
+    "current_display": "11:49",
+    "has_display": true,
+    "adjacent_buttons": [
+      {
+        "icon": "campana",
+        "position": "izquierda del display",
+        "likely_function": "temporizador/alarma"
+      },
+      {
+        "icon": "-",
+        "position": "centro-izquierda",
+        "likely_function": "decrementar tiempo"
+      }
+    ]
+  }
+}`
+
+    let phase2Response
+    try {
+        phase2Response = await analyzeImageWithGemini(imageUrl, controlMappingPrompt, {
+            responseMimeType: 'application/json' as any,
+            temperature: 0.15
+        } as any)
+    } catch (err: any) {
+        console.error('[VISUAL ANALYSIS] Phase 2 failed:', err.message)
+        return {
+            brand: phase1.brand,
+            controls: {},
+            layout: phase1
+        }
+    }
+
+    const phase2 = phase2Response?.data || {}
+    console.log('[VISUAL ANALYSIS] Phase 2 result:', JSON.stringify(phase2, null, 2))
+
+    // ValidaciÃ³n: si no detectÃ³ sÃ­mbolos, reintentar con prompt simplificado
+    if (!phase2.left_knob?.symbols || phase2.left_knob.symbols.length < 3) {
+        console.warn('[VISUAL ANALYSIS] Phase 2 detected too few symbols, retrying...')
+
+        const retryPrompt = `Mira detenidamente el MANDO IZQUIERDO de este horno.
+
+Â¿CUÃNTOS sÃ­mbolos/iconos diferentes ves alrededor del mando?
+Para CADA UNO, describe brevemente quÃ© figura ves (ventilador, lÃ­neas, grill, etc.)
+
+IMPORTANTE: Debe haber al menos 6-8 sÃ­mbolos. Si solo ves 1-2, estÃ¡s mirando mal.
+
+FORMATO JSON:
+{
+  "symbol_count": 8,
+  "symbols": [
+    {"desc": "bombilla", "meaning": "luz"},
+    {"desc": "ventilador en cÃ­rculo", "meaning": "aire caliente"}
+  ]
+}`
+
+        const retryResponse = await analyzeImageWithGemini(imageUrl, retryPrompt, {
+            responseMimeType: 'application/json' as any,
+            temperature: 0.3
+        } as any)
+
+        if (retryResponse?.data?.symbols?.length > (phase2.left_knob?.symbols?.length || 0)) {
+            console.log('[VISUAL ANALYSIS] Retry found more symbols, using retry data')
+            phase2.left_knob = {
+                type: 'selector_funciones',
+                symbols: retryResponse.data.symbols.map((s: any, i: number) => ({
+                    position: `${i + 1}h`,
+                    description: s.desc,
+                    likely_meaning: s.meaning
+                }))
+            }
+        }
+    }
+
+    return {
+        brand: phase1.brand || 'desconocida',
+        estimatedModel: phase1.confidence_brand > 0.7 ? 'modelo_visual' : undefined,
+        controls: phase2,
+        layout: phase1
+    }
+}
+
+/**
+ * PHASE 12 (Modular): Multi-Phase Manual Generation
+ * This prevents the model from entering infinite loops by breaking the manual into smaller, focused parts.
+ */
+
+async function generateSymbolsFromPDF(
+    imageUrl: string,
+    pdfContent: string,
+    visualAnalysis: any
+): Promise<string> {
+    const prompt = `EstÃ¡s creando la secciÃ³n de SÃMBOLOS Y CONTROLES de una guÃ­a de uso.
+
+ðŸ“„ MANUAL OFICIAL DISPONIBLE:
+${pdfContent.substring(0, 20000)}
+
+ðŸ‘ï¸ PANEL VISIBLE EN LA IMAGEN:
+- Mando izquierdo: selector de funciones
+- Mando derecho: temperatura (${visualAnalysis.controls?.right_knob?.min_value || '50'} - ${visualAnalysis.controls?.right_knob?.max_value || '250'}Â°C)
+- Display digital: muestra ${visualAnalysis.controls?.digital_display?.current_display || 'tiempo/temperatura'}
+
+ðŸŽ¯ TAREA: Crear una tabla markdown con MÃXIMO 15 FILAS listando los modos de cocciÃ³n del mando izquierdo.
+
+**FORMATO ESTRICTO:**
+
+## 1. Panel de Control
+
+### Mando de Funciones (Izquierda)
+Este mando selecciona el modo de cocciÃ³n. Los principales modos son:
+
+| SÃ­mbolo | Nombre del Modo | Para quÃ© sirve | Temp. Recomendada |
+|---------|----------------|----------------|-------------------|
+| â˜€ï¸ | Calor Superior/Inferior | Horneado tradicional de pasteles y asados | 180-200Â°C |
+| ðŸŒ€ | Aire Caliente 3D | Hornear en varios niveles simultÃ¡neamente | 160-180Â°C |
+| ... | ... | ... | ... |
+
+### Mando de Temperatura (Derecha)
+- **Rango:** ${visualAnalysis.controls?.right_knob?.min_value || '50'}-${visualAnalysis.controls?.right_knob?.max_value || '250'}Â°C
+- **Uso:** Gira el mando hasta la temperatura deseada. El horno comenzarÃ¡ a calentar.
+
+### Pantalla Digital
+${visualAnalysis.controls?.digital_display ?
+            `Muestra el tiempo de cocciÃ³n programado y otras funciones.
+- **Botones:** ${visualAnalysis.controls.digital_display.adjacent_buttons?.map((b: any) => b.icon).join(', ') || 'Temporizador, ajustes'}` :
+            'Este modelo tiene pantalla digital para programar tiempos.'}
+
+ðŸš« IMPORTANTE:
+- NO repitas el header de la tabla
+- NO generes mÃ¡s de 15 filas
+- USA sÃ­mbolos emoji cuando no puedas ver el icono exacto
+- Si el manual menciona un modo que no ves en la imagen, inclÃºyelo (estÃ¡ en otra posiciÃ³n del mando)
+
+RESPONDE SOLO CON EL CONTENIDO DE LA SECCIÃ“N EN MARKDOWN (sin tÃ­tulo h1).`
+
+    const response = await analyzeImageWithGemini(imageUrl, prompt, {
+        responseMimeType: 'text/plain',
+        temperature: 0.15,
+        maxOutputTokens: 2000,
+        stopSequences: ['##', '# ', '\n\n\n']
+    } as any)
+
+    return response?.data || '## 1. Panel de Control\n\n(No se pudo generar esta secciÃ³n)'
+}
+
+/**
+ * Helper to fetch and convert image to base64 for multimodal prompts
+ */
+async function fetchImageAsBase64(imageUrl: string): Promise<{ data: string, mimeType: string } | null> {
+    try {
+        const response = await fetch(imageUrl)
+        if (!response.ok) return null
+        const buffer = await response.arrayBuffer()
+        return {
+            data: Buffer.from(buffer).toString('base64'),
+            mimeType: response.headers.get('content-type') || 'image/jpeg'
+        }
+    } catch (e) {
+        console.error('[BASE64] Error fetching image:', e)
+        return null
+    }
+}
+
+async function generateSymbolsFromVisual(
+    imageUrl: string,
+    visualAnalysis: any
+): Promise<string> {
+
+    // Extraer datos del anÃ¡lisis
+    const symbolsDetected = visualAnalysis.controls?.left_knob?.symbols || []
+    const displayData = visualAnalysis.controls?.digital_display || {}
+    const tempData = visualAnalysis.controls?.right_knob || {}
+
+    console.log(`[SYMBOLS] Technical multimodal mapping for ${visualAnalysis.brand}`)
+
+    const imageData = await fetchImageAsBase64(imageUrl)
+
+    const prompt = `Eres un Ingeniero TÃ©cnico experto en electrodomÃ©sticos. Tu tarea es mirar la foto del panel de control adjunta y generar una tabla tÃ©cnica de sÃ­mbolos.
+
+DATOS PREVIAMENTE DETECTADOS (Ãšsalos como guÃ­a):
+${JSON.stringify({ brand: visualAnalysis.brand, symbolsDetected, displayData, tempData }, null, 2)}
+
+ðŸŽ¯ TAREA:
+1. Mira la imagen y confirma los sÃ­mbolos del mando izquierdo.
+2. Genera una TABLA MARKDOWN con cada sÃ­mbolo. 
+3. Usa nombres tÃ©cnicos precisos (ej. "Aire Caliente 3D", "Llama progresiva", "AquÃ¡lisis").
+4. Si es Balay/Bosch/Siemens, aplica la terminologÃ­a oficial.
+5. NO digas "no te preocupes por esto". Identifica cada icono con su funciÃ³n.
+
+<thinking>
+[Analiza visualmente la imagen. Identifica el modelo (ej: Balay Serie 3). Mapea los iconos del selector a funciones reales de ese modelo especÃ­fico]
+</thinking>
+
+## 1. Panel de Control y Funciones
+
+### Selector de Funciones (Izquierda)
+Gira este mando para elegir el modo de cocciÃ³n. Basado en el panel de este modelo:
+
+| SÃ­mbolo | FunciÃ³n TÃ©cnica | AplicaciÃ³n PrÃ¡ctica |
+|:-------:|:----------------|:--------------------|
+${symbolsDetected.map((s: any) =>
+        `| ${s.description} | **${s.likely_meaning}** | [Explica el beneficio para el usuario] |`
+    ).join('\n')}
+
+### Selector de Temperatura (Derecha)
+Control de temperatura analÃ³gico (${tempData.min_value || '50'}-${tempData.max_value || '275'}Â°C).
+- **Luz de control:** Se apaga cuando el horno alcanza la temperatura seleccionada.
+
+### Pantalla y Botones
+${displayData.has_display ?
+            `Muestra "${displayData.current_display}". Botones:
+${displayData.adjacent_buttons?.map((b: any) => `- **${b.icon}:** ${b.likely_function}`).join('\n')}
+
+âš ï¸ **CRÃTICO:** Si el reloj parpadea, el horno NO calentarÃ¡. Ajusta la hora con +/- para activar el aparato.` :
+            'Modelo analÃ³gico sin requisitos de ajuste de hora para calentar.'}
+
+ðŸš« LÃMITES:
+- Usa un lenguaje tÃ©cnico profesional.
+- No inventes sÃ­mbolos que no veas en la foto.
+- MÃ¡ximo 500 palabras.`
+
+    const input = imageData ? [
+        { inlineData: { mimeType: imageData.mimeType, data: imageData.data } },
+        prompt
+    ] : [prompt]
+
+    const response = await geminiREST('gemini-2.0-flash', input as any, {
+        responseMimeType: 'text/plain',
+        temperature: 0.1,
+        maxOutputTokens: 2000
+    } as any)
+
+    const cleanContent = response?.data?.replace(/<thinking>[\s\S]*?<\/thinking>/g, '').trim() || ''
+
+    return cleanContent || '## 1. Panel de Control\n\n(Error en mapeo visual)'
+}
+
+/**
+ * Fallback: genera tabla mirando directamente la imagen
+ */
+async function generateSymbolsTableFallback(imageUrl: string, visualAnalysis: any): Promise<string> {
+    const prompt = `Mira esta imagen del panel de control.
+
+EN EL MANDO IZQUIERDO: Describe visualmente TODOS los sÃ­mbolos que veas (debe haber entre 6-10).
+EN EL MANDO DERECHO: Â¿QuÃ© nÃºmeros de temperatura estÃ¡n marcados?
+EN LA PANTALLA: Â¿Hay display digital? Â¿QuÃ© botones tiene alrededor?
+
+Genera una tabla markdown con esta estructura:
+
+## 1. Panel de Control
+
+### Mando de Funciones (Izquierda)
+| SÃ­mbolo Visible | FunciÃ³n Estimada | Uso TÃ­pico |
+|----------------|-----------------|-----------|
+| [describe sÃ­mbolo 1] | [funciÃ³n] | [cuÃ¡ndo usarlo] |
+| [describe sÃ­mbolo 2] | [funciÃ³n] | [cuÃ¡ndo usarlo] |
+... (continÃºa para TODOS los sÃ­mbolos)
+
+### Mando de Temperatura (Derecha)
+[Describe el rango y nÃºmeros visibles]
+
+### Pantalla
+[Describe quÃ© ves]
+
+IMPORTANTE: Lista TODOS los sÃ­mbolos visibles, no solo 1-2.
+RESPONDE SOLO CON MARKDOWN.`
+
+    const response = await analyzeImageWithGemini(imageUrl, prompt, {
+        responseMimeType: 'text/plain' as any,
+        temperature: 0.25,
+        maxOutputTokens: 1500
+    } as any)
+
+    return response?.data || '## 1. Panel de Control\n\n(Error al generar tabla)'
+}
+
+async function generateSymbolsTable(
+    imageUrl: string,
+    pdfContent: string | undefined,
+    visualAnalysis: any
+): Promise<string> {
+    if (pdfContent && pdfContent.length > 5000) {
+        return await generateSymbolsFromPDF(imageUrl, pdfContent, visualAnalysis)
+    } else {
+        return await generateSymbolsFromVisual(imageUrl, visualAnalysis)
+    }
+}
+
+async function generateInstructions(
+    pdfContent: string | undefined,
+    webContent: string | undefined,
+    visualAnalysis: any,
+    imageUrl?: string
+): Promise<string> {
+
+    const hasReliableSource = (pdfContent && pdfContent.length > 5000) ||
+        (webContent && webContent.length > 3000)
+
+    const baseContext = pdfContent || webContent || ''
+    const imageData = imageUrl ? await fetchImageAsBase64(imageUrl) : null
+
+    const prompt = `Escribe la secciÃ³n de INSTRUCCIONES DE USO basada en la foto y documentaciÃ³n adjunta.
+
+${hasReliableSource ?
+            `ðŸ“„ DOCUMENTACIÃ“N TÃ‰CNICA:
+${baseContext.substring(0, 10000)}` :
+            `âš ï¸ Contexto: Horno ${visualAnalysis.brand || 'genÃ©rico'} similar a Balay Serie 3.`}
+
+ðŸŽ¯ TAREA:
+Genera una guÃ­a paso a paso directa y tÃ©cnica sobre cÃ³mo cocinar con este aparato especÃ­fico. SIN SALUDOS.
+
+<thinking>
+[Revisa la imagen. Â¿Tiene mandos ocultos? Â¿CÃ³mo se pone en hora el reloj de este modelo? Explica el flujo de precalentamiento]
+</thinking>
+
+## 2. Instrucciones de Uso
+
+### Puesta en Marcha
+1. **Ajuste del Reloj:** Si el display parpadea, ajusta la hora de inmediato. El aparato bloquea el calor por seguridad hasta que tiene hora fija.
+2. **Mandos:** ${visualAnalysis.layout?.has_retractable_knobs ? 'Presiona los mandos para que salgan.' : 'Los mandos son fijos.'}
+
+### CÃ³mo Cocinar paso a paso
+1. **SelecciÃ³n:** Gira el mando izquierdo a la funciÃ³n elegida.
+2. **Temperatura:** Selecciona los grados en el mando derecho.
+3. **Precalentamiento:** Deja que el horno alcance la temperatura antes de introducir los alimentos.
+4. **FinalizaciÃ³n:** Gira ambos selectores a la posiciÃ³n '0'.
+
+ðŸš« LÃMITES:
+- Estilo directo y profesional.
+- Sin introducciones amables.
+- MÃ¡ximo 500 palabras.`
+
+    const input = imageData ? [
+        { inlineData: { mimeType: imageData.mimeType, data: imageData.data } },
+        prompt
+    ] : [prompt]
+
+    const response = await geminiREST('gemini-2.0-flash', input as any, {
+        responseMimeType: 'text/plain',
+        temperature: 0.15,
+        maxOutputTokens: 1500 as any,
+        stopSequences: ['##', '# '] as any
+    } as any)
+
+    const cleanContent = response?.data?.replace(/<thinking>[\s\S]*?<\/thinking>/g, '').trim() || ''
+
+    return cleanContent || '## 2. Instrucciones de Uso\n\n(No disponible)'
+}
+
+async function generateTipsAndMaintenance(
+    pdfContent: string | undefined,
+    visualAnalysis: any,
+    imageUrl?: string
+): Promise<string> {
+    const imageData = imageUrl ? await fetchImageAsBase64(imageUrl) : null
+
+    const prompt = `Genera la secciÃ³n de LIMPIEZA Y SOLUCIÃ“N DE PROBLEMAS basada en la imagen. SIN SALUDOS.
+
+<thinking>
+[Identifica si es Balay/Bosch/Siemens. Inyecta detalles de AQUÃLISIS especÃ­ficos (400ml, 80Â°C, 4min). Crea tabla de PROBLEMAS | CAUSAS | SOLUCIONES]
+</thinking>
+
+## 3. Limpieza y SoluciÃ³n de Problemas
+
+### Mantenimiento y AquÃ¡lisis
+Si tu modelo incluye AquÃ¡lisis (identificable por el icono de una gota de agua):
+1. Con el horno frÃ­o, vierte **400 ml de agua** con una gota de jabÃ³n en la base.
+2. Activa la funciÃ³n **AquÃ¡lisis** o calor inferior a **80Â°C**.
+3. Deja funcionar **4 minutos** y apaga.
+4. Tras enfriar, retira la suciedad con una bayeta.
+
+### Tabla de ResoluciÃ³n de Errores
+| Problema Detectado | Causa Frecuente | AcciÃ³n del Usuario |
+|:-------------------|:----------------|:-------------------|
+| No calienta (display parpadea) | Reloj desajustado | Configura la hora con +/- |
+| Icono de Llave encendido | Bloqueo activo | Pulsa botÃ³n llave durante 4 seg |
+| Ruido tras apagarlo | Enfriamiento electrÃ³nico | Normal, pararÃ¡ solo en unos minutos |
+| CondensaciÃ³n excesiva | Vapor de alimentos | Seca el interior tras usarlo |
+
+ðŸš« LÃMITES:
+- Solo informaciÃ³n Ãºtil y tÃ©cnica.
+- MÃ¡ximo 500 palabras.`
+
+    const input = imageData ? [
+        { inlineData: { mimeType: imageData.mimeType, data: imageData.data } },
+        prompt
+    ] : [prompt]
+
+    const response = await geminiREST('gemini-2.0-flash', input as any, {
+        responseMimeType: 'text/plain',
+        temperature: 0.1,
+        maxOutputTokens: 1500
+    } as any)
+
+    const cleanContent = response?.data?.replace(/<thinking>[\s\S]*?<\/thinking>/g, '').trim() || ''
+
+    return cleanContent || '## 3. Consejos\n\n- Usa con precauciÃ³n\n- Limpia despuÃ©s de usar'
+}
+
+/**
+ * Step 1.5: Fetch Technical Data via Text-only Grounding (FAST)
+ */
+async function fetchGroundingData(brand: string, model: string, type: string): Promise<string> {
+    const query = `Busca informaciÃ³n tÃ©cnica detallada, ficha de producto y SOLUCIÃ“N DE PROBLEMAS (tabla de errores) para el siguiente aparato: ${brand} ${type} ${model}.
+    Necesito saber:
+    1. Capacidad real y potencia.
+    2. Significado de botones o luces.
+    3. Tiempos de funcionamiento/espera estÃ¡ndar.
+    4. Tabla de errores frecuentes y cÃ³mo resetearlo.
+    
+    TODO DEBE ESTAR EN ESPAÃ‘OL.
+    IMPORTANTE: Dame solo los datos crudos, sin formato de manual aÃºn.`
+
+    const { data: groundingData, error } = await geminiREST('gemini-2.0-flash', query, {
+        temperature: 0.1,
+        maxOutputTokens: 2000,
+        responseMimeType: 'text/plain', // MANDATORY to avoid JSON parse error
+        useGrounding: true
+    } as any)
+
+    if (error) {
+        console.error('[GROUNDING-FETCH] Error:', error)
+        return ''
+    }
+
+    return (groundingData as string) || ''
+}
+
+/**
+
+/**
+ * Expert Manual Generation (Optimized for Speed and Stability)
+ */
+async function generateManualSinglePass(
+    imageUrl: string,
+    basicAnalysis: any,
+    groundingData: string = ''
+): Promise<string> {
+    const systemInstruction = `Eres un experto en electrodomÃ©sticos que crea manuales de uso para huÃ©spedes de apartamentos turÃ­sticos.
+
+IDENTIDAD Y TONO:
+- Idioma: EspaÃ±ol (EspaÃ±a)
+- Tono: Profesional pero amigable
+- Audiencia: HuÃ©spedes que nunca han visto este aparato
+
+REGLAS ESTRICTAS:
+1. Empieza directamente con el tÃ­tulo h1 (ej: # GuÃ­a de Uso: Philips HD4646)
+2. NO escribas preÃ¡mbulos como "AquÃ­ tienes el manual..." o "A continuaciÃ³n..."
+3. NO repitas informaciÃ³n ya escrita
+4. Usa markdown limpio (sin bloques de cÃ³digo \`\`\`)
+5. Si no tienes datos especÃ­ficos del modelo, usa conocimiento general del tipo de aparato
+
+FORMATO OBLIGATORIO:
+- TÃ­tulo: # GuÃ­a de Uso: [Marca] [Modelo]
+- 3 secciones principales: Panel de Control, Instrucciones, Consejos
+- MÃ¡ximo 1500 palabras
+
+PROHIBIDO:
+- Mencionar la imagen ("en la foto se ve...")
+- Decir "no tengo informaciÃ³n" (si falta algo, usa conocimiento general)
+- Generar listas interminables o tablas repetitivas`;
+
+    const userPrompt = `Genera un manual de uso para este electrodomÃ©stico.
+
+DATOS DEL APARATO (del anÃ¡lisis visual):
+- Tipo: ${basicAnalysis.appliance_type || 'ElectrodomÃ©stico'}
+- Marca: ${basicAnalysis.brand || 'Desconocida'}
+- Modelo: ${basicAnalysis.model || 'No identificado'}
+- Controles visibles: ${JSON.stringify(basicAnalysis.visual_controls || [])}
+
+${groundingData ? `
+INFORMACIÃ“N TÃ‰CNICA DEL MANUAL OFICIAL:
+${groundingData.substring(0, 15000)}
+
+IMPORTANTE: Usa esta informaciÃ³n oficial para ser preciso en temperaturas, tiempos, sÃ­mbolos y funciones especÃ­ficas del modelo.
+` : `
+âš ï¸ No hay manual oficial disponible. Usa tu conocimiento experto sobre ${basicAnalysis.appliance_type || 'electrodomÃ©sticos'} similares de la marca ${basicAnalysis.brand}.
+`}
+
+TAREA:
+Genera el manual completo en markdown siguiendo la estructura del system instruction.`;
+
+    try {
+        logT(`[GEN-SINGLE] Expert generation for ${basicAnalysis.brand} ${basicAnalysis.appliance_type}`);
+
+        const { data: manual, error } = await geminiVision(imageUrl, userPrompt, {
+            systemInstruction,
+            responseMimeType: 'text/plain',  // âœ… Plain text for markdown
+            temperature: 0.15,
+            maxOutputTokens: 4000  // âœ… Increased for complete manuals
+            // âœ… No stopSequences to avoid truncation
+        });
+
+        if (error) {
+            logT(`[GEN-ERROR] ${error}`);
+            throw new Error(`Gemini error: ${error}`);
+        }
+
+        if (!manual || (manual as string).length < 500) {
+            logT(`[GEN-ERROR] Manual too short: ${(manual as string)?.length || 0} chars`);
+            throw new Error('Generated manual too short');
+        }
+
+        // âœ… Simple validation without complex retry logic
+        const cleaned = (manual as string).trim();
+
+        if (!cleaned.startsWith('#')) {
+            logT(`[VALIDATION] Manual doesn't start with h1, fixing...`);
+            const h1Index = cleaned.indexOf('#');
+            if (h1Index !== -1) {
+                return cleaned.substring(h1Index).trim();
+            }
+            // Force title if missing
+            return `# GuÃ­a de Uso: ${basicAnalysis.brand || ''} ${basicAnalysis.model || basicAnalysis.appliance_type}\n\n${cleaned}`;
+        }
+
+        logT(`[GEN-SINGLE] âœ… Manual generated: ${cleaned.length} chars`);
+        return cleaned;
+
+    } catch (err: any) {
+        logT(`[GEN-ERROR] ${err.message}`);
+        throw err;
+    }
+}
+
+
+}

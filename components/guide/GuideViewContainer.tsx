@@ -36,6 +36,11 @@ interface GuideViewContainerProps {
 }
 
 export function GuideViewContainer({ property, branding, sections, manuals, recommendations, faqs = [], context, guestName, accessToken }: GuideViewContainerProps) {
+    // Resolve themeId: proper column (after migration 031) or JSONB fallback
+    const themeId: string =
+        branding?.layout_theme_id ||
+        (branding?.computed_theme as any)?._layout_theme_id ||
+        'modern'
     const [currentPage, setCurrentPage] = useState<string | null>('welcome');
     const [activeTab, setActiveTab] = useState('hub');
     const [language, setLanguage] = useState<string>('es');
@@ -150,6 +155,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                     guestName={guestName}
                     accessToken={accessToken}
                     propertyId={property.id}
+                    themeId={themeId}
                 />
             );
         }
@@ -169,6 +175,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                     guestName={guestName}
                     accessToken={accessToken}
                     propertyId={property.id}
+                    themeId={themeId}
                 />
             );
         }

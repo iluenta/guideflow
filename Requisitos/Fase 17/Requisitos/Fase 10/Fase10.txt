@@ -1,0 +1,145 @@
+🟦 HOME DEL HUÉSPED — TEXTO REAL
+👋 Bienvenido Pedro
+
+Estás en el apartamento Nieto.
+Soy tu asistente de estancia y puedo ayudarte con cualquier cosa del alojamiento y del entorno sin necesidad de contactar con el propietario.
+
+💬 Pregúntame lo que quieras
+
+(caja de chat grande y protagonista)
+
+Puedes preguntarme, por ejemplo:
+
+¿Cuál es la clave del WiFi?
+
+¿Cómo funciona la vitrocerámica?
+
+¿Dónde está mi plaza de garaje?
+
+¿Cómo pongo la lavadora?
+
+¿Dónde puedo comer ahora mismo cerca?
+
+¿Qué puedo visitar esta tarde?
+
+(esto son chips/botones pulsables)
+
+✅ Respondo al instante con la información exacta de este apartamento
+
+Manuales, normas, direcciones, recomendaciones locales y cualquier duda habitual durante tu estancia.
+
+O si lo prefieres
+
+[ Explorar la guía completa del apartamento ]
+
+🧠 Detalle muy importante
+
+Ese bloque:
+
+“Respondo al instante con la información exacta de este apartamento”
+
+No es para el huésped.
+
+Es para cuando el propietario vea esto.
+
+Ahí entiende el valor.
+
+🟦 PRIMER MENSAJE AUTOMÁTICO DEL CHAT (nada más abrir)
+
+Esto es CLAVE.
+
+El chat no puede estar vacío.
+
+Debe decir automáticamente:
+
+Hola Pedro 👋
+Ya tengo cargada toda la información del apartamento Nieto.
+
+Puedo ayudarte con electrodomésticos, normas, direcciones, garaje, wifi y recomendaciones de la zona.
+
+¿Qué necesitas ahora?
+
+🟦 RESPUESTAS MODELO (muy importante que estén bien escritas)
+Si pulsa: “¿Cuál es la clave del WiFi?”
+
+📶 WiFi del apartamento
+Red: NIETO_GUEST
+Clave: *******
+
+Encontrarás el router en el mueble del salón, junto a la TV.
+
+Si pulsa: “¿Cómo funciona la vitro?”
+
+🍳 Vitrocerámica de inducción
+
+Mantén pulsado el botón de encendido 3 segundos.
+
+Coloca la sartén sobre la zona.
+
+Ajusta la potencia con los controles táctiles.
+
+Aquí tienes el manual con imágenes del modelo exacto:
+[ Ver manual ]
+
+Si pulsa: “¿Dónde puedo comer ahora?”
+
+🍽 Son las 14:43 y estos restaurantes están abiertos ahora mismo a menos de 8 min andando:
+
+Bar El Lago – 6 min – Menú casero – 4.6⭐
+
+La Tasca Nieto – 4 min – Tapas – 4.7⭐
+
+Restaurante Avenida – 7 min – Carnes – 4.5⭐
+
+[ Ver en mapa ] [ Cómo llegar andando ]
+
+Si pregunta: “¿Cómo entro al apartamento?”
+
+Te guío paso a paso 👇
+
+1️⃣ Dirección
+C/ Fernando Nieto, 14
+[ Abrir en Google Maps ]
+
+2️⃣ Plaza de garaje
+Nº 183
+
+3️⃣ Código del portal
+07349 [ Copiar ]
+
+4️⃣ Apartamento
+22 - 1 - 5
+
+🟦 BOTÓN SECUNDARIO (tu guía actual)
+
+Abajo del todo:
+
+¿Prefieres navegar por la guía?
+
+[ Ver guía del apartamento ]
+
+Y aquí ya entra tu diseño actual, que es correcto.
+
+🎯 Qué has conseguido con SOLO este cambio
+
+El huésped entiende:
+
+“Esto es un asistente, no una guía”
+
+El propietario entiende:
+
+“Esto me quita trabajo”
+
+Y tú no has tenido que rehacer nada.
+
+🧪 Esto es un MVP perfecto porque
+
+Solo necesitas cambiar:
+
+La primera pantalla
+
+El primer mensaje del chat
+
+6 sugerencias
+
+Nada más.

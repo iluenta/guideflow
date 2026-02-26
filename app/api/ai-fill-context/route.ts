@@ -108,47 +108,176 @@ export async function POST(req: Request) {
 
     if (section === 'dining' || section === 'recommendations') {
       const selectedCat = existingData?.category || 'todos';
-      const existingNames = existingData?.existingNames || [];
-      const exclusionRule = existingNames.length > 0
-        ? `\nREGLA CRÍTICA: NO incluyas ninguno de estos sitios ya existentes: ${existingNames.join(', ')}.`
-        : '';
+      const existingNames: string[] = existingData?.existingNames || [];
 
-      // Categorías válidas que espera el componente LocalRecommendations
-      const validCategories = ['restaurantes', 'compras', 'cultura', 'naturaleza', 'ocio', 'relax'];
+      // ── 1. Deduplication set ─────────────────────────────────────────────────
+      const seen = new Set(existingNames.map((n: string) => n.toLowerCase()));
 
-      let categoryDirectives = '';
-      if (selectedCat === 'todos') {
-        categoryDirectives = `Genera exactamente 10-12 recomendaciones REALES distribuidas entre estas categorías: restaurantes, compras, cultura, naturaleza, ocio, relax. Incluye al menos 1-2 de cada categoría.`;
-      } else {
-        categoryDirectives = `Genera exactamente 6-8 recomendaciones REALES y específicas para la categoría: "${selectedCat}". TODOS los objetos deben tener category = "${selectedCat}".`;
+      // ── 2. Subcategory → Google Places type + keyword mapping ────────────────
+      const SUBCATEGORY_MAP: Record<string, { placeType: string; keyword?: string }> = {
+        todos:         { placeType: 'restaurant' },
+        restaurantes:  { placeType: 'restaurant' },
+        italiano:      { placeType: 'restaurant', keyword: 'italiano pizza pasta' },
+        mediterraneo:  { placeType: 'restaurant', keyword: 'mediterráneo tapas mariscos' },
+        hamburguesas:  { placeType: 'restaurant', keyword: 'hamburguesa burger' },
+        asiatico:      { placeType: 'restaurant', keyword: 'sushi japonés chino thai asiático' },
+        alta_cocina:   { placeType: 'restaurant', keyword: 'alta cocina gourmet' },
+        internacional: { placeType: 'restaurant', keyword: 'internacional fusión' },
+        desayuno:      { placeType: 'cafe',        keyword: 'desayuno brunch cafetería' },
+        compras:       { placeType: 'shopping_mall', keyword: 'centro comercial moda fashion ropa tiendas típicas souvenirs' },
+        supermercados: { placeType: 'supermarket',   keyword: 'mercadona dia carrefour lidl aldi mercado abastos alimentación' },
+        cultura:       { placeType: 'museum',      keyword: 'museo monumento cultura' },
+        naturaleza:    { placeType: 'park' },
+        ocio:          { placeType: 'bar',         keyword: 'ocio entretenimiento' },
+        relax:         { placeType: 'spa',         keyword: 'spa relax bienestar' },
+      };
+      const catConfig = SUBCATEGORY_MAP[selectedCat] || SUBCATEGORY_MAP['restaurantes'];
+
+      // ── 3. Try Google Places Nearby Search ───────────────────────────────────
+      const placesKey = process.env.GOOGLE_PLACES_API_KEY;
+      let placesResults: any[] = [];
+
+      if (placesKey) {
+        try {
+          const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${placesKey}`;
+          const geoRes = await fetch(geoUrl);
+          const geoData = await geoRes.json();
+          const loc = geoData.results?.[0]?.geometry?.location;
+
+          if (loc) {
+            const { lat, lng } = loc;
+            const radius = 2500; 
+            let nearbyUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${catConfig.placeType}&language=es&key=${placesKey}`;
+            if (catConfig.keyword) nearbyUrl += `&keyword=${encodeURIComponent(catConfig.keyword)}`;
+
+            const nearbyRes = await fetch(nearbyUrl);
+            const nearbyData = await nearbyRes.json();
+
+            placesResults = (nearbyData.results || [])
+              .filter((p: any) => !seen.has((p.name || '').toLowerCase()) && (p.rating || 0) >= 3.5)
+              .slice(0, 10) // Get up to 10
+              .map((p: any) => ({
+                google_place_id: p.place_id,
+                name: p.name,
+                address: p.vicinity,
+                rating: p.rating,
+                price_level: p.price_level, 
+                map_url: `https://www.google.com/maps/place/?q=place_id:${p.place_id}`,
+                is_ai_generated: false
+              }));
+          }
+        } catch (err) {
+          console.warn('[PLACES] Nearby search failed:', err);
+        }
       }
 
-      prompt = `Eres un guía local experto de ${finalCity}, España.
-UBICACIÓN DEL APARTAMENTO: ${fullAddress}
+      // ── 4. Fallback Selection & Hybrid Logic ─────────────────────────────────
+      // Logic defined by user: 
+      // - 0 results: Omit category (return empty)
+      // - 1-2 results: Keep them + generate 2 more with Gemini (AI completion)
+      // - 3+ results: Just use real ones + enrichment
+      
+      let finalPlacesToEnrich = [];
+      let needsAiCompletion = false;
 
-TAREA: ${categoryDirectives}${exclusionRule}
+      if (placesResults.length === 0) {
+        return new Response(JSON.stringify({ recommendations: [] }), { headers: { 'Content-Type': 'application/json' } });
+      } else if (placesResults.length < 3) {
+        finalPlacesToEnrich = [...placesResults];
+        needsAiCompletion = true;
+      } else {
+        finalPlacesToEnrich = placesResults.slice(0, 8);
+      }
 
-REGLAS:
-- Usa SOLO lugares REALES que existan en ${finalCity}
-- Incluye distancia estimada caminando desde ${fullAddress}
-- El campo "category" DEBE ser uno de: ${validCategories.join(', ')}
-- Sé específico: nombre real, qué hace especial al sitio, precio orientativo
+      // ── 5. Gemini Enrichment & Completion ────────────────────────────────────
+      const priceMap: Record<number, string> = { 0: '€', 1: '€', 2: '€€', 3: '€€€', 4: '€€€€' };
+      const completionCount = needsAiCompletion ? 2 : 0;
+      
+      const enrichPrompt = `Eres un guía local experto de ${finalCity} con conocimiento profundo de la zona (${fullAddress}).
+      
+${needsAiCompletion ? `Solo he encontrado ${placesResults.length} puntos oficiales. TU TAREA:
+1. Enriquece los resultados REALES que te paso.
+2. INVENTA ${completionCount} lugares adicionales VEROSÍMILES (RESTAURANTES/SITIOS de la categoría "${selectedCat}") que podrían existir en esta zona pero que no aparecen en el mapa oficial. Márcalos como AI-generated.
+` : `Enriquece estos resultados REALES de Google Maps:`}
 
-ESTRUCTURA JSON REQUERIDA (responde SOLO el JSON, sin texto adicional):
+Para cada lugar, proporciona:
+- description: 2-3 frases auténticas y apetecibles.
+- personal_note: Un consejo práctico (ej. "reserva con antelación", "pide el postre X").
+
+Lugares actuales:
+${finalPlacesToEnrich.map((p, i) => `${i + 1}. "${p.name}" (@ ${p.address})`).join('\n')}
+
+Responde SOLO con JSON:
 {
-  "recommendations": [
-    {
-      "id": "uuid-unico",
-      "name": "Nombre Real del Sitio",
-      "category": "restaurantes",
-      "description": "Qué ofrece y por qué merece la pena visitarlo.",
-      "distance": "350m",
-      "time": "5 min andando",
-      "price_range": "€€",
-      "personal_note": "Consejo específico del guía local (ej: pide el menú del día, mejor ir por la mañana...)"
-    }
+  "enriched": [
+    { "index": 0, "description": "...", "personal_note": "..." }
   ]
+  ${needsAiCompletion ? `, "completed": [
+    { "name": "...", "description": "...", "personal_note": "...", "price_range": "€€" }
+  ]` : ''}
 }`;
+
+      const genAI = getGenAI();
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.3 }
+      });
+      
+      const enrichRes = await model.generateContent(enrichPrompt);
+      let parsedEnrichment: any = {};
+      try {
+        parsedEnrichment = JSON.parse(enrichRes.response.text());
+      } catch (e) {
+        console.error('[AI-FILL] Failed to parse enrichment:', e);
+      }
+
+      // Build recommendations array
+      const recommendations: any[] = [];
+      
+      // Add real enriched ones
+      finalPlacesToEnrich.forEach((p, i) => {
+        const e = parsedEnrichment.enriched?.find((x: any) => x.index === i) || { description: '', personal_note: '' };
+        recommendations.push({
+          id: `places_${p.google_place_id}`,
+          name: p.name,
+          category: selectedCat === 'todos' ? 'restaurantes' : selectedCat,
+          type: selectedCat === 'todos' ? 'restaurantes' : selectedCat,
+          description: e.description,
+          personal_note: e.personal_note,
+          distance: '',
+          time: '',
+          price_range: priceMap[p.price_level] ?? '€€',
+          map_url: p.map_url,
+          google_place_id: p.google_place_id,
+        });
+      });
+
+      // Add AI completed ones if needed
+      if (needsAiCompletion && parsedEnrichment.completed) {
+        parsedEnrichment.completed.forEach((ai: any, i: number) => {
+          recommendations.push({
+            id: `ai_comp_${Date.now()}_${i}`,
+            name: ai.name,
+            category: selectedCat === 'todos' ? 'restaurantes' : selectedCat,
+            type: selectedCat === 'todos' ? 'restaurantes' : selectedCat,
+            description: ai.description,
+            personal_note: `[AI] ${ai.personal_note}`,
+            distance: '',
+            time: '',
+            price_range: ai.price_range || '€€',
+            map_url: '',
+            google_place_id: null,
+          });
+        });
+      }
+
+      return new Response(JSON.stringify({ recommendations }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      // ── 6. Fallback Catch-all (Should rarely be reached if Places is active) ───
+      console.warn('[PLACES] Complete fallback required');
+
 
     } else if (section === 'tech') {
       prompt = `Asistente técnico para alojamiento turístico. Genera consejos básicos para Smart TV y WiFi. JSON con clave "tech_info".`;

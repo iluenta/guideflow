@@ -33,25 +33,29 @@ export async function POST(req: Request) {
         let propertyId = legacyPropertyId;
         let propertyTier: 'standard' | 'premium' | 'enterprise' = 'standard';
 
-        // 0. FETCH PROPERTY STATUS (FASE 22)
-        const { data: propertyStatus, error: propError } = await supabase
-            .from('properties')
-            .select('id, tier, is_halted, halt_expires_at, halt_reason')
-            .eq('id', propertyId)
-            .single();
+        // C6 SECURITY: We only check the halt status AFTER token validation (see below).
+        // If there is no accessToken (legacy flow), we can do it here with the unvalidated legacyPropertyId.
+        // With accessToken, propertyId will be set from the validated token, so we defer the halt check.
+        const checkHaltStatus = async (pidToCheck: string) => {
+            const { data: propertyStatus, error: propError } = await supabase
+                .from('properties')
+                .select('id, tier, is_halted, halt_expires_at, halt_reason')
+                .eq('id', pidToCheck)
+                .single();
 
-        if (propError || !propertyStatus) {
-            console.error('[CHAT] Property status check failed:', propError?.message);
-        } else {
+            if (propError || !propertyStatus) {
+                console.error('[CHAT] Property status check failed:', propError?.message);
+                return null;
+            }
+
             propertyTier = (propertyStatus.tier as any) || 'standard';
-            
-            // Check for active halt
+
             if (propertyStatus.is_halted) {
                 const now = new Date();
                 const expiresAt = propertyStatus.halt_expires_at ? new Date(propertyStatus.halt_expires_at) : null;
-                
+
                 if (!expiresAt || now < expiresAt) {
-                    console.warn(`[SECURITY] 🛡️ Request blocked for Halted Property: ${propertyId}. Reason: ${propertyStatus.halt_reason}`);
+                    console.warn(`[SECURITY] 🛡️ Request blocked for Halted Property: ${pidToCheck}. Reason: ${propertyStatus.halt_reason}`);
                     return new Response(JSON.stringify({ 
                         error: 'Servicio temporalmente pausado por seguridad',
                         reason: 'property_halted',
@@ -59,10 +63,17 @@ export async function POST(req: Request) {
                         resetAt: expiresAt
                     }), { status: 403 });
                 } else {
-                    // Auto-cooldown expired: Reset status in background
-                    supabase.from('properties').update({ is_halted: false }).eq('id', propertyId);
+                    // Auto-cooldown expired: reset in background
+                    supabase.from('properties').update({ is_halted: false }).eq('id', pidToCheck);
                 }
             }
+            return null; // null = not halted, proceed
+        };
+
+        // Without accessToken: check halt with legacyPropertyId now (unvalidated but only path)
+        if (!accessToken && legacyPropertyId) {
+            const haltResponse = await checkHaltStatus(legacyPropertyId);
+            if (haltResponse) return haltResponse;
         }
 
         // 1. VALIDACIÓN DE SEGURIDAD (FASE 4)
@@ -86,6 +97,11 @@ export async function POST(req: Request) {
             }
 
             propertyId = tokenValidation.access.property_id;
+
+            // C6 SECURITY: Now that we have the real propertyId from the validated token,
+            // run the halt check with the trusted propertyId.
+            const haltResponse = await checkHaltStatus(propertyId);
+            if (haltResponse) return haltResponse;
 
             // 1.2. Rate Limiting Multi-Nivel (FASE 22: Tiered)
             const deviceFingerprint = await generateDeviceFingerprint(ip, userAgent);
@@ -163,20 +179,41 @@ export async function POST(req: Request) {
             }
         }
 
-        const emergencyKeywords = ['humo', 'fuego', 'chispa', 'chispas', 'quema', 'olor a quemado', 'olor extraño', 'fuga grande', 'explota', 'explosión', 'gas', 'cortocircuito'];
-        const isEmergency = emergencyKeywords.some(word => lastMessage.toLowerCase().includes(word));
+        // C2: Intent detection window expanded to last 10 messages (5 full turns)
+        // for regex matching of categories and flows.
+        const recentContext = messages
+            .slice(-10) 
+            .map((m: any) => m.content)
+            .join(' ');
 
-        // ✅ NUEVO: Detectar preguntas sobre recomendaciones
-        const isRecommendationQuery = /restaurante|comer|cenar|desayuno|almuerzo|tapas|bar|cafetería|café|comida|dónde.*comer|sitio.*comer|lugar.*comer|ocio|visitar|qué ver|qué hacer|cosas que hacer|actividad|turismo|museo|parque|compra|tienda/i.test(lastMessage);
-        const isApplianceQuery = /funciona|enciende|calienta|lava|centrifuga|error|problema|no va|roto|avería|código|fallo|ruido|vibra|gotea|desagua/i.test(lastMessage);
-        // Detect usage/how-to queries ("quiero hacerme un te", "cómo uso el hervidor", "poner la lavadora", etc.)
-        // NOTE: checked BEFORE isRecommendationQuery in chatStrategy to avoid false positives
-        const isApplianceUsageQuery = /hacerme|hagarme|preparar|calentar agua|hacer (un |el )?(té|te|café|cafe|pasta|arroz|sopa)|cómo (uso|utilizo|pongo|enciendo|arranco)|poner (el |la |un |una )?(lavadora|lavavajilla|microondas|horno|hervidor|cafetera|tostadora)|encender|arrancar/i.test(lastMessage);
+        // C4: Context-aware emergency detection — prevents false positives like
+        // '¿hay ahumadero cerca?' or '¿gasolinera?' triggering emergency mode.
+        const emergencyPatterns = [
+            /humo\s*(que sale|hay|se ve|mucho|negro|blanco|denso|del)/i,
+            /olor\s*(a\s*)?(gas|quemado|burn|quema)/i,
+            /fuga\s*(de\s*)?gas/i,
+            /incendio|hay\s+fuego|se\s+(est[aá]|ha)\s+quemando/i,
+            /inundaci[oó]n|agua\s+(por\s+todos|desbord|saliendo\s+sola)/i,
+            /no\s+(respira|respiro)|desmay|inconsciente/i,
+            /cortocircuito|chispa[s]?\s*(eléctricas?|en)/i,
+            /explota|explosión/i,
+        ];
+        const isEmergency = emergencyPatterns.some(p => p.test(recentContext));
+
+        // ✅ RECOMENDACIONES: Excludes place-queries that are NOT food/activity recommendations
+        // (parking, farmacia, etc.) to avoid injecting restaurant data into those answers.
+        const isPlaceServiceQuery = /parking|aparcamiento|farmacia|hospital|cajero|atm|gasolinera/i.test(recentContext);
+        
+        // Robust detection: checks recent context (for flow) OR last message (for specific category answers)
+        const isRecommendationQuery = !isPlaceServiceQuery && (
+            /restaurante|comer|cenar|desayuno|almuerzo|tapas|bar|cafeter[íi]a|café|cafe|comida|d[oó]nde.*comer|sitio.*comer|lugar.*comer|d[oó]nde.*cenar|sitio.*cenar|d[oó]nde ir|qu[eé] recomienda|recomendaci[oó]n|recomendaciones|ocio|visitar|qu[eé] ver|qu[eé] hacer|cosas que hacer|actividad|turismo|museo|compra|tienda/i.test(recentContext)
+            || /italian|pizza|pasta|mediterr|hamburgues|burger|american|asiat|japones|chino|thai|sushi|ramen|wok|alta cocina|gourmet|fine dining|brunch|marisco/i.test(lastMessage)
+        );
+        const isApplianceQuery = /funciona|enciende|calienta|lava|centrifuga|error|problema|no va|roto|aver[íi]a|c[oó]digo|fallo|ruido|vibra|gotea|desagua/i.test(recentContext);
+        const isApplianceUsageQuery = /hacerme|hagarme|preparar|calentar agua|hacer (un |el )?(té|te|café|cafe|pasta|arroz|sopa)|c[oó]mo (uso|utilizo|pongo|enciendo|arranco)|poner (el |la |un |una )?(lavadora|lavavajilla|microondas|horno|hervidor|cafetera|tostadora)|encender|arrancar/i.test(recentContext);
 
         const chatStrategy = isEmergency ? 'emergency' : 
                             detectedErrorCode ? 'error_code' : 
-                            // isApplianceUsageQuery checked BEFORE isRecommendationQuery to avoid
-                            // "hacer" in "hacerme un te" falsely triggering recommendation logic
                             (isApplianceQuery || isApplianceUsageQuery) ? 'appliance' :
                             isRecommendationQuery ? 'recommendation' :
                             'standard';
@@ -187,7 +224,8 @@ export async function POST(req: Request) {
             isEmergency,
             isRecommendationQuery,
             isApplianceQuery,
-            isApplianceUsageQuery
+            isApplianceUsageQuery,
+            recentContextLength: recentContext.length
         });
 
         // ═══════════════════════════════════════════════════════
@@ -298,7 +336,9 @@ export async function POST(req: Request) {
         });
 
         // 3. Obtener información ESTRUCTURADA Crítica (Garantía de datos básicos)
-        // NOTA: Movemos esto arriba para usarlo en la validación anti-alucinaciones
+        // Also fetch recommendations directly from DB (not via RAG) when the user asks about food/things to do.
+        // This bypasses the RAG indexing gap — many recs have no embeddings yet.
+        // Always fetch property basics and context
         const [
             { data: propertyInfo },
             { data: propertyBranding },
@@ -311,6 +351,73 @@ export async function POST(req: Request) {
                 .eq('property_id', propertyId)
                 .in('category', ['tech', 'rules', 'access', 'contacts', 'notes'])
         ]);
+
+        // ── DETECCIÓN GLOBAL DE INTENCIÓN (DIRECCIONADA A RECOMENDACIONES) ──
+        const msg = lastMessage.toLowerCase();
+        const contextMsg = recentContext.toLowerCase();
+        
+        const wantFood = /comer|cenar|restaurante|desayuno|almuerzo|tapas|bar|cafeter|caf[eé]|comida|cena|hambre|donde.*com|sitio.*com/.test(msg);
+        const wantShopping = /centro\s+comercial|shopping|moda|tienda\s+de\s+ropa|fashion|boutique|souvenir|regalo|tienda\s+t[ií]pica|artesan[íi]a/.test(contextMsg);
+        const wantAct = /ocio|diversion|hacer|noche|copas|bar|baile|fiesta|cine|bolera|karts/.test(contextMsg);
+        const wantNature = /parque|naturaleza|senderismo|monte|campo|aire libre|lago|rio|bosque/.test(contextMsg);
+        const wantCulture = /museo|monumento|teatro|historia|visit|excursion|iglesia|auditorio/.test(contextMsg);
+        const wantRelax = /relax|masaje|spa|balneario|termas|descanso|sauna/.test(contextMsg);
+        const wantSuper = /supermerca|mercadona|carrefour|lidl|aldi|dia|mercado\s+de\s+abastos|alimentaci[oó]n|hacer\s+la\s+compra|comprar\s+comida/.test(contextMsg);
+
+        // Detección de subcategorías específicas (Sticky: check full recent context)
+        const wantItaliano   = /italian|pizza|pasta|risotto/.test(contextMsg);
+        const wantMediter    = /mediterr[aá]neo|griega|griegos|mar|mariscos/.test(contextMsg);
+        const wantBurger     = /hamburgues|burger|american/.test(contextMsg);
+        const wantAsian      = /asiat|japones|chino|thai|sushi|ramen|wok/.test(contextMsg);
+        const wantAltaCocina = /alta cocina|gourmet|fine dining|estrella/.test(contextMsg);
+        const wantIntl       = /internacional|fusion|variado/.test(contextMsg);
+        const wantDesayuno   = /desayuno|brunch|caf[eé]|cafeter|cruasán|tostadas/.test(contextMsg);
+        const wantRestaurantesGeneral = /restaurante/.test(contextMsg);
+
+        const foodSubcat: string[] = [];
+        if (wantItaliano)   foodSubcat.push('italiano');
+        if (wantMediter)    foodSubcat.push('mediterraneo');
+        if (wantBurger)     foodSubcat.push('hamburguesas');
+        if (wantAsian)      foodSubcat.push('asiatico');
+        if (wantAltaCocina) foodSubcat.push('alta_cocina');
+        if (wantIntl)       foodSubcat.push('internacional');
+        if (wantDesayuno)   foodSubcat.push('desayuno');
+        if (wantRestaurantesGeneral) foodSubcat.push('restaurantes');
+
+        const isGenericFood = wantFood && foodSubcat.length === 0;
+
+        // Efficiency: Only fetch direct recommendations if actually needed
+        let directRecommendations: any[] = [];
+        if (isRecommendationQuery) {
+            const detectedTypes = [
+                ...foodSubcat,
+                ...(wantShopping ? ['compras'] : []),
+                ...(wantAct ? ['ocio'] : []),
+                ...(wantNature ? ['naturaleza'] : []),
+                ...(wantCulture ? ['cultura'] : []),
+                ...(wantRelax ? ['relax'] : []),
+                ...(wantSuper ? ['supermercados'] : []),
+            ];
+
+            const recsQuery = supabase.from('property_recommendations')
+                .select('name, type, description, distance, personal_note, price_range')
+                .eq('property_id', propertyId);
+
+            if (detectedTypes.length > 0) {
+                // Subcategoría específica detectada → filtrar en DB para evitar pérdida de datos por limit
+                recsQuery.in('type', detectedTypes).limit(15);
+            } else {
+                // Query genérica o sin subcat detectada → fetcheamos muestra para ver categorías disponibles
+                recsQuery.order('type').limit(50);
+            }
+
+            const { data: recs } = await recsQuery;
+            directRecommendations = recs || [];
+            console.log('[CHAT-DEBUG] Direct recs from DB (SQL filtered):', { 
+                count: directRecommendations.length, 
+                types: detectedTypes 
+            });
+        }
 
         // Extraer contacto de soporte
         const contactsData = criticalContext?.find((c: any) => c.category === 'contacts')?.content;
@@ -332,6 +439,12 @@ export async function POST(req: Request) {
         const commonBrands = ['TEKA', 'BALAY', 'BOSCH', 'SIEMENS', 'NEFF', 'BSH', 'SAMSUNG', 'LG', 'BEKO', 'WHIRLPOOL'];
         const brandRegex = new RegExp(`\\b(${commonBrands.join('|')})\\b`, 'gi');
 
+        // Mutable object populated/read by context blocks
+        const recMeta: { isGenericFood: boolean; availableCats: string[] } = {
+            isGenericFood,
+            availableCats: []
+        };
+
         const formattedContext = [
             // A. Datos Generales
             ...(propertyInfo ? [`[PROPIEDAD]: "${propertyInfo.name}". Ciudad: ${propertyInfo.city}.`] : []),
@@ -343,7 +456,16 @@ export async function POST(req: Request) {
 
                 if (typeof c.content === 'object' && c.content !== null) {
                     if (c.category === 'access') {
-                        contentString = `Dirección: ${c.content.full_address || ''}. Parking: ${c.content.parking?.info || 'N/A'}. Transp: ${c.content.from_airport?.instructions || 'N/A'}`;
+                        contentString = `Dirección: ${c.content.address || ''}. Parking: ${c.content.parking?.info || 'N/A'}. Transp: ${c.content.from_airport?.instructions || 'N/A'}`;
+                    } else if (c.category === 'tech') {
+                        let techStr = '';
+                        if (c.content.wifi_ssid) {
+                            techStr += `Red WiFi: \`${c.content.wifi_ssid}\`. Contraseña WiFi: \`${c.content.wifi_password || ''}\`. `;
+                        }
+                        if (c.content.router_notes) {
+                            techStr += `Notas Router: ${c.content.router_notes}. `;
+                        }
+                        contentString = techStr.trim() || JSON.stringify(c.content);
                     } else {
                         contentString = JSON.stringify(c.content);
                     }
@@ -355,8 +477,98 @@ export async function POST(req: Request) {
                 return `[${label}]: ${contentString.replace(brandRegex, '')}`;
             }),
 
-            // C. RAG (Manuales Técnicos, FAQs, Recomendaciones)
-            ...(relevantChunks || []).map((c: any) => {
+            // C. RECOMENDACIONES DIRECTAS DE LA BASE DE DATOS
+            ...(isRecommendationQuery && directRecommendations && directRecommendations.length > 0 ? (() => {
+                // Category flags are derived from global intent flags detect above (msg/lastMessage based)
+                // Build available food categories from the DB data
+                const ALL_FOOD_TYPES = ['restaurantes','italiano','mediterraneo','hamburguesas','asiatico','alta_cocina','internacional','desayuno'];
+                const getType = (r: any) => (r.type || r.category || 'general').toLowerCase();
+                const allFoodRecs = (directRecommendations as any[]).filter(r => ALL_FOOD_TYPES.includes(getType(r)));
+
+                // Which food categories are actually in DB?
+                const foodCatsInDB = Array.from(new Set(allFoodRecs.map(r => getType(r))));
+                recMeta.availableCats = foodCatsInDB;
+
+                // ── GENERIC food query → only inject a category menu, NOT the restaurant list ──
+                // But only if there are enough categories to warrant a choice (> 2)
+                if (recMeta.isGenericFood && foodCatsInDB.length > 2) {
+                    const catLabels: Record<string, string> = {
+                        'restaurantes': 'Restaurantes', 'italiano': 'Italiana',
+                        'mediterraneo': 'Mediterránea', 'hamburguesas': 'Hamburguesas',
+                        'asiatico': 'Asiática', 'alta_cocina': 'Alta cocina',
+                        'internacional': 'Internacional', 'desayuno': 'Desayunos / Cafeterías'
+                    };
+                    const catSummary = foodCatsInDB.map(c => catLabels[c] || c).join(', ');
+                    // Return only the category list — no restaurant names visible to Gemini
+                    return [`[CATEGORIAS_DISPONIBLES_COMIDA]: ${catSummary}`];
+                }
+
+                if (foodCatsInDB.length <= 2) {
+                    recMeta.isGenericFood = false;
+                }
+
+                // ── SPECIFIC subcategory or non-food → inject only the relevant recs ──
+                let allowedTypes: string[] = [...foodSubcat];
+                if (wantShopping)   allowedTypes.push('compras');
+                if (wantAct)        allowedTypes.push('ocio');
+                if (wantNature)     allowedTypes.push('naturaleza');
+                if (wantCulture)    allowedTypes.push('cultura');
+                if (wantRelax)      allowedTypes.push('relax');
+
+                const filteredRecs = allowedTypes.length > 0
+                    ? (directRecommendations as any[]).filter(r => allowedTypes.includes(getType(r)))
+                    : (directRecommendations as any[]);
+
+                if (filteredRecs.length === 0) return [];
+
+                // Group by type
+                const grouped: Record<string, any[]> = {};
+                for (const r of filteredRecs) {
+                    const cat = getType(r);
+                    if (!grouped[cat]) grouped[cat] = [];
+                    grouped[cat].push(r);
+                }
+
+                const catLabelMap: Record<string, string> = {
+                    'restaurantes':  'RESTAURANTES_GENERALES',
+                    'italiano':      'RESTAURANTES_ITALIANOS',
+                    'mediterraneo':  'RESTAURANTES_MEDITERRANEOS',
+                    'hamburguesas':  'HAMBURGUESAS_Y_AMERICANO',
+                    'asiatico':      'COCINA_ASIATICA',
+                    'alta_cocina':   'ALTA_COCINA',
+                    'internacional': 'COCINA_INTERNACIONAL',
+                    'desayuno':      'CAFETERIAS_Y_DESAYUNOS',
+                    'ocio':          'LUGARES_DE_OCIO',
+                    'compras':       'TIENDAS_Y_COMPRAS',
+                    'naturaleza':    'NATURALEZA_Y_PARQUES',
+                    'cultura':       'CULTURA_Y_VISITAS',
+                    'relax':         'RELAX_Y_BIENESTAR',
+                };
+
+                return Object.entries(grouped).map(([cat, items]) => {
+                    const catLabel = catLabelMap[cat] || 'RECOMENDACIONES_LOCALES';
+                    const itemLines = items.map((r: any) => {
+                        let line = `- **${r.name}**`;
+                        if (r.distance)     line += ` (${r.distance})`;
+                        if (r.price_range)  line += ` ${r.price_range}`;
+                        if (r.description)  line += `: ${r.description.substring(0, 150)}`;
+                        if (r.personal_note) line += ` 💬 Nota del anfitrión: "${r.personal_note}"`;
+                        return line;
+                    }).join('\n');
+                    return `[${catLabel}]:\n${itemLines}`;
+                });
+            })() : []),
+
+            // D. RAG (Manuales Técnicos, FAQs, otras Recomendaciones)
+            // If it's a generic food query, we filter out recommendation chunks to let the concierge flow work.
+            ...(relevantChunks || [])
+                .filter((c: any) => {
+                    const sourceType = c.source_type?.toLowerCase() || '';
+                    const isRec = sourceType === 'recommendation' || sourceType === 'recommendations';
+                    if (recMeta.isGenericFood && isRec) return false;
+                    return true;
+                })
+                .map((c: any) => {
                 const isEnriched = c.metadata?.enriched === true;
                 const sourceType = c.source_type?.toLowerCase() || '';
                 
@@ -390,8 +602,14 @@ export async function POST(req: Request) {
                     });
                 }
                 
-                // Limpiar marcas del contenido RAG
-                return `[${type}]: ${c.content.replace(brandRegex, '')}`;
+                // Limpiar marcas del contenido RAG (incluyendo el tag interno [[RECOMENDACIÓN:...]])
+                // Usamos un regex más robusto que ignore acentos y espacios, y limpie incluso si hay variaciones
+                const cleanContent = c.content
+                    .replace(/\[\[RECOMENDACI[ÓO]N:\s*(.*?)\s*\]\]/gi, '$1') // Extrae el nombre de forma robusta
+                    .replace(/\[\[.*?\]\]/g, '') // Elimina cualquier otro tag residual entre corchetes dobles
+                    .replace(brandRegex, '');
+                
+                return `[${type}]: ${cleanContent}`;
             })
         ].join('\n\n\n');
 
@@ -399,10 +617,12 @@ export async function POST(req: Request) {
         // NIVEL 2: Fallback con búsqueda externa (Brave Search)
         // ═══════════════════════════════════════════════════════
         // 🔧 FEATURE FLAG: Cambiar a false para desactivar el fallback
-        const ENABLE_CHAT_GROUNDING_FALLBACK = true;
+        // C3: Brave Search DISABLED — RAG with manuales should be sufficient.
+        // External search can contaminate with instructions for different appliance models.
+        const ENABLE_CHAT_GROUNDING_FALLBACK = false;
 
         let fallbackContext = '';
-        const isProblemRelated = /no funciona|no va|no enciende|no arranca|error|problema|roto|avería|averia|fallo|no calienta|no enfría|gotea|vibra|ruido|olor|bloqueo|código|no desagua|no centrifuga/i.test(lastMessage);
+        const isProblemRelated = /no funciona|no va|no enciende|no arranca|error|problema|roto|aver[íi]a|fallo|no calienta|no enf[rí]a|gotea|vibra|ruido|olor|bloqueo|c[oó]digo|no desagua|no centrifuga/i.test(recentContext);
 
         if (ENABLE_CHAT_GROUNDING_FALLBACK && isProblemRelated && !isEmergency) {
             // Calcular confianza del RAG: ¿los chunks son relevantes?
@@ -480,24 +700,50 @@ export async function POST(req: Request) {
         // ═══════════════════════════════════════════════════════
         let systemInstruction: string;
 
+        // C5: LANGUAGE HANDLING section — for multilingual conversation history.
+        // Only the last message is translated for RAG; history goes to Gemini as-is.
+        const languageHandlingBlock = `
+# LANGUAGE HANDLING:
+- The conversation history may contain messages in multiple languages (English, French, German, Italian, Portuguese, etc.).
+- You MUST understand all of them, but ALWAYS respond in Spanish only.
+- Do not acknowledge any language switch. Just process and respond in Spanish.
+- Your Spanish response will be automatically translated for the guest by a downstream system.`;
+
+        // MAP FORMAT: instruct Gemini to emit structured markers for physical addresses.
+        // The frontend (GuestChat.tsx) parses [[MAP:...]] and renders a tappable map button.
+        const mapFormatBlock = `
+# FORMATO DE DIRECCIONES:
+Cuando menciones una dirección física concreta (calle, hospital, restaurante, etc.), escríbela así:
+[[MAP:Dirección completa, Ciudad:Nombre del lugar]]
+Ejemplo: [[MAP:Avenida Castillo de Olivares s/n, Torrelodones, Madrid:Hospital HM Torrelodones]]
+NUNCA escribas una dirección como texto plano si dispones de ella.
+Solo usa este formato cuando tengas la dirección exacta en el CONTEXTO — no inventes direcciones.`;
+
+        // C1: Anti-hallucination closing anchor — placed at end of every system prompt.
+        const noInventionAnchor = `
+⛔ REGLA FINAL ABSOLUTA:
+Si la información solicitada NO está en el CONTEXTO anterior (excepto si estás en medio de un flujo de recomendación según las etiquetas [CATEGORIAS_DISPONIBLES_...], [RESTAURANTES_...], [RECOMENDACIONES_...], [INFO_COMIDA], etc.), responde exactamente:
+"No tengo esa información guardada. Contacta con ${supportContact}."
+NUNCA completes, asumas, deduzcas ni inventes con conocimiento externo al CONTEXTO.`;
+
         if (isEmergency) {
             // ⚠️ EMERGENCIA: Respuesta inmediata de seguridad
             systemInstruction = `EMERGENCIA DE SEGURIDAD DETECTADA.
-            
-# LANGUAGE RULE:
-- ALWAYS respond ENTIRELY in ${responseLanguage}. No exceptions.
-- Use ONLY natural Spanish expressions.
+${languageHandlingBlock}
+${mapFormatBlock}
+${noInventionAnchor}
 
 No añadas nada más. No intentes diagnosticar. Prioridad absoluta: seguridad del huésped.
-NUNCA menciones "el manual" ni "la documentación" — el huésped no sabe que existen.`;
+NUNCA menciones "el manual" ni "la documentación" — el huésped no sabe que existen.
+
+Incluye siempre la dirección del apartamento al final para que el huésped 
+pueda dársela a los servicios de emergencia: ${criticalContext?.find((c: any) => c.category === 'access')?.content?.address || propertyInfo?.address || 'la dirección del alojamiento'}`;
 
         } else if (detectedErrorCode) {
             // 🔧 CÓDIGO DE ERROR: Diagnóstico específico
             systemInstruction = `Eres el asistente del apartamento "${propertyInfo?.name || 'este apartamento'}". El huésped tiene el código de error: ${detectedErrorCode}.
-            
-# LANGUAGE RULE:
-- ALWAYS respond ENTIRELY in ${responseLanguage}. No exceptions.
-- Use only pure ${responseLanguage}.
+${languageHandlingBlock}
+${mapFormatBlock}
 
 TU MISIÓN: Busca ESTE código EXACTO (${detectedErrorCode}) en la tabla de diagnóstico del contexto.
 
@@ -513,76 +759,87 @@ Prueba esto y me cuentas si se soluciona."
 
 # SI NO ENCUENTRAS ESE CÓDIGO:
 "No encuentro el código ${detectedErrorCode} en el manual de este aparato.
-
 ¿Puedes comprobar que el código sea exactamente ese? A veces se confunde con otros parecidos.
-
 Si persiste, contacta con ${supportContact}."
 
 # REGLAS
 - Respuesta máximo 5 líneas
-- Tono natural en ${targetLanguageName}
-- SOLO información del contexto, no inventes soluciones
+- Tono natural
 - ❌ NUNCA digas "consulta el manual" ni similar.
 - 📍 ${currentTimeContext}
 
 # CONTEXTO:
-${fullContext}`;
+${fullContext}
+${noInventionAnchor}`;
 
         } else {
             // 💬 ESTÁNDAR: Asistente personal del apartamento
-            // FASE 16: Grounding ultra-estricto y ejemplos anti-alucinación
+            const hasDirectRecs = isRecommendationQuery && (directRecommendations?.length ?? 0) > 0;
+
             const groundingRules = `
-# REGLAS DE SEGURIDAD E INFORMACIÓN:
-1. Eres un sistema de información CERRADO. SOLO puedes usar el CONTEXTO proporcionado.
-2. Si el usuario pregunta por algo que NO está en el CONTEXTO -> Responde amigablemente indicando que no tienes esa información y sugiérele contactar con ${supportContact}.
-3. NO inventes instrucciones genéricas.
-4. Tu prioridad es la precisión basada en los datos del apartamento.
-5. Responde siempre en Español.
+# REGLAS DE INFORMACIÓN:
+1. Eres el asistente experto del apartamento. Tu objetivo es SER ÚTIL al huésped.
+2. Para preguntas sobre el apartamento, normas, acceso, electrodomésticos: usa solo el CONTEXTO.
+3. Para recomendaciones locales: usa los datos del CONTEXTO que incluye la lista completa guardada por el anfitrión.
+4. Para preguntas genéricas de viaje o de la zona: puedes responder con conocimiento general + los datos locales del contexto.
+5. NO inventes datos específicos del apartamento (códigos wifi, contraseñas, etc.) si no están en el contexto.
+6. FORMATO DE WIFI: Siempre que des el nombre de red o la contraseña del WiFi, ponlos OBLIGATORIAMENTE entre comillas invertidas simples (backticks, \`) para que el huésped pueda copiarlos y pegarlos fácilmente. Ejemplo: La red es \`MiRed_5G\` y la contraseña \`12345678\`. ESTO ES CRÍTICO.
+7. Responde siempre en Español.
 
 # CONTEXTO:
 ${fullContext}`;
 
-            // ✅ NUEVO: Instrucciones específicas para recomendaciones
+            // Recommendation guidance: reads from the local recMeta object populated by the IIFE above
+            const isGenericFood: boolean = recMeta.isGenericFood;
+            const availableCats: string[] = recMeta.availableCats;
+
+            const catLabels: Record<string, string> = {
+                'restaurantes': 'Restaurantes generales', 'italiano': 'Italiana',
+                'mediterraneo': 'Mediterránea', 'hamburguesas': 'Hamburguesas',
+                'asiatico': 'Asiática', 'alta_cocina': 'Alta cocina',
+                'internacional': 'Internacional', 'desayuno': 'Desayunos / Cafeterías'
+            };
+            const availableCatNames = availableCats
+                .map(c => catLabels[c] || c)
+                .join(', ');
+
             const recommendationGuidance = isRecommendationQuery ? `
 
-# GUÍA ESPECIAL PARA RECOMENDACIONES:
-- Si hay [RESTAURANTES_Y_BARES] o [LUGARES_Y_ACTIVIDADES] en el contexto, úsalos SIEMPRE como prioridad.
-- Da 2-3 opciones concretas con nombres específicos del contexto.
-- Incluye distancia aproximada si está disponible en los datos.
-- Formato amigable: "Te recomiendo [Nombre], que está a [distancia]. [Breve descripción del contexto]."
-- Si NO hay recomendaciones específicas en el contexto, di: "No tengo recomendaciones específicas guardadas para esta zona, pero ${supportContact} puede darte los mejores consejos locales."
-- NUNCA inventes nombres de restaurantes o lugares que no estén en el contexto.
+# GUÍA PARA RECOMENDACIONES LOCALES:
+${hasDirectRecs ? (
+    isGenericFood ? `
+- El CONTEXTO tiene recomendaciones de estas CATEGORÍAS disponibles: ${availableCatNames}.
+- REGLA CONCIERGE: Como el huésped preguntó de forma genérica ("¿Dónde puedo comer?"), tu siguiente respuesta debe ser UNA SOLA pregunta de cualificación corta y amigable, listando las categorías disponibles.
+- ESTA PREGUNTA SE CONSIDERA UNA RESPUESTA VÁLIDA CON DATOS DEL CONTEXTO. Ignora la regla de "No tengo esa información" en este paso.
+- EJEMPLO de respuesta esperada: "¡Claro! ¿Tienes alguna preferencia de cocina? Tengo recomendaciones de: **Italiana**, **Mediterránea**, **Hamburguesas** y **Desayunos / Cafeterías**. 😊"
+- Muestra MÁXIMO las categorías que REALMENTE existen en el CONTEXTO. No inventes categorías.
+- NO listes restaurantes todavía. Espera la respuesta del huésped.` : `
+- El CONTEXTO ya incluye las recomendaciones reales del anfitrión bajo las etiquetas [HAMBURGUESAS_Y_AMERICANO], [CAFETERIAS_Y_DESAYUNOS], [RESTAURANTES_ITALIANOS], etc.
+- Da 3-5 opciones COPIANDO literalmente los nombres que aparecen tras "**" en esas etiquetas. No reduzcas, no combines ni traduzas los nombres.
+- Formato: "**[Nombre exacto del contexto]** ([distancia si existe]) — [descripción breve del contexto]."
+- ⛔ PROHIBIDO ABSOLUTO: Inventar un nombre que no aparezca textualmente en una etiqueta del CONTEXTO. Si no encuentras ningún nombre en el CONTEXTO para la categoría pedida, di "No tengo esa información guardada".`
+) : `
+- Si no hay recomendaciones en el contexto, di amablemente que no tienes lista guardada para la zona y sugiere preguntar a ${supportContact}.`}
+- ⛔ Si el nombre que ibas a escribir no aparece LITERALMENTE en el CONTEXTO → no lo escribas. Solo nombres del CONTEXTO.
 ` : '';
 
-            systemInstruction = language === 'es' 
-              ? `Eres el asistente personal del apartamento "${propertyInfo?.name || 'este apartamento'}".
-              
+
+            systemInstruction = `Eres el asistente personal del apartamento "${propertyInfo?.name || 'este apartamento'}".
+${languageHandlingBlock}
+${mapFormatBlock}
+${noInventionAnchor}
+
 # TU FORMA DE SER
 - Hablas como un amigo que conoce bien el apartamento.
 - Das respuestas PRÁCTICAS y ÚTILES, no técnicas.
+
 ${groundingRules}
 ${recommendationGuidance}
 
 # REGLAS ABSOLUTAS
 - ❌ NUNCA menciones modelos técnicos ni "el manual".
 - ✅ Tono natural, como WhatsApp.
-- ✅ Si no tienes info, dilo y da el contacto de ${supportContact}.
-- 📍 ${currentTimeContext}`
-              : `Eres un asistente de procesamiento interno. 
-              
-# REGLA CRÍTICA: 
-- Debes responder EXCLUSIVAMENTE en Español. 
-- Tu respuesta será traducida automáticamente por un sistema posterior.
-- Si respondes en inglés o cualquier otro idioma, el sistema fallará.
-${groundingRules}
-${recommendationGuidance}
-
-# MISIÓN:
-- Eres el asistente del apartamento "${propertyInfo?.name || 'este apartamento'}".
-- Da consejos prácticos y amigables (siempre en español).
-- NO menciones el manual.
-- PROHIBIDO INVENTAR: Si el aparato no está en el CONTEXTO, indica que no tienes info y da el contacto con ${supportContact} (en español).
-- Fecha y hora: ${currentTimeContext}`;
+- 📍 ${currentTimeContext}`;
         }
 
         // 5. Gemini Call (Streaming con 2.0 Flash)
@@ -613,17 +870,18 @@ ${recommendationGuidance}
                 if (!reader) return;
 
                 const decoder = new TextDecoder();
-                let buffer = '';
+                let eventBuffer = '';
                 let accumulatedText = '';
+                let mapMarkerBuffer = ''; // Buffer to prevent splitting [[MAP:...]]
 
                 try {
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) break;
 
-                        buffer += decoder.decode(value, { stream: true });
-                        const lines = buffer.split('\n');
-                        buffer = lines.pop() || '';
+                        eventBuffer += decoder.decode(value, { stream: true });
+                        const lines = eventBuffer.split('\n');
+                        eventBuffer = lines.pop() || '';
 
                         for (const line of lines) {
                             if (line.startsWith('data: ')) {
@@ -632,41 +890,54 @@ ${recommendationGuidance}
                                     const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
                                     if (text) {
                                         if (language === 'es') {
-                                            // Normal flow for Spanish - format as Vercel AI SDK data stream protocol
-                                            const chunk = `0:${JSON.stringify(text)}\n`;
-                                            controller.enqueue(new TextEncoder().encode(chunk));
+                                            // 🇪🇸 Spanish Flow - Implement Map Marker Buffer
+                                            if (text.includes('[[') || mapMarkerBuffer) {
+                                                mapMarkerBuffer += text;
+                                                if (mapMarkerBuffer.includes(']]')) {
+                                                    const chunk = `0:${JSON.stringify(mapMarkerBuffer)}\n`;
+                                                    controller.enqueue(new TextEncoder().encode(chunk));
+                                                    mapMarkerBuffer = '';
+                                                }
+                                            } else {
+                                                const chunk = `0:${JSON.stringify(text)}\n`;
+                                                controller.enqueue(new TextEncoder().encode(chunk));
+                                            }
                                         } else {
-                                            // Translation flow for other languages
+                                            // 🌍 Translation Flow - Avoid splitting markers inside chunks
                                             accumulatedText += text;
                                             
-                                            // OPTIMIZED CHUNKING:
-                                            // 1. Split by \n (no space required)
-                                            // 2. Split by .!? followed by whitespace
-                                            // 3. Split BEFORE a list marker (e.g., " 1. ", " * ")
-                                            const boundaryRegex = /(\n|[\.!?]\s+|\s[\*\-]\s|\s\d+\.\s)/g;
-                                            let match;
-                                            
-                                            while ((match = boundaryRegex.exec(accumulatedText)) !== null) {
-                                                const breakPoint = match.index + (match[0].startsWith(' ') ? 0 : 1);
-                                                const chunkToTranslate = accumulatedText.substring(0, breakPoint).trim();
+                                            // Check if we are inside a map marker. If so, don't flush yet.
+                                            const hasOpening = accumulatedText.includes('[[');
+                                            const hasClosing = accumulatedText.includes(']]');
+                                            const isInsideMarker = hasOpening && !hasClosing;
+
+                                            if (!isInsideMarker) {
+                                                const boundaryRegex = /(\n|[\.!?]\s+|\s[\*\-]\s|\s\d+\.\s)/g;
+                                                let match;
                                                 
-                                                if (chunkToTranslate) {
-                                                    const { text: translatedChunk } = await TranslationService.translate(
-                                                        chunkToTranslate,
-                                                        'es',
-                                                        language,
-                                                        { propertyId, context: 'chat' }
-                                                    );
-                                                    const chunk = `0:${JSON.stringify(translatedChunk + ' ')}\n`;
-                                                    controller.enqueue(new TextEncoder().encode(chunk));
+                                                while ((match = boundaryRegex.exec(accumulatedText)) !== null) {
+                                                    const breakPoint = match.index + (match[0].startsWith(' ') ? 0 : 1);
+                                                    const chunkToTranslate = accumulatedText.substring(0, breakPoint).trim();
+                                                    
+                                                    if (chunkToTranslate) {
+                                                        const { text: translatedChunk } = await TranslationService.translate(
+                                                            chunkToTranslate,
+                                                            'es',
+                                                            language,
+                                                            { propertyId, context: 'chat' }
+                                                        );
+                                                        const chunk = `0:${JSON.stringify(translatedChunk + ' ')}\n`;
+                                                        controller.enqueue(new TextEncoder().encode(chunk));
+                                                    }
+                                                    
+                                                    accumulatedText = accumulatedText.substring(breakPoint).trimStart();
+                                                    boundaryRegex.lastIndex = 0; 
                                                 }
-                                                
-                                                accumulatedText = accumulatedText.substring(breakPoint).trimStart();
-                                                boundaryRegex.lastIndex = 0; 
                                             }
 
                                             // Fallback: If a single sentence is too long (> 200 chars), force split
-                                            if (accumulatedText.length > 200) {
+                                            // but ONLY if we are not in the middle of a map marker.
+                                            if (accumulatedText.length > 200 && !isInsideMarker) {
                                                 const lastSpace = accumulatedText.lastIndexOf(' ', 200);
                                                 const breakPoint = lastSpace !== -1 ? lastSpace : 200;
                                                 const chunkToTranslate = accumulatedText.substring(0, breakPoint).trim();
@@ -690,7 +961,11 @@ ${recommendationGuidance}
                         }
                     }
 
-                    // Flush remaining text for non-Spanish
+                    // Final flush
+                    if (mapMarkerBuffer) {
+                        controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(mapMarkerBuffer)}\n`));
+                    }
+
                     if (language !== 'es' && accumulatedText.trim()) {
                         const { text: translatedChunk } = await TranslationService.translate(
                             accumulatedText,

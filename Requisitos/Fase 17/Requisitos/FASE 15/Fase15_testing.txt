@@ -1,0 +1,767 @@
+# Guía de Testing - Sistema de Traducción con Caché
+## Para Testing Manual (No requiere conocimientos de programación)
+
+---
+
+## 📋 CHECKLIST GENERAL
+
+**Antes de empezar:**
+- [ ] Antigravity confirma que el deploy en staging está completo
+- [ ] Tienes acceso a:
+  - [ ] Staging: https://staging.tuapp.com
+  - [ ] Supabase SQL Editor
+  - [ ] Logs de Vercel/tu plataforma
+- [ ] Tienes a mano este checklist impreso o en otra pestaña
+
+**Duración estimada:** 3-4 horas
+
+---
+
+## 🧪 TEST 1: Verificar Base de Datos (15 min)
+
+### Objetivo
+Confirmar que las tablas se crearon correctamente en Supabase.
+
+### Pasos
+
+**1.1. Abrir Supabase SQL Editor**
+- Ir a: https://supabase.com/dashboard/project/TU_PROJECT/sql
+- Copiar y ejecutar este query:
+
+```sql
+-- Verificar que las tablas existen
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public' 
+AND table_name IN ('translation_cache', 'translation_metrics');
+```
+
+**✅ Resultado esperado:**
+```
+translation_cache
+translation_metrics
+```
+
+**❌ Si no aparecen:** Avisar a Antigravity que el SQL no se ejecutó.
+
+---
+
+**1.2. Verificar índices**
+
+```sql
+-- Verificar que los índices existen
+SELECT indexname 
+FROM pg_indexes 
+WHERE tablename IN ('translation_cache', 'translation_metrics');
+```
+
+**✅ Resultado esperado:** Debe mostrar al menos 4 índices:
+```
+idx_translation_hash
+idx_translation_usage
+idx_translation_langs
+idx_translation_last_used
+```
+
+---
+
+**1.3. Verificar funciones SQL**
+
+```sql
+-- Verificar que las funciones existen
+SELECT routine_name 
+FROM information_schema.routines 
+WHERE routine_schema = 'public' 
+AND routine_name IN ('cleanup_translation_cache', 'get_translation_cache_stats');
+```
+
+**✅ Resultado esperado:**
+```
+cleanup_translation_cache
+get_translation_cache_stats
+```
+
+---
+
+## 🧪 TEST 2: Cache MISS - Primera Traducción (15 min)
+
+### Objetivo
+Verificar que la primera vez que se traduce algo, se guarda en la base de datos.
+
+### Pasos
+
+**2.1. Limpiar caché (empezar desde cero)**
+
+En Supabase SQL Editor:
+```sql
+DELETE FROM translation_cache;
+DELETE FROM translation_metrics;
+```
+
+**✅ Confirmación:** Debe decir "0 rows affected" o similar.
+
+---
+
+**2.2. Enviar mensaje en inglés**
+
+1. Abrir staging: https://staging.tuapp.com/villa-sol-mar (o tu property test)
+2. **Cambiar idioma a inglés** (selector de idioma)
+3. Escribir en el chat: `"What is the WiFi password?"`
+4. Enviar y esperar respuesta
+
+**✅ Debe responder en inglés** (no español)
+
+---
+
+**2.3. Revisar logs de Vercel**
+
+1. Ir a: Vercel Dashboard → tu proyecto → Logs
+2. Buscar líneas recientes con `[TRANSLATION]`
+
+**✅ Resultado esperado:**
+```
+[TRANSLATION] ❌ Cache MISS - translating (en → es)...
+[TRANSLATION] ✅ Translated in XXXms (total: XXXms)
+```
+
+**❌ Si ves:**
+```
+[TRANSLATION] Cache HIT
+```
+→ Significa que no se limpió bien. Repetir paso 2.1.
+
+---
+
+**2.4. Verificar que se guardó en base de datos**
+
+En Supabase SQL Editor:
+```sql
+-- Ver traducciones guardadas
+SELECT 
+  source_lang,
+  target_lang,
+  LEFT(source_text, 50) as source_preview,
+  LEFT(translated_text, 50) as translated_preview,
+  usage_count,
+  created_at
+FROM translation_cache
+ORDER BY created_at DESC
+LIMIT 5;
+```
+
+**✅ Resultado esperado:** Debe aparecer 1 fila:
+```
+source_lang: en
+target_lang: es
+source_preview: What is the WiFi password?
+translated_preview: ¿Cuál es la contraseña del WiFi?
+usage_count: 1
+```
+
+---
+
+## 🧪 TEST 3: Cache HIT - Traducción Repetida (10 min)
+
+### Objetivo
+Verificar que la segunda vez que se traduce lo mismo, usa la caché.
+
+### Pasos
+
+**3.1. Recargar la página**
+
+1. Recargar staging (F5)
+2. Escribir **exactamente el mismo mensaje**: `"What is the WiFi password?"`
+3. Enviar
+
+**✅ Debe responder en inglés (más rápido que antes)**
+
+---
+
+**3.2. Revisar logs de Vercel**
+
+**✅ Resultado esperado:**
+```
+[TRANSLATION] 💾 L2 Cache HIT (database): XXms
+```
+
+**❌ Si ves "Cache MISS" otra vez:**
+→ La caché no está funcionando. Avisar a Antigravity.
+
+---
+
+**3.3. Verificar que el contador aumentó**
+
+En Supabase SQL Editor:
+```sql
+SELECT 
+  source_text,
+  usage_count,
+  last_used_at
+FROM translation_cache
+WHERE source_text ILIKE '%wifi password%'
+ORDER BY last_used_at DESC;
+```
+
+**✅ Resultado esperado:**
+```
+usage_count: 2  (aumentó de 1 a 2)
+last_used_at: [timestamp reciente]
+```
+
+---
+
+## 🧪 TEST 4: Múltiples Idiomas (20 min)
+
+### Objetivo
+Probar que funciona con francés, alemán, italiano.
+
+### Pasos
+
+**4.1. Probar en francés**
+
+1. Cambiar idioma a **Français**
+2. Escribir: `"Comment utiliser le four?"`
+3. Enviar
+
+**✅ Debe responder en francés**
+
+Verificar en logs:
+```
+[TRANSLATION] Cache MISS (primera vez)
+```
+
+---
+
+**4.2. Repetir en francés**
+
+1. Recargar página
+2. Escribir de nuevo: `"Comment utiliser le four?"`
+3. Enviar
+
+**✅ Logs deben decir:**
+```
+[TRANSLATION] Cache HIT
+```
+
+---
+
+**4.3. Probar en alemán**
+
+1. Cambiar idioma a **Deutsch**
+2. Escribir: `"Wie benutze ich den Ofen?"`
+3. Enviar
+
+**✅ Debe responder en alemán**
+
+---
+
+**4.4. Verificar base de datos**
+
+```sql
+-- Ver todas las traducciones por idioma
+SELECT 
+  source_lang,
+  COUNT(*) as total_translations,
+  SUM(usage_count) as total_usage
+FROM translation_cache
+GROUP BY source_lang
+ORDER BY total_usage DESC;
+```
+
+**✅ Resultado esperado:**
+```
+en  | 1 | 2  (inglés, usado 2 veces)
+fr  | 1 | 1  (francés, usado 1 vez)
+de  | 1 | 1  (alemán, usado 1 vez)
+```
+
+---
+
+## 🧪 TEST 5: Streaming de Respuestas Largas (15 min)
+
+### Objetivo
+Verificar que respuestas largas se traducen correctamente en chunks.
+
+### Pasos
+
+**5.1. Hacer pregunta que genera respuesta larga**
+
+En inglés, escribir:
+```
+"Can you list all the programs the oven has and explain what each one does?"
+```
+
+**✅ La respuesta debe:**
+- Aparecer gradualmente (streaming)
+- Estar completamente en inglés
+- No tener cortes raros mid-palabra
+
+**❌ Señales de problema:**
+- Respuesta aparece de golpe (no streaming)
+- Mitad inglés, mitad español
+- Palabras cortadas: "The pr-ogram is for bak-ing"
+
+---
+
+**5.2. Verificar chunks en logs**
+
+```
+[TRANSLATION] Cache HIT (múltiples líneas, una por chunk)
+```
+
+**✅ Debe haber varios cache hits (uno por chunk de ~150 caracteres)**
+
+---
+
+## 🧪 TEST 6: Código de Error (15 min)
+
+### Objetivo
+Verificar que códigos de error se detectan y traducen correctamente.
+
+### Pasos
+
+**6.1. En español (baseline)**
+
+1. Cambiar idioma a **Español**
+2. Escribir: `"El horno marca error E15"`
+3. Enviar
+
+**✅ Debe responder explicando el error E15 en español**
+
+---
+
+**6.2. En inglés (traducción)**
+
+1. Cambiar idioma a **English**
+2. Escribir: `"The oven shows error E15"`
+3. Enviar
+
+**✅ Debe:**
+- Detectar "E15" correctamente
+- Responder en inglés
+- Dar la misma solución que en español (traducida)
+
+---
+
+**6.3. Verificar en logs**
+
+```
+[CHAT-DEBUG] Detection: { chatStrategy: 'error_code', detectedErrorCode: 'E15' }
+[TRANSLATION] RAG Query Translation
+```
+
+**✅ La query RAG debe traducirse antes de buscar en la base de datos**
+
+---
+
+## 🧪 TEST 7: Emergencias (10 min)
+
+### Objetivo
+Verificar que emergencias se manejan en cualquier idioma.
+
+### Pasos
+
+**7.1. En inglés**
+
+Escribir: `"The oven is smoking!"`
+
+**✅ Debe responder:**
+- En inglés
+- Con tono de urgencia: "⚠️ For safety, turn off/unplug..."
+- Dar contacto de soporte
+
+---
+
+**7.2. En francés**
+
+Escribir: `"Le four fume!"`
+
+**✅ Debe responder:**
+- En francés
+- Mismo formato de emergencia
+
+---
+
+## 🧪 TEST 8: Performance y Latencia (20 min)
+
+### Objetivo
+Medir que las traducciones con caché son rápidas.
+
+### Pasos
+
+**8.1. Medir cache MISS (primera vez)**
+
+1. Limpiar caché: `DELETE FROM translation_cache;`
+2. Escribir mensaje nuevo: `"Where is the parking?"`
+3. **Medir tiempo** (cronómetro desde ENTER hasta primera letra de respuesta)
+
+**✅ Resultado esperado:** 1-3 segundos
+
+---
+
+**8.2. Medir cache HIT (segunda vez)**
+
+1. Recargar página
+2. Escribir **mismo mensaje**: `"Where is the parking?"`
+3. **Medir tiempo**
+
+**✅ Resultado esperado:** 0.5-1.5 segundos (mucho más rápido)
+
+**Mejora esperada:** Al menos 50% más rápido
+
+---
+
+**8.3. Verificar en logs el tiempo exacto**
+
+```
+[TRANSLATION] Cache MISS: XXXms  (primera vez)
+[TRANSLATION] Cache HIT: XXms    (segunda vez)
+```
+
+**✅ El cache HIT debe ser <100ms**
+
+---
+
+## 🧪 TEST 9: Estadísticas de Caché (10 min)
+
+### Objetivo
+Verificar que las estadísticas se generan correctamente.
+
+### Pasos
+
+**9.1. Ejecutar función de stats**
+
+En Supabase SQL Editor:
+```sql
+SELECT * FROM get_translation_cache_stats();
+```
+
+**✅ Resultado esperado (ejemplo):**
+```json
+{
+  "total_translations": 8,
+  "total_usage": 15,
+  "avg_translation_time_ms": 450.25,
+  "top_source_lang": "en",
+  "top_target_lang": "es",
+  "cache_size_mb": 0.02
+}
+```
+
+**❌ Si devuelve error:** La función SQL no se creó bien.
+
+---
+
+**9.2. Probar API de admin (si existe)**
+
+En navegador o Postman:
+```
+GET https://staging.tuapp.com/api/admin/translation-stats
+Authorization: Bearer TU_ADMIN_API_KEY
+```
+
+**✅ Debe devolver JSON con stats (igual que arriba)**
+
+**❌ Si da 401:** Verificar que `ADMIN_API_KEY` está en variables de entorno.
+
+---
+
+## 🧪 TEST 10: Edge Cases (30 min)
+
+### Objetivo
+Probar casos extremos que podrían romper el sistema.
+
+### Casos a probar:
+
+**10.1. Texto muy largo**
+```
+Escribir 10+ líneas de texto en inglés
+```
+**✅ Debe traducir completo sin errores**
+
+---
+
+**10.2. Caracteres especiales**
+```
+"What's the WiFi password? It's André's apartment!"
+```
+**✅ Debe manejar apóstrofes y acentos**
+
+---
+
+**10.3. Mezcla de idiomas**
+```
+"Hello, ¿dónde está el parking? Merci!"
+```
+**✅ Debe detectar idioma principal (el del selector)**
+
+---
+
+**10.4. Emojis**
+```
+"WiFi password? 🔐📶"
+```
+**✅ Debe funcionar normalmente**
+
+---
+
+**10.5. Mismo idioma (bypass)**
+
+1. Cambiar selector a **Español**
+2. Escribir en español: `"¿Cuál es la clave WiFi?"`
+
+**✅ No debe traducir (es → es)**
+
+Verificar en logs:
+```
+NO debe aparecer [TRANSLATION]
+```
+
+---
+
+## 🧪 TEST 11: Limpieza de Caché (10 min)
+
+### Objetivo
+Verificar que la función de limpieza funciona.
+
+### Pasos
+
+**11.1. Llenar caché con traducciones**
+
+1. Enviar 10-15 mensajes diferentes en varios idiomas
+2. Verificar que se guardaron:
+
+```sql
+SELECT COUNT(*) FROM translation_cache;
+-- Debe mostrar ~10-15
+```
+
+---
+
+**11.2. Ejecutar limpieza**
+
+```sql
+SELECT * FROM cleanup_translation_cache();
+```
+
+**✅ Resultado esperado:**
+```
+deleted_count: 0  (si hay <10,000 traducciones, no borra nada)
+```
+
+**Nota:** Esta función solo borra si hay >10,000 entradas, así que en testing siempre devolverá 0.
+
+---
+
+## 🧪 TEST 12: Load Test Básico (20 min)
+
+### Objetivo
+Verificar que soporta múltiples peticiones simultáneas.
+
+### Pasos
+
+**12.1. Abrir 5 pestañas**
+
+1. Abrir staging en 5 pestañas del navegador
+2. En cada una, cambiar a un idioma diferente:
+   - Pestaña 1: Inglés
+   - Pestaña 2: Francés  
+   - Pestaña 3: Alemán
+   - Pestaña 4: Italiano
+   - Pestaña 5: Español
+
+---
+
+**12.2. Enviar mensajes simultáneos**
+
+En cada pestaña, escribir y enviar casi al mismo tiempo:
+```
+"What is the checkout time?"
+"Quelle est l'heure de départ?"
+"Wann ist die Abreisezeit?"
+"Qual è l'orario di check-out?"
+"¿A qué hora es el checkout?"
+```
+
+**✅ Todas deben responder:**
+- En su idioma correcto
+- Sin errores 500
+- En <5 segundos
+
+---
+
+**12.3. Verificar métricas**
+
+```sql
+SELECT 
+  DATE_TRUNC('minute', created_at) as minute,
+  COUNT(*) as translations_per_minute
+FROM translation_metrics
+WHERE created_at > NOW() - INTERVAL '10 minutes'
+GROUP BY minute
+ORDER BY minute DESC;
+```
+
+**✅ Debe mostrar spike de 5 traducciones en el mismo minuto**
+
+---
+
+## ✅ CHECKLIST FINAL ANTES DE PRODUCCIÓN
+
+Todos estos deben estar ✅:
+
+### Base de Datos
+- [ ] Tablas `translation_cache` y `translation_metrics` existen
+- [ ] Índices creados correctamente
+- [ ] Funciones SQL funcionan sin errores
+
+### Funcionalidad Core
+- [ ] Cache MISS funciona (primera traducción)
+- [ ] Cache HIT funciona (traducciones repetidas)
+- [ ] Todos los idiomas soportados funcionan (en, fr, de, it, pt)
+- [ ] Contador `usage_count` incrementa correctamente
+
+### Streaming y UX
+- [ ] Respuestas largas se muestran progresivamente
+- [ ] No hay cortes mid-palabra
+- [ ] Respuestas están 100% en el idioma seleccionado
+
+### Edge Cases
+- [ ] Textos largos (500+ chars) funcionan
+- [ ] Caracteres especiales y emojis funcionan
+- [ ] Códigos de error se detectan en todos los idiomas
+- [ ] Emergencias se manejan correctamente
+
+### Performance
+- [ ] Cache HIT es al menos 50% más rápido que MISS
+- [ ] Cache HIT toma <150ms según logs
+- [ ] Soporta 5+ requests simultáneas sin errores
+
+### Métricas y Admin
+- [ ] Estadísticas SQL devuelven datos correctos
+- [ ] API de admin funciona (si existe)
+- [ ] Logs muestran información útil
+
+---
+
+## 🚨 CRITERIOS DE BLOQUEO (NO PASAR A PRODUCCIÓN SI)
+
+❌ **Bloqueador 1:** Cache no funciona (siempre dice "MISS")
+- **Impacto:** No hay beneficio, solo añade latencia
+- **Acción:** Antigravity debe debuggear
+
+❌ **Bloqueador 2:** Respuestas en idioma incorrecto
+- **Impacto:** Experiencia del huésped rota
+- **Acción:** Revisar lógica de streaming con traducción
+
+❌ **Bloqueador 3:** Errores 500 en producción
+- **Impacto:** Chat no funciona
+- **Acción:** Revisar logs, probablemente Edge Runtime issue
+
+❌ **Bloqueador 4:** Respuestas extremadamente lentas (>5s)
+- **Impacto:** Huéspedes abandonan el chat
+- **Acción:** Verificar que fire-and-forget está bien implementado
+
+---
+
+## 📊 REPORTE DE TESTING
+
+Después de completar todos los tests, llena este reporte:
+
+```
+========================================
+REPORTE DE TESTING - TRADUCCIÓN CACHÉ
+========================================
+
+Fecha: _______________
+Tester: _______________
+Staging URL: _______________
+
+RESULTADOS:
+-----------
+✅ Tests pasados: ____ / 12
+❌ Tests fallidos: ____
+⚠️  Warnings encontrados: ____
+
+BLOCKERS:
+---------
+[ ] Ninguno - OK para producción
+[ ] Bloqueador 1: Cache no funciona
+[ ] Bloqueador 2: Idioma incorrecto
+[ ] Bloqueador 3: Errores 500
+[ ] Bloqueador 4: Muy lento
+
+NOTAS ADICIONALES:
+------------------
+(Describe cualquier comportamiento raro que notaste)
+
+
+
+
+DECISIÓN FINAL:
+---------------
+[ ] ✅ APROBAR para producción
+[ ] ❌ RECHAZAR - necesita correcciones
+
+Firma: _______________
+```
+
+---
+
+## 💡 TIPS PARA TESTING EFICIENTE
+
+1. **Haz los tests en orden** - están ordenados de simple a complejo
+2. **Si falla un test temprano**, para ahí y reporta a Antigravity
+3. **Toma screenshots** de comportamientos raros
+4. **Copia/pega los logs** cuando veas errores
+5. **No pases a producción con blockers** - mejor esperar 1 día más
+
+---
+
+## 🆘 QUÉ HACER SI ENCUENTRAS UN BUG
+
+1. **Anota:**
+   - Qué test estabas haciendo
+   - Qué pasos seguiste
+   - Qué viste (screenshot)
+   - Qué esperabas ver
+
+2. **Copia logs:**
+   - De Vercel (últimas 50 líneas)
+   - De Supabase (si hay error SQL)
+
+3. **Reporta a Antigravity:**
+   ```
+   Bug en TEST X:
+   - Pasos: [pega pasos del test]
+   - Resultado: [lo que viste]
+   - Esperado: [lo que debía pasar]
+   - Logs: [pega logs]
+   - Screenshot: [adjunta]
+   ```
+
+4. **Marca ese test como ❌** en tu checklist
+
+5. **Continúa con otros tests** (no bloques por 1 fallo)
+
+---
+
+## ✅ CUANDO TODO PASE
+
+**Envía a Antigravity:**
+```
+✅ Testing completo - OK para producción
+
+Tests ejecutados: 12/12 ✅
+Blockers: 0
+Warnings: [lista si hay]
+
+Performance observada:
+- Cache MISS: ~XXX ms
+- Cache HIT: ~XX ms  
+- Mejora: XX%
+
+Listo para deploy a producción.
+```
+
+¡Y listo! 🎉

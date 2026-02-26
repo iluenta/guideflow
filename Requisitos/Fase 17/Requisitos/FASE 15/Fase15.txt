@@ -1,0 +1,926 @@
+# Sistema de Traducción con Caché Multi-Nivel
+## Especificación Técnica para Implementación
+
+---
+
+## 📋 RESUMEN EJECUTIVO
+
+### Objetivo
+Implementar un sistema de traducción con caché multi-nivel (memoria + base de datos) para optimizar latencia y costos en el chat multiidioma de huéspedes.
+
+### Problema Actual
+- **Latencia:** 800ms promedio por traducción
+- **Costo:** $0.002 por mensaje (cada traducción es una llamada API a Gemini)
+- **Sin caché:** Traducciones repetidas ("WiFi password", "checkout time") se procesan cada vez
+- **Escalabilidad:** Difícil soportar >10 conversaciones simultáneas
+
+### Solución Propuesta
+Sistema de caché de traducciones con dos niveles:
+- **L1 (Memoria):** Respuesta instantánea (~0ms) para traducciones recientes en la sesión actual
+- **L2 (Supabase):** Respuesta rápida (~50ms) para traducciones comunes usadas por otros huéspedes
+
+### Impacto Esperado
+| Métrica | Antes | Después | Mejora |
+|---------|-------|---------|---------|
+| Latencia promedio | 800ms | 150ms | **81% ⚡** |
+| Costo por mensaje | $0.002 | $0.0008 | **60% 💰** |
+| Cache hit rate | 0% | 65-75% | **∞ 🎯** |
+| Mensajes/segundo | 5 | 20 | **4x 🚀** |
+
+---
+
+## 🎯 ARQUITECTURA DEL SISTEMA
+
+### Diagrama de Flujo
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  HUÉSPED: "How to use the oven?" (EN)                  │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  TranslationService.translate(text, 'en', 'es')         │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                     ▼
+         ┌───────────────────────┐
+         │  ¿EN → ES iguales?    │
+         └───┬───────────────┬───┘
+             │ SÍ            │ NO
+             ▼               ▼
+        [Return text]   [Continuar]
+                             │
+                             ▼
+              ┌──────────────────────────┐
+              │  L1: Caché en Memoria    │
+              │  (Map<string, string>)   │
+              └────────┬────────────┬────┘
+                   HIT │            │ MISS
+                       ▼            ▼
+                  [Return    ┌──────────────────┐
+                   ~0ms]     │  L2: Supabase    │
+                             │  translation_cache│
+                             └────┬──────────┬───┘
+                              HIT │          │ MISS
+                                  ▼          ▼
+                             [Return   ┌────────────────┐
+                              ~50ms]   │  L3: Gemini    │
+                                       │  (API call)    │
+                                       └────┬───────────┘
+                                            │
+                                            ▼
+                                   [Traducción nueva]
+                                      ~300-800ms
+                                            │
+                        ┌───────────────────┴───────────────┐
+                        │                                   │
+                        ▼                                   ▼
+              ┌──────────────────┐              ┌──────────────────┐
+              │  Guardar en L1   │              │  Guardar en L2   │
+              │  (Map.set)       │              │  (INSERT)        │
+              └──────────────────┘              └──────────────────┘
+                        │                                   │
+                        └───────────────────┬───────────────┘
+                                            │
+                                            ▼
+                                      [Return text]
+                                            │
+                                            ▼
+┌─────────────────────────────────────────────────────────┐
+│  RAG: Buscar con "Cómo usar el horno" (ES)             │
+│  → Mejor matching en embeddings (indexados en español) │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Componentes Principales
+
+1. **TranslationService** (`lib/translation-service.ts`)
+   - Clase principal con métodos estáticos
+   - Gestiona caché L1 (memoria) y L2 (Supabase)
+   - Integración con Gemini para traducciones en vivo (L3)
+
+2. **Base de Datos** (Supabase)
+   - Tabla `translation_cache`: almacenamiento persistente
+   - Tabla `translation_metrics`: analytics y monitoreo
+   - Funciones SQL: limpieza automática y estadísticas
+
+3. **API Route** (`app/api/chat/route.ts`)
+   - Integración en flujo existente de chat
+   - Traducción de query RAG (antes de embedding)
+   - Traducción de respuesta (streaming en tiempo real)
+
+---
+
+## 📦 ENTREGABLES
+
+### 1. Base de Datos (Supabase SQL)
+
+#### Tabla: `translation_cache`
+
+```sql
+CREATE TABLE IF NOT EXISTS translation_cache (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  hash TEXT UNIQUE NOT NULL,           -- SHA-256 de "text:source→target"
+  source_text TEXT NOT NULL,           -- Texto original
+  source_lang TEXT NOT NULL,           -- ISO 639-1 (en, es, fr, de, it, pt)
+  target_lang TEXT NOT NULL,           -- ISO 639-1
+  translated_text TEXT NOT NULL,       -- Texto traducido
+  usage_count INTEGER DEFAULT 1,       -- Contador de uso
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_used_at TIMESTAMPTZ DEFAULT NOW(),
+  translation_time_ms INTEGER,         -- Tiempo de traducción original
+  provider TEXT DEFAULT 'gemini-2.0-flash'
+);
+
+-- Índices para performance
+CREATE INDEX IF NOT EXISTS idx_translation_hash 
+  ON translation_cache(hash);
+  
+CREATE INDEX IF NOT EXISTS idx_translation_usage 
+  ON translation_cache(usage_count DESC, last_used_at DESC);
+  
+CREATE INDEX IF NOT EXISTS idx_translation_langs 
+  ON translation_cache(source_lang, target_lang);
+  
+CREATE INDEX IF NOT EXISTS idx_translation_last_used 
+  ON translation_cache(last_used_at DESC);
+```
+
+#### Tabla: `translation_metrics`
+
+```sql
+CREATE TABLE IF NOT EXISTS translation_metrics (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  property_id UUID REFERENCES properties(id),
+  source_lang TEXT NOT NULL,
+  target_lang TEXT NOT NULL,
+  cache_hit BOOLEAN NOT NULL,
+  translation_time_ms INTEGER,
+  text_length INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_translation_metrics_created 
+  ON translation_metrics(created_at DESC);
+  
+CREATE INDEX IF NOT EXISTS idx_translation_metrics_property 
+  ON translation_metrics(property_id);
+```
+
+#### Función: Limpieza automática
+
+```sql
+CREATE OR REPLACE FUNCTION cleanup_translation_cache() 
+RETURNS TABLE(deleted_count INTEGER) AS $$
+DECLARE
+  deleted INTEGER;
+BEGIN
+  -- Mantener solo las 10,000 traducciones más usadas
+  DELETE FROM translation_cache
+  WHERE id NOT IN (
+    SELECT id FROM translation_cache
+    ORDER BY usage_count DESC, last_used_at DESC
+    LIMIT 10000
+  );
+  
+  GET DIAGNOSTICS deleted = ROW_COUNT;
+  RETURN QUERY SELECT deleted;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+#### Función: Estadísticas
+
+```sql
+CREATE OR REPLACE FUNCTION get_translation_cache_stats()
+RETURNS TABLE(
+  total_translations BIGINT,
+  total_usage BIGINT,
+  avg_translation_time_ms NUMERIC,
+  top_source_lang TEXT,
+  top_target_lang TEXT,
+  cache_size_mb NUMERIC
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    COUNT(*)::BIGINT as total_translations,
+    SUM(usage_count)::BIGINT as total_usage,
+    ROUND(AVG(translation_time_ms)::NUMERIC, 2) as avg_translation_time_ms,
+    (SELECT source_lang FROM translation_cache 
+     GROUP BY source_lang ORDER BY COUNT(*) DESC LIMIT 1) as top_source_lang,
+    (SELECT target_lang FROM translation_cache 
+     GROUP BY target_lang ORDER BY COUNT(*) DESC LIMIT 1) as top_target_lang,
+    ROUND((pg_total_relation_size('translation_cache')::NUMERIC / 1024 / 1024), 2) as cache_size_mb
+  FROM translation_cache;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+#### Row Level Security (Opcional)
+
+```sql
+ALTER TABLE translation_cache ENABLE ROW LEVEL SECURITY;
+
+-- Lectura pública (caché compartida)
+CREATE POLICY "Anyone can read cache" ON translation_cache
+  FOR SELECT USING (true);
+
+-- Solo service_role puede escribir
+CREATE POLICY "Service role can write" ON translation_cache
+  FOR ALL USING (auth.role() = 'service_role');
+```
+
+---
+
+### 2. Servicio de Traducción (`lib/translation-service.ts`)
+
+#### Interfaz Pública
+
+```typescript
+export class TranslationService {
+  /**
+   * Traduce texto con caché multi-nivel
+   * @param text - Texto a traducir (máximo 5000 caracteres)
+   * @param sourceLang - Idioma origen (ISO 639-1: en, es, fr, de, it, pt)
+   * @param targetLang - Idioma destino (ISO 639-1)
+   * @param options - Opciones adicionales
+   * @returns Objeto con texto traducido y métricas
+   */
+  static async translate(
+    text: string,
+    sourceLang: string,
+    targetLang: string,
+    options?: TranslationOptions
+  ): Promise<{ text: string; metrics: TranslationMetrics }>;
+
+  /**
+   * Traduce múltiples textos en paralelo
+   * @returns Array de traducciones + métricas agregadas
+   */
+  static async translateBatch(
+    texts: string[],
+    sourceLang: string,
+    targetLang: string,
+    options?: TranslationOptions
+  ): Promise<{ 
+    translations: string[]; 
+    totalTimeMs: number; 
+    cacheHitRate: number 
+  }>;
+
+  /**
+   * Obtiene estadísticas del caché
+   */
+  static async getCacheStats(): Promise<CacheStats>;
+
+  /**
+   * Limpia caché antigua (mantiene top 10k)
+   */
+  static async cleanupCache(): Promise<{ deletedCount: number }>;
+
+  /**
+   * Pre-carga traducciones comunes
+   */
+  static async warmupCache(
+    commonPhrases: Array<{
+      text: string;
+      sourceLang: string;
+      targetLang: string;
+    }>
+  ): Promise<void>;
+}
+```
+
+#### Tipos
+
+```typescript
+interface TranslationOptions {
+  propertyId?: string;                    // Para métricas por propiedad
+  context?: 'chat' | 'rag_query' | 'ui';  // Tipo de traducción
+  skipCache?: boolean;                     // Forzar traducción nueva
+}
+
+interface TranslationMetrics {
+  cacheHit: boolean;                      // ¿Fue cache hit?
+  translationTimeMs: number;              // Tiempo total
+  textLength: number;                     // Longitud del texto
+  cacheLevel?: 'memory' | 'database' | 'none';
+}
+
+interface CacheStats {
+  total_translations: number;
+  total_usage: number;
+  avg_translation_time_ms: number;
+  top_source_lang: string;
+  top_target_lang: string;
+  cache_size_mb: number;
+  memoryCacheSize: number;
+  memoryCacheLimit: number;
+}
+```
+
+#### Lógica de Caché
+
+**L1: Memoria (Map)**
+- Almacenamiento: `Map<string, string>` (clave: `"text:source→target"`)
+- Límite: 500 entradas (FIFO cuando se excede)
+- Persistencia: Solo durante la sesión del servidor
+- Ventaja: 0ms de latencia
+
+**L2: Supabase**
+- Clave única: SHA-256 hash del texto + idiomas
+- Índice en `hash` para búsqueda O(1)
+- Actualización asíncrona de `usage_count` y `last_used_at`
+- Ventaja: Compartida entre todas las instancias
+
+**L3: Gemini API**
+- Llamada solo en cache miss total
+- Guarda resultado en L1 y L2 (fire-and-forget)
+- Registra métricas en `translation_metrics`
+
+#### Gestión de Hash
+
+```typescript
+private static async generateHash(text: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+```
+
+**Importante:** Usar `globalThis.crypto` (Web Crypto API) para compatibilidad con Edge Runtime. **NO usar `import crypto from 'crypto'`** (Node.js).
+
+#### Limpieza de Memoria
+
+```typescript
+private static cleanMemoryCache(): void {
+  if (memoryCache.size > MAX_MEMORY_CACHE) {
+    const keysToDelete = Array.from(memoryCache.keys()).slice(0, 100);
+    keysToDelete.forEach(key => memoryCache.delete(key));
+  }
+}
+```
+
+#### Logging de Métricas
+
+```typescript
+private static async logMetrics(
+  metrics: TranslationMetrics,
+  sourceLang: string,
+  targetLang: string,
+  options?: TranslationOptions
+): Promise<void> {
+  // Async, no bloquea la respuesta
+  await this.supabase.from('translation_metrics').insert({
+    property_id: options?.propertyId || null,
+    source_lang: sourceLang,
+    target_lang: targetLang,
+    cache_hit: metrics.cacheHit,
+    translation_time_ms: metrics.translationTimeMs,
+    text_length: metrics.textLength
+  });
+}
+```
+
+---
+
+### 3. Integración en Chat Route (`app/api/chat/route.ts`)
+
+#### Cambios Necesarios
+
+**ANTES (línea ~119 actual):**
+```typescript
+if (language !== 'es') {
+    const { Translator } = await import('@/lib/gemini-i18n');
+    const translatedQuery = await Translator.translateText(ragQuery, 'es', language);
+    ragQuery = translatedQuery;
+}
+```
+
+**DESPUÉS:**
+```typescript
+import { TranslationService } from '@/lib/translation-service';
+
+// ...
+
+if (language !== 'es') {
+    const { text: translatedQuery, metrics } = await TranslationService.translate(
+        ragQuery,
+        language,
+        'es',
+        { propertyId, context: 'rag_query' }
+    );
+
+    ragQuery = translatedQuery;
+
+    console.log(`[CHAT] RAG Query Translation:`, {
+        cacheHit: metrics.cacheHit,
+        cacheLevel: metrics.cacheLevel,
+        timeMs: metrics.translationTimeMs
+    });
+}
+```
+
+#### Nueva Lógica de Streaming con Traducción
+
+**Para idiomas != español, traducir respuesta en tiempo real:**
+
+```typescript
+if (language !== 'es') {
+    const stream = new ReadableStream({
+        async start(controller) {
+            const reader = response.body?.getReader();
+            if (!reader) return;
+
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let accumulatedText = '';
+            const CHUNK_SIZE = 150; // Traducir cada ~150 caracteres
+
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const json = JSON.parse(line.substring(6));
+                                const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                                if (text) {
+                                    accumulatedText += text;
+
+                                    // Traducir en chunks para UX fluido
+                                    if (accumulatedText.length >= CHUNK_SIZE) {
+                                        const { text: translatedChunk } = 
+                                            await TranslationService.translate(
+                                                accumulatedText,
+                                                'es',
+                                                language,
+                                                { propertyId, context: 'chat' }
+                                            );
+
+                                        controller.enqueue(
+                                            new TextEncoder().encode(translatedChunk)
+                                        );
+                                        accumulatedText = '';
+                                    }
+                                }
+                            } catch (e) {
+                                // Ignore parse errors
+                            }
+                        }
+                    }
+                }
+
+                // Traducir texto restante
+                if (accumulatedText.trim()) {
+                    const { text: translatedChunk } = 
+                        await TranslationService.translate(
+                            accumulatedText,
+                            'es',
+                            language,
+                            { propertyId, context: 'chat' }
+                        );
+                    controller.enqueue(new TextEncoder().encode(translatedChunk));
+                }
+
+            } catch (e) {
+                console.error('[CHAT] Streaming translation error:', e);
+                controller.error(e);
+            } finally {
+                controller.close();
+            }
+        }
+    });
+
+    return new StreamingTextResponse(stream);
+}
+```
+
+---
+
+### 4. Endpoint de Estadísticas (Opcional)
+
+#### `app/api/admin/translation-stats/route.ts`
+
+```typescript
+import { TranslationService } from '@/lib/translation-service';
+import { NextResponse } from 'next/server';
+
+export const runtime = 'edge';
+
+export async function GET(req: Request) {
+  try {
+    // Autenticación admin
+    const authHeader = req.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.ADMIN_API_KEY}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const stats = await TranslationService.getCacheStats();
+
+    return NextResponse.json({
+      success: true,
+      stats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+```
+
+**Uso:**
+```bash
+curl -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
+  https://yourapp.com/api/admin/translation-stats
+```
+
+---
+
+### 5. Script de Mantenimiento
+
+#### `scripts/translation-maintenance.ts`
+
+```typescript
+import { TranslationService } from '@/lib/translation-service';
+
+async function main() {
+  console.log('🧹 Translation Cache Maintenance\n');
+
+  // Estadísticas actuales
+  console.log('📊 Current Stats:');
+  const stats = await TranslationService.getCacheStats();
+  console.log(JSON.stringify(stats, null, 2));
+
+  // Limpieza
+  console.log('\n🗑️  Cleaning old translations...');
+  const { deletedCount } = await TranslationService.cleanupCache();
+  console.log(`✅ Deleted ${deletedCount} old entries\n`);
+
+  // Estadísticas finales
+  console.log('📊 Updated Stats:');
+  const newStats = await TranslationService.getCacheStats();
+  console.log(JSON.stringify(newStats, null, 2));
+
+  console.log('\n✨ Maintenance complete!');
+}
+
+main().catch(console.error);
+```
+
+**Añadir a `package.json`:**
+```json
+{
+  "scripts": {
+    "translation:stats": "tsx scripts/translation-maintenance.ts",
+    "translation:cleanup": "tsx scripts/translation-maintenance.ts"
+  }
+}
+```
+
+---
+
+## 🧪 CRITERIOS DE ACEPTACIÓN
+
+### Funcionales
+
+✅ **F1: Traducción Básica**
+- Input: `translate("Hello", "en", "es")`
+- Output: `{ text: "Hola", metrics: { cacheHit: false, ... } }`
+- Primera llamada debe ser cache MISS y guardar en DB
+
+✅ **F2: Cache Hit en Memoria (L1)**
+- Misma traducción en 30 segundos
+- Output: `{ ..., metrics: { cacheHit: true, cacheLevel: 'memory', translationTimeMs: <5ms } }`
+
+✅ **F3: Cache Hit en Database (L2)**
+- Reiniciar servidor → misma traducción
+- Output: `{ ..., metrics: { cacheHit: true, cacheLevel: 'database', translationTimeMs: <100ms } }`
+
+✅ **F4: Traducción Batch**
+- Input: `translateBatch(["Hi", "Bye"], "en", "es")`
+- Output: `{ translations: ["Hola", "Adiós"], cacheHitRate: 0-100 }`
+
+✅ **F5: Idiomas iguales (bypass)**
+- Input: `translate("Hola", "es", "es")`
+- Output: `{ text: "Hola", metrics: { cacheHit: true, translationTimeMs: 0 } }`
+- No debe llamar a Gemini ni escribir en DB
+
+✅ **F6: Streaming con Traducción**
+- Chat en inglés → respuesta en español streaming
+- Chunks traducidos cada ~150 caracteres
+- UX fluida sin bloqueos largos
+
+### No Funcionales
+
+✅ **NF1: Performance**
+- Cache MISS: < 1000ms
+- Cache HIT (L1): < 10ms
+- Cache HIT (L2): < 150ms
+
+✅ **NF2: Límites**
+- Texto máximo: 5000 caracteres
+- Error claro si se excede
+
+✅ **NF3: Edge Runtime Compatible**
+- ⚠️ **CRÍTICO:** Usar `globalThis.crypto.subtle` (Web Crypto API)
+- ❌ **PROHIBIDO:** `import crypto from 'crypto'` (Node.js)
+
+✅ **NF4: Manejo de Errores**
+- Timeout de Gemini → retry 1 vez
+- Error de DB → log warning pero no bloquear traducción
+- Fire-and-forget para escrituras de caché (no bloquear respuesta)
+
+✅ **NF5: Logging**
+- Nivel INFO: Cache hits/misses con timings
+- Nivel WARN: Fallos no críticos (DB write fail)
+- Nivel ERROR: Fallos críticos (Gemini timeout)
+
+### Validación
+
+✅ **V1: Tests Unitarios**
+```typescript
+// lib/__tests__/translation-service.test.ts
+describe('TranslationService', () => {
+  it('should bypass translation for same language', async () => {
+    const result = await TranslationService.translate('Hello', 'en', 'en');
+    expect(result.text).toBe('Hello');
+    expect(result.metrics.cacheHit).toBe(true);
+  });
+
+  it('should cache translation in memory', async () => {
+    const first = await TranslationService.translate('Hello', 'en', 'es');
+    const second = await TranslationService.translate('Hello', 'en', 'es');
+    
+    expect(second.metrics.cacheHit).toBe(true);
+    expect(second.metrics.cacheLevel).toBe('memory');
+  });
+
+  it('should reject text over 5000 chars', async () => {
+    const longText = 'a'.repeat(5001);
+    await expect(
+      TranslationService.translate(longText, 'en', 'es')
+    ).rejects.toThrow('Text too long');
+  });
+});
+```
+
+✅ **V2: Tests de Integración**
+```bash
+# 1. Limpiar caché
+DELETE FROM translation_cache;
+
+# 2. Primera traducción (cache miss)
+curl -X POST /api/chat -d '{"messages": [...], "language": "en"}' 
+# → Check logs: "Cache MISS"
+
+# 3. Repetir inmediatamente (cache hit L1)
+curl -X POST /api/chat -d '{"messages": [...], "language": "en"}'
+# → Check logs: "L1 Cache HIT (memory)"
+
+# 4. Reiniciar servidor + repetir (cache hit L2)
+# → Check logs: "L2 Cache HIT (database)"
+
+# 5. Verificar DB
+SELECT * FROM translation_cache WHERE hash = '<hash>';
+# → usage_count debe incrementarse
+```
+
+---
+
+## 🚨 CONSIDERACIONES IMPORTANTES
+
+### 1. Edge Runtime Compatibility
+
+⚠️ **MUY IMPORTANTE:** El sistema debe funcionar en Edge Runtime de Next.js/Vercel.
+
+**PERMITIDO:**
+```typescript
+// ✅ Web Crypto API (disponible en Edge)
+const hash = await globalThis.crypto.subtle.digest('SHA-256', data);
+const uuid = globalThis.crypto.randomUUID();
+```
+
+**PROHIBIDO:**
+```typescript
+// ❌ Node.js crypto (NO funciona en Edge)
+import crypto from 'crypto';
+const hash = crypto.createHash('sha256').update(text).digest('hex');
+```
+
+### 2. Fire-and-Forget para Escrituras
+
+Las escrituras en `translation_cache` y `translation_metrics` **NO deben bloquear la respuesta**:
+
+```typescript
+// ✅ CORRECTO: Fire-and-forget
+supabase.from('translation_cache').insert({...}).then();
+
+// ❌ INCORRECTO: Bloquea respuesta
+await supabase.from('translation_cache').insert({...});
+```
+
+### 3. Actualización de `usage_count`
+
+**NO usar operador `++`**, usar SQL increment:
+
+```typescript
+// ✅ CORRECTO: Atomic increment en DB
+supabase.from('translation_cache')
+  .update({ usage_count: supabase.raw('usage_count + 1') })
+  .eq('hash', hash)
+  .then();
+
+// ❌ INCORRECTO: Race condition
+const { data } = await supabase.from('translation_cache').select('usage_count').eq('hash', hash).single();
+await supabase.from('translation_cache').update({ usage_count: data.usage_count + 1 }).eq('hash', hash);
+```
+
+### 4. Limpieza de Memoria
+
+El Map debe tener límite para evitar memory leaks:
+
+```typescript
+const MAX_MEMORY_CACHE = 500;
+
+private static cleanMemoryCache(): void {
+  if (memoryCache.size > MAX_MEMORY_CACHE) {
+    // FIFO: eliminar primeras 100 entradas
+    const keysToDelete = Array.from(memoryCache.keys()).slice(0, 100);
+    keysToDelete.forEach(key => memoryCache.delete(key));
+  }
+}
+```
+
+### 5. Chunk Size para Streaming
+
+**150 caracteres** es el balance óptimo entre:
+- UX fluida (no esperas largas entre chunks)
+- Eficiencia de caché (frases completas se cachean mejor)
+- Costos (menos llamadas a Gemini)
+
+Si chunks son muy pequeños (50 chars): mala cacheabilidad
+Si chunks son muy grandes (500 chars): UX lenta
+
+---
+
+## 📊 MÉTRICAS DE ÉXITO
+
+### KPIs Principales
+
+**Semana 1:**
+- Cache hit rate: >30%
+- Latencia P50: <200ms
+- Latencia P95: <500ms
+
+**Semana 4:**
+- Cache hit rate: >60%
+- Latencia P50: <150ms
+- Latencia P95: <300ms
+
+**Mes 3:**
+- Cache hit rate: >75%
+- Latencia P50: <100ms
+- Ahorro de costos: >50%
+
+### Monitoreo
+
+```sql
+-- Query para analytics diarias
+SELECT 
+  DATE(created_at) as date,
+  COUNT(*) as total_requests,
+  COUNT(*) FILTER (WHERE cache_hit = true) as cache_hits,
+  ROUND(100.0 * COUNT(*) FILTER (WHERE cache_hit = true) / COUNT(*), 2) as hit_rate,
+  AVG(translation_time_ms) as avg_time_ms
+FROM translation_metrics
+WHERE created_at > NOW() - INTERVAL '7 days'
+GROUP BY DATE(created_at)
+ORDER BY date DESC;
+```
+
+---
+
+## 🔄 MANTENIMIENTO
+
+### Limpieza Automática
+
+**Opción A: Cron Job Manual**
+```bash
+# Ejecutar semanalmente
+0 2 * * 0 npm run translation:cleanup
+```
+
+**Opción B: Supabase pg_cron (Recomendado)**
+```sql
+SELECT cron.schedule(
+  'cleanup-translations',
+  '0 2 * * 0',  -- Domingos a las 2am
+  'SELECT cleanup_translation_cache()'
+);
+```
+
+### Warm-up de Caché
+
+Ejecutar después de deploys para pre-cargar traducciones comunes:
+
+```typescript
+// lib/translation-warmup.ts
+const COMMON_PHRASES = [
+  { text: 'wifi password', sourceLang: 'en', targetLang: 'es' },
+  { text: 'checkout time', sourceLang: 'en', targetLang: 'es' },
+  { text: 'how to use oven', sourceLang: 'en', targetLang: 'es' },
+  // ... más frases comunes
+];
+
+await TranslationService.warmupCache(COMMON_PHRASES);
+```
+
+---
+
+## 🎯 PRÓXIMOS PASOS RECOMENDADOS
+
+### Fase 1: MVP (Esta implementación)
+- ✅ Caché L1 + L2
+- ✅ Integración en chat
+- ✅ Métricas básicas
+
+### Fase 2: Optimizaciones (Futuro)
+- 🔮 Caché distribuida con Redis (si >1000 req/min)
+- 🔮 Pre-traducción de mensajes del sistema
+- 🔮 A/B testing de calidad Gemini vs otros proveedores
+- 🔮 Compresión de textos largos antes de cachear
+
+### Fase 3: Analytics Avanzados (Futuro)
+- 🔮 Dashboard de costos por property
+- 🔮 Detección de traducciones de baja calidad
+- 🔮 Auto-ajuste de CHUNK_SIZE según latencia observada
+
+---
+
+## 📚 REFERENCIAS
+
+- **Gemini i18n existente:** `lib/gemini-i18n.ts`
+- **Chat route actual:** `app/api/chat/route.ts` (línea 119)
+- **Supabase Edge Client:** `lib/supabase/edge.ts`
+- **Web Crypto API:** https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API
+- **Next.js Edge Runtime:** https://nextjs.org/docs/app/building-your-application/rendering/edge-and-nodejs-runtimes
+
+---
+
+## ✅ CHECKLIST DE IMPLEMENTACIÓN
+
+### Pre-implementación
+- [ ] Revisar `lib/gemini-i18n.ts` para entender API actual
+- [ ] Verificar permisos de Supabase service_role
+- [ ] Confirmar que `GOOGLE_AI_API_KEY` está en variables de entorno
+
+### Implementación
+- [ ] Ejecutar SQL en Supabase (tablas + funciones)
+- [ ] Crear `lib/translation-service.ts`
+- [ ] Actualizar `app/api/chat/route.ts`
+- [ ] Crear `app/api/admin/translation-stats/route.ts` (opcional)
+- [ ] Crear `scripts/translation-maintenance.ts`
+- [ ] Añadir scripts a `package.json`
+
+### Testing
+- [ ] Test unitario: mismo idioma (bypass)
+- [ ] Test integración: cache MISS → cache HIT L1
+- [ ] Test integración: reinicio → cache HIT L2
+- [ ] Test streaming: respuesta en inglés → español
+- [ ] Load test: 10 requests simultáneas
+
+### Deploy
+- [ ] Limpiar caché Next.js: `rm -rf .next`
+- [ ] Deploy a staging
+- [ ] Verificar logs (no errores de crypto/Edge)
+- [ ] Ejecutar warm-up de frases comunes
+- [ ] Deploy a producción
+
+### Post-deploy
+- [ ] Monitorear métricas primeras 24h
+- [ ] Verificar cache hit rate > 20% en día 1
+- [ ] Configurar cron job de limpieza
+- [ ] Documentar en wiki del equipo
+
+---
+
+## 📞 CONTACTO
+
+Para dudas durante la implementación, el contexto clave está en:
+1. `app/api/chat/route.ts` - línea 119 (traducción actual de query RAG)
+2. `lib/gemini-i18n.ts` - API de `Translator.translateText()`
+3. Requisito principal: **reducir latencia de 800ms → 150ms con caché**
+
+**Importante:** El sistema actual SÍ funciona, solo necesitamos optimizarlo con caché para mejorar performance y reducir costos. No hay bugs que arreglar, solo performance que optimizar.

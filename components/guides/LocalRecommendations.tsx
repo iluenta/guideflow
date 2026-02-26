@@ -10,7 +10,8 @@ import {
     Sparkles, Plus, Trash2, MapPin, Clock, Utensils,
     ShoppingBag, Landmark, Trees, Music, Coffee, Star,
     Search, ChevronLeft, ChevronRight, Check, Loader2,
-    Info, Lightbulb
+    Info, Lightbulb, Pizza, Fish, Beef, Globe, UtensilsCrossed,
+    Store
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { RecommendationCard, Recommendation } from './RecommendationCard'
@@ -26,13 +27,23 @@ interface LocalRecommendationsProps {
 }
 
 const categories = [
-    { id: 'todos', label: 'Todos', icon: Star },
-    { id: 'restaurantes', label: 'Restaurantes', icon: Utensils },
-    { id: 'compras', label: 'Compras', icon: ShoppingBag },
-    { id: 'cultura', label: 'Cultura', icon: Landmark },
-    { id: 'naturaleza', label: 'Naturaleza', icon: Trees },
-    { id: 'ocio', label: 'Ocio', icon: Music },
-    { id: 'relax', label: 'Relax', icon: Coffee }
+    { id: 'todos',         label: 'Todos',              icon: Star,            group: 'general' },
+    // Restaurantes y subcategorías
+    { id: 'restaurantes',  label: 'Restaurantes',        icon: Utensils,        group: 'eat' },
+    { id: 'italiano',      label: 'Italiano & Pizza',    icon: Pizza,           group: 'eat' },
+    { id: 'mediterraneo',  label: 'Mediterráneo',        icon: Fish,            group: 'eat' },
+    { id: 'hamburguesas',  label: 'Hamburguesas',        icon: Beef,            group: 'eat' },
+    { id: 'asiatico',      label: 'Asiático',            icon: UtensilsCrossed, group: 'eat' },
+    { id: 'alta_cocina',   label: 'Alta Cocina',         icon: Star,            group: 'eat' },
+    { id: 'internacional', label: 'Internacional',       icon: Globe,           group: 'eat' },
+    { id: 'desayuno',      label: 'Desayunos & Cafés',   icon: Coffee,          group: 'eat' },
+    // Otras categorías
+    { id: 'compras',       label: 'Compras',             icon: ShoppingBag,     group: 'other' },
+    { id: 'supermercados', label: 'Supermercados',       icon: Store,           group: 'other' },
+    { id: 'cultura',       label: 'Cultura',             icon: Landmark,        group: 'other' },
+    { id: 'naturaleza',    label: 'Naturaleza',          icon: Trees,           group: 'other' },
+    { id: 'ocio',          label: 'Ocio',                icon: Music,           group: 'other' },
+    { id: 'relax',         label: 'Relax',               icon: Coffee,          group: 'other' },
 ]
 
 export function LocalRecommendations({
@@ -172,14 +183,18 @@ export function LocalRecommendations({
 
             {/* Recommendations Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                {filteredRecommendations.map((rec, idx) => (
-                    <RecommendationCard
-                        key={idx}
-                        recommendation={rec}
-                        onDelete={() => handleDelete(idx)}
-                        onClick={() => openEdit(rec)}
-                    />
-                ))}
+            {filteredRecommendations.map((rec) => {
+                    // Find the real index in the original (unfiltered) array
+                    const realIdx = recommendations.findIndex(r => r === rec || (r.id && r.id === rec.id))
+                    return (
+                        <RecommendationCard
+                            key={rec.id || realIdx}
+                            recommendation={rec}
+                            onDelete={() => handleDelete(realIdx)}
+                            onClick={() => openEdit(rec)}
+                        />
+                    )
+                })}
             </div>
 
             {/* Add Manual Button - Compact Style */}
@@ -231,7 +246,7 @@ export function LocalRecommendations({
                                 <Label className="text-slate-700 font-bold">Categoría</Label>
                                 <select
                                     className="w-full h-12 rounded-xl bg-slate-50 border-none px-4 font-medium text-sm focus:ring-2 focus:ring-primary outline-none"
-                                    value={editingRec?.category || selectedCategory}
+                                    value={editingRec?.category || (selectedCategory !== 'todos' ? selectedCategory : 'restaurantes')}
                                     onChange={e => setEditingRec({ ...editingRec, category: e.target.value })}
                                 >
                                     {categories.filter(c => c.id !== 'todos').map(c => (

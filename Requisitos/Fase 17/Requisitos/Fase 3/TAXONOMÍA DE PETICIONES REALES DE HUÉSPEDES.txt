@@ -1,0 +1,1152 @@
+2. CATEGORÍAS DE INFORMACIÓN Y CASOS REALES
+CATEGORÍA 1: ACCESO Y LLEGADA (35% de consultas)
+Subcategorías:
+
+Cómo llegar
+Check-in / entrega de llaves
+Parking
+Transporte público
+Problemas de acceso
+
+Casos Reales:
+"¿Cómo llego desde el aeropuerto?"
+"Mi vuelo llega a las 23:00, ¿puedo hacer check-in?"
+"No encuentro la caja de llaves"
+"El código del lockbox no funciona"
+"¿Dónde aparco? No hay sitio en la calle"
+"¿Cuál es el portal exacto? Hay varios números"
+"Vengo en coche, ¿hay parking gratuito cerca?"
+"¿Puedo llegar en metro? ¿Qué línea?"
+"He perdido las llaves, ¿qué hago?"
+"¿Hay ascensor? Vengo con maletas pesadas"
+"¿A qué hora puedo entrar? Llego a las 11:00"
+"¿Necesito dejar fianza de llaves?"
+"El portal está cerrado y no sé el código"
+"¿Puedo dejar las maletas si llego antes del check-in?"
+"¿Hay consigna de equipaje cerca?"
+Información Necesaria:
+yamlacceso:
+  direccion_completa: "Calle Example 123, 3º B, 28001 Madrid"
+  coordenadas_gps: "40.4168, -3.7038"
+  
+  desde_aeropuerto:
+    metro: 
+      linea: "Línea 8 (rosa)"
+      paradas: "Aeropuerto T4 → Nuevos Ministerios"
+      cambio: "Línea 10 a Tribunal → Línea 1 a Sol"
+      duracion: "45 minutos"
+      precio: "€6 (suplemento aeropuerto)"
+    
+    taxi:
+      duracion: "25 minutos"
+      precio: "€35-40"
+      app: "Uber, Cabify, FreeNow"
+    
+    bus:
+      linea: "Express Aeropuerto (203)"
+      parada_destino: "Atocha"
+      frecuencia: "cada 15 min"
+  
+  desde_estacion_tren:
+    cercania: "C1 desde Atocha, bajar en Sol (10 min)"
+    andando: "15 minutos a pie desde Atocha"
+  
+  parking:
+    incluido: false
+    parking_publico_cercano:
+      - nombre: "Parking Plaza Mayor"
+        distancia: "200m"
+        precio: "€25/día"
+        cubierto: true
+      - nombre: "Zona SER calle lateral"
+        distancia: "50m"
+        precio: "€3/hora (gratis domingos)"
+        tipo: "calle"
+    
+    zona_azul: true
+    horario_zona_azul: "L-V 9:00-21:00, S 9:00-15:00"
+  
+  transporte_publico_cercano:
+    metro: "Sol (L1, L2, L3) - 5 min andando"
+    bus: "Líneas 3, 50, 150 - parada en la esquina"
+  
+  como_llegar_portal:
+    descripcion: "Portal de madera verde, número 123 dorado"
+    referencia: "Entre farmacia y panadería"
+    foto_portal: "url_imagen_portal.jpg"
+  
+  check_in:
+    tipo: "lockbox" # o "presencial", "smart_lock"
+    ubicacion_lockbox: "En la puerta del portal, lado derecho a 1.5m altura"
+    codigo: "Se envía por WhatsApp 24h antes"
+    instrucciones:
+      - "Marca el código en el teclado"
+      - "Gira la manivela hacia la derecha"
+      - "Recoge las llaves (2 llaves + llave buzón)"
+      - "Cierra bien la caja"
+    
+    horario_flexible: true
+    hora_minima: "15:00"
+    check_in_temprano:
+      disponible: "bajo petición"
+      coste: "€20 si está disponible"
+    
+    check_in_tardio:
+      disponible: true
+      horario: "sin límite"
+      instrucciones_nocturnas: "El portal cierra a las 23:00, usar código 1234#"
+  
+  acceso_portal:
+    codigo_portal: "1234#" # Incluir si es fijo
+    horario_cierre: "23:00-7:00"
+    tiene_portero: false
+  
+  acceso_edificio:
+    planta: "3ª"
+    puerta: "B"
+    ascensor: true
+    escaleras: "3 tramos"
+  
+  deposito_equipaje:
+    antes_checkin:
+      disponible: true
+      ubicacion: "Trastero en planta baja"
+      instrucciones: "Contactar 1h antes"
+    
+    despues_checkout:
+      disponible: true
+      ubicacion: "Mismo trastero"
+      horario_limite: "hasta las 20:00"
+```
+
+---
+
+### **CATEGORÍA 2: NORMAS DE LA CASA Y SALIDA (25% de consultas)**
+
+**Casos Reales:**
+```
+"¿A qué hora tengo que dejar el apartamento?"
+"¿Tengo que limpiar antes de salir?"
+"¿Dónde dejo las llaves al irme?"
+"¿Puedo salir más tarde? Mi vuelo es a las 18:00"
+"¿Hay que lavar las sábanas?"
+"¿Qué hago con la basura?"
+"¿Tengo que fregar los platos?"
+"¿Se puede fumar en el balcón?"
+"¿Puedo hacer ruido por la noche? ¿Hasta qué hora?"
+"¿Puedo invitar amigos? ¿Cuántas personas como máximo?"
+"¿Se admiten mascotas?"
+"¿Hay alguna norma especial del edificio?"
+"¿Puedo usar la lavadora de noche?"
+"¿Dónde tiro las botellas de vidrio?"
+Información Necesaria:
+yamlnormas_casa:
+  check_out:
+    hora: "11:00"
+    hora_flexible: "hasta 12:00 sin coste"
+    late_checkout:
+      disponible: true
+      horario: "hasta 15:00"
+      coste: "€15"
+      como_solicitar: "avisar con 24h de antelación"
+  
+  limpieza_salida:
+    limpieza_incluida: true
+    obligaciones_huesped:
+      - "Dejar la cocina recogida (no fregar)"
+      - "Tirar la basura en los contenedores de la calle"
+      - "Dejar las toallas en el baño"
+      - "Apagar luces y aire acondicionado"
+    no_es_necesario:
+      - "Lavar sábanas"
+      - "Fregar suelos"
+      - "Limpiar baño a fondo"
+  
+  devolucion_llaves:
+    metodo: "Dejar en el lockbox"
+    instrucciones: "Dejar las llaves dentro del lockbox y cerrar"
+    alternativa: "Dejar bajo el felpudo si hay problemas con lockbox"
+  
+  basura:
+    contenedores:
+      ubicacion: "Saliendo del portal, 20m a la derecha"
+      tipos:
+        - "Amarillo: plástico y latas"
+        - "Azul: papel y cartón"
+        - "Verde: vidrio (al lado del bar)"
+        - "Gris: orgánico"
+    
+    horario_recomendado: "Sacar antes de las 22:00"
+    dia_recogida: "Lunes, miércoles y viernes"
+  
+  ruido:
+    horario_silencio: "23:00 - 8:00"
+    normativa: "Respeto a los vecinos en todo momento"
+    vecinos_sensibles: true
+    nota: "El edificio es residencial, agradecemos especial cuidado"
+  
+  fumar:
+    dentro_apartamento: false
+    balcon: true
+    nota: "Si fumas en el balcón, usar cenicero (debajo del fregadero)"
+  
+  visitas:
+    permitidas: true
+    capacidad_maxima: 4
+    nota: "No se permiten fiestas"
+    registro_obligatorio: false
+  
+  mascotas:
+    permitidas: false
+    excepcion: "Perros pequeños (<10kg) con suplemento de €20 y depósito"
+  
+  normas_edificio:
+    - "No usar ascensor entre 23:00-8:00 si es posible (ruido)"
+    - "Cerrar siempre la puerta del portal"
+    - "No tender ropa en el balcón que dé a la calle principal"
+    - "Respetar zonas comunes"
+  
+  electrodomesticos:
+    lavadora:
+      horario_recomendado: "9:00-22:00"
+      centrifugado_nocturno: "no recomendado (vibra mucho)"
+    
+    lavavajillas: "sin restricciones"
+    aire_acondicionado: "apagar al salir"
+```
+
+---
+
+### **CATEGORÍA 3: WIFI Y TECNOLOGÍA (15% de consultas)**
+
+**Casos Reales:**
+```
+"¿Cuál es la contraseña del WiFi?"
+"El WiFi no funciona"
+"¿Hay Netflix en la tele?"
+"¿Cómo enciendo la tele?"
+"¿Cómo conecto mi móvil al Bluetooth de la tele?"
+"No hay internet, ¿qué hago?"
+"¿Puedo usar Chromecast?"
+"La WiFi va muy lenta"
+"¿Tenéis impresora?"
+"¿Cómo funciona la Smart TV?"
+Información Necesaria:
+yamltecnologia:
+  wifi:
+    red_principal:
+      nombre: "Apartamento_Madrid_5G"
+      contraseña: "Madrid2024!"
+      velocidad: "300 Mbps fibra"
+    
+    red_2.4ghz:
+      nombre: "Apartamento_Madrid"
+      contraseña: "Madrid2024!"
+      mejor_para: "dispositivos antiguos o lejos del router"
+    
+    ubicacion_router: "Armario del pasillo, balda superior"
+    
+    problemas_comunes:
+      no_conecta:
+        - "Verificar que escribes bien la contraseña (distingue mayúsculas)"
+        - "Reiniciar router (botón rojo en el lateral)"
+        - "Esperar 2 minutos a que arranque"
+      
+      va_lento:
+        - "Conectarte a la red 5G si tu dispositivo lo soporta"
+        - "Acercarte al salón (donde está el router)"
+        - "Reiniciar router si es muy lento"
+  
+  television:
+    modelo: "Samsung Smart TV 55''"
+    ubicacion: "Salón"
+    
+    encendido:
+      - "Mando a distancia: botón rojo superior"
+      - "Si no enciende: botón físico debajo de la tele, centro-derecha"
+    
+    canales:
+      tdt: true
+      numero_canales: "80+ canales TDT"
+      guia: "Botón GUIDE del mando"
+    
+    apps_disponibles:
+      - nombre: "Netflix"
+        login_incluido: true
+        usuario: "apartamento@email.com"
+        nota: "Perfil 'Huéspedes'"
+      
+      - nombre: "Prime Video"
+        login_incluido: false
+        nota: "Puedes usar tu cuenta"
+      
+      - nombre: "YouTube"
+        login_incluido: false
+      
+      - nombre: "Disney+"
+        login_incluido: false
+    
+    chromecast:
+      integrado: true
+      como_usar: "Botón 'Source' → Seleccionar 'Screen Mirroring'"
+    
+    bluetooth:
+      disponible: true
+      instrucciones:
+        - "Ajustes → Sonido → Salida de audio → Bluetooth"
+        - "Buscar dispositivo"
+        - "Emparejar"
+    
+    problemas_comunes:
+      no_enciende:
+        - "Verificar que el cable está conectado (detrás de la tele)"
+        - "Comprobar regleta de enchufes (detrás del sofá)"
+      
+      sin_imagen:
+        - "Botón SOURCE del mando"
+        - "Seleccionar HDMI1 o TDT"
+      
+      sin_sonido:
+        - "Subir volumen (puede estar en mute)"
+        - "Verificar que no está conectado a Bluetooth"
+  
+  otros_dispositivos:
+    impresora: false
+    
+    altavoz_bluetooth:
+      disponible: true
+      ubicacion: "Estantería del salón"
+      como_conectar: "Mantener botón encendido 3 segundos, buscar 'JBL Speaker'"
+      bateria: "Cargador USB-C en el cajón de la cocina"
+```
+
+---
+
+### **CATEGORÍA 4: PROBLEMAS TÉCNICOS Y MANTENIMIENTO (10% de consultas)**
+
+**Casos Reales:**
+```
+"No hay agua caliente"
+"El termo hace ruido raro"
+"Hay una fuga de agua en el baño"
+"El aire acondicionado no enfría"
+"Se ha ido la luz"
+"El enchufe del dormitorio no funciona"
+"La cerradura se atasca"
+"Hay una ventana que no cierra bien"
+"El váter no desagua bien"
+"Huele a gas, ¿es normal?"
+"La nevera hace mucho ruido"
+"No funciona el microondas"
+Información Necesaria:
+yamlproblemas_tecnicos:
+  electricidad:
+    cuadro_electrico:
+      ubicacion: "Entrada, armario a la derecha"
+      foto: "url_foto_cuadro.jpg"
+    
+    sin_luz_general:
+      - "Verificar cuadro eléctrico"
+      - "Subir todos los interruptores"
+      - "Si hay ICP (limitador), comprobar que no hay muchos aparatos conectados"
+      - "Si no se soluciona: contactar inmediatamente"
+    
+    sin_luz_habitacion:
+      - "Comprobar cuadro eléctrico (diferencial de habitaciones)"
+      - "Desconectar aparatos de esa habitación"
+      - "Subir diferencial"
+    
+    enchufes_no_funcionan:
+      habitacion_principal: "Controlado por interruptor junto a la puerta"
+      salón: "Verificar regleta detrás del sofá (tiene interruptor)"
+  
+  agua:
+    sin_agua_caliente:
+      paso1: "Verificar que el termo está encendido (luz verde)"
+      paso2: "Si luz roja parpadeante: esperar 30 minutos (está calentando)"
+      paso3: "Si luz apagada: interruptor en cuadro eléctrico"
+      paso4: "Esperar 2-3 horas para que caliente (termo de 80L)"
+      contacto_urgente: "Si después de 3 horas sigue sin agua caliente"
+    
+    sin_agua_fria:
+      - "Comprobar llave de paso general (debajo del fregadero)"
+      - "Puede ser corte de suministro del edificio"
+      - "Contactar inmediatamente si dura más de 1 hora"
+    
+    fuga_agua:
+      paso1: "Cerrar llave de paso general (debajo del fregadero, girar a la derecha)"
+      paso2: "Poner toallas para secar"
+      paso3: "Contactar INMEDIATAMENTE (WhatsApp o llamada)"
+      emergencia_24h: true
+  
+  climatizacion:
+    aire_acondicionado:
+      no_enfria:
+        - "Verificar que está en modo FRÍO (símbolo copo de nieve)"
+        - "Temperatura debe estar a 18-20°C"
+        - "Esperar 15 minutos"
+        - "Cerrar puertas y ventanas"
+        - "Limpiar filtro (extraer panel frontal, enjuagar con agua)"
+      
+      no_enciende:
+        - "Verificar mando (cambiar pilas, cajón cocina)"
+        - "Botón físico en la unidad interior (lado derecho)"
+      
+      gotea:
+        - "Normal si hace mucho calor (condensación)"
+        - "Si gotea mucho: apagar y contactar"
+    
+    calefaccion:
+      tipo: "Radiadores eléctricos"
+      ubicacion_termostato: "Pasillo, altura 1.5m"
+      instrucciones: "Ver manual radiadores"
+  
+  cerraduras:
+    puerta_principal:
+      se_atasca:
+        - "Levantar ligeramente la puerta al girar la llave"
+        - "Usar WD40 (debajo del fregadero)"
+        - "Si persiste: contactar"
+      
+      llave_no_gira:
+        - "Verificar que es la llave correcta (son 2, una lisa y una con sierra)"
+        - "Girar primero a la izquierda, luego derecha"
+  
+  fontaneria:
+    vater_atascado:
+      - "Usar desatascador (baño, detrás de la puerta)"
+      - "NO echar productos químicos"
+      - "Si no se soluciona en 2 intentos: contactar"
+    
+    ducha_no_desagua:
+      - "Quitar rejilla y limpiar pelos"
+      - "Si persiste: contactar"
+  
+  olores:
+    gas:
+      accion: "ABRIR VENTANAS, NO encender luces, cerrar llave de gas, EVACUAR, contactar 112"
+      llave_gas: "Cocina, debajo de la encimera, lado izquierdo"
+    
+    tuberias:
+      - "Normal si el apartamento ha estado cerrado"
+      - "Abrir grifos 2 minutos"
+      - "Si persiste después de 1 día: contactar"
+  
+  contacto_emergencias:
+    urgente_24h:
+      telefono: "+34 600 123 456"
+      whatsapp: "+34 600 123 456"
+      casos: "Fugas de agua, gas, sin electricidad total"
+    
+    no_urgente:
+      email: "soporte@apartamento.com"
+      horario: "L-V 9:00-20:00"
+      tiempo_respuesta: "máx 4 horas"
+```
+
+---
+
+### **CATEGORÍA 5: RESTAURANTES Y OCIO (20% de consultas)**
+
+**Casos Reales:**
+```
+"¿Dónde puedo comer cerca?"
+"Me apetece pizza, ¿qué me recomiendas?"
+"¿Hay algún supermercado abierto ahora?"
+"¿Dónde está el mercado local?"
+"¿Qué restaurantes tienen terraza?"
+"Queremos ir de tapas, ¿alguna zona buena?"
+"¿Hay servicio de comida a domicilio?"
+"¿Qué hacer en Madrid este fin de semana?"
+"¿Dónde puedo desayunar cerca?"
+"¿Hay alguna farmacia 24h?"
+"¿Dónde puedo comprar vino local?"
+"¿Qué museo me recomiendas?"
+"¿Hay algún bar de copas cerca?"
+Información Necesaria:
+yamlrestaurantes_ocio:
+  desayuno:
+    - nombre: "Café de la Esquina"
+      distancia: "50m"
+      especialidad: "Tostadas y café"
+      precio: "€5-8"
+      horario: "7:00-12:00"
+      destacado: "Los churros con chocolate son espectaculares"
+    
+    - nombre: "Panadería San José"
+      distancia: "100m"
+      especialidad: "Bollería casera"
+      precio: "€3-5"
+      horario: "6:30-14:00"
+      nota: "Cierra domingos"
+  
+  comida_cena:
+    por_tipo:
+      italiana:
+        - nombre: "Trattoria Roma"
+          distancia: "200m"
+          direccion: "Calle Mayor 45"
+          precio: "€15-25/persona"
+          especialidad: "Pasta fresca, pizza napolitana"
+          reserva: "Recomendada fines de semana"
+          telefono: "+34 910 123 456"
+          glovo_uber: true
+          destacado: "Pizza Margarita y Carbonara"
+          ambiente: "Familiar, terraza interior"
+      
+      española:
+        - nombre: "Casa Pepe"
+          distancia: "150m"
+          precio: "€20-30/persona"
+          especialidad: "Tapas tradicionales, cocido madrileño (jueves)"
+          destacado: "Mejor tortilla de patatas del barrio"
+          terraza: true
+        
+        - nombre: "Taberna El Ancla"
+          distancia: "300m"
+          precio: "€15-20/persona"
+          especialidad: "Pescado y marisco"
+          nota: "Muy concurrido, ir pronto o reservar"
+      
+      asiatica:
+        - nombre: "Sakura Sushi"
+          distancia: "400m"
+          precio: "€25-35/persona"
+          delivery: true
+          apps: ["Uber Eats", "Glovo"]
+      
+      vegetariana:
+        - nombre: "Green Garden"
+          distancia: "250m"
+          precio: "€12-18/persona"
+          especialidad: "100% vegano"
+          nota: "Muy buenas opciones sin gluten"
+    
+    economico:
+      - nombre: "Bocatería El Rápido"
+        precio: "€6-10"
+        distancia: "80m"
+        horario: "12:00-23:00"
+      
+      - nombre: "Kebab Istanbul"
+        precio: "€5-8"
+        distancia: "120m"
+        horario: "12:00-2:00"
+    
+    delivery:
+      apps_recomendadas: ["Glovo", "Uber Eats", "Just Eat"]
+      zona_amplia_cobertura: true
+      tiempo_medio: "30-40 min"
+  
+  bares_copas:
+    - nombre: "Bar Central"
+      tipo: "Bar de barrio"
+      distancia: "100m"
+      ambiente: "Local, auténtico"
+      precio: "Cerveza €2.50, copa €6"
+    
+    - nombre: "Cocktail Lab"
+      tipo: "Coctelería"
+      distancia: "350m"
+      ambiente: "Moderno, música electrónica"
+      precio: "Cóctel €10-12"
+      horario: "19:00-3:00"
+    
+    zona_marcha:
+      nombre: "Barrio de Huertas"
+      distancia: "15 min andando"
+      descripcion: "Zona con más de 50 bares y pubs"
+      transporte: "Metro Antón Martín (L1)"
+  
+  supermercados:
+    - nombre: "Mercadona"
+      distancia: "300m"
+      horario: "9:00-21:30 (L-S)"
+      domingos: "cerrado"
+      tipo: "Supermercado completo"
+    
+    - nombre: "Carrefour Express"
+      distancia: "150m"
+      horario: "8:00-22:00 (todos los días)"
+      tipo: "Supermercado pequeño, básicos"
+    
+    - nombre: "Alimentación 24h"
+      distancia: "400m"
+      horario: "24 horas"
+      nota: "Precios más altos, para emergencias"
+    
+    mercado_local:
+      nombre: "Mercado de San Miguel"
+      distancia: "10 min andando"
+      horario: "10:00-00:00"
+      descripcion: "Mercado gourmet, productos locales"
+      destacado: "Perfecto para comprar jamón, quesos, vinos"
+  
+  farmacias:
+    - nombre: "Farmacia López"
+      distancia: "200m"
+      horario: "9:00-21:00"
+      telefono: "+34 910 111 222"
+    
+    - nombre: "Farmacia 24h Puerta del Sol"
+      distancia: "15 min andando"
+      horario: "24 horas"
+      direccion: "Plaza Puerta del Sol 2"
+  
+  ocio_cultura:
+    museos_cercanos:
+      - nombre: "Museo del Prado"
+        distancia: "20 min andando / 10 min metro"
+        precio: "€15 (gratis 18:00-20:00 L-S)"
+        destacado: "Imprescindible: Velázquez, Goya"
+      
+      - nombre: "Museo Reina Sofía"
+        distancia: "15 min andando"
+        precio: "€12 (gratis 19:00-21:00 L-S)"
+        destacado: "Guernica de Picasso"
+    
+    parques:
+      - nombre: "Parque del Retiro"
+        distancia: "25 min andando"
+        destacado: "Perfecto para pasear, alquilar barca"
+    
+    flamenco:
+      - nombre: "Tablao Villa Rosa"
+        distancia: "10 min andando"
+        precio: "desde €35 (show + bebida)"
+        reserva: "Imprescindible"
+    
+    compras:
+      - zona: "Gran Vía"
+        distancia: "15 min andando"
+        tipo: "Grandes marcas, tiendas"
+      
+      - zona: "El Rastro"
+        cuando: "Domingos y festivos 9:00-15:00"
+        tipo: "Mercadillo tradicional"
+        distancia: "12 min andando"
+  
+  experiencias_recomendadas:
+    - "Free tour por el Madrid de los Austrias (10:00 o 17:00 desde Plaza Mayor)"
+    - "Atardecer en el Templo de Debod (mejor vista de Madrid)"
+    - "Ruta de tapas por La Latina (domingos especialmente)"
+    - "Teleférico de Madrid (vistas panorámicas)"
+```
+
+---
+
+### **CATEGORÍA 6: SERVICIOS Y FACILIDADES DEL APARTAMENTO (8% de consultas)**
+
+**Casos Reales:**
+```
+"¿Hay secador de pelo?"
+"¿Tenéis plancha?"
+"¿Dónde están las toallas extra?"
+"¿Hay adaptador de enchufe?"
+"¿Tenéis cuna para bebé?"
+"¿Hay productos de limpieza?"
+"¿Dónde está el tendedero?"
+"¿Hay tabla de planchar?"
+"¿Tenéis paraguas?"
+"¿Hay cargador de iPhone?"
+"¿Dónde están las almohadas extra?"
+Información Necesaria:
+yamlinventario_apartamento:
+  baño:
+    ubicacion_elementos:
+      toallas:
+        juegos_completos: 4
+        ubicacion: "Armario del baño, balda superior"
+        incluye: "1 toalla grande, 1 mediana, 1 mano por persona"
+        toallas_extra: "Armario pasillo, balda inferior"
+      
+      secador:
+        disponible: true
+        ubicacion: "Cajón bajo el lavabo"
+        modelo: "Remington 2000W"
+      
+      productos:
+        gel_champu:
+          incluido: true
+          ubicacion: "Ducha"
+          tipo: "Monodosis primeros días"
+        
+        papel_higienico:
+          rollos_iniciales: 4
+          ubicacion_extra: "Armario baño, balda inferior"
+        
+        jabon_manos: "Dosificador en lavabo"
+    
+    no_incluido:
+      - "Cepillo de dientes"
+      - "Pasta de dientes"
+      - "Maquinilla de afeitar"
+  
+  dormitorios:
+    ropa_cama:
+      sabanas:
+        juegos: 2
+        ubicacion_extra: "Armario empotrado dormitorio principal"
+      
+      mantas:
+        disponibles: 2
+        ubicacion: "Altillo armario dormitorio"
+      
+      almohadas:
+        por_cama: 2
+        almohadas_extra: 2
+        ubicacion: "Armario pasillo"
+    
+    armarios:
+      perchas: 20
+      cajones_disponibles: "Todos (están vacíos)"
+      caja_fuerte: false
+  
+  cocina:
+    electrodomesticos:
+      cafetera:
+        tipo: "Nespresso"
+        capsulas_incluidas: 10
+        ubicacion_capsulas: "Cajón superior izquierdo"
+        capsulas_compatibles: "Cualquier cápsula Nespresso"
+      
+      tostadora:
+        disponible: true
+        ubicacion: "Encimera"
+      
+      batidora:
+        disponible: true
+        ubicacion: "Armario bajo fregadero"
+      
+      exprimidor:
+        disponible: true
+        ubicacion: "Cajón grande"
+    
+    menaje:
+      ollas_sartenes: "Set completo"
+      vajilla_personas: 6
+      cuberteria_personas: 6
+      vasos_copas: "Completo"
+      tuppers: 5
+      
+    productos_cocina:
+      basicos_incluidos:
+        - "Sal, pimienta, aceite de oliva"
+        - "Azúcar, café, té"
+        - "Papel de cocina"
+        - "Estropajos, jabón lavavajillas"
+        - "Bolsas de basura"
+        - "Papel de aluminio, film transparente"
+      
+      ubicacion: "Armario superior derecho"
+  
+  limpieza:
+    aspiradora:
+      disponible: true
+      ubicacion: "Armario pasillo"
+      tipo: "Sin cable (Dyson V8)"
+      cargador: "Conectado en la pared del armario"
+    
+    fregona:
+      ubicacion: "Armario pasillo"
+      cubo: "Mismo armario"
+    
+    escoba_recogedor:
+      ubicacion: "Detrás puerta cocina"
+    
+    productos_limpieza:
+      disponibles: true
+      ubicacion: "Bajo fregadero"
+      incluye:
+        - "Multiusos"
+        - "Limpiacristales"
+        - "Lejía"
+        - "Limpiador suelos"
+  
+  lavanderia:
+    lavadora:
+      ubicacion: "Baño"
+      manual: "Ver manual lavadora"
+      detergente_incluido: true
+      ubicacion_detergente: "Encima de la lavadora"
+    
+    tendedero:
+      tipo: "Plegable"
+      ubicacion: "Armario pasillo, colgado en la puerta"
+      donde_tender: "Balcón o baño"
+    
+    plancha:
+      disponible: true
+      ubicacion: "Armario pasillo, balda baja"
+      tabla_planchar:
+        disponible: true
+        ubicacion: "Detrás puerta dormitorio principal"
+  
+  otros:
+    paraguas:
+      disponibles: 2
+      ubicacion: "Paragüero entrada"
+    
+    adaptadores_enchufe:
+      tipo: "Europa (tipo C)"
+      adaptadores_universales: 2
+      ubicacion: "Cajón entrada"
+    
+    cargadores:
+      usb:
+        puertos: "Regleta salón con 4 puertos USB"
+      
+      cables:
+        disponibles: "Lightning, USB-C, Micro-USB"
+        ubicacion: "Cajón mesa salón"
+    
+    ventilador:
+      disponible: true
+      ubicacion: "Armario pasillo"
+      tipo: "De pie, oscilante"
+    
+    calefactor_extra:
+      disponible: true
+      ubicacion: "Armario pasillo"
+      para: "Si hace mucho frío"
+    
+    botiquin:
+      ubicacion: "Armario baño"
+      contenido:
+        - "Tiritas"
+        - "Gasas"
+        - "Alcohol"
+        - "Termómetro"
+        - "Paracetamol"
+      nota: "Básico, para emergencias recomendamos farmacia"
+    
+    juegos_libros:
+      disponibles: true
+      ubicacion: "Estantería salón"
+      incluye:
+        - "Cartas españolas/póker"
+        - "Parchís"
+        - "Guías de Madrid (español/inglés)"
+        - "Libros varios"
+  
+  familias_bebes:
+    cuna:
+      disponible: "Bajo petición (gratis)"
+      aviso_previo: "48 horas"
+      tipo: "Cuna viaje"
+    
+    trona:
+      disponible: "Bajo petición (gratis)"
+      aviso_previo: "48 horas"
+    
+    cambiador:
+      disponible: false
+      alternativa: "Se puede usar cama con toalla"
+    
+    bañera_bebe:
+      disponible: false
+```
+
+---
+
+### **CATEGORÍA 7: INFORMACIÓN LOCAL Y PRÁCTICA (5% de consultas)**
+
+**Casos Reales:**
+```
+"¿Dónde está el hospital más cercano?"
+"¿Cómo llamo a un taxi?"
+"¿Hay WiFi en las cafeterías de cerca?"
+"¿Dónde puedo hacer ejercicio?"
+"¿Hay lavanderías por aquí?"
+"¿Dónde está la oficina de correos?"
+"¿Hay cajeros cerca?"
+"¿Qué días abren las tiendas?"
+"¿Hay algún coworking cerca?"
+"¿Dónde puedo correr por la mañana?"
+Información Necesaria:
+yamlservicios_locales:
+  salud:
+    centro_salud:
+      nombre: "Centro de Salud Embajadores"
+      distancia: "600m"
+      telefono: "+34 914 000 000"
+      horario: "L-V 8:00-21:00"
+    
+    hospital:
+      nombre: "Hospital Gregorio Marañón"
+      distancia: "2km (10 min taxi)"
+      urgencias_24h: true
+      telefono: "+34 915 868 000"
+    
+    urgencias:
+      numero: "112"
+      ambulancia: "061"
+    
+    dentista:
+      nombre: "Clínica Dental Sonrisa"
+      distancia: "400m"
+      urgencias: true
+      telefono: "+34 910 222 333"
+  
+  bancos_cajeros:
+    cajeros:
+      - banco: "Santander"
+        distancia: "100m"
+        ubicacion: "Esquina calle Mayor"
+      
+      - banco: "BBVA"
+        distancia: "200m"
+        ubicacion: "Plaza del Sol"
+      
+      - tipo: "Euronet (sin comisión si eres de zona euro)"
+        distancia: "150m"
+        ubicacion: "Tienda 24h"
+    
+    oficina_bancaria:
+      nombre: "CaixaBank"
+      distancia: "250m"
+      horario: "L-V 8:30-14:00"
+  
+  correos:
+    oficina_principal:
+      distancia: "500m"
+      horario: "L-V 8:30-20:30, S 9:30-13:00"
+      servicios: "Envíos nacionales/internacionales, paquetería"
+    
+    buzon:
+      ubicacion: "Esquina del edificio"
+      recogida: "L-V a las 18:00"
+    
+    punto_pack:
+      nombre: "Amazon Locker - Estanco López"
+      distancia: "200m"
+      horario: "L-S 8:00-21:00"
+  
+  transporte:
+    taxi:
+      apps:
+        - "Free Now"
+        - "Uber"
+        - "Cabify"
+      
+      parada_taxi:
+        ubicacion: "Plaza Mayor (5 min andando)"
+        siempre_disponible: true
+      
+      telefono_radiotaxi: "+34 915 478 200"
+      precio_medio_aeropuerto: "€35-40"
+    
+    metro:
+      estacion_cercana: "Sol"
+      lineas: ["L1", "L2", "L3"]
+      distancia: "5 min andando"
+      horario: "6:00-1:30"
+      precio_billete: "€1.50-2"
+      bono_10_viajes: "€12.20"
+      tarjeta_turistica:
+        precio: "€26.40 (3 días ilimitado)"
+        incluye: "Metro + bus"
+    
+    bus:
+      parada: "Calle Mayor (50m)"
+      lineas: ["3", "50", "150"]
+      horario: "6:00-23:00"
+      bus_nocturno: "N16, N26 (parada Plaza Mayor)"
+    
+    bicicleta:
+      bicimad:
+        estacion: "Calle Atocha (300m)"
+        precio: "€2/30min"
+        app: "BiciMAD"
+      
+      alquiler:
+        nombre: "Madrid Rent a Bike"
+        distancia: "10 min andando"
+        precio: "€12/día"
+    
+    parking_publico:
+      nombre: "Parking Plaza Mayor"
+      distancia: "200m"
+      precio: "€25/día, €2.50/hora"
+      24h: true
+  
+  deporte_bienestar:
+    gimnasio:
+      nombre: "Gym Express"
+      distancia: "400m"
+      pase_dia: "€15"
+      horario: "6:00-23:00"
+    
+    yoga:
+      nombre: "Namaste Center"
+      distancia: "600m"
+      clase_suelta: "€18"
+    
+    piscina:
+      nombre: "Piscina Municipal Casa de Campo"
+      distancia: "3km (15 min metro)"
+      verano: "Abierta jun-sep"
+      precio: "€5"
+    
+    running:
+      ruta_recomendada: "Parque del Retiro (25 min andando)"
+      distancia_ruta: "5km perimetral"
+      horario_seguro: "7:00-22:00"
+  
+  trabajo:
+    coworking:
+      nombre: "Impact Hub Madrid"
+      distancia: "800m"
+      pase_dia: "€25"
+      wifi: "100 Mbps"
+      horario: "8:00-20:00"
+    
+    cafeterias_trabajo:
+      - nombre: "Federal Café"
+        distancia: "300m"
+        wifi: "Gratis"
+        enchufes: true
+        ambiente: "Tranquilo, ideal laptop"
+      
+      - nombre: "Starbucks Plaza Mayor"
+        distancia: "10 min"
+        wifi: "Gratis"
+        horario: "7:00-22:00"
+  
+  lavanderia:
+    autoservicio:
+      nombre: "Wash & Go"
+      distancia: "500m"
+      horario: "8:00-22:00 todos los días"
+      precio: "€5 lavado, €3 secado"
+      tiempo: "Lavado 30min, secado 40min"
+    
+    tintoreria:
+      nombre: "Tintorería Rápida"
+      distancia: "350m"
+      servicio: "Lavado en seco, planchado"
+      horario: "L-V 9:00-14:00, 17:00-20:00"
+  
+  comercio:
+    horarios_generales:
+      tiendas: "L-S 10:00-21:00"
+      centros_comerciales: "L-D 10:00-22:00"
+      supermercados: "9:00-21:30 (algunos 24h)"
+      domingos: "Algunos grandes almacenes y centro abren"
+    
+    festivos_locales:
+      - "2 de mayo (Comunidad de Madrid)"
+      - "15 de mayo (San Isidro - patrón Madrid)"
+      - "Consultar calendario oficial"
+  
+  utilidades:
+    veterinario_24h:
+      nombre: "Clínica Veterinaria Urgencias"
+      distancia: "1.5km"
+      telefono: "+34 915 555 555"
+    
+    cerrajero_24h:
+      nombre: "Cerrajería Express"
+      telefono: "+34 900 123 123"
+      precio_aproximado: "€60-120"
+    
+    fontanero_24h:
+      incluido: "Contactar al anfitrión primero"
+      emergencia: "+34 600 123 456"
+```
+
+---
+
+### **CATEGORÍA 8: EXPERIENCIAS Y EVENTOS ESPECIALES (2% de consultas)**
+
+**Casos Reales:**
+```
+"¿Hay algún concierto este fin de semana?"
+"¿Dónde ver fútbol?"
+"¿Hay mercados navideños?"
+"¿Qué eventos hay en la ciudad?"
+"¿Dónde ver el amanecer?"
+"¿Hay tours guiados en español?"
+"¿Dónde puedo ver flamenco auténtico?"
+"¿Hay algún festival este mes?"
+Información Necesaria:
+yamlexperiencias_eventos:
+  futbol:
+    estadios:
+      - nombre: "Santiago Bernabéu (Real Madrid)"
+        distancia: "30 min metro"
+        tours: "€25, reservar online"
+        partidos: "Ver calendario en realmadrid.com"
+      
+      - nombre: "Cívitas Metropolitano (Atlético Madrid)"
+        distancia: "25 min metro"
+    
+    bares_ver_futbol:
+      - nombre: "Irish Rover"
+        distancia: "15 min andando"
+        pantallas: "5 pantallas grandes"
+        ambiente: "Muy futbolero"
+  
+  flamenco:
+    recomendados:
+      - nombre: "Corral de la Morería"
+        precio: "desde €48"
+        tipo: "Tablao profesional"
+        reserva: "Imprescindible"
+        incluye: "Show + bebida"
+      
+      - nombre: "Cardamomo"
+        precio: "desde €40"
+        ambiente: "Más íntimo"
+        zona: "Plaza Mayor (10 min andando)"
+  
+  tours:
+    - tipo: "Free Tour Madrid Clásico"
+      punto_encuentro: "Plaza Mayor"
+      horarios: "10:00, 11:00, 17:00"
+      duracion: "2.5 horas"
+      idiomas: "Español, inglés"
+      propina: "€10-15 recomendado"
+    
+    - tipo: "Tour Gastronómico"
+      empresa: "Devour Madrid"
+      precio: "€95"
+      incluye: "6 paradas, comida incluida"
+    
+    - tipo: "Pub Crawl"
+      zona: "Huertas"
+      precio: "€12"
+      incluye: "5 bares, 5 chupitos"
+      inicio: "22:30"
+  
+  eventos_temporales:
+    navidad:
+      mercado_navideño: "Plaza Mayor (dic)"
+      cabalgata_reyes: "5 enero, 18:00h"
+      luces: "Gran Vía (nov-ene)"
+    
+    verano:
+      veranos_villa: "Conciertos gratuitos jul-ago"
+      terrazas: "Azoteas abiertas may-sep"
+    
+    todo_el_año:
+      consultar: "https://www.esmadrid.com/agenda"
+  
+  miradores:
+    - nombre: "Templo de Debod"
+      distancia: "20 min metro"
+      horario: "Hasta puesta de sol"
+      precio: "Gratis"
+      destacado: "Mejor atardecer de Madrid"
+    
+    - nombre: "Círculo de Bellas Artes"
+      precio: "€5"
+      tiene_bar: true
+      vistas: "360° de Madrid"
+  
+  experiencias_unicas:
+    - "Rastro (domingos mañana)"
+    - "Chocolatería San Ginés (24h, mejor a las 3am)"
+    - "Mercado San Miguel (tapeo gourmet)"
+    - "Espectáculo flamenco tablaos"
+    - "Paseo nocturno Madrid iluminado"

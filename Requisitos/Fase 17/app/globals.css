@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@theme {
+  /* Brand Colors */
+  --color-teal: #316263;
+  --color-clay: #C36A4A;
+  --color-cloud: #F0EEE9;
+  --color-ink: #101417;
+
+  /* Functional Colors mapping */
+  --color-background: var(--color-cloud);
+  --color-foreground: var(--color-ink);
+
+  --color-primary: var(--color-teal);
+  --color-primary-foreground: var(--color-cloud);
+
+  --color-secondary: var(--color-clay);
+  --color-secondary-foreground: var(--color-cloud);
+
+  --color-muted: #E5E2DA;
+  --color-muted-foreground: #525252;
+
+  --color-accent: var(--color-clay);
+  --color-accent-foreground: var(--color-cloud);
+
+  --color-border: #E5E2DA;
+  --color-input: #E5E2DA;
+  --color-ring: var(--color-teal);
+
+  /* Legacy aliases to avoid breaking existing code */
+  --color-beige: var(--color-cloud);
+  --color-navy: var(--color-ink);
+  --color-slate: #525252;
+  --color-cream: #FFFDF9;
+
+  /* Fonts */
+  --font-sans: 'Inter', 'Geist', 'Geist Fallback', system-ui, sans-serif;
+  --font-serif: 'Playfair Display', serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+
+  /* Radii */
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.5rem;
+
+  /* Shadows */
+  --shadow-card: 0 4px 20px -2px rgba(16, 20, 23, 0.08);
+  --shadow-card-hover: 0 8px 30px -4px rgba(16, 20, 23, 0.12);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

@@ -49,8 +49,7 @@ function ContactItem({
     currentLanguage, 
     accessToken, 
     getIcon, 
-    handleDirections, 
-    handleCall,
+    getMapsUrl, 
     isCustom = false,
     propertyId // FASE 17
 }: { 
@@ -59,8 +58,7 @@ function ContactItem({
     currentLanguage: string, 
     accessToken?: string,
     getIcon: (type: string) => any,
-    handleDirections: (name: string, address?: string) => void,
-    handleCall: (phone: string) => void,
+    getMapsUrl: (name: string, address?: string) => string,
     isCustom?: boolean,
     propertyId?: string // FASE 17
 }) {
@@ -77,12 +75,12 @@ function ContactItem({
                     <span className="text-slate-800 font-bold text-sm tracking-tight">{localizedName}</span>
                     <span className="text-[11px] text-primary/40 font-medium mt-0.5">{contact.phone}</span>
                 </div>
-                <button
-                    onClick={() => handleCall(contact.phone)}
+                <a
+                    href={`tel:${(contact.phone || '').replace(/\s/g, '')}`}
                     className="w-9 h-9 bg-primary/[0.04] text-primary rounded-full flex items-center justify-center hover:bg-primary/[0.08] transition-all active:scale-95 shrink-0"
                 >
                     <Phone className="w-4 h-4" strokeWidth={2} />
-                </button>
+                </a>
             </div>
         );
     }
@@ -107,18 +105,20 @@ function ContactItem({
                 </div>
             </div>
             <div className="flex items-center gap-2 relative z-10">
-                <button
-                    onClick={() => handleDirections(contact.name, contact.address)}
+                <a
+                    href={getMapsUrl(contact.name, contact.address)}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-9 h-9 bg-primary/[0.04] text-primary rounded-full flex items-center justify-center hover:bg-primary/[0.08] transition-all active:scale-95 shrink-0 shadow-sm"
                 >
                     <MapPin className="w-4 h-4" strokeWidth={2} />
-                </button>
-                <button
-                    onClick={() => handleCall(contact.phone)}
+                </a>
+                <a
+                    href={`tel:${(contact.phone || '').replace(/\s/g, '')}`}
                     className="w-9 h-9 bg-primary/10 text-primary rounded-full flex items-center justify-center hover:bg-primary/20 transition-all active:scale-95 shrink-0"
                 >
                     <Phone className="w-4 h-4" strokeWidth={2} />
-                </button>
+                </a>
             </div>
         </div>
     );
@@ -169,24 +169,13 @@ export function EmergencyView({
         }
     };
 
-    const handleCall = (phone: string) => {
-        if (!phone) return;
-        window.location.href = `tel:${phone.replace(/\s/g, '')}`;
-    };
-
-    const handleWhatsApp = (phone: string) => {
-        if (!phone) return;
-        const cleanPhone = phone.replace(/\s+/g, '').replace('+', '');
-        window.open(`https://wa.me/${cleanPhone}`, '_blank');
-    };
-
-    const handleDirections = (name: string, address?: string) => {
+    // getMapsUrl: same logic as GuestChat — Apple Maps on iOS, Google Maps elsewhere
+    const getMapsUrl = (name: string, address?: string) => {
         const query = encodeURIComponent(address || name);
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const url = isIOS
-            ? `http://maps.apple.com/?q=${query}`
+        const isIOS = typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(window.navigator.userAgent);
+        return isIOS
+            ? `maps://?q=${query}`
             : `https://www.google.com/maps/search/?api=1&query=${query}`;
-        window.open(url, '_blank');
     };
 
     return (
@@ -244,18 +233,20 @@ export function EmergencyView({
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 relative z-10">
-                                <button
-                                    onClick={() => handleWhatsApp(contactsData.support_mobile || contactsData.support_phone || '')}
+                                <a
+                                    href={`https://wa.me/${(contactsData.support_mobile || contactsData.support_phone || '').replace(/\s+/g, '').replace('+', '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="w-10 h-10 bg-green-50 text-[#1FC170] rounded-full flex items-center justify-center hover:bg-green-100 transition-all active:scale-95 shadow-sm"
                                 >
                                     <MessageSquare className="w-4.5 h-4.5" strokeWidth={2.5} />
-                                </button>
-                                <button
-                                    onClick={() => handleCall(contactsData.support_phone || contactsData.support_mobile || '')}
+                                </a>
+                                <a
+                                    href={`tel:${(contactsData.support_phone || contactsData.support_mobile || '').replace(/\s/g, '')}`}
                                     className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20"
                                 >
                                     <Phone className="w-4.5 h-4.5" strokeWidth={2} />
-                                </button>
+                                </a>
                             </div>
                         </div>
                     </motion.div>
@@ -277,8 +268,7 @@ export function EmergencyView({
                                     accessToken={accessToken}
                                     propertyId={propertyId}
                                     getIcon={getIcon}
-                                    handleDirections={handleDirections}
-                                    handleCall={handleCall}
+                                    getMapsUrl={getMapsUrl}
                                 />
                             ))}
                         </div>
@@ -301,8 +291,7 @@ export function EmergencyView({
                                     accessToken={accessToken}
                                     propertyId={propertyId}
                                     getIcon={getIcon}
-                                    handleDirections={handleDirections}
-                                    handleCall={handleCall}
+                                    getMapsUrl={getMapsUrl}
                                     isCustom={true}
                                 />
                             ))}

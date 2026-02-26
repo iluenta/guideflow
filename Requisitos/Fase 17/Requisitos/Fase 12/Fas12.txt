@@ -1,0 +1,575 @@
+Plan Completo: Sistema Robusto de Generación de Manuales
+🎯 Objetivo
+Crear un sistema que genere manuales detallados incluso sin PDF oficial, interpretando visualmente el panel de control y combinando múltiples fuentes de información.
+
+📋 Arquitectura de 4 Niveles (Fallback Strategy)
+Nivel 1: PDF Oficial Exacto (Ideal)
+    ↓ Si falla
+Nivel 2: Documentación Web Fragmentada (Scraping)
+    ↓ Si falla
+Nivel 3: Análisis Visual Profundo + IA Generativa
+    ↓ Siempre
+Nivel 4: Validación Cruzada y Enriquecimiento
+
+🔧 Implementación Detallada
+NIVEL 1: Búsqueda Inteligente de PDF
+typescript/**
+ * Búsqueda multi-estrategia del manual oficial
+ */
+async function findOfficialManual(brand: string, model: string, appliance_type: string): Promise<{
+    pdfUrl?: string,
+    webDocs: string[],
+    confidence: 'high' | 'medium' | 'low'
+}> {
+    const strategies = [
+        // Estrategia 1: Modelo exacto + PDF
+        `"${brand}" "${model}" manual instrucciones filetype:pdf`,
+        
+        // Estrategia 2: E-Nr (común en Balay/Bosch/Siemens)
+        `"${model}" "E-Nr" manual usuario filetype:pdf`,
+        
+        // Estrategia 3: Sitio oficial del fabricante
+        `site:${getOfficialDomain(brand)} "${model}" manual`,
+        
+        // Estrategia 4: Modelo sin guiones/espacios (ej: 3HB4331X0 → 3HB4331X0/54)
+        `"${normalizeModel(model)}" manual pdf`,
+        
+        // Estrategia 5: Tipo de aparato genérico (fallback)
+        `"${brand}" ${appliance_type} manual instrucciones pdf`,
+        
+        // Estrategia 6: Portales de manuales
+        `site:manualslib.com OR site:manualscat.com "${brand}" "${model}"`
+    ]
+
+    let pdfUrl: string | undefined
+    let webDocs: string[] = []
+    let bestConfidence: 'high' | 'medium' | 'low' = 'low'
+
+    for (const [index, query] of strategies.entries()) {
+        console.log(`[MANUAL SEARCH] Strategy ${index + 1}: ${query}`)
+        
+        try {
+            const results = await searchBrave(query, { 
+                count: 10,
+                freshness: 'py' // Último año para evitar modelos discontinuados
+            })
+            
+            if (!results.web?.results) continue
+
+            // Buscar PDFs directos
+            const pdfs = results.web.results
+                .filter(r => r.url.toLowerCase().endsWith('.pdf'))
+                .map(r => r.url)
+
+            if (pdfs.length > 0) {
+                pdfUrl = pdfs[0]
+                bestConfidence = index < 2 ? 'high' : 'medium'
+                console.log(`[MANUAL SEARCH] ✅ Found PDF: ${pdfUrl}`)
+                break
+            }
+
+            // Recolectar URLs de documentación (para scraping posterior)
+            const relevantDocs = results.web.results
+                .filter(r => 
+                    r.url.includes(brand.toLowerCase()) ||
+                    r.url.includes('manual') ||
+                    r.description?.toLowerCase().includes(model.toLowerCase())
+                )
+                .slice(0, 3)
+                .map(r => r.url)
+
+            webDocs.push(...relevantDocs)
+
+        } catch (error) {
+            console.error(`[MANUAL SEARCH] Strategy ${index + 1} failed:`, error)
+        }
+
+        // Delay para evitar rate limits
+        await new Promise(res => setTimeout(res, 2000))
+    }
+
+    return { 
+        pdfUrl, 
+        webDocs: [...new Set(webDocs)], 
+        confidence: pdfUrl ? bestConfidence : 'low' 
+    }
+}
+
+function getOfficialDomain(brand: string): string {
+    const domains: Record<string, string> = {
+        'balay': 'balay.es',
+        'bosch': 'bosch-home.es',
+        'siemens': 'siemens-home.bsh-group.com',
+        'teka': 'teka.com',
+        'whirlpool': 'whirlpool.es',
+        'lg': 'lg.com',
+        'samsung': 'samsung.com'
+    }
+    return domains[brand.toLowerCase()] || `${brand.toLowerCase()}.com`
+}
+
+function normalizeModel(model: string): string {
+    // 3HB4331X0/54 → 3HB4331X0
+    return model.replace(/[\/\-\s]/g, '').toUpperCase()
+}
+
+NIVEL 2: Scraping de Documentación Fragmentada
+typescript/**
+ * Extrae contenido técnico de páginas web cuando no hay PDF
+ */
+async function scrapeManualContent(urls: string[]): Promise<string> {
+    let aggregatedContent = ''
+
+    for (const url of urls.slice(0, 3)) { // Limitar a 3 URLs
+        try {
+            console.log(`[WEB SCRAPE] Fetching: ${url}`)
+            
+            // Usar Jina Reader para obtener contenido limpio
+            const response = await axios.get(`https://r.jina.ai/${encodeURIComponent(url)}`, {
+                timeout: 20000,
+                headers: { 'X-Return-Format': 'markdown' }
+            })
+
+            const content = response.data
+            
+            // Filtrar secciones relevantes (heurística)
+            const relevantSections = extractRelevantSections(content)
+            aggregatedContent += `\n\n## Fuente: ${url}\n${relevantSections}`
+
+        } catch (error) {
+            console.error(`[WEB SCRAPE] Failed for ${url}:`, error)
+        }
+    }
+
+    return aggregatedContent
+}
+
+function extractRelevantSections(markdown: string): string {
+    const keywords = [
+        'función', 'símbolo', 'programa', 'temperatura', 
+        'mando', 'panel', 'control', 'uso', 'instrucción',
+        'modo', 'cocción', 'nivel', 'accesorio'
+    ]
+
+    const lines = markdown.split('\n')
+    let relevantContent = ''
+    let buffer: string[] = []
+    let isRelevant = false
+
+    for (const line of lines) {
+        const lowerLine = line.toLowerCase()
+        
+        // Detectar inicio de sección relevante
+        if (keywords.some(kw => lowerLine.includes(kw))) {
+            isRelevant = true
+        }
+
+        // Detectar fin de sección (línea vacía o nuevo header)
+        if (isRelevant && (line.trim() === '' || line.startsWith('#'))) {
+            if (buffer.length > 0) {
+                relevantContent += buffer.join('\n') + '\n\n'
+                buffer = []
+            }
+            isRelevant = line.startsWith('#') && keywords.some(kw => lowerLine.includes(kw))
+        }
+
+        if (isRelevant) {
+            buffer.push(line)
+        }
+    }
+
+    return relevantContent.substring(0, 10000) // Limitar tamaño
+}
+
+NIVEL 3: Análisis Visual Profundo (Sin Etiqueta)
+Este es el caso de la segunda imagen que subiste (panel sin etiqueta visible).
+typescript/**
+ * Análisis visual en 2 fases cuando no hay etiqueta
+ */
+async function analyzeControlPanelVisually(imageUrl: string): Promise<{
+    brand?: string,
+    estimatedModel?: string,
+    controls: ControlElement[],
+    layout: PanelLayout
+}> {
+    
+    // FASE 1: Identificación de Marca y Tipo
+    const identificationPrompt = `Analiza esta imagen de un panel de control de electrodoméstico.
+
+TAREA 1: Identificar la marca
+- Busca logos, nombres, tipografía característica
+- Si ves "Balay", "Bosch", "Siemens", etc., indícalo
+- Considera el diseño: ¿es BSH Group? ¿Electrolux? ¿LG?
+
+TAREA 2: Tipo de aparato
+- ¿Horno? ¿Microondas? ¿Placa? ¿Lavavajillas?
+- Razona por los símbolos visibles
+
+TAREA 3: Características del Panel
+- ¿Tiene pantalla digital? ¿Qué muestra?
+- ¿Mandos giratorios? ¿Cuántos?
+- ¿Botones táctiles? ¿Escamoteables?
+- ¿Qué rango de temperatura muestra? (ej: 50-250°C)
+
+FORMATO JSON:
+{
+  "brand": "marca inferida o 'desconocida'",
+  "confidence_brand": 0.0-1.0,
+  "appliance_type": "HORNO/MICROONDAS/etc",
+  "panel_type": "digital/analógico/mixto",
+  "has_retractable_knobs": boolean,
+  "temperature_range": "min-max",
+  "display_shows": "descripción de lo que muestra la pantalla",
+  "reasoning": "por qué crees que es esta marca/modelo"
+}`
+
+    const phase1 = await analyzeImageWithGemini(imageUrl, identificationPrompt, {
+        responseMimeType: 'application/json',
+        temperature: 0.3
+    })
+
+    // FASE 2: Mapeo Detallado de Controles
+    const controlMappingPrompt = `Ahora analiza CADA elemento de control visible en esta imagen.
+
+Para el MANDO IZQUIERDO:
+- Lista TODOS los símbolos/iconos alrededor (en sentido horario desde las 12)
+- Describe cada símbolo (ej: "ventilador con círculo", "dos líneas horizontales")
+
+Para el MANDO DERECHO:
+- ¿Es de temperatura? ¿Qué números/marcas tiene?
+- ¿Tiene posiciones específicas?
+
+Para la PANTALLA DIGITAL:
+- ¿Qué está mostrando actualmente?
+- ¿Qué botones hay junto a ella? (ej: campana, -, +, reloj)
+
+Para OTROS CONTROLES:
+- ¿Hay botones adicionales?
+- ¿Hay selectores de programa?
+
+FORMATO JSON:
+{
+  "left_knob": {
+    "type": "función/modo",
+    "symbols": [
+      { "position": "12h", "description": "...", "likely_meaning": "..." },
+      { "position": "1h", "description": "...", "likely_meaning": "..." }
+      // ... todos los símbolos
+    ]
+  },
+  "right_knob": {
+    "type": "temperatura/nivel",
+    "min_value": "...",
+    "max_value": "...",
+    "increments": "..."
+  },
+  "digital_display": {
+    "current_display": "11:49",
+    "adjacent_buttons": [
+      { "icon": "campana", "likely_function": "temporizador" },
+      { "icon": "-", "likely_function": "decrementar" }
+      // ...
+    ]
+  },
+  "other_controls": []
+}`
+
+    const phase2 = await analyzeImageWithGemini(imageUrl, controlMappingPrompt, {
+        responseMimeType: 'application/json',
+        temperature: 0.2
+    })
+
+    return {
+        brand: phase1?.data?.brand,
+        estimatedModel: phase1?.data?.confidence_brand > 0.7 ? 'Modelo estimado por IA' : undefined,
+        controls: phase2?.data,
+        layout: phase1?.data
+    }
+}
+
+interface ControlElement {
+    type: string
+    position?: string
+    description: string
+    likely_meaning: string
+}
+
+interface PanelLayout {
+    panel_type: string
+    has_retractable_knobs: boolean
+    temperature_range: string
+}
+
+NIVEL 4: Generación Híbrida del Manual
+typescript/**
+ * Genera el manual combinando TODAS las fuentes disponibles
+ */
+async function generateHybridManual(context: {
+    imageUrl: string,
+    pdfContent?: string,
+    webContent?: string,
+    visualAnalysis: any,
+    confidence: 'high' | 'medium' | 'low'
+}): Promise<string> {
+    
+    const { pdfContent, webContent, visualAnalysis, confidence } = context
+
+    let basePrompt = `ERES UN EXPERTO EN ELECTRODOMÉSTICOS CREANDO UNA GUÍA DE USO PARA HUÉSPEDES.
+
+**CONTEXTO DISPONIBLE:**`
+
+    // Estrategia según nivel de confianza
+    if (confidence === 'high' && pdfContent) {
+        basePrompt += `
+📄 **MANUAL OFICIAL (FUENTE PRIMARIA):**
+${pdfContent.substring(0, 25000)}
+
+🎯 OBJETIVO: Traducir el manual oficial a una guía amigable para huéspedes.`
+
+    } else if (confidence === 'medium' && webContent) {
+        basePrompt += `
+🌐 **DOCUMENTACIÓN WEB FRAGMENTADA:**
+${webContent.substring(0, 15000)}
+
+👁️ **ANÁLISIS VISUAL DEL PANEL:**
+${JSON.stringify(visualAnalysis, null, 2)}
+
+🎯 OBJETIVO: Combinar información web + análisis visual para crear una guía coherente.`
+
+    } else {
+        // Caso más difícil: solo análisis visual
+        basePrompt += `
+👁️ **ANÁLISIS VISUAL PROFUNDO DEL PANEL:**
+${JSON.stringify(visualAnalysis, null, 2)}
+
+⚠️ **SITUACIÓN:** No se encontró manual oficial. Debes inferir el funcionamiento basándote en:
+1. Los símbolos estándar de la industria
+2. El diseño del panel (marca: ${visualAnalysis.brand || 'desconocida'})
+3. Patrones comunes en hornos ${visualAnalysis.appliance_type}
+
+🎯 OBJETIVO: Crear una guía útil aunque no sea 100% específica del modelo.`
+    }
+
+    basePrompt += `
+
+📋 **ESTRUCTURA OBLIGATORIA DEL MANUAL:**
+
+# Guía de Uso: ${visualAnalysis.brand || 'Horno'} ${visualAnalysis.estimatedModel || ''}
+
+## 1. PANEL DE CONTROL Y SÍMBOLOS
+
+### Mando de Funciones (Izquierda)
+${generateSymbolTable(visualAnalysis.controls?.left_knob)}
+
+### Mando de Temperatura (Derecha)
+- **Rango:** ${visualAnalysis.controls?.right_knob?.min_value} - ${visualAnalysis.controls?.right_knob?.max_value}
+- **Uso:** [Explicar cómo ajustar temperatura]
+
+### Pantalla y Botones
+${generateDisplayGuide(visualAnalysis.controls?.digital_display)}
+
+## 2. MODOS DE COCCIÓN DISPONIBLES
+[Para cada símbolo del mando de funciones, explica:]
+- **Nombre del modo**
+- **Cuándo usarlo** (ej: "Ideal para pizzas y tartas")
+- **Temperatura recomendada**
+- **Nivel de bandeja** (si se conoce)
+
+## 3. INSTRUCCIONES PASO A PASO
+
+### Primera vez que usas el horno:
+1. [Pasos iniciales]
+
+### Para cocinar:
+1. **Seleccionar modo:** Gira el mando izquierdo hasta el símbolo deseado
+2. **Ajustar temperatura:** Gira el mando derecho a los grados necesarios
+3. **Programar tiempo (opcional):** [Explicar botones de reloj]
+4. **Precalentar:** [¿Es necesario? ¿Cómo saberlo?]
+
+## 4. FUNCIONES ESPECIALES
+
+### Temporizador/Reloj
+${visualAnalysis.controls?.digital_display?.adjacent_buttons ? 
+  'Usa los botones junto a la pantalla para programar tiempo de cocción' : 
+  'Este modelo puede no tener temporizador programable'}
+
+### Mandos Escamoteables (si aplica)
+${visualAnalysis.layout?.has_retractable_knobs ? 
+  '⚠️ Los mandos se presionan para extraerlos y se presionan de nuevo para guardarlos.' : 
+  'Los mandos son fijos.'}
+
+## 5. CONSEJOS Y PRECAUCIONES
+- **Limpieza:** [Consejos generales seguros]
+- **Seguridad:** No tocar el cristal durante el funcionamiento
+- **Mantenimiento:** [Básico]
+
+## 6. SOLUCIÓN DE PROBLEMAS
+- **No enciende:** Verificar que ambos mandos estén en posición distinta de 0
+- **No calienta:** [Posibles causas]
+
+---
+
+🚫 **PROHIBICIONES:**
+1. NO digas "la imagen muestra" o "en la foto"
+2. NO uses condicionales ("podría", "quizás") si tienes datos del manual oficial
+3. SI solo tienes análisis visual, SÍ puedes usar: "Típicamente este símbolo significa..."
+4. NO inventes números de modelo si no los conoces
+
+✅ **SI NO TIENES CERTEZA:** Usa frases como:
+- "Este símbolo generalmente se usa para..."
+- "En hornos de esta marca, este modo suele ser..."
+- "Consulta el manual físico para confirmar..."
+
+FORMATO: Markdown limpio y estructurado.
+LONGITUD: Mínimo 1200 palabras.
+
+RESPONDE ÚNICAMENTE CON EL MANUAL.`
+
+    const manual = await geminiREST('gemini-2.0-flash-exp', basePrompt, {
+        responseMimeType: 'text/plain',
+        temperature: confidence === 'high' ? 0.2 : 0.4, // Más creativo si no hay manual
+        maxOutputTokens: 8000
+    })
+
+    return manual?.data || ''
+}
+
+function generateSymbolTable(leftKnob: any): string {
+    if (!leftKnob?.symbols) return 'No se pudieron identificar los símbolos.'
+    
+    let table = `| Posición | Símbolo Visual | Función Estimada |\n|----------|---------------|------------------|\n`
+    
+    for (const symbol of leftKnob.symbols) {
+        table += `| ${symbol.position} | ${symbol.description} | ${symbol.likely_meaning} |\n`
+    }
+    
+    return table
+}
+
+function generateDisplayGuide(display: any): string {
+    if (!display) return 'Panel sin pantalla digital.'
+    
+    let guide = `**Pantalla actual:** ${display.current_display}\n\n`
+    guide += `**Botones disponibles:**\n`
+    
+    for (const btn of display.adjacent_buttons || []) {
+        guide += `- **${btn.icon}:** ${btn.likely_function}\n`
+    }
+    
+    return guide
+}
+
+Integración Final en processBatchScans
+typescriptexport async function processBatchScans(propertyId: string, imageUrls: string[], replaceExisting: boolean = false) {
+    // ... código existente ...
+
+    for (const [index, url] of imageUrls.entries()) {
+        try {
+            // PASO 1: Análisis Visual Inicial (siempre)
+            console.log(`[PROCESS] [${index + 1}] Step 1: Visual analysis...`)
+            const visualAnalysis = await analyzeControlPanelVisually(url)
+
+            // PASO 2: Búsqueda Inteligente de Manual
+            console.log(`[PROCESS] [${index + 1}] Step 2: Searching for manual...`)
+            const manualSearch = await findOfficialManual(
+                visualAnalysis.brand || 'generic',
+                visualAnalysis.estimatedModel || '',
+                visualAnalysis.layout?.appliance_type || 'horno'
+            )
+
+            // PASO 3: Extracción de Contenido
+            let pdfContent = ''
+            let webContent = ''
+
+            if (manualSearch.pdfUrl) {
+                console.log(`[PROCESS] [${index + 1}] Step 3a: Extracting PDF...`)
+                pdfContent = await extractPDFManual(manualSearch.pdfUrl)
+            }
+
+            if (!pdfContent && manualSearch.webDocs.length > 0) {
+                console.log(`[PROCESS] [${index + 1}] Step 3b: Scraping web docs...`)
+                webContent = await scrapeManualContent(manualSearch.webDocs)
+            }
+
+            // PASO 4: Generación Híbrida
+            console.log(`[PROCESS] [${index + 1}] Step 4: Generating hybrid manual (confidence: ${manualSearch.confidence})...`)
+            const manualContent = await generateHybridManual({
+                imageUrl: url,
+                pdfContent,
+                webContent,
+                visualAnalysis,
+                confidence: manualSearch.confidence
+            })
+
+            // PASO 5: Guardar (igual que antes)
+            // ... resto del código ...
+
+        } catch (err) {
+            console.error(`[PROCESS] Error:`, err)
+        }
+    }
+}
+
+🎨 Mejoras Adicionales
+1. Caché de Manuales
+typescript// Evitar redownload de PDFs ya procesados
+const manualCache = new Map<string, string>()
+
+async function extractPDFManual(pdfUrl: string): Promise<string> {
+    if (manualCache.has(pdfUrl)) {
+        console.log('[PDF] Using cached version')
+        return manualCache.get(pdfUrl)!
+    }
+    
+    // ... extracción normal ...
+    manualCache.set(pdfUrl, content)
+    return content
+}
+2. Validación Post-Generación
+typescriptasync function validateManual(manual: string, imageUrl: string): Promise<{
+    isComplete: boolean,
+    missingElements: string[]
+}> {
+    const validationPrompt = `Compara esta imagen del panel con el manual generado:
+
+MANUAL:
+${manual.substring(0, 5000)}
+
+RESPONDE JSON:
+{
+  "symbols_in_image": ["lista de símbolos visibles"],
+  "symbols_in_manual": ["lista de símbolos mencionados"],
+  "missing": ["símbolos no explicados"],
+  "isComplete": boolean
+}`
+
+    const result = await analyzeImageWithGemini(imageUrl, validationPrompt, {
+        responseMimeType: 'application/json'
+    })
+
+    return result?.data || { isComplete: false, missingElements: [] }
+}
+3. Feedback Loop
+typescript// Si la validación detecta elementos faltantes, regenerar
+if (!validation.isComplete && validation.missingElements.length > 0) {
+    console.log(`[VALIDATION] Regenerating with missing elements: ${validation.missingElements}`)
+    
+    const补充Prompt = `El manual anterior omitió estos elementos visibles:
+${validation.missingElements.join(', ')}
+
+Genera SOLO las secciones faltantes en formato markdown.`
+    
+    const supplement = await analyzeImageWithGemini(url, 补充Prompt)
+    manualContent += `\n\n## Información Adicional\n${supplement.data}`
+}
+
+📊 Matriz de Confianza
+EscenarioPDFWeb DocsVisualConfianzaCalidad EsperadaEtiqueta clara + PDF encontrado✅-✅High95% precisoEtiqueta + Web docs❌✅✅Medium80% precisoSolo panel visible❌❌✅Low60-70% útilAparato antiguo + Web❌✅ (genérico)✅Medium-Low70% útil
+
+🚀 Resultado Final
+Con este sistema completo:
+✅ Con etiqueta + PDF: Manual exacto con todos los símbolos del modelo
+✅ Con etiqueta sin PDF: Manual basado en docs web + inferencia visual
+✅ Sin etiqueta (como tu 2ª imagen): Manual interpretativo útil
+✅ Aparatos antiguos: Búsqueda ampliada + contenido genérico de calidad
+El sistema siempre genera algo útil, escalando la precisión según los datos disponibles.

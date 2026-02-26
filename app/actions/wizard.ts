@@ -105,10 +105,13 @@ export async function saveWizardStep(
                     time: rec.time || '',
                     price_range: rec.price_range || '',
                     personal_note: rec.personal_note || '',
+                    google_place_id: rec.google_place_id || null,
+                    map_url: rec.map_url || null,
                     metadata: {
                         time: rec.time,
                         price_range: rec.price_range,
-                        personal_note: rec.personal_note
+                        personal_note: rec.personal_note,
+                        google_place_id: rec.google_place_id || null
                     }
                 }))
             )
@@ -140,7 +143,7 @@ export async function saveWizardStep(
                 property_id: currentPropId,
                 tenant_id: currentTenantId,
                 theme_id: sanitizedThemeId,
-                // layout_theme_id: sanitizedLayoutThemeId, // ← add when migration 031 is applied
+                layout_theme_id: sanitizedLayoutThemeId, // migration 031 confirmed applied
                 custom_primary_color: stepData.custom_primary_color,
                 custom_logo_url: stepData.custom_logo_url,
                 computed_theme: computedThemeWithId,

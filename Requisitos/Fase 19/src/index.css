@@ -1,0 +1,23 @@
+/* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE, ABOVE THE TAILWIND IMPORTS — DO NOT DELETE THIS COMMENT */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Lato:wght@300;400;700&family=Oswald:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Jost:wght@300;400;500;600&family=Nunito:wght@400;600;700;800&display=swap');
+
+/* CRITICAL: THE FOLLOWING TAILWIND IMPORTS MUST NEVER BE DELETED OR REORDERED — DO NOT DELETE THIS COMMENT */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* END TAILWIND IMPORTS — ALL OTHER CSS MUST GO BELOW THIS LINE */
+
+body {
+  background-color: #f0f0f0;
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.font-playfair { font-family: 'Playfair Display', serif; }
+.font-lato { font-family: 'Lato', sans-serif; }
+.font-oswald { font-family: 'Oswald', sans-serif; }
+.font-montserrat { font-family: 'Montserrat', sans-serif; }
+.font-cormorant { font-family: 'Cormorant Garamond', serif; }
+.font-jost { font-family: 'Jost', sans-serif; }
+.font-nunito { font-family: 'Nunito', sans-serif; }
+.font-inter { font-family: 'Inter', sans-serif; }

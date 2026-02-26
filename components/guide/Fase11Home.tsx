@@ -20,7 +20,9 @@ import {
 import { Card } from '@/components/ui/card';
 import { LanguageSelector } from '@/components/guide/LanguageSelector';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
+import { getGuideTheme } from '@/lib/guide-theme';
 import { cn } from '@/lib/utils';
+
 
 interface Fase11HomeProps {
     propertyName: string;
@@ -34,7 +36,8 @@ interface Fase11HomeProps {
     recommendations?: any[];
     guestName?: string;
     accessToken?: string;
-    propertyId?: string; // FASE 17
+    propertyId?: string;
+    themeId?: string;
 }
 
 const container = {
@@ -64,8 +67,10 @@ export function Fase11Home({
     recommendations = [],
     guestName,
     accessToken,
-    propertyId // FASE 17
+    propertyId,
+    themeId = 'modern',
 }: Fase11HomeProps) {
+    const t = getGuideTheme(themeId)
 
     // Dynamic Translations
     const { content: localizedPropertyName } = useLocalizedContent(propertyName, currentLanguage, 'general', accessToken, propertyId);
@@ -92,24 +97,13 @@ export function Fase11Home({
     }, [recommendations, timeInfo.category]);
 
     const hasRecommendations = recommendations && recommendations.length > 0;
-    const eatRecs = recommendations.filter(r =>
-        r.type === 'restaurant' || r.type === 'restaurante' || r.type === 'restaurantes' ||
-        r.type === 'cafe' || r.type === 'bar' || r.type === 'food' || r.type === 'comida'
-    );
-    const doRecs = recommendations.filter(r =>
-        r.type === 'activity' || r.type === 'actividad' || r.type === 'actividades' ||
-        r.type === 'park' || r.type === 'parque' ||
-        r.type === 'museum' || r.type === 'museo' ||
-        r.type === 'landmark' || r.type === 'cultura' ||
-        r.type === 'naturaleza' || r.type === 'ocio' || r.type === 'relax' ||
-        r.type === 'experiencias' || r.type === 'experience'
-    );
-    const shopRecs = recommendations.filter(r =>
-        r.type === 'shopping' || r.type === 'compras' ||
-        r.type === 'market' || r.type === 'mercado' ||
-        r.type === 'pharmacy' || r.type === 'farmacia' ||
-        r.type === 'supermarket' || r.type === 'supermercado'
-    );
+    const EAT_SET  = new Set(['restaurantes','italiano','mediterraneo','hamburguesas','asiatico','alta_cocina','internacional','desayuno','restaurant','restaurante','cafe','bar','food','comida']);
+    const DO_SET   = new Set(['naturaleza','cultura','ocio','relax','activity','actividad','actividades','park','parque','museum','museo','landmark','experiencias','experience']);
+    const SHOP_SET = new Set(['compras','shopping','market','mercado','pharmacy','farmacia','supermarket','supermercado']);
+    const getRType = (r: any) => (r.type || r.category || '').toLowerCase();
+    const eatRecs  = recommendations.filter(r => EAT_SET.has(getRType(r)));
+    const doRecs   = recommendations.filter(r => DO_SET.has(getRType(r)));
+    const shopRecs = recommendations.filter(r => SHOP_SET.has(getRType(r)));
 
     const { content: localizedTipName } = useLocalizedContent(tipRecommendation?.name || '', currentLanguage, 'recommendations', accessToken, propertyId);
     const { content: localizedTipDesc } = useLocalizedContent(tipRecommendation?.personal_note || tipRecommendation?.description || '', currentLanguage, 'recommendations', accessToken, propertyId);
@@ -136,7 +130,7 @@ export function Fase11Home({
 
     return (
         <motion.div
-            className="flex flex-col min-h-screen bg-white"
+            className={cn('flex flex-col min-h-screen', t.pageBg)}
             variants={container}
             initial="hidden"
             animate="show"
@@ -155,7 +149,7 @@ export function Fase11Home({
                     </div>
                 )}
 
-                <div className="absolute inset-0 bg-black/40" />
+                <div className={cn('absolute inset-0', t.heroOverlay)} />
 
                 <div className="absolute top-0 left-0 w-full p-4 flex items-center justify-between z-10">
                     <button
@@ -170,13 +164,14 @@ export function Fase11Home({
                     />
                 </div>
 
-                <div className="absolute bottom-10 left-6 text-white">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-1">
+                <div className="absolute bottom-10 left-6">
+                    <p className={cn('text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-1', t.heroSubLabel)}>
                         {guestName ? (currentLanguage === 'es' ? `Hola ${guestName}` : `Hello ${guestName}`) : labelTuGuia}
                     </p>
                     <h1 className={cn(
-                        "text-2xl font-serif font-bold tracking-tight",
-                        !localizedPropertyName && "h-8 w-48 bg-white/20 animate-pulse rounded-lg mt-1"
+                        'text-2xl font-bold tracking-tight',
+                        t.heroGreeting,
+                        !localizedPropertyName && 'h-8 w-48 bg-white/20 animate-pulse rounded-lg mt-1'
                     )}>
                         {localizedPropertyName}
                     </h1>
@@ -187,10 +182,10 @@ export function Fase11Home({
                 {/* Time-based Suggestion */}
                 {hasRecommendations && (
                     <motion.div variants={item} className="mb-8">
-                        <Card className="overflow-hidden border-none shadow-[0_10px_30px_rgba(0,0,0,0.08)] bg-white">
+                        <Card className={cn('overflow-hidden border-none shadow-[0_10px_30px_rgba(0,0,0,0.08)]', t.cardBg)}>
                             <div className="p-5">
                                 <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2 text-primary">
+                                    <div className={cn('flex items-center gap-2', t.chipIconColor)}>
                                         <Clock size={14} strokeWidth={2.5} />
                                         <span className="text-[10px] font-black tracking-widest uppercase">
                                             {timeInfo.time} • {timeInfo.greeting}
@@ -250,14 +245,14 @@ export function Fase11Home({
 
                 {/* Essentials Grid */}
                 <motion.div variants={item} className="mb-10">
-                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <h3 className={cn('text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2', t.sectionLabel)}>
                         <Star size={12} className="text-[#f59e0b]" fill="currentColor" />
                         {labelLoIndispensable}
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
                         <button
                             onClick={() => onNavigate('checkin')}
-                            className="flex flex-col items-center justify-center p-4 bg-primary text-white rounded-2xl shadow-lg shadow-primary/10 active:scale-95 transition-all"
+                            className={cn('flex flex-col items-center justify-center p-4 rounded-2xl shadow-lg active:scale-95 transition-all', t.actionBtn)}
                         >
                             <Key size={24} className="mb-2 opacity-90" />
                             <span className="text-[9px] font-black tracking-widest uppercase">
@@ -266,10 +261,10 @@ export function Fase11Home({
                         </button>
                         <button
                             onClick={() => onNavigate('wifi')}
-                            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-100 rounded-2xl shadow-sm active:scale-95 transition-all text-primary"
+                            className={cn('flex flex-col items-center justify-center p-4 rounded-2xl shadow-sm active:scale-95 transition-all', t.chipBg, t.chipIconColor)}
                         >
                             <Wifi size={24} className="mb-2" />
-                            <span className="text-[9px] font-black tracking-widest uppercase text-gray-600">
+                            <span className={cn('text-[9px] font-black tracking-widest uppercase', t.chipLabel)}>
                                 WiFi
                             </span>
                         </button>
@@ -288,7 +283,7 @@ export function Fase11Home({
                 {/* Explore Section */}
                 {(eatRecs.length > 0 || doRecs.length > 0 || shopRecs.length > 0) && (
                     <motion.div variants={item} className="mb-10">
-                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
+                        <h3 className={cn('text-[10px] font-black uppercase tracking-[0.2em] mb-4', t.sectionLabel)}>
                             {labelDescubreLocation}
                         </h3>
                         <div className="space-y-3">
@@ -300,20 +295,20 @@ export function Fase11Home({
                                 <div
                                     key={action.id}
                                     onClick={() => onNavigate(action.id)}
-                                    className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between cursor-pointer hover:border-primary/20 transition-all hover:bg-gray-50/50 group"
+                                    className={cn('p-4 rounded-xl flex items-center justify-between cursor-pointer transition-all group border', t.chipBg)}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                        <div className={cn('w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform', t.chipIconBg, t.chipIconColor)}>
                                             <action.icon size={18} />
                                         </div>
                                         <div>
-                                            <p className="font-bold text-gray-900 text-sm">
+                                            <p className={cn('font-bold text-sm', t.chipLabel)}>
                                                 {action.label}
                                             </p>
-                                            <p className="text-[11px] text-gray-400">{action.sub}</p>
+                                            <p className={cn('text-[11px]', t.guideCardSubtitle)}>{action.sub}</p>
                                         </div>
                                     </div>
-                                    <ChevronRight size={16} className="text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                                    <ChevronRight size={16} className={cn('group-hover:translate-x-1 transition-all', t.chipIconColor)} />
                                 </div>
                             ))}
                         </div>
@@ -322,7 +317,7 @@ export function Fase11Home({
 
                 {/* Accommodation Info */}
                 <motion.div variants={item} className="mb-8">
-                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
+                    <h3 className={cn('text-[10px] font-black uppercase tracking-[0.2em] mb-4', t.sectionLabel)}>
                         {labelSobreCasa}
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
@@ -334,10 +329,10 @@ export function Fase11Home({
                             <button
                                 key={navItem.id}
                                 onClick={() => onNavigate(navItem.id)}
-                                className="flex flex-col items-center justify-center p-4 bg-gray-50/50 rounded-xl border border-gray-100 active:scale-95 transition-all hover:bg-gray-100 group"
+                                className={cn('flex flex-col items-center justify-center p-4 rounded-xl active:scale-95 transition-all group border', t.chipBg)}
                             >
-                                <navItem.icon size={20} className="mb-2 text-gray-400 group-hover:text-primary transition-colors" />
-                                <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">
+                                <navItem.icon size={20} className={cn('mb-2 group-hover:scale-110 transition-colors', t.chipIconColor)} />
+                                <span className={cn('text-[9px] font-black uppercase tracking-widest', t.chipLabel)}>
                                     {navItem.label}
                                 </span>
                             </button>

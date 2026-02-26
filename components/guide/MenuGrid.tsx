@@ -147,9 +147,14 @@ export function MenuGrid({
     const hasManuals = manuals.length > 0;
     const hasCheckin = !!context?.find(c => c.category === 'checkin')?.content?.steps?.length;
     
-    const eatRecs = recommendations.filter(r => r.type === 'restaurant' || r.type === 'cafe' || r.type === 'bar');
-    const doRecs = recommendations.filter(r => r.type === 'activity' || r.type === 'park' || r.type === 'museum' || r.type === 'landmark');
-    const shopRecs = recommendations.filter(r => r.type === 'shopping' || r.type === 'market' || r.type === 'pharmacy');
+    const EAT_TYPES = new Set(['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'restaurant', 'cafe', 'bar']);
+    const DO_TYPES  = new Set(['naturaleza', 'cultura', 'ocio', 'relax', 'activity', 'park', 'museum', 'landmark']);
+    const SHOP_TYPES = new Set(['compras', 'shopping', 'market', 'pharmacy']);
+
+    const getRecType = (r: any) => (r.type || r.category || '').toLowerCase();
+    const eatRecs  = recommendations.filter(r => EAT_TYPES.has(getRecType(r)));
+    const doRecs   = recommendations.filter(r => DO_TYPES.has(getRecType(r)));
+    const shopRecs = recommendations.filter(r => SHOP_TYPES.has(getRecType(r)));
 
     const triggerHaptic = (pattern: number | number[] = 10) => {
         if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {

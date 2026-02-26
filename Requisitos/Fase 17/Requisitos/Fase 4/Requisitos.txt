@@ -1,0 +1,879 @@
+Vamos a diseñar un sistema de seguridad robusto para la guia y evitar el abuso, pero que mantenga la simplicidad para el huésped.
+
+ESTRATEGIA DE SEGURIDAD MULTI-CAPA
+Capa 1: URLs Únicas por Reserva (No por Propiedad)
+typescript
+
+// ❌ MAL - URL fija por propiedad
+https://guia.app/casa-el-refugio
+
+// ✅ BIEN - URL única por reserva con token
+https://guia.app/g/a8f3k2m9p1x7
+
+// Estructura de la tabla
+CREATE TABLE guest_access_tokens (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  property_id UUID REFERENCES properties(id),
+  
+  -- Token único e irrepetible
+  access_token VARCHAR(32) UNIQUE NOT NULL, -- ej: a8f3k2m9p1x7
+  
+  -- Información de la reserva
+  booking_id VARCHAR(255), -- ID de Airbnb/Booking si existe
+  guest_email VARCHAR(255),
+  guest_name VARCHAR(255),
+  
+  -- Ventana temporal de acceso
+  valid_from TIMESTAMP NOT NULL, -- 2 días antes check-in
+  valid_until TIMESTAMP NOT NULL, -- 2 días después check-out
+  
+  -- Check-in/out dates
+  checkin_date DATE NOT NULL,
+  checkout_date DATE NOT NULL,
+  
+  -- Seguridad
+  is_active BOOLEAN DEFAULT true,
+  max_devices INTEGER DEFAULT 3, -- Máximo 3 dispositivos
+  ip_whitelist TEXT[], -- IPs permitidas (opcional)
+  
+  -- Auditoría
+  first_access_at TIMESTAMP,
+  last_access_at TIMESTAMP,
+  access_count INTEGER DEFAULT 0,
+  unique_devices INTEGER DEFAULT 0,
+  
+  -- Rate limiting
+  daily_chat_limit INTEGER DEFAULT 50,
+  chat_count_today INTEGER DEFAULT 0,
+  last_chat_reset DATE DEFAULT CURRENT_DATE,
+  
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_access_token ON guest_access_tokens(access_token);
+CREATE INDEX idx_valid_dates ON guest_access_tokens(valid_from, valid_until);
+
+FLUJO DE GENERACIÓN DE ACCESO
+Paso 1: Host crea acceso para huésped
+typescript// app/api/create-guest-access/route.ts
+
+export async function POST(req: Request) {
+  const {
+    propertyId,
+    guestEmail,
+    guestName,
+    checkinDate,
+    checkoutDate
+  } = await req.json();
+  
+  // Validar que el usuario es el propietario
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: property } = await supabase
+    .from('properties')
+    .select('owner_id')
+    .eq('id', propertyId)
+    .single();
+    
+  if (property.owner_id !== user.id) {
+    return Response.json({ error: 'Unauthorized' }, { status: 403 });
+  }
+  
+  // Generar token único
+  const accessToken = generateSecureToken(32);
+  
+  // Calcular ventana de acceso (2 días antes - 2 días después)
+  const validFrom = subDays(new Date(checkinDate), 2);
+  const validUntil = addDays(new Date(checkoutDate), 2);
+  
+  // Crear acceso
+  const { data: access, error } = await supabase
+    .from('guest_access_tokens')
+    .insert({
+      property_id: propertyId,
+      access_token: accessToken,
+      guest_email: guestEmail,
+      guest_name: guestName,
+      checkin_date: checkinDate,
+      checkout_date: checkoutDate,
+      valid_from: validFrom,
+      valid_until: validUntil,
+      daily_chat_limit: 50 // Configurable
+    })
+    .select()
+    .single();
+  
+  if (error) throw error;
+  
+  // Generar URL
+  const guideUrl = `${process.env.NEXT_PUBLIC_APP_URL}/g/${accessToken}`;
+  
+  // Enviar email al huésped (opcional)
+  if (guestEmail) {
+    await sendGuestEmail(guestEmail, guestName, guideUrl, checkinDate);
+  }
+  
+  return Response.json({
+    accessToken,
+    guideUrl,
+    validFrom,
+    validUntil
+  });
+}
+
+function generateSecureToken(length: number): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let token = '';
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  
+  for (let i = 0; i < length; i++) {
+    token += chars[array[i] % chars.length];
+  }
+  
+  return token;
+}
+
+MIDDLEWARE DE VALIDACIÓN DE ACCESO
+Paso 2: Validar acceso en cada request
+typescript// middleware.ts
+
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  
+  // Solo validar rutas de guías
+  if (!pathname.startsWith('/g/')) {
+    return NextResponse.next();
+  }
+  
+  const accessToken = pathname.split('/')[2];
+  
+  if (!accessToken) {
+    return NextResponse.redirect(new URL('/access-denied', request.url));
+  }
+  
+  // Validar token
+  const validation = await validateAccessToken(
+    accessToken,
+    request.ip,
+    request.headers.get('user-agent')
+  );
+  
+  if (!validation.valid) {
+    return NextResponse.redirect(
+      new URL(`/access-denied?reason=${validation.reason}`, request.url)
+    );
+  }
+  
+  // Registrar acceso
+  await logAccess(accessToken, request);
+  
+  return NextResponse.next();
+}
+
+async function validateAccessToken(
+  token: string,
+  ip: string | undefined,
+  userAgent: string | null
+) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_KEY!
+  );
+  
+  const { data: access, error } = await supabase
+    .from('guest_access_tokens')
+    .select('*')
+    .eq('access_token', token)
+    .single();
+  
+  if (error || !access) {
+    return { valid: false, reason: 'invalid_token' };
+  }
+  
+  // Validación 1: Token activo
+  if (!access.is_active) {
+    return { valid: false, reason: 'token_deactivated' };
+  }
+  
+  // Validación 2: Ventana temporal
+  const now = new Date();
+  const validFrom = new Date(access.valid_from);
+  const validUntil = new Date(access.valid_until);
+  
+  if (now < validFrom) {
+    return { 
+      valid: false, 
+      reason: 'too_early',
+      availableFrom: validFrom 
+    };
+  }
+  
+  if (now > validUntil) {
+    return { 
+      valid: false, 
+      reason: 'expired',
+      expiredAt: validUntil 
+    };
+  }
+  
+  // Validación 3: Límite de dispositivos
+  const deviceFingerprint = generateDeviceFingerprint(ip, userAgent);
+  const deviceCount = await countUniqueDevices(token);
+  
+  if (deviceCount >= access.max_devices) {
+    const isKnownDevice = await isDeviceRegistered(token, deviceFingerprint);
+    if (!isKnownDevice) {
+      return { 
+        valid: false, 
+        reason: 'max_devices_exceeded',
+        maxDevices: access.max_devices 
+      };
+    }
+  }
+  
+  // Validación 4: IP whitelist (si existe)
+  if (access.ip_whitelist && access.ip_whitelist.length > 0) {
+    if (!ip || !access.ip_whitelist.includes(ip)) {
+      return { valid: false, reason: 'ip_not_whitelisted' };
+    }
+  }
+  
+  return { valid: true, access };
+}
+
+function generateDeviceFingerprint(
+  ip: string | undefined, 
+  userAgent: string | null
+): string {
+  const data = `${ip || 'unknown'}-${userAgent || 'unknown'}`;
+  return createHash('sha256').update(data).digest('hex').substring(0, 16);
+}
+
+async function logAccess(token: string, request: NextRequest) {
+  const deviceFingerprint = generateDeviceFingerprint(
+    request.ip,
+    request.headers.get('user-agent')
+  );
+  
+  // Actualizar contador de accesos
+  await supabase
+    .from('guest_access_tokens')
+    .update({
+      last_access_at: new Date(),
+      access_count: supabase.rpc('increment', { x: 1 }),
+      first_access_at: supabase.raw('COALESCE(first_access_at, NOW())')
+    })
+    .eq('access_token', token);
+  
+  // Registrar dispositivo
+  await supabase
+    .from('guest_devices')
+    .upsert({
+      access_token: token,
+      device_fingerprint: deviceFingerprint,
+      ip_address: request.ip,
+      user_agent: request.headers.get('user-agent'),
+      last_seen: new Date()
+    }, {
+      onConflict: 'access_token,device_fingerprint'
+    });
+}
+
+export const config = {
+  matcher: '/g/:path*'
+};
+
+PROTECCIÓN CONTRA ATAQUES AL CHAT
+Sistema de Rate Limiting Multi-Nivel
+typescript// lib/rate-limiter.ts
+
+interface RateLimitConfig {
+  windowMs: number;
+  maxRequests: number;
+  message: string;
+}
+
+const RATE_LIMITS = {
+  // Por IP
+  ip: {
+    windowMs: 60 * 1000, // 1 minuto
+    maxRequests: 10, // 10 mensajes por minuto
+    message: 'Demasiadas solicitudes. Espera un momento.'
+  },
+  
+  // Por token de acceso (por día)
+  token_daily: {
+    windowMs: 24 * 60 * 60 * 1000, // 24 horas
+    maxRequests: 50, // 50 mensajes por día
+    message: 'Has alcanzado el límite diario de mensajes.'
+  },
+  
+  // Por token (por minuto)
+  token_minute: {
+    windowMs: 60 * 1000,
+    maxRequests: 5, // 5 mensajes por minuto
+    message: 'Demasiados mensajes muy rápido. Espera un poco.'
+  },
+  
+  // Por fingerprint dispositivo
+  device: {
+    windowMs: 60 * 1000,
+    maxRequests: 8,
+    message: 'Límite de mensajes alcanzado.'
+  }
+};
+
+export class RateLimiter {
+  private static async checkLimit(
+    key: string,
+    config: RateLimitConfig
+  ): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
+    
+    const now = Date.now();
+    const windowStart = now - config.windowMs;
+    
+    // Usar Redis para producción, Supabase para MVP
+    const { data: requests } = await supabase
+      .from('rate_limit_requests')
+      .select('timestamp')
+      .eq('key', key)
+      .gte('timestamp', new Date(windowStart));
+    
+    const requestCount = requests?.length || 0;
+    const allowed = requestCount < config.maxRequests;
+    const remaining = Math.max(0, config.maxRequests - requestCount);
+    const resetAt = new Date(windowStart + config.windowMs);
+    
+    if (allowed) {
+      // Registrar request
+      await supabase
+        .from('rate_limit_requests')
+        .insert({
+          key,
+          timestamp: new Date()
+        });
+    }
+    
+    return { allowed, remaining, resetAt };
+  }
+  
+  static async checkChatRateLimit(
+    accessToken: string,
+    ip: string,
+    deviceFingerprint: string
+  ): Promise<RateLimitResult> {
+    
+    // Nivel 1: Rate limit por IP
+    const ipLimit = await this.checkLimit(
+      `ip:${ip}`,
+      RATE_LIMITS.ip
+    );
+    
+    if (!ipLimit.allowed) {
+      return {
+        allowed: false,
+        reason: 'ip_rate_limit',
+        message: RATE_LIMITS.ip.message,
+        resetAt: ipLimit.resetAt
+      };
+    }
+    
+    // Nivel 2: Rate limit por token (minuto)
+    const tokenMinuteLimit = await this.checkLimit(
+      `token:minute:${accessToken}`,
+      RATE_LIMITS.token_minute
+    );
+    
+    if (!tokenMinuteLimit.allowed) {
+      return {
+        allowed: false,
+        reason: 'token_minute_limit',
+        message: RATE_LIMITS.token_minute.message,
+        resetAt: tokenMinuteLimit.resetAt
+      };
+    }
+    
+    // Nivel 3: Rate limit diario por token
+    const tokenDailyLimit = await this.checkLimit(
+      `token:daily:${accessToken}`,
+      RATE_LIMITS.token_daily
+    );
+    
+    if (!tokenDailyLimit.allowed) {
+      return {
+        allowed: false,
+        reason: 'daily_limit_exceeded',
+        message: RATE_LIMITS.token_daily.message,
+        resetAt: tokenDailyLimit.resetAt
+      };
+    }
+    
+    // Nivel 4: Rate limit por dispositivo
+    const deviceLimit = await this.checkLimit(
+      `device:${deviceFingerprint}`,
+      RATE_LIMITS.device
+    );
+    
+    if (!deviceLimit.allowed) {
+      return {
+        allowed: false,
+        reason: 'device_rate_limit',
+        message: RATE_LIMITS.device.message,
+        resetAt: deviceLimit.resetAt
+      };
+    }
+    
+    return {
+      allowed: true,
+      remaining: Math.min(
+        ipLimit.remaining,
+        tokenMinuteLimit.remaining,
+        tokenDailyLimit.remaining,
+        deviceLimit.remaining
+      )
+    };
+  }
+}
+
+// Tabla para rate limiting (MVP - usar Redis en producción)
+CREATE TABLE rate_limit_requests (
+  id BIGSERIAL PRIMARY KEY,
+  key VARCHAR(255) NOT NULL,
+  timestamp TIMESTAMP DEFAULT NOW(),
+  INDEX idx_key_timestamp (key, timestamp)
+);
+
+-- Auto-limpieza de datos antiguos (ejecutar cada hora)
+CREATE OR REPLACE FUNCTION cleanup_old_rate_limits()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM rate_limit_requests 
+  WHERE timestamp < NOW() - INTERVAL '24 hours';
+END;
+$$ LANGUAGE plpgsql;
+
+API DEL CHAT CON PROTECCIONES
+typescript// app/api/chat/route.ts
+
+export async function POST(req: Request) {
+  const { messages, accessToken } = await req.json();
+  
+  // 1. VALIDAR TOKEN DE ACCESO
+  const tokenValidation = await validateAccessToken(
+    accessToken,
+    req.headers.get('x-forwarded-for'),
+    req.headers.get('user-agent')
+  );
+  
+  if (!tokenValidation.valid) {
+    return Response.json(
+      { error: 'Access denied', reason: tokenValidation.reason },
+      { status: 403 }
+    );
+  }
+  
+  const access = tokenValidation.access;
+  
+  // 2. GENERAR FINGERPRINT
+  const deviceFingerprint = generateDeviceFingerprint(
+    req.headers.get('x-forwarded-for'),
+    req.headers.get('user-agent')
+  );
+  
+  // 3. RATE LIMITING
+  const rateLimit = await RateLimiter.checkChatRateLimit(
+    accessToken,
+    req.headers.get('x-forwarded-for') || 'unknown',
+    deviceFingerprint
+  );
+  
+  if (!rateLimit.allowed) {
+    // Logging de intento de abuso
+    await logSuspiciousActivity(accessToken, {
+      type: 'rate_limit_exceeded',
+      reason: rateLimit.reason,
+      ip: req.headers.get('x-forwarded-for'),
+      timestamp: new Date()
+    });
+    
+    return Response.json(
+      { 
+        error: rateLimit.message,
+        resetAt: rateLimit.resetAt,
+        reason: rateLimit.reason
+      },
+      { 
+        status: 429,
+        headers: {
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': rateLimit.resetAt.toISOString()
+        }
+      }
+    );
+  }
+  
+  // 4. VALIDAR LONGITUD DEL MENSAJE
+  const lastMessage = messages[messages.length - 1].content;
+  
+  if (lastMessage.length > 500) {
+    return Response.json(
+      { error: 'Mensaje demasiado largo (máximo 500 caracteres)' },
+      { status: 400 }
+    );
+  }
+  
+  // 5. DETECTAR PATRONES SOSPECHOSOS
+  const suspiciousPatterns = [
+    /ignore previous instructions/i,
+    /you are now/i,
+    /system prompt/i,
+    /forget everything/i,
+    /<script>/i,
+    /eval\(/i,
+  ];
+  
+  const isSuspicious = suspiciousPatterns.some(pattern => 
+    pattern.test(lastMessage)
+  );
+  
+  if (isSuspicious) {
+    await logSuspiciousActivity(accessToken, {
+      type: 'prompt_injection_attempt',
+      message: lastMessage,
+      ip: req.headers.get('x-forwarded-for'),
+      timestamp: new Date()
+    });
+    
+    return Response.json(
+      { error: 'Mensaje no válido' },
+      { status: 400 }
+    );
+  }
+  
+  // 6. ACTUALIZAR CONTADOR DE CHAT DEL DÍA
+  await incrementChatCount(accessToken);
+  
+  // 7. PROCESAR CHAT NORMALMENTE
+  const propertyId = access.property_id;
+  
+  // ... (tu lógica existente de RAG + Claude)
+  
+  // 8. REGISTRAR USO PARA ANALYTICS
+  await logChatUsage(accessToken, {
+    messageLength: lastMessage.length,
+    timestamp: new Date(),
+    tokensUsed: estimatedTokens // Aproximado
+  });
+  
+  return /* tu respuesta normal */;
+}
+
+async function incrementChatCount(accessToken: string) {
+  const today = new Date().toISOString().split('T')[0];
+  
+  const { data: access } = await supabase
+    .from('guest_access_tokens')
+    .select('last_chat_reset, chat_count_today')
+    .eq('access_token', accessToken)
+    .single();
+  
+  // Reset diario
+  if (access.last_chat_reset !== today) {
+    await supabase
+      .from('guest_access_tokens')
+      .update({
+        chat_count_today: 1,
+        last_chat_reset: today
+      })
+      .eq('access_token', accessToken);
+  } else {
+    await supabase
+      .from('guest_access_tokens')
+      .update({
+        chat_count_today: access.chat_count_today + 1
+      })
+      .eq('access_token', accessToken);
+  }
+}
+
+async function logSuspiciousActivity(
+  accessToken: string, 
+  activity: any
+) {
+  await supabase
+    .from('suspicious_activities')
+    .insert({
+      access_token: accessToken,
+      activity_type: activity.type,
+      details: activity,
+      created_at: new Date()
+    });
+  
+  // Si hay muchos intentos sospechosos, desactivar token
+  const { count } = await supabase
+    .from('suspicious_activities')
+    .select('*', { count: 'exact', head: true })
+    .eq('access_token', accessToken)
+    .gte('created_at', new Date(Date.now() - 60 * 60 * 1000)); // última hora
+  
+  if (count && count > 10) {
+    // Desactivar token automáticamente
+    await supabase
+      .from('guest_access_tokens')
+      .update({ is_active: false })
+      .eq('access_token', accessToken);
+    
+    // Notificar al host
+    await notifyHostOfSuspiciousActivity(accessToken);
+  }
+}
+
+SISTEMA DE ALERTAS PARA HOSTS
+typescript// app/api/host/security-alerts/route.ts
+
+export async function GET(req: Request) {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // Obtener alertas de seguridad
+  const { data: alerts } = await supabase
+    .from('security_alerts')
+    .select(`
+      *,
+      guest_access_tokens (
+        guest_name,
+        guest_email,
+        property_id
+      )
+    `)
+    .eq('host_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  
+  return Response.json({ alerts });
+}
+
+// Tipos de alertas
+interface SecurityAlert {
+  type: 
+    | 'rate_limit_exceeded'
+    | 'suspicious_patterns'
+    | 'max_devices_exceeded'
+    | 'token_shared_publicly'
+    | 'unusual_access_pattern';
+  severity: 'low' | 'medium' | 'high';
+  action_taken: string;
+  recommendation: string;
+}
+
+DASHBOARD DE SEGURIDAD PARA HOSTS
+typescript// app/dashboard/security/page.tsx
+
+export default function SecurityDashboard() {
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-8">Seguridad y Accesos</h1>
+      
+      {/* Accesos Activos */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Accesos Activos</h2>
+        
+        <table className="w-full">
+          <thead>
+            <tr className="border-b">
+              <th>Huésped</th>
+              <th>Propiedad</th>
+              <th>Válido hasta</th>
+              <th>Dispositivos</th>
+              <th>Chats hoy</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Listado */}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Alertas de Seguridad */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Alertas</h2>
+        
+        {/* Lista de alertas */}
+        <div className="space-y-3">
+          <div className="border-l-4 border-yellow-500 bg-yellow-50 p-4">
+            <div className="flex justify-between">
+              <div>
+                <p className="font-semibold">Rate limit excedido</p>
+                <p className="text-sm text-gray-600">
+                  Huésped "John Doe" - Casa Rural El Refugio
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  15 intentos en 1 minuto - Hace 2 horas
+                </p>
+              </div>
+              <button className="text-sm text-blue-600">
+                Ver detalles
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Configuración de Límites */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold mb-4">Configuración</h2>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Mensajes de chat por día
+            </label>
+            <input 
+              type="number" 
+              defaultValue={50}
+              className="border rounded px-3 py-2 w-32"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Dispositivos máximos por huésped
+            </label>
+            <input 
+              type="number" 
+              defaultValue={3}
+              className="border rounded px-3 py-2 w-32"
+            />
+          </div>
+          
+          <div>
+            <label className="flex items-center">
+              <input type="checkbox" className="mr-2" />
+              <span className="text-sm">
+                Enviarme alertas de actividad sospechosa
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+PÁGINA DE ACCESO DENEGADO
+typescript// app/access-denied/page.tsx
+
+export default function AccessDenied({ searchParams }: { searchParams: { reason?: string } }) {
+  const reason = searchParams.reason;
+  
+  const messages = {
+    invalid_token: {
+      title: "Enlace no válido",
+      message: "Este enlace no es válido. Contacta con tu anfitrión para obtener el enlace correcto.",
+      icon: "🔒"
+    },
+    expired: {
+      title: "Acceso expirado",
+      message: "Tu acceso a esta guía ha expirado. Si necesitas extenderlo, contacta con tu anfitrión.",
+      icon: "⏰"
+    },
+    too_early: {
+      title: "Aún no disponible",
+      message: "Tu acceso a la guía estará disponible 2 días antes de tu check-in.",
+      icon: "📅"
+    },
+    max_devices_exceeded: {
+      title: "Límite de dispositivos",
+      message: "Has alcanzado el máximo de dispositivos permitidos (3). Si necesitas acceder desde otro dispositivo, contacta con tu anfitrión.",
+      icon: "📱"
+    },
+    token_deactivated: {
+      title: "Acceso desactivado",
+      message: "Este acceso ha sido desactivado por el anfitrión.",
+      icon: "🚫"
+    }
+  };
+  
+  const content = messages[reason as keyof typeof messages] || messages.invalid_token;
+  
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+        <div className="text-6xl mb-4">{content.icon}</div>
+        <h1 className="text-2xl font-bold mb-2">{content.title}</h1>
+        <p className="text-gray-600 mb-6">{content.message}</p>
+        
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-left">
+          <p className="font-semibold mb-2">💡 ¿Necesitas ayuda?</p>
+          <p className="text-gray-700">
+            Contacta con tu anfitrión directamente. 
+            Encontrarás su información en el email de confirmación de tu reserva.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+MONITOREO Y ANALYTICS
+typescript// Tabla de analytics de uso
+CREATE TABLE chat_usage_analytics (
+  id BIGSERIAL PRIMARY KEY,
+  access_token VARCHAR(32) REFERENCES guest_access_tokens(access_token),
+  property_id UUID REFERENCES properties(id),
+  
+  message_length INTEGER,
+  response_tokens INTEGER,
+  cost_usd DECIMAL(10, 6),
+  
+  response_time_ms INTEGER,
+  
+  timestamp TIMESTAMP DEFAULT NOW(),
+  
+  INDEX idx_property_date (property_id, timestamp),
+  INDEX idx_access_token (access_token)
+);
+
+// Vista agregada para hosts
+CREATE VIEW property_usage_stats AS
+SELECT 
+  property_id,
+  DATE(timestamp) as date,
+  COUNT(*) as total_messages,
+  SUM(cost_usd) as total_cost,
+  AVG(response_time_ms) as avg_response_time,
+  COUNT(DISTINCT access_token) as unique_guests
+FROM chat_usage_analytics
+GROUP BY property_id, DATE(timestamp);
+
+RESUMEN DE MEDIDAS DE SEGURIDAD
+Nivel 1: Control de Acceso
+✅ URLs únicas por reserva (no por propiedad)
+✅ Tokens de 32 caracteres aleatorios
+✅ Ventana temporal (2 días antes - 2 días después)
+✅ Límite de dispositivos (3 por defecto)
+✅ Desactivación manual por el host
+Nivel 2: Rate Limiting
+✅ Por IP: 10 msg/minuto
+✅ Por token: 5 msg/minuto, 50 msg/día
+✅ Por dispositivo: 8 msg/minuto
+✅ Reset automático diario
+Nivel 3: Detección de Abusos
+✅ Detección de prompt injection
+✅ Límite de longitud (500 caracteres)
+✅ Patrones sospechosos
+✅ Auto-bloqueo tras 10 intentos sospechosos/hora
+Nivel 4: Monitoreo
+✅ Logging de todos los accesos
+✅ Fingerprinting de dispositivos
+✅ Alertas automáticas al host
+✅ Analytics de uso y costes
+Nivel 5: Recuperación
+✅ Desactivación manual de tokens
+✅ Generación de nuevos tokens
+✅ Whitelist de IPs (opcional)
+✅ Extensión de fechas de acceso

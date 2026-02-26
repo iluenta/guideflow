@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Trash2, MapPin, Clock, Star, Utensils, ShoppingBag, Landmark, Trees, Music, Coffee } from 'lucide-react'
+import { Trash2, MapPin, Clock, Star, Utensils, ShoppingBag, Landmark, Trees, Music, Coffee, Pizza, Fish, Beef, Globe, UtensilsCrossed } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface Recommendation {
@@ -31,23 +31,37 @@ interface RecommendationCardProps {
 }
 
 const categoryIcons: Record<string, any> = {
-    'restaurantes': Utensils,
-    'compras': ShoppingBag,
-    'cultura': Landmark,
-    'naturaleza': Trees,
-    'ocio': Music,
-    'relax': Coffee,
-    'todos': Star
+    'restaurantes':  Utensils,
+    'italiano':      Pizza,
+    'mediterraneo':  Fish,
+    'hamburguesas':  Beef,
+    'asiatico':      UtensilsCrossed,
+    'alta_cocina':   Star,
+    'internacional': Globe,
+    'desayuno':      Coffee,
+    'compras':       ShoppingBag,
+    'cultura':       Landmark,
+    'naturaleza':    Trees,
+    'ocio':          Music,
+    'relax':         Coffee,
+    'todos':         Star
 }
 
 const categoryColors: Record<string, string> = {
-    'restaurantes': 'bg-orange-100 text-orange-700 border-orange-200',
-    'compras': 'bg-blue-100 text-blue-700 border-blue-200',
-    'cultura': 'bg-amber-100 text-amber-700 border-amber-200',
-    'naturaleza': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    'ocio': 'bg-purple-100 text-purple-700 border-purple-200',
-    'relax': 'bg-cyan-100 text-cyan-700 border-cyan-200',
-    'todos': 'bg-slate-100 text-slate-700 border-slate-200'
+    'restaurantes':  'bg-orange-100 text-orange-700 border-orange-200',
+    'italiano':      'bg-red-100 text-red-700 border-red-200',
+    'mediterraneo':  'bg-sky-100 text-sky-700 border-sky-200',
+    'hamburguesas':  'bg-amber-100 text-amber-700 border-amber-200',
+    'asiatico':      'bg-rose-100 text-rose-700 border-rose-200',
+    'alta_cocina':   'bg-violet-100 text-violet-700 border-violet-200',
+    'internacional': 'bg-cyan-100 text-cyan-700 border-cyan-200',
+    'desayuno':      'bg-yellow-100 text-yellow-700 border-yellow-200',
+    'compras':       'bg-blue-100 text-blue-700 border-blue-200',
+    'cultura':       'bg-amber-100 text-amber-700 border-amber-200',
+    'naturaleza':    'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'ocio':          'bg-purple-100 text-purple-700 border-purple-200',
+    'relax':         'bg-cyan-100 text-cyan-700 border-cyan-200',
+    'todos':         'bg-slate-100 text-slate-700 border-slate-200'
 }
 
 export function RecommendationCard({ recommendation, onDelete, onClick, className }: RecommendationCardProps) {
@@ -82,7 +96,7 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all rounded-full"
+                            className="sm:opacity-0 sm:group-hover:opacity-100 text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all rounded-full shrink-0"
                             onClick={(e) => {
                                 e.stopPropagation()
                                 onDelete()

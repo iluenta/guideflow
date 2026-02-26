@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat } from 'ai/react'
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { X, Send, Bot, User, Sparkles, MessageCircle, MessageSquare, Phone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
@@ -38,6 +38,86 @@ function QuickReplyButton({
             {localizedReply}
         </button>
     );
+}
+
+function CopyButton({ text }: { text: string }) {
+    const [copied, setCopied] = useState(false);
+    
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // Fallback for iOS Safari which might block clipboard implicitly 
+            const el = document.createElement('textarea');
+            el.value = text;
+            el.style.position = 'fixed';
+            el.style.opacity = '0';
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
+    
+    return (
+        <button
+            type="button"
+            onClick={handleCopy}
+            className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-[13px] border transition-all cursor-pointer active:scale-95 select-all",
+                copied
+                    ? "bg-green-50 text-green-700 border-green-300"
+                    : "bg-primary/5 text-primary border-primary/15 hover:bg-primary/10"
+            )}
+            title="Tocar para copiar"
+        >
+            {copied ? (
+                <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>Copiado</span>
+                </>
+            ) : (
+                <>
+                    <span>{text}</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-40">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                </>
+            )}
+        </button>
+    );
+}
+
+const WIFI_EXCLUDED = new Set([
+    'wifi', 'red', 'ssid', 'es', 'la', 'el', 'un', 'una',
+    'contraseña', 'password', 'clave', 'network', 'internet',
+    'siguiente', 'esta', 'aqui', 'aquí', 'the', 'is', 'are'
+]);
+
+function injectWifiMarkers(content: string): string {
+    // Si ya hay backticks (Gemini los emitió) → convertirlos a [[COPY:...]]
+    content = content.replace(/`([^`\n]{2,50})`/g, (_m, val) => {
+        if (WIFI_EXCLUDED.has(val.toLowerCase())) return val;
+        return `[[COPY:${val}]]`;
+    });
+
+    // Detectar patrón semántico: "red: VALOR", "contraseña: VALOR", "red es VALOR", etc.
+    content = content.replace(
+        /\b(?:red(?:\s+wifi)?|ssid|contrase[ñn]a|password|clave)(?:\s*:\s*|\s+es\s+|\s+wifi\s+es\s+)([^\s`\[\],.\n]{4,50})/gi,
+        (match, value) => {
+            if (WIFI_EXCLUDED.has(value.toLowerCase())) return match;
+            return match.replace(value, `[[COPY:${value}]]`);
+        }
+    );
+
+    return content;
 }
 
 export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', accessToken }: GuestChatProps) {
@@ -227,7 +307,13 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                         </div>
                     ) : (
                         <div className="p-6 space-y-6">
-                            {messages.map((m) => (
+                            {messages.map((m) => {
+                                const processedContent = injectWifiMarkers(m.content)
+                                    .replace(/\[\[COPY:([^\]]+)\]\]/g, (_match, val) => `[${val}](copy:${encodeURIComponent(val)})`)
+                                    .replace(/\[\[MAP:([^:]+):([^\]]+)\]\]/g, (_match, address, label) => `[${label}](maps:${encodeURIComponent(address)})`)
+                                    .replace(/(?<!\d|\[)(\+?\d{9,15})(?!\d|\])/g, '[$1](tel_wa:$1)');
+
+                                return (
                                 <div
                                     key={m.id}
                                     className={cn(
@@ -251,12 +337,17 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                 ? "bg-primary text-white rounded-br-none shadow-md font-medium"
                                                 : "bg-stone-50 text-primary/90 rounded-bl-none border border-stone-100"
                                         )}>
-                                            <div className="prose prose-sm max-w-none prose-slate">
+                                            <div className="text-[14px] leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-800 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1">
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm]}
                                                     urlTransform={(url) => url}
                                                     components={{
                                                         a: ({ node, href, children, ...props }) => {
+                                                            if (href?.startsWith('copy:')) {
+                                                                const value = decodeURIComponent(href.slice('copy:'.length));
+                                                                return <CopyButton text={value} />;
+                                                            }
+                                                            // tel_wa: — existing phone + WhatsApp button
                                                             if (href?.startsWith('tel_wa:')) {
                                                                 const num = href.split(':')[1];
                                                                 const cleanNum = num.replace(/\D/g, '');
@@ -284,17 +375,40 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                                     </span>
                                                                 );
                                                             }
+                                                            // maps: — new tappable map button (Apple Maps on iOS, Google Maps elsewhere)
+                                                            if (href?.startsWith('maps:')) {
+                                                                const encodedAddress = href.slice('maps:'.length);
+                                                                const isIOS = typeof window !== 'undefined' && /iPhone|iPad|iPod/.test(window.navigator.userAgent);
+                                                                const mapsUrl = isIOS
+                                                                    ? `maps://?q=${encodedAddress}`
+                                                                    : `https://maps.google.com/?q=${encodedAddress}`;
+                                                                return (
+                                                                    <a
+                                                                        href={mapsUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium border border-blue-200 hover:bg-blue-100 active:scale-95 transition-all"
+                                                                    >
+                                                                        <span className="text-base leading-none">📍</span>
+                                                                        {decodeURIComponent(String(children))}
+                                                                    </a>
+                                                                );
+                                                            }
                                                             return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+                                                        },
+                                                        code: ({ node, inline, children, ...props }: any) => {
+                                                            return <code {...props} className="bg-primary/5 text-primary px-1 rounded-sm">{children}</code>;
                                                         }
                                                     }}
                                                 >
-                                                    {m.content.replace(/(?<!\d|\[)(\+?\d{9,15})(?!\d|\])/g, '[$1](tel_wa:$1)')}
+                                                    {processedContent}
                                                 </ReactMarkdown>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
 
                             {isLoading && (
                                 <div className="flex justify-start animate-pulse">

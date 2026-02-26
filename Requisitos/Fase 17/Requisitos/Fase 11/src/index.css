@@ -1,0 +1,47 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  /* Premium Theme Variables - Default (Blue/Gold/White) */
+  --color-primary: #1e3a8a; /* Deep Blue */
+  --color-primary-light: #eff6ff; /* Light Blue bg */
+  --color-accent: #f59e0b; /* Gold/Amber */
+  --color-text-main: #1f2937;
+  --color-text-muted: #6b7280;
+  --color-bg-page: #f9fafb;
+  --color-surface: #ffffff;
+  
+  /* Chip Colors */
+  --chip-blue-bg: #eff6ff;
+  --chip-blue-text: #2563eb;
+  --chip-orange-bg: #fff7ed;
+  --chip-orange-text: #ea580c;
+  --chip-green-bg: #f0fdf4;
+  --chip-green-text: #16a34a;
+  --chip-purple-bg: #faf5ff;
+  --chip-purple-text: #9333ea;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f3f4f6; /* Outer background */
+  color: var(--color-text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+}
+
+/* Hide scrollbar for clean mobile look */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

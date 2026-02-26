@@ -21,7 +21,13 @@ import {
     Waves,
     Coffee,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Pizza,
+    Fish,
+    Beef,
+    Globe,
+    Utensils,
+    Store
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
@@ -30,6 +36,7 @@ interface Recommendation {
     id: string;
     name: string;
     type: string;
+    category?: string;
     description?: string;
     distance?: string;
     time?: string;
@@ -60,7 +67,7 @@ function RecommendationCard({
     toggleExpand, 
     currentLanguage, 
     accessToken, 
-    handleOpenMap,
+    getMapsUrl,
     propertyId // FASE 17
 }: { 
     rec: Recommendation, 
@@ -68,7 +75,7 @@ function RecommendationCard({
     toggleExpand: (id: string) => void,
     currentLanguage: string, 
     accessToken?: string,
-    handleOpenMap: (e: React.MouseEvent, rec: Recommendation) => void,
+    getMapsUrl: (rec: Recommendation) => string,
     propertyId?: string // FASE 17
 }) {
     const { content: localizedName } = useLocalizedContent(rec.name, currentLanguage, 'recommendation_name', accessToken, propertyId);
@@ -183,12 +190,20 @@ function RecommendationCard({
                 </div>
 
                 <div className="self-start pt-1">
-                    <button
-                        onClick={(e) => handleOpenMap(e, rec)}
+                    <a
+                        href={getMapsUrl(rec)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // If it's a web link, target _blank. If it's geo:/maps: don't.
+                            if (getMapsUrl(rec).startsWith('http')) {
+                                window.open(getMapsUrl(rec), '_blank', 'noopener,noreferrer');
+                                e.preventDefault();
+                            }
+                        }}
                         className="w-10 h-10 rounded-full bg-beige hover:bg-primary/10 flex items-center justify-center text-navy transition-all active:scale-90"
                     >
                         <ArrowRight className="w-5 h-5" />
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
@@ -196,14 +211,21 @@ function RecommendationCard({
 }
 
 const categoryConfigs: Record<string, { icon: any, color: string, bgColor: string, activeBg: string, hex: string }> = {
-    restaurantes: { icon: UtensilsCrossed, color: 'text-orange-600', bgColor: 'bg-orange-50', activeBg: 'bg-orange-600', hex: '#EA580C' },
-    naturaleza: { icon: Mountain, color: 'text-emerald-600', bgColor: 'bg-emerald-50', activeBg: 'bg-emerald-600', hex: '#059669' },
-    cultura: { icon: Landmark, color: 'text-amber-600', bgColor: 'bg-amber-50', activeBg: 'bg-amber-600', hex: '#D97706' },
-    ocio: { icon: Music, color: 'text-pink-600', bgColor: 'bg-pink-50', activeBg: 'bg-pink-600', hex: '#DB2777' },
-    relax: { icon: Waves, color: 'text-teal-600', bgColor: 'bg-teal-50', activeBg: 'bg-teal-600', hex: '#0D9488' },
-    compras: { icon: ShoppingBag, color: 'text-indigo-600', bgColor: 'bg-indigo-50', activeBg: 'bg-indigo-600', hex: '#4F46E5' },
-    desayuno: { icon: Coffee, color: 'text-amber-700', bgColor: 'bg-amber-50', activeBg: 'bg-amber-700', hex: '#B45309' },
-    todos: { icon: Star, color: 'text-navy/40', bgColor: 'bg-white', activeBg: 'bg-navy', hex: '#1E3A5F' }
+    restaurantes:  { icon: UtensilsCrossed, color: 'text-orange-600',  bgColor: 'bg-orange-50',  activeBg: 'bg-orange-600',  hex: '#EA580C' },
+    italiano:      { icon: Pizza,           color: 'text-red-600',     bgColor: 'bg-red-50',     activeBg: 'bg-red-600',     hex: '#DC2626' },
+    mediterraneo:  { icon: Fish,            color: 'text-sky-600',     bgColor: 'bg-sky-50',     activeBg: 'bg-sky-600',     hex: '#0284C7' },
+    hamburguesas:  { icon: Beef,            color: 'text-amber-700',   bgColor: 'bg-amber-50',   activeBg: 'bg-amber-700',   hex: '#B45309' },
+    asiatico:      { icon: UtensilsCrossed, color: 'text-rose-600',    bgColor: 'bg-rose-50',    activeBg: 'bg-rose-600',    hex: '#E11D48' },
+    alta_cocina:   { icon: Star,            color: 'text-violet-600',  bgColor: 'bg-violet-50',  activeBg: 'bg-violet-600',  hex: '#7C3AED' },
+    internacional: { icon: Globe,           color: 'text-cyan-600',    bgColor: 'bg-cyan-50',    activeBg: 'bg-cyan-600',    hex: '#0891B2' },
+    naturaleza:    { icon: Mountain,        color: 'text-emerald-600', bgColor: 'bg-emerald-50', activeBg: 'bg-emerald-600', hex: '#059669' },
+    cultura:       { icon: Landmark,        color: 'text-amber-600',   bgColor: 'bg-amber-50',   activeBg: 'bg-amber-600',   hex: '#D97706' },
+    ocio:          { icon: Music,           color: 'text-pink-600',    bgColor: 'bg-pink-50',    activeBg: 'bg-pink-600',    hex: '#DB2777' },
+    relax:         { icon: Waves,           color: 'text-teal-600',    bgColor: 'bg-teal-50',    activeBg: 'bg-teal-600',    hex: '#0D9488' },
+    compras:       { icon: ShoppingBag,     color: 'text-indigo-600',  bgColor: 'bg-indigo-50',  activeBg: 'bg-indigo-600',  hex: '#4F46E5' },
+    supermercados: { icon: Store,           color: 'text-blue-600',    bgColor: 'bg-blue-50',    activeBg: 'bg-blue-600',    hex: '#2563EB' },
+    desayuno:      { icon: Coffee,          color: 'text-amber-700',   bgColor: 'bg-amber-50',   activeBg: 'bg-amber-700',   hex: '#B45309' },
+    todos:         { icon: Star,            color: 'text-navy/40',     bgColor: 'bg-white',      activeBg: 'bg-navy',        hex: '#1E3A5F' }
 };
 
 const groupConfigs = {
@@ -211,11 +233,18 @@ const groupConfigs = {
         title: 'Dónde Comer',
         heroTitle: 'Sabores Locales',
         heroDesc: 'Mis recomendaciones personales para disfrutar de la mejor gastronomía de la zona.',
-        categories: ['restaurantes', 'desayuno'],
+        // All eat subcategories are valid in this group
+        categories: ['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno'],
         pills: [
-            { id: 'todos', label: 'Todo', type: 'todos' },
-            { id: 'restaurantes', label: 'Restaurantes', type: 'restaurantes' },
-            { id: 'desayuno', label: 'Desayunos', type: 'desayuno' }
+            { id: 'todos',         label: 'Todos',            type: 'todos' },
+            { id: 'restaurantes',  label: 'Restaurantes',     type: 'restaurantes' },
+            { id: 'italiano',      label: 'Italiano',         type: 'italiano' },
+            { id: 'mediterraneo',  label: 'Mediterráneo',     type: 'mediterraneo' },
+            { id: 'hamburguesas',  label: 'Hamburguesas',     type: 'hamburguesas' },
+            { id: 'asiatico',      label: 'Asiático',         type: 'asiatico' },
+            { id: 'alta_cocina',   label: 'Alta Cocina',      type: 'alta_cocina' },
+            { id: 'internacional', label: 'Internacional',    type: 'internacional' },
+            { id: 'desayuno',      label: 'Cafés',            type: 'desayuno' },
         ]
     },
     do: {
@@ -224,21 +253,22 @@ const groupConfigs = {
         heroDesc: 'Experiencias únicas y rincones especiales seleccionados para ti.',
         categories: ['naturaleza', 'cultura', 'ocio', 'relax'],
         pills: [
-            { id: 'todos', label: 'Todo', type: 'todos' },
+            { id: 'todos',      label: 'Todo',       type: 'todos' },
             { id: 'naturaleza', label: 'Naturaleza', type: 'naturaleza' },
-            { id: 'cultura', label: 'Cultura', type: 'cultura' },
-            { id: 'relax', label: 'Relax', type: 'relax' },
-            { id: 'ocio', label: 'Ocio', type: 'ocio' }
+            { id: 'cultura',    label: 'Cultura',    type: 'cultura' },
+            { id: 'relax',      label: 'Relax',      type: 'relax' },
+            { id: 'ocio',       label: 'Ocio',       type: 'ocio' }
         ]
     },
     shopping: {
         title: 'Compras',
         heroTitle: 'De Compras',
         heroDesc: 'Mercados tradicionales, tiendas de artesanía y todo lo necesario para tu estancia.',
-        categories: ['compras'],
+        categories: ['compras', 'supermercados'],
         pills: [
-            { id: 'todos', label: 'Todo', type: 'todos' },
-            { id: 'compras', label: 'Compras', type: 'compras' }
+            { id: 'todos',   label: 'Todo',    type: 'todos' },
+            { id: 'compras', label: 'Tiendas', type: 'compras' },
+            { id: 'supermercados', label: 'Supermercados', type: 'supermercados' }
         ]
     }
 };
@@ -270,7 +300,8 @@ export function RecommendationsView({
     const { content: labelCultura } = useLocalizedContent('Cultura', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelRelax } = useLocalizedContent('Relax', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelOcio } = useLocalizedContent('Ocio', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelCompras } = useLocalizedContent('Compras', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelCompras } = useLocalizedContent('Tiendas', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelSuper } = useLocalizedContent('Súper / Mercados', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const pillLabels: Record<string, string | undefined> = {
         todos: labelTodo,
@@ -280,43 +311,36 @@ export function RecommendationsView({
         cultura: labelCultura,
         relax: labelRelax,
         ocio: labelOcio,
-        compras: labelCompras
+        compras: labelCompras,
+        supermercados: labelSuper
     };
 
     const filteredRecommendations = useMemo(() => {
         let items = recommendations.filter(r => {
-            const cat = (r.type || 'ocio').toLowerCase();
+            const cat = (r.type || r.category || 'ocio').toLowerCase();
             return config.categories.includes(cat);
         });
 
         if (selectedCategory !== 'todos') {
-            items = items.filter(r => (r.type || '').toLowerCase() === selectedCategory);
+            items = items.filter(r => (r.type || r.category || '').toLowerCase() === selectedCategory);
         }
         return items;
     }, [recommendations, group, selectedCategory]);
 
     const getMapsUrl = (rec: Recommendation) => {
+        // If there's a specific map_url, use it.
         if (rec.map_url && rec.map_url.startsWith('http')) return rec.map_url;
 
-        // Smart URL generation based on name, category and city context
         const locationContext = city ? ` ${city}` : '';
-        const query = encodeURIComponent(`${rec.name} ${rec.type || ''}${locationContext}`);
-        // Universal Google Maps search URL (works on iOS and Android)
+        const query = encodeURIComponent(`${rec.name}${locationContext}`);
+        
+        const isIOS = typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+
+        if (isIOS) return `maps://?q=${query}`;
+        if (isAndroid) return `geo:0,0?q=${query}`;
+        
         return `https://www.google.com/maps/search/?api=1&query=${query}`;
-    };
-
-    const getRecommendationDetails = (rec: Recommendation) => {
-        return {
-            price: rec.price_range || rec.metadata?.price_range,
-            time: rec.time || rec.metadata?.time,
-            note: rec.personal_note || rec.metadata?.personal_note
-        };
-    };
-
-    const handleOpenMap = (e: React.MouseEvent, rec: Recommendation) => {
-        e.stopPropagation();
-        const url = getMapsUrl(rec);
-        window.open(url, '_blank');
     };
 
     const toggleExpand = (id: string) => {
@@ -388,7 +412,7 @@ export function RecommendationsView({
                                 currentLanguage={currentLanguage}
                                 accessToken={accessToken}
                                 propertyId={propertyId}
-                                handleOpenMap={handleOpenMap}
+                                getMapsUrl={getMapsUrl}
                             />
                         ))
                     ) : (

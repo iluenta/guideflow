@@ -1,0 +1,91 @@
+'use client'
+
+import { Property } from '@/app/actions/properties'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { MapPin, Users, Bed, Bath, Sparkles, ExternalLink, Share2 } from 'lucide-react'
+import { AutoBuildDialog } from './AutoBuildDialog'
+import { GuestAccessDialog } from './GuestAccessDialog'
+import Link from 'next/link'
+import Image from 'next/image'
+
+interface PropertyCardProps {
+    property: Property
+}
+
+export function PropertyCard({ property }: PropertyCardProps) {
+    return (
+        <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm">
+            <div className="relative aspect-video overflow-hidden">
+                {property.main_image_url ? (
+                    <Image
+                        src={property.main_image_url}
+                        alt={property.name}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <span className="text-muted-foreground text-sm">Sin imagen</span>
+                    </div>
+                )}
+            </div>
+
+            <CardHeader className="p-4 pb-0">
+                <h3 className="font-semibold text-lg line-clamp-1 group-hover:text-primary transition-colors">
+                    {property.name}
+                </h3>
+                <div className="flex items-center gap-1 text-muted-foreground text-sm">
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span className="line-clamp-1">
+                        {property.city ? `${property.city}${property.country ? `, ${property.country}` : ''}` : 'Sin ubicación'}
+                    </span>
+                </div>
+            </CardHeader>
+
+            <CardContent className="p-4 pt-4">
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/50 border border-border/50">
+                        <Users className="h-4 w-4 text-primary mb-1" />
+                        <span className="text-xs font-medium">{property.guests} Huéspedes</span>
+                    </div>
+                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/50 border border-border/50">
+                        <Bed className="h-4 w-4 text-primary mb-1" />
+                        <span className="text-xs font-medium">{property.beds} Hab.</span>
+                    </div>
+                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/50 border border-border/50">
+                        <Bath className="h-4 w-4 text-primary mb-1" />
+                        <span className="text-xs font-medium">{property.baths} Baños</span>
+                    </div>
+                </div>
+            </CardContent>
+
+            <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-2 w-full">
+                    <AutoBuildDialog
+                        propertyId={property.id}
+                        onComplete={() => { }}
+                    />
+                    <Button variant="secondary" className="gap-2 text-xs" asChild>
+                        <Link href={`/${property.slug || property.id}`} target="_blank">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Ver Guía
+                        </Link>
+                    </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 w-full mt-2">
+                    <Button variant="outline" className="gap-2 text-xs border-primary/20 text-primary hover:bg-primary/5 h-9" asChild>
+                        <Link href={`/dashboard/properties/${property.id}/setup`}>
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Configurar
+                        </Link>
+                    </Button>
+                    <GuestAccessDialog
+                        propertyId={property.id}
+                        propertyName={property.name}
+                    />
+                </div>
+            </CardFooter>
+        </Card>
+    )
+}

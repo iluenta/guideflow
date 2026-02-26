@@ -14,6 +14,9 @@ import {
 } from 'lucide-react';
 import { LanguageSelector } from '@/components/guide/LanguageSelector';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
+import { getGuideTheme } from '@/lib/guide-theme';
+import { cn } from '@/lib/utils';
+
 
 interface Fase11WelcomeProps {
     propertyName: string;
@@ -26,7 +29,8 @@ interface Fase11WelcomeProps {
     onLanguageChange: (lang: string) => void;
     guestName?: string;
     accessToken?: string;
-    propertyId?: string; // FASE 17
+    propertyId?: string;
+    themeId?: string;
 }
 
 const container: Variants = {
@@ -62,8 +66,10 @@ export function Fase11Welcome({
     onLanguageChange,
     guestName,
     accessToken,
-    propertyId // FASE 17
+    propertyId,
+    themeId = 'modern',
 }: Fase11WelcomeProps) {
+    const t = getGuideTheme(themeId)
     const { content: localizedPropertyName } = useLocalizedContent(propertyName, currentLanguage, 'general', accessToken, propertyId);
     const { content: welcomeHomeLabel } = useLocalizedContent('Bienvenido a casa', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: greetingLabel } = useLocalizedContent('Hola', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -85,7 +91,7 @@ export function Fase11Welcome({
 
     return (
         <motion.div
-            className="flex flex-col min-h-full bg-white relative"
+            className={cn('flex flex-col min-h-full relative', t.pageBg)}
             variants={container}
             initial="hidden"
             animate="show"
@@ -105,7 +111,7 @@ export function Fase11Welcome({
                     <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-700" />
                 )}
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className={cn('absolute inset-0', t.heroOverlay)} />
 
                 <div className="absolute top-4 right-4 z-20">
                     <LanguageSelector 
@@ -114,16 +120,16 @@ export function Fase11Welcome({
                     />
                 </div>
 
-                <div className="absolute bottom-0 left-0 w-full p-6 pb-12 text-white">
+                <div className="absolute bottom-0 left-0 w-full p-6 pb-12">
                     <motion.div variants={item}>
-                        <p className="text-sm font-medium tracking-widest uppercase opacity-90 mb-2 flex items-center gap-2">
+                        <p className={cn('text-sm font-medium tracking-widest uppercase opacity-90 mb-2 flex items-center gap-2', t.heroSubLabel)}>
                             <Sparkles size={14} className="text-amber-400" />
                             {welcomeHomeLabel}
                         </p>
-                        <h1 className="text-4xl font-bold mb-1 font-serif leading-tight">
+                        <h1 className={cn('text-4xl font-bold mb-1 leading-tight', t.heroGreeting)}>
                             {localizedGreeting}
                         </h1>
-                        <p className="text-lg opacity-90 font-light italic font-serif">
+                        <p className={cn('text-lg opacity-90', t.heroPropertyName)}>
                             {localizedPropertyName}
                         </p>
                     </motion.div>
@@ -132,28 +138,26 @@ export function Fase11Welcome({
 
             {/* Content Container - Overlapping Hero */}
             <div className="flex-1 px-6 -mt-8 relative z-10 pb-8">
-                {/* Search Bar - Links to Chat */}
+                {/* Search Bar */}
                 <motion.div variants={item} className="mb-8">
                     <div
-                        className="relative group shadow-[0_15px_40px_rgba(0,0,0,0.12)] rounded-2xl bg-white overflow-hidden cursor-pointer"
+                        className={cn('relative group shadow-[0_15px_40px_rgba(0,0,0,0.12)] rounded-2xl overflow-hidden cursor-pointer border', t.searchBg, t.searchBorder)}
                         onClick={() => onChatQuery('')}
                     >
                         <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-primary">
                             <Search size={20} />
                         </div>
-                        <div className="w-full h-16 pl-12 pr-14 bg-white flex items-center text-gray-400 text-base">
+                        <div className={cn('w-full h-16 pl-12 pr-14 flex items-center text-base', t.searchBg, t.searchText)}>
                             {conciergePlaceholder}
                         </div>
 
                         <div className="absolute inset-y-0 right-2 flex items-center">
-                            <button
-                                className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white transition-transform active:scale-95"
-                            >
+                            <button className={cn('w-10 h-10 rounded-xl flex items-center justify-center transition-transform active:scale-95', t.actionBtn)}>
                                 <ArrowRight size={20} />
                             </button>
                         </div>
                     </div>
-                    <p className="text-center text-xs text-gray-400 mt-3 font-medium uppercase tracking-[0.1em]">
+                    <p className={cn('text-center text-xs mt-3 font-medium uppercase tracking-[0.1em]', t.conciergeText)}>
                         {conciergeLabel} {location}
                     </p>
                 </motion.div>
@@ -161,61 +165,85 @@ export function Fase11Welcome({
                 {/* Quick Actions - FAQs */}
                 <motion.div variants={item} className="mb-8">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        <h3 className={cn('text-[10px] font-black uppercase tracking-widest', t.sectionLabel)}>
                             {commonQuestionsLabel}
                         </h3>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { id: 'wifi', icon: Wifi, label: 'WiFi', type: 'nav', target: 'wifi' },
-                            { id: 'access', icon: Key, label: labelAcceso, type: 'nav', target: 'checkin' },
-                            { id: 'parking', icon: MapPin, label: labelParking, type: 'chat', query: queryParking },
-                            { id: 'eat', icon: Utensils, label: labelComer, type: 'chat', query: queryComer }
-                        ].map((chip) => (
-                            <button
-                                key={chip.id}
-                                onClick={() => chip.type === 'nav' ? onNavigate(chip.target!) : onChatQuery(chip.query!)}
-                                className="flex items-center gap-3 p-3.5 rounded-xl bg-gray-50/50 hover:bg-gray-100 transition-colors text-left group border border-gray-100/50"
-                            >
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
-                                    <chip.icon size={16} />
-                                </div>
-                                <span className="text-sm font-bold text-gray-700">{chip.label}</span>
-                            </button>
-                        ))}
-                    </div>
+                    {t.chipLayout === 'stacked' ? (
+                        // ── Stacked layout: 4-col circular badge + label below (Coastal) ──
+                        <div className="grid grid-cols-4 gap-2">
+                            {[
+                                { id: 'wifi', icon: Wifi, label: 'WiFi', type: 'nav', target: 'wifi' },
+                                { id: 'access', icon: Key, label: labelAcceso, type: 'nav', target: 'checkin' },
+                                { id: 'parking', icon: MapPin, label: labelParking, type: 'chat', query: queryParking },
+                                { id: 'eat', icon: Utensils, label: labelComer, type: 'chat', query: queryComer }
+                            ].map((chip, i) => (
+                                <button
+                                    key={chip.id}
+                                    onClick={() => chip.type === 'nav' ? onNavigate(chip.target!) : onChatQuery(chip.query!)}
+                                    className="flex flex-col items-center gap-2 active:scale-95 transition-transform"
+                                >
+                                    <div className={cn(
+                                        'w-14 h-14 rounded-full flex items-center justify-center shadow-md',
+                                        t.perChipColors[i] ?? 'bg-sky-400',
+                                    )}>
+                                        <chip.icon size={22} className="text-white" />
+                                    </div>
+                                    <span className={cn('text-[11px] font-bold text-center leading-tight', t.chipLabel)}>
+                                        {chip.label}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        // ── Inline layout: 2×2 icon-left (Modern / Urban) ──
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                { id: 'wifi', icon: Wifi, label: 'WiFi', type: 'nav', target: 'wifi' },
+                                { id: 'access', icon: Key, label: labelAcceso, type: 'nav', target: 'checkin' },
+                                { id: 'parking', icon: MapPin, label: labelParking, type: 'chat', query: queryParking },
+                                { id: 'eat', icon: Utensils, label: labelComer, type: 'chat', query: queryComer }
+                            ].map((chip) => (
+                                <button
+                                    key={chip.id}
+                                    onClick={() => chip.type === 'nav' ? onNavigate(chip.target!) : onChatQuery(chip.query!)}
+                                    className={cn('flex items-center gap-3 p-3.5 rounded-xl transition-colors text-left group', t.chipBg)}
+                                >
+                                    <div className={cn('w-8 h-8 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform', t.chipIconBg, t.chipIconColor)}>
+                                        <chip.icon size={16} />
+                                    </div>
+                                    <span className={cn('text-sm font-bold', t.chipLabel)}>{chip.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </motion.div>
+
 
                 {/* Guide Link Card */}
                 <motion.div variants={item} className="mt-auto">
                     <div
-                        className="rounded-2xl p-1 relative overflow-hidden group cursor-pointer"
+                        className={cn('rounded-2xl p-5 flex items-center justify-between shadow-md cursor-pointer group', t.guideCardBg)}
                         onClick={onOpenGuide}
-                        style={{
-                            background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.05), white)'
-                        }}
                     >
-                        <div className="bg-white rounded-xl p-5 border border-primary/5 relative z-10 flex items-center justify-between shadow-sm">
-                            <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-[#f59e0b] mb-1">
-                                    {yourStayLabel}
-                                </p>
-                                <h3 className="text-xl font-serif font-bold text-gray-900 mb-1">
-                                    {houseGuideLabel}
-                                </h3>
-                                <p className="text-xs text-gray-500">
-                                    {everythingYouNeedLabel}
-                                </p>
-                            </div>
-                            <div
-                                className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center text-primary transition-all group-hover:bg-primary group-hover:text-white group-hover:scale-110"
-                            >
-                                <ChevronRight size={24} />
-                            </div>
+                        <div>
+                            <p className={cn('text-[10px] font-black uppercase tracking-widest mb-1', t.guideCardTag)}>
+                                {yourStayLabel}
+                            </p>
+                            <h3 className={cn('text-xl font-bold mb-1', t.guideCardTitle)}>
+                                {houseGuideLabel}
+                            </h3>
+                            <p className={cn('text-xs', t.guideCardSubtitle)}>
+                                {everythingYouNeedLabel}
+                            </p>
+                        </div>
+                        <div className={cn('w-12 h-12 rounded-full flex items-center justify-center transition-all group-hover:scale-110', t.guideCardChevron)}>
+                            <ChevronRight size={24} />
                         </div>
                     </div>
                 </motion.div>
+
 
                 {/* Footer */}
                 <motion.div variants={item} className="mt-8 text-center">

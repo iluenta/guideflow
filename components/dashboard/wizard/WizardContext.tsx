@@ -397,6 +397,7 @@ export function WizardProvider({
                     ...prev,
                     branding: {
                         theme_id: branding.theme_id,
+                        layout_theme_id: branding.layout_theme_id || (branding.computed_theme as any)?._layout_theme_id || 'modern',
                         custom_primary_color: branding.custom_primary_color || '',
                         custom_logo_url: branding.custom_logo_url || '',
                         computed_theme: branding.computed_theme || prev.branding.computed_theme
