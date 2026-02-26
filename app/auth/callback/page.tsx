@@ -186,8 +186,12 @@ function CallbackContent() {
       router.push(`/auth/login?error=${encodeURIComponent('No se recibieron datos de autenticación válidos. Por favor, intenta de nuevo.')}`)
     }
 
-    handleCallback()
-  }, [router, searchParams])
+    const timer = setTimeout(() => {
+        handleCallback();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [])
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
