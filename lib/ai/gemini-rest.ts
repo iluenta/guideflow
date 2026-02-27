@@ -98,58 +98,86 @@ export async function geminiREST(
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+    const maxRetries = 3;
+    let lastError: any = null;
 
-        const data: GeminiResponse = await response.json();
-
-        if (!response.ok) {
-            const errorMsg = data.error?.message || 'Error desconocido de Gemini API';
-            console.error('[GEMINI-REST] API Error:', JSON.stringify(data.error, null, 2));
-            throw new Error(errorMsg);
-        }
-
-        const candidate = data.candidates?.[0];
-        if (!candidate || !candidate.content || !candidate.content.parts) {
-            console.warn('[GEMINI-REST] No valid candidates returned.');
-            return { data: null, usage: undefined };
-        }
-
-        const fullText = candidate.content.parts
-            .map(p => p.text || '')
-            .join(' ')
-            .trim();
-
-        const effectiveMimeType = options.responseMimeType ?? 'application/json';
-        const usageMetrics = data.usageMetadata ? {
-            prompt_tokens: data.usageMetadata.promptTokenCount,
-            candidates_tokens: data.usageMetadata.candidatesTokenCount,
-            total_tokens: data.usageMetadata.totalTokenCount
-        } : undefined;
-
-        if (effectiveMimeType === 'application/json') {
-            let cleaned = fullText.trim();
-            if (cleaned.includes('```')) {
-                const match = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
-                if (match) cleaned = match[1].trim();
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            if (attempt > 0) {
+                const waitTime = Math.pow(2, attempt) * 1000;
+                console.log(`[GEMINI-REST] Retrying in ${waitTime}ms (Attempt ${attempt}/${maxRetries})...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
             }
 
-            try {
-                return { data: JSON.parse(cleaned), usage: usageMetrics };
-            } catch (e) {
-                return { data: cleaned, usage: usageMetrics, error: 'JSON Parse Error' };
-            }
-        }
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-        return { data: fullText, usage: usageMetrics };
-    } catch (error: any) {
-        console.error('[GEMINI-REST] Error:', error.message);
-        return { data: null, usage: undefined, error: error.message };
+            const data: GeminiResponse = await response.json();
+
+            if (!response.ok) {
+                const isRetryable = response.status === 429 || response.status >= 500;
+                const errorMsg = data.error?.message || 'Error desconocido de Gemini API';
+
+                if (isRetryable && attempt < maxRetries) {
+                    console.warn(`[GEMINI-REST] Retryable error (${response.status}): ${errorMsg}`);
+                    continue;
+                }
+
+                console.error('[GEMINI-REST] API Error:', JSON.stringify(data.error, null, 2));
+                throw new Error(errorMsg);
+            }
+
+            const candidate = data.candidates?.[0];
+            if (!candidate || !candidate.content || !candidate.content.parts) {
+                console.warn('[GEMINI-REST] No valid candidates returned.');
+                return { data: null, usage: undefined };
+            }
+
+            const fullText = candidate.content.parts
+                .map(p => p.text || '')
+                .join(' ')
+                .trim();
+
+            const effectiveMimeType = options.responseMimeType ?? 'application/json';
+            const usageMetrics = data.usageMetadata ? {
+                prompt_tokens: data.usageMetadata.promptTokenCount,
+                candidates_tokens: data.usageMetadata.candidatesTokenCount,
+                total_tokens: data.usageMetadata.totalTokenCount
+            } : undefined;
+
+            if (effectiveMimeType === 'application/json') {
+                let cleaned = fullText.trim();
+                if (cleaned.includes('```')) {
+                    const match = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+                    if (match) cleaned = match[1].trim();
+                }
+
+                try {
+                    return { data: JSON.parse(cleaned), usage: usageMetrics };
+                } catch (e) {
+                    return { data: cleaned, usage: usageMetrics, error: 'JSON Parse Error' };
+                }
+            }
+
+            return { data: fullText, usage: usageMetrics };
+        } catch (error: any) {
+            lastError = error;
+            const isRetryable = error.message?.includes('429') || error.message?.includes('status: 5') || error.name === 'AbortError' || error.name === 'TimeoutError';
+
+            if (isRetryable && attempt < maxRetries) {
+                console.warn(`[GEMINI-REST] Network/Retryable error: ${error.message}. Attempting retry...`);
+                continue;
+            }
+
+            console.error('[GEMINI-REST] Error:', error.message);
+            return { data: null, usage: undefined, error: error.message };
+        }
     }
+
+    return { data: null, usage: undefined, error: lastError?.message || 'Max retries reached' };
 }
 
 /**

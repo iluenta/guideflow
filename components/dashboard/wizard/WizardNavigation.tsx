@@ -4,20 +4,22 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, CheckCircle, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useWizard, steps } from './WizardContext';
+import { useWizard } from './WizardContext';
 
 export function WizardNavigation() {
-    const { 
-        activeTab, 
-        handleNext, 
-        handleBack, 
+    const {
+        activeTab,
+        handleNext,
+        handleBack,
         loading,
-        propertyId
+        aiLoading,
+        propertyId,
+        filteredSteps
     } = useWizard()
 
-    const currentIndex = steps.indexOf(activeTab)
+    const currentIndex = filteredSteps.indexOf(activeTab)
     const isFirstStep = currentIndex === 0
-    const isLastStep = currentIndex === steps.length - 1
+    const isLastStep = currentIndex === filteredSteps.length - 1
     const canContinue = propertyId || isFirstStep
 
     return (
@@ -40,7 +42,7 @@ export function WizardNavigation() {
                 <div className="flex-1 flex justify-end">
                     <Button
                         onClick={handleNext}
-                        disabled={loading || !canContinue}
+                        disabled={loading || !!aiLoading || !canContinue}
                         className={cn(
                             "rounded-full md:rounded-xl shadow-xl transition-all duration-300 w-14 h-14 md:w-auto md:min-w-[200px] md:h-11",
                             isLastStep
@@ -48,10 +50,12 @@ export function WizardNavigation() {
                                 : "bg-primary hover:bg-primary/90 shadow-primary/20"
                         )}
                     >
-                        {loading ? (
+                        {loading || aiLoading ? (
                             <span className="flex items-center gap-2">
                                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                                <span className="hidden md:inline">Guardando...</span>
+                                <span className="hidden md:inline">
+                                    {aiLoading ? 'Procesando IA...' : 'Guardando...'}
+                                </span>
                             </span>
                         ) : (
                             <>

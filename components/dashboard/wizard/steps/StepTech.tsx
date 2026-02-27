@@ -11,37 +11,19 @@ import { Sparkles, Loader2 } from 'lucide-react'
 import { useWizard } from '../WizardContext'
 
 export default function StepTech({ value }: { value?: string }) {
-    const { 
-        data, 
-        setData, 
-        aiLoading, 
-        handleAIFill 
+    const {
+        data,
+        setData,
+        aiLoading,
+        handleAIFill
     } = useWizard()
 
     return (
         <TabsContent value="tech" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
                 <CardHeader className="bg-slate-50 border-b py-3 px-4">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <CardTitle className="text-base">WiFi y Tecnología</CardTitle>
-                            <CardDescription className="text-xs">Datos de conexión e instrucciones de dispositivos.</CardDescription>
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 text-[10px] font-bold uppercase tracking-wider border-navy/20 text-navy hover:bg-navy/5"
-                            onClick={() => handleAIFill('tech')}
-                            disabled={aiLoading === 'tech'}
-                        >
-                            {aiLoading === 'tech' ? (
-                                <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                            ) : (
-                                <Sparkles className="w-3 h-3 mr-2" />
-                            )}
-                            {aiLoading === 'tech' ? 'Generando...' : 'Auto-completar WiFi'}
-                        </Button>
-                    </div>
+                    <CardTitle className="text-base">WiFi y Tecnología</CardTitle>
+                    <CardDescription className="text-xs">Datos de conexión e instrucciones de dispositivos.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

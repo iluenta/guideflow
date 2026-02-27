@@ -116,7 +116,17 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
             `Ubicación del router/Notas: ${data.router_notes || ''}`
         metadata = { category: 'tecnologia', type: 'wifi' }
     } else if (category === 'inventory') {
-        contentToEmbed = `[LISTA DE ELECTRODOMÉSTICOS Y EQUIPAMIENTO]:\n${data.text || (typeof data === 'string' ? data : JSON.stringify(data))}`
+        const inventoryData = data as any
+        const selectedItems = inventoryData.selected_items || []
+
+        if (selectedItems.length === 0) return
+
+        contentToEmbed = `[LISTA DE ELECTRODOMÉSTICOS Y EQUIPAMIENTO DISPONIBLE]:\n` +
+            selectedItems
+                .filter((item: any) => item.isPresent)
+                .map((item: any) => `- **${item.name}**: ${item.customContext ? `Ubicación/Nota: ${item.customContext}` : 'Disponible en el alojamiento.'}`)
+                .join('\n')
+
         metadata = { category: 'inventario', type: 'equipamiento' }
     } else {
         contentToEmbed = `[INFORMAClÓN DE ${category.toUpperCase()}]:\n${typeof data === 'string' ? data : JSON.stringify(data)}`

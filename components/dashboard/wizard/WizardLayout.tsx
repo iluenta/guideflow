@@ -5,14 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Tabs } from '@/components/ui/tabs'
 import { WizardStepper } from './WizardStepper'
 import { WizardNavigation } from './WizardNavigation'
-import { useWizard, steps } from './WizardContext'
+import { useWizard } from './WizardContext'
 
 export function WizardLayout({ children }: { children: React.ReactNode }) {
-    const { 
-        activeTab, 
-        handleTabChange, 
-        completedSteps, 
-        propertyId, 
+    const {
+        activeTab,
+        handleTabChange,
+        completedSteps,
+        propertyId,
         direction,
         mounted
     } = useWizard()
@@ -63,9 +63,9 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
 
             {/* Floating Navigation for Mobile */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t md:hidden z-50">
-                 <WizardNavigation />
+                <WizardNavigation />
             </div>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden md:block max-w-4xl mx-auto w-full px-4 mb-20">
                 <WizardNavigation />

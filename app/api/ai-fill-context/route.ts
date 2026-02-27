@@ -3,16 +3,16 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { generateArrivalInstructions } from '@/lib/arrival/generator-final';
 
 const getSupabase = () => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) throw new Error('Credenciales de Supabase no configuradas');
-    return createClient(url, key);
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('Credenciales de Supabase no configuradas');
+  return createClient(url, key);
 };
 
 const getGenAI = () => {
-    const key = process.env.GOOGLE_AI_API_KEY;
-    if (!key) throw new Error('Google AI API Key no configurada');
-    return new GoogleGenerativeAI(key);
+  const key = process.env.GOOGLE_AI_API_KEY;
+  if (!key) throw new Error('Google AI API Key no configurada');
+  return new GoogleGenerativeAI(key);
 };
 
 export async function POST(req: Request) {
@@ -22,12 +22,12 @@ export async function POST(req: Request) {
 
     // Validación básica de propertyId (evitar strings no-UUID que rompen Supabase)
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyId);
-    
+
     if (!isUuid || propertyId === 'address-only') {
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: 'ID de propiedad inválido o no guardado',
         debug: 'ROUTE_UUID_CHECK_FAIL',
-        receivedId: propertyId 
+        receivedId: propertyId
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     }
 
     const supabase = getSupabase();
-    
+
     // Obtener detalles de la propiedad para el contexto geográfico
     const { data: property, error: propError } = await supabase
       .from('properties')
@@ -88,16 +88,16 @@ export async function POST(req: Request) {
         const result = await generateArrivalInstructions(fullAddress, subSection, coordinates);
         console.log(`[AI-API] Generator result success`);
         return new Response(JSON.stringify(result), {
-            headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' }
         });
       } catch (error: any) {
         console.error('[TRANSPORT-FILL] Error:', error.message);
-        return new Response(JSON.stringify({ 
-            error: error.message,
-            debug: 'ROUTE_TRANSPORT_CATCH'
+        return new Response(JSON.stringify({
+          error: error.message,
+          debug: 'ROUTE_TRANSPORT_CATCH'
         }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
         });
       }
     }
@@ -115,25 +115,25 @@ export async function POST(req: Request) {
 
       // ── 2. Subcategory → Google Places type + keyword mapping ────────────────
       const SUBCATEGORY_MAP: Record<string, { placeType: string; keyword?: string }> = {
-        todos:         { placeType: 'restaurant' },
-        restaurantes:  { placeType: 'restaurant' },
-        italiano:      { placeType: 'restaurant', keyword: 'italiano pizza pasta' },
-        mediterraneo:  { placeType: 'restaurant', keyword: 'mediterráneo tapas mariscos' },
-        hamburguesas:  { placeType: 'restaurant', keyword: 'hamburguesa burger' },
-        asiatico:      { placeType: 'restaurant', keyword: 'sushi japonés chino thai asiático' },
-        alta_cocina:   { placeType: 'restaurant', keyword: 'alta cocina gourmet' },
+        todos: { placeType: 'restaurant' },
+        restaurantes: { placeType: 'restaurant' },
+        italiano: { placeType: 'restaurant', keyword: 'italiano pizza pasta' },
+        mediterraneo: { placeType: 'restaurant', keyword: 'mediterráneo tapas mariscos' },
+        hamburguesas: { placeType: 'restaurant', keyword: 'hamburguesa burger' },
+        asiatico: { placeType: 'restaurant', keyword: 'sushi japonés chino thai asiático' },
+        alta_cocina: { placeType: 'restaurant', keyword: 'alta cocina gourmet' },
         internacional: { placeType: 'restaurant', keyword: 'internacional fusión' },
-        desayuno:      { placeType: 'cafe',        keyword: 'desayuno brunch cafetería' },
-        compras:       { placeType: 'shopping_mall', keyword: 'centro comercial moda fashion ropa tiendas típicas souvenirs' },
-        supermercados: { placeType: 'supermarket',   keyword: 'mercadona dia carrefour lidl aldi mercado abastos alimentación' },
-        cultura:       { placeType: 'museum',      keyword: 'museo monumento cultura' },
-        naturaleza:    { placeType: 'park' },
-        ocio:          { placeType: 'bar',         keyword: 'ocio entretenimiento' },
-        relax:         { placeType: 'spa',         keyword: 'spa relax bienestar' },
+        desayuno: { placeType: 'cafe', keyword: 'desayuno brunch cafetería' },
+        compras: { placeType: 'shopping_mall', keyword: 'centro comercial moda fashion ropa tiendas típicas souvenirs' },
+        supermercados: { placeType: 'supermarket', keyword: 'mercadona dia carrefour lidl aldi mercado abastos alimentación' },
+        cultura: { placeType: 'museum', keyword: 'museo monumento cultura' },
+        naturaleza: { placeType: 'park' },
+        ocio: { placeType: 'bar', keyword: 'ocio entretenimiento' },
+        relax: { placeType: 'spa', keyword: 'spa relax bienestar' },
       };
       const catConfig = SUBCATEGORY_MAP[selectedCat] || SUBCATEGORY_MAP['restaurantes'];
 
-      // ── 3. Try Google Places Nearby Search ───────────────────────────────────
+      // ── 3. Google Places Search Logic ───────────────────────────────────────
       const placesKey = process.env.GOOGLE_PLACES_API_KEY;
       let placesResults: any[] = [];
 
@@ -146,25 +146,42 @@ export async function POST(req: Request) {
 
           if (loc) {
             const { lat, lng } = loc;
-            const radius = 2500; 
-            let nearbyUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${catConfig.placeType}&language=es&key=${placesKey}`;
-            if (catConfig.keyword) nearbyUrl += `&keyword=${encodeURIComponent(catConfig.keyword)}`;
+            const radius = 3000; // Increased radius for search
 
-            const nearbyRes = await fetch(nearbyUrl);
-            const nearbyData = await nearbyRes.json();
+            // Define which categories to search for 'todos'
+            const categoriesToIterate = selectedCat === 'todos'
+              ? ['restaurantes', 'compras', 'cultura', 'naturaleza', 'ocio']
+              : [selectedCat];
 
-            placesResults = (nearbyData.results || [])
-              .filter((p: any) => !seen.has((p.name || '').toLowerCase()) && (p.rating || 0) >= 3.5)
-              .slice(0, 10) // Get up to 10
-              .map((p: any) => ({
-                google_place_id: p.place_id,
-                name: p.name,
-                address: p.vicinity,
-                rating: p.rating,
-                price_level: p.price_level, 
-                map_url: `https://www.google.com/maps/place/?q=place_id:${p.place_id}`,
-                is_ai_generated: false
-              }));
+            console.log(`[PLACES] Searching for categories:`, categoriesToIterate);
+
+            for (const cat of categoriesToIterate) {
+              const config = SUBCATEGORY_MAP[cat] || SUBCATEGORY_MAP['restaurantes'];
+              let nearbyUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${config.placeType}&language=es&key=${placesKey}`;
+              if (config.keyword) nearbyUrl += `&keyword=${encodeURIComponent(config.keyword)}`;
+
+              const nearbyRes = await fetch(nearbyUrl);
+              const nearbyData = await nearbyRes.json();
+
+              const currentResults = (nearbyData.results || [])
+                .filter((p: any) => !seen.has((p.name || '').toLowerCase()) && (p.rating || 0) >= 3.5)
+                .slice(0, selectedCat === 'todos' ? 4 : 10) // 4 for each if 'todos', else 10
+                .map((p: any) => ({
+                  google_place_id: p.place_id,
+                  name: p.name,
+                  address: p.vicinity,
+                  rating: p.rating,
+                  price_level: p.price_level,
+                  category: cat === 'todos' ? 'restaurantes' : cat,
+                  map_url: `https://www.google.com/maps/place/?q=place_id:${p.place_id}`,
+                  is_ai_generated: false
+                }));
+
+              placesResults = [...placesResults, ...currentResults];
+
+              // Prevent too many requests for 'todos'
+              if (selectedCat === 'todos' && placesResults.length >= 20) break;
+            }
           }
         } catch (err) {
           console.warn('[PLACES] Nearby search failed:', err);
@@ -172,40 +189,33 @@ export async function POST(req: Request) {
       }
 
       // ── 4. Fallback Selection & Hybrid Logic ─────────────────────────────────
-      // Logic defined by user: 
-      // - 0 results: Omit category (return empty)
-      // - 1-2 results: Keep them + generate 2 more with Gemini (AI completion)
-      // - 3+ results: Just use real ones + enrichment
-      
-      let finalPlacesToEnrich = [];
-      let needsAiCompletion = false;
+      let finalPlacesToEnrich = placesResults.slice(0, 20);
+      let needsAiCompletion = finalPlacesToEnrich.length < (selectedCat === 'todos' ? 10 : 3);
 
-      if (placesResults.length === 0) {
+      if (finalPlacesToEnrich.length === 0 && !needsAiCompletion) {
         return new Response(JSON.stringify({ recommendations: [] }), { headers: { 'Content-Type': 'application/json' } });
-      } else if (placesResults.length < 3) {
-        finalPlacesToEnrich = [...placesResults];
-        needsAiCompletion = true;
-      } else {
-        finalPlacesToEnrich = placesResults.slice(0, 8);
       }
+
+      const catDesc = selectedCat === 'todos' ? 'diversas categorías (Restaurantes, Compras, Cultura, Naturaleza, Ocio)' : `la categoría "${selectedCat}"`;
 
       // ── 5. Gemini Enrichment & Completion ────────────────────────────────────
       const priceMap: Record<number, string> = { 0: '€', 1: '€', 2: '€€', 3: '€€€', 4: '€€€€' };
       const completionCount = needsAiCompletion ? 2 : 0;
-      
+
       const enrichPrompt = `Eres un guía local experto de ${finalCity} con conocimiento profundo de la zona (${fullAddress}).
       
 ${needsAiCompletion ? `Solo he encontrado ${placesResults.length} puntos oficiales. TU TAREA:
 1. Enriquece los resultados REALES que te paso.
-2. INVENTA ${completionCount} lugares adicionales VEROSÍMILES (RESTAURANTES/SITIOS de la categoría "${selectedCat}") que podrían existir en esta zona pero que no aparecen en el mapa oficial. Márcalos como AI-generated.
-` : `Enriquece estos resultados REALES de Google Maps:`}
+2. INVENTA ${completionCount} lugares adicionales VEROSÍMILES de ${catDesc} que podrían existir en esta zona pero que no aparecen en el mapa oficial. Márcalos como AI-generated.
+` : `Enriquece estos resultados REALES de Google Maps de la categoría "${selectedCat}":`}
 
 Para cada lugar, proporciona:
 - description: 2-3 frases auténticas y apetecibles.
 - personal_note: Un consejo práctico (ej. "reserva con antelación", "pide el postre X").
+${selectedCat === 'todos' ? '- category: Si el lugar es inventado, asígnale una categoría válida (restaurantes, italiano, mediterraneo, hamburguesas, asiatico, desayuno, compras, supermercados, cultura, naturaleza, ocio).' : ''}
 
 Lugares actuales:
-${finalPlacesToEnrich.map((p, i) => `${i + 1}. "${p.name}" (@ ${p.address})`).join('\n')}
+${finalPlacesToEnrich.map((p, i) => `${i + 1}. "${p.name}" (Categoría: ${p.category || selectedCat}) @ ${p.address}`).join('\n')}
 
 Responde SOLO con JSON:
 {
@@ -213,7 +223,7 @@ Responde SOLO con JSON:
     { "index": 0, "description": "...", "personal_note": "..." }
   ]
   ${needsAiCompletion ? `, "completed": [
-    { "name": "...", "description": "...", "personal_note": "...", "price_range": "€€" }
+    { "name": "...", "description": "...", "personal_note": "...", "price_range": "€€"${selectedCat === 'todos' ? ', "category": "..." ' : ''} }
   ]` : ''}
 }`;
 
@@ -222,7 +232,7 @@ Responde SOLO con JSON:
         model: 'gemini-2.0-flash',
         generationConfig: { responseMimeType: 'application/json', temperature: 0.3 }
       });
-      
+
       const enrichRes = await model.generateContent(enrichPrompt);
       let parsedEnrichment: any = {};
       try {
@@ -233,15 +243,16 @@ Responde SOLO con JSON:
 
       // Build recommendations array
       const recommendations: any[] = [];
-      
+
       // Add real enriched ones
       finalPlacesToEnrich.forEach((p, i) => {
         const e = parsedEnrichment.enriched?.find((x: any) => x.index === i) || { description: '', personal_note: '' };
+        const catToUse = p.category || (selectedCat === 'todos' ? 'restaurantes' : selectedCat);
         recommendations.push({
           id: `places_${p.google_place_id}`,
           name: p.name,
-          category: selectedCat === 'todos' ? 'restaurantes' : selectedCat,
-          type: selectedCat === 'todos' ? 'restaurantes' : selectedCat,
+          category: catToUse,
+          type: catToUse,
           description: e.description,
           personal_note: e.personal_note,
           distance: '',
@@ -255,13 +266,14 @@ Responde SOLO con JSON:
       // Add AI completed ones if needed
       if (needsAiCompletion && parsedEnrichment.completed) {
         parsedEnrichment.completed.forEach((ai: any, i: number) => {
+          const aiCat = ai.category || (selectedCat === 'todos' ? 'restaurantes' : selectedCat);
           recommendations.push({
             id: `ai_comp_${Date.now()}_${i}`,
             name: ai.name,
-            category: selectedCat === 'todos' ? 'restaurantes' : selectedCat,
-            type: selectedCat === 'todos' ? 'restaurantes' : selectedCat,
+            category: aiCat,
+            type: aiCat,
             description: ai.description,
-            personal_note: `[AI] ${ai.personal_note}`,
+            personal_note: `[IA] ${ai.personal_note}`,
             distance: '',
             time: '',
             price_range: ai.price_range || '€€',
@@ -383,10 +395,10 @@ RESPONDE ÚNICAMENTE CON EL JSON VÁLIDO, sin texto adicional.`;
   } catch (error: any) {
     console.error('[AI-FILL] Error:', error);
     const errorMessage = error?.message || (typeof error === 'string' ? error : JSON.stringify(error)) || 'Unknown Error';
-    return new Response(JSON.stringify({ 
-        error: errorMessage,
-        debug: 'ROUTE_GLOBAL_CATCH',
-        errorRaw: String(error)
+    return new Response(JSON.stringify({
+      error: errorMessage,
+      debug: 'ROUTE_GLOBAL_CATCH',
+      errorRaw: String(error)
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

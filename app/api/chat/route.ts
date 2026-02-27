@@ -56,7 +56,7 @@ export async function POST(req: Request) {
 
                 if (!expiresAt || now < expiresAt) {
                     console.warn(`[SECURITY] 🛡️ Request blocked for Halted Property: ${pidToCheck}. Reason: ${propertyStatus.halt_reason}`);
-                    return new Response(JSON.stringify({ 
+                    return new Response(JSON.stringify({
                         error: 'Servicio temporalmente pausado por seguridad',
                         reason: 'property_halted',
                         haltReason: propertyStatus.halt_reason,
@@ -83,13 +83,13 @@ export async function POST(req: Request) {
             if (!tokenValidation.valid) {
                 // If the reason is property mismatch, log it explicitly
                 if (tokenValidation.reason === 'invalid_token' && legacyPropertyId) {
-                   await logSuspiciousActivity(supabase, accessToken, {
-                       type: 'property_mismatch_attempt',
-                       details: { providedPropertyId: legacyPropertyId, ip },
-                       ip
-                   });
+                    await logSuspiciousActivity(supabase, accessToken, {
+                        type: 'property_mismatch_attempt',
+                        details: { providedPropertyId: legacyPropertyId, ip },
+                        ip
+                    });
                 }
-                
+
                 return new Response(JSON.stringify({
                     error: 'Acceso denegado',
                     reason: tokenValidation.reason
@@ -182,7 +182,7 @@ export async function POST(req: Request) {
         // C2: Intent detection window expanded to last 10 messages (5 full turns)
         // for regex matching of categories and flows.
         const recentContext = messages
-            .slice(-10) 
+            .slice(-10)
             .map((m: any) => m.content)
             .join(' ');
 
@@ -203,7 +203,7 @@ export async function POST(req: Request) {
         // ✅ RECOMENDACIONES: Excludes place-queries that are NOT food/activity recommendations
         // (parking, farmacia, etc.) to avoid injecting restaurant data into those answers.
         const isPlaceServiceQuery = /parking|aparcamiento|farmacia|hospital|cajero|atm|gasolinera/i.test(recentContext);
-        
+
         // Robust detection: checks recent context (for flow) OR last message (for specific category answers)
         const isRecommendationQuery = !isPlaceServiceQuery && (
             /restaurante|comer|cenar|desayuno|almuerzo|tapas|bar|cafeter[íi]a|café|cafe|comida|d[oó]nde.*comer|sitio.*comer|lugar.*comer|d[oó]nde.*cenar|sitio.*cenar|d[oó]nde ir|qu[eé] recomienda|recomendaci[oó]n|recomendaciones|ocio|visitar|qu[eé] ver|qu[eé] hacer|cosas que hacer|actividad|turismo|museo|compra|tienda/i.test(recentContext)
@@ -212,15 +212,15 @@ export async function POST(req: Request) {
         const isApplianceQuery = /funciona|enciende|calienta|lava|centrifuga|error|problema|no va|roto|aver[íi]a|c[oó]digo|fallo|ruido|vibra|gotea|desagua/i.test(recentContext);
         const isApplianceUsageQuery = /hacerme|hagarme|preparar|calentar agua|hacer (un |el )?(té|te|café|cafe|pasta|arroz|sopa)|c[oó]mo (uso|utilizo|pongo|enciendo|arranco)|poner (el |la |un |una )?(lavadora|lavavajilla|microondas|horno|hervidor|cafetera|tostadora)|encender|arrancar/i.test(recentContext);
 
-        const chatStrategy = isEmergency ? 'emergency' : 
-                            detectedErrorCode ? 'error_code' : 
-                            (isApplianceQuery || isApplianceUsageQuery) ? 'appliance' :
-                            isRecommendationQuery ? 'recommendation' :
-                            'standard';
+        const chatStrategy = isEmergency ? 'emergency' :
+            detectedErrorCode ? 'error_code' :
+                (isApplianceQuery || isApplianceUsageQuery) ? 'appliance' :
+                    isRecommendationQuery ? 'recommendation' :
+                        'standard';
 
-        console.log('[CHAT-DEBUG] Detection:', { 
-            chatStrategy, 
-            detectedErrorCode, 
+        console.log('[CHAT-DEBUG] Detection:', {
+            chatStrategy,
+            detectedErrorCode,
             isEmergency,
             isRecommendationQuery,
             isApplianceQuery,
@@ -239,7 +239,7 @@ export async function POST(req: Request) {
         } else if (isRecommendationQuery) {
             // Expandir query para mejorar matching con recomendaciones
             const expansionTerms = [];
-            
+
             if (/restaurante|comer|cenar|comida|almuerzo/i.test(lastMessage)) {
                 expansionTerms.push('restaurantes', 'comer', 'cenar', 'tapas', 'menú', 'cocina');
             }
@@ -252,9 +252,9 @@ export async function POST(req: Request) {
             if (/compra|tienda|shopping/i.test(lastMessage)) {
                 expansionTerms.push('compras', 'tiendas', 'comercios', 'mercado');
             }
-            
+
             ragQuery = `${lastMessage} ${expansionTerms.join(' ')} recomendaciones lugares zona`;
-            
+
             console.log('[CHAT-DEBUG] Expanded recommendation query:', ragQuery);
         } else if (isApplianceUsageQuery) {
             // Expand usage queries to bridge the semantic gap:
@@ -290,20 +290,20 @@ export async function POST(req: Request) {
 
         // ✅ Threshold adaptativo según tipo de pregunta
         const matchThreshold = isRecommendationQuery ? 0.18 :  // Más permisivo para recomendaciones
-                              isApplianceQuery ? 0.35 :         // Más estricto para problemas técnicos
-                              isApplianceUsageQuery ? 0.22 :    // Permisivo para uso/how-to (bridging semántico)
-                              detectedErrorCode ? 0.3 :          // Estricto para códigos de error
-                              0.28;                              // Default ligeramente más permisivo
+            isApplianceQuery ? 0.35 :         // Más estricto para problemas técnicos
+                isApplianceUsageQuery ? 0.22 :    // Permisivo para uso/how-to (bridging semántico)
+                    detectedErrorCode ? 0.3 :          // Estricto para códigos de error
+                        0.28;                              // Default ligeramente más permisivo
 
         const matchCount = detectedErrorCode ? 30 :
-                          isRecommendationQuery ? 15 :
-                          isApplianceUsageQuery ? 20 :  // Wider net for usage queries
-                          25;
+            isRecommendationQuery ? 15 :
+                isApplianceUsageQuery ? 20 :  // Wider net for usage queries
+                    25;
 
-        console.log('[CHAT-DEBUG] RAG Config:', { 
-            isRecommendationQuery, 
-            isApplianceQuery, 
-            matchThreshold, 
+        console.log('[CHAT-DEBUG] RAG Config:', {
+            isRecommendationQuery,
+            isApplianceQuery,
+            matchThreshold,
             matchCount,
             queryLength: ragQuery.length
         });
@@ -321,7 +321,7 @@ export async function POST(req: Request) {
         console.log('[CHAT-DEBUG] RAG results:', {
             totalChunks: relevantChunks?.length || 0,
             enrichedCount: relevantChunks?.filter((c: any) => c.metadata?.enriched === true).length || 0,
-            recommendationCount: relevantChunks?.filter((c: any) => 
+            recommendationCount: relevantChunks?.filter((c: any) =>
                 c.source_type === 'recommendation' || c.source_type === 'recommendations'
             ).length || 0,
             strategy: chatStrategy,
@@ -355,7 +355,7 @@ export async function POST(req: Request) {
         // ── DETECCIÓN GLOBAL DE INTENCIÓN (DIRECCIONADA A RECOMENDACIONES) ──
         const msg = lastMessage.toLowerCase();
         const contextMsg = recentContext.toLowerCase();
-        
+
         const wantFood = /comer|cenar|restaurante|desayuno|almuerzo|tapas|bar|cafeter|caf[eé]|comida|cena|hambre|donde.*com|sitio.*com/.test(msg);
         const wantShopping = /centro\s+comercial|shopping|moda|tienda\s+de\s+ropa|fashion|boutique|souvenir|regalo|tienda\s+t[ií]pica|artesan[íi]a/.test(contextMsg);
         const wantAct = /ocio|diversion|hacer|noche|copas|bar|baile|fiesta|cine|bolera|karts/.test(contextMsg);
@@ -365,23 +365,23 @@ export async function POST(req: Request) {
         const wantSuper = /supermerca|mercadona|carrefour|lidl|aldi|dia|mercado\s+de\s+abastos|alimentaci[oó]n|hacer\s+la\s+compra|comprar\s+comida/.test(contextMsg);
 
         // Detección de subcategorías específicas (Sticky: check full recent context)
-        const wantItaliano   = /italian|pizza|pasta|risotto/.test(contextMsg);
-        const wantMediter    = /mediterr[aá]neo|griega|griegos|mar|mariscos/.test(contextMsg);
-        const wantBurger     = /hamburgues|burger|american/.test(contextMsg);
-        const wantAsian      = /asiat|japones|chino|thai|sushi|ramen|wok/.test(contextMsg);
+        const wantItaliano = /italian|pizza|pasta|risotto/.test(contextMsg);
+        const wantMediter = /mediterr[aá]neo|griega|griegos|mar|mariscos/.test(contextMsg);
+        const wantBurger = /hamburgues|burger|american/.test(contextMsg);
+        const wantAsian = /asiat|japones|chino|thai|sushi|ramen|wok/.test(contextMsg);
         const wantAltaCocina = /alta cocina|gourmet|fine dining|estrella/.test(contextMsg);
-        const wantIntl       = /internacional|fusion|variado/.test(contextMsg);
-        const wantDesayuno   = /desayuno|brunch|caf[eé]|cafeter|cruasán|tostadas/.test(contextMsg);
+        const wantIntl = /internacional|fusion|variado/.test(contextMsg);
+        const wantDesayuno = /desayuno|brunch|caf[eé]|cafeter|cruasán|tostadas/.test(contextMsg);
         const wantRestaurantesGeneral = /restaurante/.test(contextMsg);
 
         const foodSubcat: string[] = [];
-        if (wantItaliano)   foodSubcat.push('italiano');
-        if (wantMediter)    foodSubcat.push('mediterraneo');
-        if (wantBurger)     foodSubcat.push('hamburguesas');
-        if (wantAsian)      foodSubcat.push('asiatico');
+        if (wantItaliano) foodSubcat.push('italiano');
+        if (wantMediter) foodSubcat.push('mediterraneo');
+        if (wantBurger) foodSubcat.push('hamburguesas');
+        if (wantAsian) foodSubcat.push('asiatico');
         if (wantAltaCocina) foodSubcat.push('alta_cocina');
-        if (wantIntl)       foodSubcat.push('internacional');
-        if (wantDesayuno)   foodSubcat.push('desayuno');
+        if (wantIntl) foodSubcat.push('internacional');
+        if (wantDesayuno) foodSubcat.push('desayuno');
         if (wantRestaurantesGeneral) foodSubcat.push('restaurantes');
 
         const isGenericFood = wantFood && foodSubcat.length === 0;
@@ -413,9 +413,9 @@ export async function POST(req: Request) {
 
             const { data: recs } = await recsQuery;
             directRecommendations = recs || [];
-            console.log('[CHAT-DEBUG] Direct recs from DB (SQL filtered):', { 
-                count: directRecommendations.length, 
-                types: detectedTypes 
+            console.log('[CHAT-DEBUG] Direct recs from DB (SQL filtered):', {
+                count: directRecommendations.length,
+                types: detectedTypes
             });
         }
 
@@ -481,7 +481,7 @@ export async function POST(req: Request) {
             ...(isRecommendationQuery && directRecommendations && directRecommendations.length > 0 ? (() => {
                 // Category flags are derived from global intent flags detect above (msg/lastMessage based)
                 // Build available food categories from the DB data
-                const ALL_FOOD_TYPES = ['restaurantes','italiano','mediterraneo','hamburguesas','asiatico','alta_cocina','internacional','desayuno'];
+                const ALL_FOOD_TYPES = ['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno'];
                 const getType = (r: any) => (r.type || r.category || 'general').toLowerCase();
                 const allFoodRecs = (directRecommendations as any[]).filter(r => ALL_FOOD_TYPES.includes(getType(r)));
 
@@ -509,11 +509,11 @@ export async function POST(req: Request) {
 
                 // ── SPECIFIC subcategory or non-food → inject only the relevant recs ──
                 let allowedTypes: string[] = [...foodSubcat];
-                if (wantShopping)   allowedTypes.push('compras');
-                if (wantAct)        allowedTypes.push('ocio');
-                if (wantNature)     allowedTypes.push('naturaleza');
-                if (wantCulture)    allowedTypes.push('cultura');
-                if (wantRelax)      allowedTypes.push('relax');
+                if (wantShopping) allowedTypes.push('compras');
+                if (wantAct) allowedTypes.push('ocio');
+                if (wantNature) allowedTypes.push('naturaleza');
+                if (wantCulture) allowedTypes.push('cultura');
+                if (wantRelax) allowedTypes.push('relax');
 
                 const filteredRecs = allowedTypes.length > 0
                     ? (directRecommendations as any[]).filter(r => allowedTypes.includes(getType(r)))
@@ -530,28 +530,28 @@ export async function POST(req: Request) {
                 }
 
                 const catLabelMap: Record<string, string> = {
-                    'restaurantes':  'RESTAURANTES_GENERALES',
-                    'italiano':      'RESTAURANTES_ITALIANOS',
-                    'mediterraneo':  'RESTAURANTES_MEDITERRANEOS',
-                    'hamburguesas':  'HAMBURGUESAS_Y_AMERICANO',
-                    'asiatico':      'COCINA_ASIATICA',
-                    'alta_cocina':   'ALTA_COCINA',
+                    'restaurantes': 'RESTAURANTES_GENERALES',
+                    'italiano': 'RESTAURANTES_ITALIANOS',
+                    'mediterraneo': 'RESTAURANTES_MEDITERRANEOS',
+                    'hamburguesas': 'HAMBURGUESAS_Y_AMERICANO',
+                    'asiatico': 'COCINA_ASIATICA',
+                    'alta_cocina': 'ALTA_COCINA',
                     'internacional': 'COCINA_INTERNACIONAL',
-                    'desayuno':      'CAFETERIAS_Y_DESAYUNOS',
-                    'ocio':          'LUGARES_DE_OCIO',
-                    'compras':       'TIENDAS_Y_COMPRAS',
-                    'naturaleza':    'NATURALEZA_Y_PARQUES',
-                    'cultura':       'CULTURA_Y_VISITAS',
-                    'relax':         'RELAX_Y_BIENESTAR',
+                    'desayuno': 'CAFETERIAS_Y_DESAYUNOS',
+                    'ocio': 'LUGARES_DE_OCIO',
+                    'compras': 'TIENDAS_Y_COMPRAS',
+                    'naturaleza': 'NATURALEZA_Y_PARQUES',
+                    'cultura': 'CULTURA_Y_VISITAS',
+                    'relax': 'RELAX_Y_BIENESTAR',
                 };
 
                 return Object.entries(grouped).map(([cat, items]) => {
                     const catLabel = catLabelMap[cat] || 'RECOMENDACIONES_LOCALES';
                     const itemLines = items.map((r: any) => {
                         let line = `- **${r.name}**`;
-                        if (r.distance)     line += ` (${r.distance})`;
-                        if (r.price_range)  line += ` ${r.price_range}`;
-                        if (r.description)  line += `: ${r.description.substring(0, 150)}`;
+                        if (r.distance) line += ` (${r.distance})`;
+                        if (r.price_range) line += ` ${r.price_range}`;
+                        if (r.description) line += `: ${r.description.substring(0, 150)}`;
                         if (r.personal_note) line += ` 💬 Nota del anfitrión: "${r.personal_note}"`;
                         return line;
                     }).join('\n');
@@ -569,48 +569,48 @@ export async function POST(req: Request) {
                     return true;
                 })
                 .map((c: any) => {
-                const isEnriched = c.metadata?.enriched === true;
-                const sourceType = c.source_type?.toLowerCase() || '';
-                
-                let type: string;
-                
-                // ✅ MEJORADO: Reconocer todos los tipos de contenido
-                if (sourceType === 'manual') {
-                    type = isEnriched ? 'GUÍA_PERSONALIZADA_ANFITRIÓN' : 'GUÍA_TÉCNICA';
-                } else if (sourceType === 'recommendation' || sourceType === 'recommendations') {
-                    // Determinar subtipo de recomendación
-                    const category = c.metadata?.category || c.metadata?.type || '';
-                    type = category === 'ocio' ? 'LUGARES_Y_ACTIVIDADES' : 
-                           category === 'dining' ? 'RESTAURANTES_Y_BARES' :
-                           'RECOMENDACIONES_LOCALES';
-                } else if (sourceType === 'arrival_instructions' || sourceType === 'access') {
-                    type = 'INSTRUCCIONES_LLEGADA';
-                } else if (sourceType === 'property' || sourceType === 'welcome') {
-                    type = 'INFO_APARTAMENTO';
-                } else {
-                    type = sourceType.toUpperCase();
-                }
-                
-                // ✅ MEJORADO: Log detallado para debugging
-                if (isEnriched || sourceType.includes('recommendation')) {
-                    console.log('[CHAT-DEBUG] Special chunk included:', {
-                        type,
-                        sourceType,
-                        similarity: c.similarity?.toFixed(3),
-                        preview: c.content.substring(0, 100),
-                        metadata: c.metadata
-                    });
-                }
-                
-                // Limpiar marcas del contenido RAG (incluyendo el tag interno [[RECOMENDACIÓN:...]])
-                // Usamos un regex más robusto que ignore acentos y espacios, y limpie incluso si hay variaciones
-                const cleanContent = c.content
-                    .replace(/\[\[RECOMENDACI[ÓO]N:\s*(.*?)\s*\]\]/gi, '$1') // Extrae el nombre de forma robusta
-                    .replace(/\[\[.*?\]\]/g, '') // Elimina cualquier otro tag residual entre corchetes dobles
-                    .replace(brandRegex, '');
-                
-                return `[${type}]: ${cleanContent}`;
-            })
+                    const isEnriched = c.metadata?.enriched === true;
+                    const sourceType = c.source_type?.toLowerCase() || '';
+
+                    let type: string;
+
+                    // ✅ MEJORADO: Reconocer todos los tipos de contenido
+                    if (sourceType === 'manual') {
+                        type = isEnriched ? 'GUÍA_PERSONALIZADA_ANFITRIÓN' : 'GUÍA_TÉCNICA';
+                    } else if (sourceType === 'recommendation' || sourceType === 'recommendations') {
+                        // Determinar subtipo de recomendación
+                        const category = c.metadata?.category || c.metadata?.type || '';
+                        type = category === 'ocio' ? 'LUGARES_Y_ACTIVIDADES' :
+                            category === 'dining' ? 'RESTAURANTES_Y_BARES' :
+                                'RECOMENDACIONES_LOCALES';
+                    } else if (sourceType === 'arrival_instructions' || sourceType === 'access') {
+                        type = 'INSTRUCCIONES_LLEGADA';
+                    } else if (sourceType === 'property' || sourceType === 'welcome') {
+                        type = 'INFO_APARTAMENTO';
+                    } else {
+                        type = sourceType.toUpperCase();
+                    }
+
+                    // ✅ MEJORADO: Log detallado para debugging
+                    if (isEnriched || sourceType.includes('recommendation')) {
+                        console.log('[CHAT-DEBUG] Special chunk included:', {
+                            type,
+                            sourceType,
+                            similarity: c.similarity?.toFixed(3),
+                            preview: c.content.substring(0, 100),
+                            metadata: c.metadata
+                        });
+                    }
+
+                    // Limpiar marcas del contenido RAG (incluyendo el tag interno [[RECOMENDACIÓN:...]])
+                    // Usamos un regex más robusto que ignore acentos y espacios, y limpie incluso si hay variaciones
+                    const cleanContent = c.content
+                        .replace(/\[\[RECOMENDACI[ÓO]N:\s*(.*?)\s*\]\]/gi, '$1') // Extrae el nombre de forma robusta
+                        .replace(/\[\[.*?\]\]/g, '') // Elimina cualquier otro tag residual entre corchetes dobles
+                        .replace(brandRegex, '');
+
+                    return `[${type}]: ${cleanContent}`;
+                })
         ].join('\n\n\n');
 
         // ═══════════════════════════════════════════════════════
@@ -780,11 +780,12 @@ ${noInventionAnchor}`;
 # REGLAS DE INFORMACIÓN:
 1. Eres el asistente experto del apartamento. Tu objetivo es SER ÚTIL al huésped.
 2. Para preguntas sobre el apartamento, normas, acceso, electrodomésticos: usa solo el CONTEXTO.
-3. Para recomendaciones locales: usa los datos del CONTEXTO que incluye la lista completa guardada por el anfitrión.
-4. Para preguntas genéricas de viaje o de la zona: puedes responder con conocimiento general + los datos locales del contexto.
-5. NO inventes datos específicos del apartamento (códigos wifi, contraseñas, etc.) si no están en el contexto.
-6. FORMATO DE WIFI: Siempre que des el nombre de red o la contraseña del WiFi, ponlos OBLIGATORIAMENTE entre comillas invertidas simples (backticks, \`) para que el huésped pueda copiarlos y pegarlos fácilmente. Ejemplo: La red es \`MiRed_5G\` y la contraseña \`12345678\`. ESTO ES CRÍTICO.
-7. Responde siempre en Español.
+3. Para la ubicación de objetos o disponibilidad de equipamiento, prioriza la información bajo la etiqueta [LISTA DE ELECTRODOMÉSTICOS Y EQUIPAMIENTO DISPONIBLE]. Si el anfitrión ha dejado una nota de ubicación allí, úsala como respuesta definitiva.
+4. Para recomendaciones locales: usa los datos del CONTEXTO que incluye la lista completa guardada por el anfitrión.
+5. Para preguntas genéricas de viaje o de la zona: puedes responder con conocimiento general + los datos locales del contexto.
+6. NO inventes datos específicos del apartamento (códigos wifi, contraseñas, etc.) si no están en el contexto.
+7. FORMATO DE WIFI: Siempre que des el nombre de red o la contraseña del WiFi, ponlos OBLIGATORIAMENTE entre comillas invertidas simples (backticks, \`) para que el huésped pueda copiarlos y pegarlos fácilmente. Ejemplo: La red es \`MiRed_5G\` y la contraseña \`12345678\`. ESTO ES CRÍTICO.
+8. Responde siempre en Español.
 
 # CONTEXTO:
 ${fullContext}`;
@@ -807,7 +808,7 @@ ${fullContext}`;
 
 # GUÍA PARA RECOMENDACIONES LOCALES:
 ${hasDirectRecs ? (
-    isGenericFood ? `
+                    isGenericFood ? `
 - El CONTEXTO tiene recomendaciones de estas CATEGORÍAS disponibles: ${availableCatNames}.
 - REGLA CONCIERGE: Como el huésped preguntó de forma genérica ("¿Dónde puedo comer?"), tu siguiente respuesta debe ser UNA SOLA pregunta de cualificación corta y amigable, listando las categorías disponibles.
 - ESTA PREGUNTA SE CONSIDERA UNA RESPUESTA VÁLIDA CON DATOS DEL CONTEXTO. Ignora la regla de "No tengo esa información" en este paso.
@@ -818,7 +819,7 @@ ${hasDirectRecs ? (
 - Da 3-5 opciones COPIANDO literalmente los nombres que aparecen tras "**" en esas etiquetas. No reduzcas, no combines ni traduzas los nombres.
 - Formato: "**[Nombre exacto del contexto]** ([distancia si existe]) — [descripción breve del contexto]."
 - ⛔ PROHIBIDO ABSOLUTO: Inventar un nombre que no aparezca textualmente en una etiqueta del CONTEXTO. Si no encuentras ningún nombre en el CONTEXTO para la categoría pedida, di "No tengo esa información guardada".`
-) : `
+                ) : `
 - Si no hay recomendaciones en el contexto, di amablemente que no tienes lista guardada para la zona y sugiere preguntar a ${supportContact}.`}
 - ⛔ Si el nombre que ibas a escribir no aparece LITERALMENTE en el CONTEXTO → no lo escribas. Solo nombres del CONTEXTO.
 ` : '';
@@ -905,7 +906,7 @@ ${recommendationGuidance}
                                         } else {
                                             // 🌍 Translation Flow - Avoid splitting markers inside chunks
                                             accumulatedText += text;
-                                            
+
                                             // Check if we are inside a map marker. If so, don't flush yet.
                                             const hasOpening = accumulatedText.includes('[[');
                                             const hasClosing = accumulatedText.includes(']]');
@@ -914,11 +915,11 @@ ${recommendationGuidance}
                                             if (!isInsideMarker) {
                                                 const boundaryRegex = /(\n|[\.!?]\s+|\s[\*\-]\s|\s\d+\.\s)/g;
                                                 let match;
-                                                
+
                                                 while ((match = boundaryRegex.exec(accumulatedText)) !== null) {
                                                     const breakPoint = match.index + (match[0].startsWith(' ') ? 0 : 1);
                                                     const chunkToTranslate = accumulatedText.substring(0, breakPoint).trim();
-                                                    
+
                                                     if (chunkToTranslate) {
                                                         const { text: translatedChunk } = await TranslationService.translate(
                                                             chunkToTranslate,
@@ -929,9 +930,9 @@ ${recommendationGuidance}
                                                         const chunk = `0:${JSON.stringify(translatedChunk + ' ')}\n`;
                                                         controller.enqueue(new TextEncoder().encode(chunk));
                                                     }
-                                                    
+
                                                     accumulatedText = accumulatedText.substring(breakPoint).trimStart();
-                                                    boundaryRegex.lastIndex = 0; 
+                                                    boundaryRegex.lastIndex = 0;
                                                 }
                                             }
 

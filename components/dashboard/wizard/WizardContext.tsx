@@ -56,6 +56,7 @@ interface WizardContextType {
     setCompletedSteps: React.Dispatch<React.SetStateAction<string[]>>
 
     // Compound Actions
+    filteredSteps: string[]
     handleTabChange: (value: string) => void
     handleNext: () => Promise<void>
     handleBack: () => void
@@ -68,14 +69,14 @@ interface WizardContextType {
 
 const WizardContext = createContext<WizardContextType | undefined>(undefined)
 
-export function WizardProvider({ 
-    children, 
-    initialPropertyId, 
+export function WizardProvider({
+    children,
+    initialPropertyId,
     tenantId,
-    onSuccess 
-}: { 
-    children: React.ReactNode, 
-    initialPropertyId?: string, 
+    onSuccess
+}: {
+    children: React.ReactNode,
+    initialPropertyId?: string,
     tenantId?: string,
     onSuccess?: (id: string) => void
 }) {
@@ -138,6 +139,15 @@ export function WizardProvider({
         return (isValidUUID(initialPropertyId) ? initialPropertyId : null) || validUrlId || null
     }, [initialPropertyId, pathname])
 
+    // Onboarding Mode: Hide "Appearance" and "Scanner" if we are in "Alta" mode
+    const isAltaMode = searchParams.get('mode') === 'alta' || !effectivePropertyId
+    const filteredSteps = useMemo(() => {
+        if (isAltaMode) {
+            return steps.filter(s => s !== 'appearance' && s !== 'visual-scanner')
+        }
+        return steps
+    }, [isAltaMode])
+
     // Restore missing automated logic from monolithic version
     // 1. Auto-geocode when full_address changes
     useEffect(() => {
@@ -189,7 +199,7 @@ export function WizardProvider({
         const status = property?.inventory_status
         if (!effectivePropertyId || (status !== 'identifying' && status !== 'generating')) return
 
-        const MAX_POLLING_TIME = 5 * 60 * 1000 
+        const MAX_POLLING_TIME = 5 * 60 * 1000
         const startTime = Date.now()
 
         const interval = setInterval(async () => {
@@ -207,6 +217,16 @@ export function WizardProvider({
 
             if (error) {
                 console.error('[POLLING] Error fetching status:', error.message)
+                return
+            }
+
+            // In ALTA mode, we don't want the scanner to auto-update our inventory checkboxes
+            // The scanner is hidden and inventory is a manual setup step.
+            if (isAltaMode) {
+                console.log('[POLLING] ALTA mode active - skipping inventory auto-sync')
+                if (prop && prop.inventory_status !== property?.inventory_status) {
+                    setProperty((prev: any) => ({ ...prev, inventory_status: prop.inventory_status }))
+                }
                 return
             }
 
@@ -438,8 +458,8 @@ export function WizardProvider({
             })
             return
         }
-        const index = steps.indexOf(value)
-        const currentIndex = steps.indexOf(activeTab)
+        const index = filteredSteps.indexOf(value)
+        const currentIndex = filteredSteps.indexOf(activeTab)
         setDirection(index > currentIndex ? 1 : -1)
         setActiveTab(value)
         const params = new URLSearchParams(searchParams.toString())
@@ -505,14 +525,19 @@ export function WizardProvider({
 
                 if (result.isNew) {
                     if (onSuccess) onSuccess(result.property.id)
-                    router.push(`/dashboard/properties/${result.property.id}/setup?tab=appearance`)
+                    // Use filteredSteps to redirect to the correct next step
+                    const firstStep = filteredSteps[0]
+                    const nextStep = filteredSteps[1] || 'access'
+                    router.push(`/dashboard/properties/${result.property.id}/setup?tab=${nextStep}&mode=alta`)
                     return
                 }
 
                 toast({ title: 'Guardado', description: `${category} actualizado correctamente.` })
 
                 if (category === 'inventory' && dataToSave.selected_items) {
-                    processInventoryManuals(currentPropId, dataToSave.selected_items).then(res => {
+                    setAiLoading('manuals-generation')
+                    try {
+                        const res = await processInventoryManuals(currentPropId, dataToSave.selected_items)
                         if (res.processed && res.processed > 0) {
                             toast({
                                 title: 'IA: Manuales Generados',
@@ -520,9 +545,11 @@ export function WizardProvider({
                                 variant: 'default'
                             })
                         }
-                    }).catch(err => {
-                        console.error('[INVENTORY] Background processing failed:', err)
-                    })
+                    } catch (err) {
+                        console.error('[INVENTORY] Processing failed:', err)
+                    } finally {
+                        setAiLoading(null)
+                    }
                 }
 
                 const stepKey = category === 'branding' ? 'appearance' : category
@@ -574,9 +601,9 @@ export function WizardProvider({
                 await saveStep(categoryToSave, stepData);
             }
 
-            const currentIndex = steps.indexOf(activeTab)
-            if (currentIndex < steps.length - 1) {
-                handleTabChange(steps[currentIndex + 1])
+            const currentIndex = filteredSteps.indexOf(activeTab)
+            if (currentIndex < filteredSteps.length - 1) {
+                handleTabChange(filteredSteps[currentIndex + 1])
             } else {
                 toast({ title: "Guía completada!", description: "Redirigiendo al panel principal..." })
                 router.push(`/dashboard/properties`)
@@ -590,9 +617,9 @@ export function WizardProvider({
     }
 
     const handleBack = () => {
-        const currentIndex = steps.indexOf(activeTab)
+        const currentIndex = filteredSteps.indexOf(activeTab)
         if (currentIndex > 0) {
-            handleTabChange(steps[currentIndex - 1])
+            handleTabChange(filteredSteps[currentIndex - 1])
         }
     }
 
@@ -656,7 +683,7 @@ export function WizardProvider({
         // Ensure we have a valid property ID from any available source
         const currentPropId = effectivePropertyId || property?.id
         console.log(`[AI-FILL] Initializing request. Section: ${section} | propertyId: ${currentPropId}`);
-        
+
         if (!currentPropId && !overrideData?.address) {
             toast({
                 title: 'ID de propiedad no encontrado',
@@ -680,7 +707,7 @@ export function WizardProvider({
             const interval = setInterval(() => {
                 setAiProgress(prev => Math.min(prev + 5, 95))
             }, 600)
-            ;(window as any)._aiInterval = interval
+                ; (window as any)._aiInterval = interval
         }
 
         setAiLoading(section)
@@ -737,10 +764,10 @@ export function WizardProvider({
 
             if (!res.ok) {
                 console.error(`[AI-FILL] Server error (${res.status}):`, result);
-                toast({ 
-                    title: 'Error IA', 
-                    description: result?.error || `Error del servidor (${res.status})`, 
-                    variant: 'destructive' 
+                toast({
+                    title: 'Error IA',
+                    description: result?.error || `Error del servidor (${res.status})`,
+                    variant: 'destructive'
                 })
                 return
             }
@@ -751,7 +778,7 @@ export function WizardProvider({
                 setData((prev: any) => {
                     const mergedAccess = { ...prev.access };
                     const incoming = result.access_info || {};
-                    
+
                     Object.entries(incoming).forEach(([key, val]) => {
                         if (val && typeof val === 'object') {
                             // Solo sobreescribimos si hay contenido real (instrucciones o info)
@@ -901,6 +928,7 @@ export function WizardProvider({
         setManualEditDetected,
         setDirection,
         setCompletedSteps,
+        filteredSteps,
         handleTabChange,
         handleNext,
         handleBack,

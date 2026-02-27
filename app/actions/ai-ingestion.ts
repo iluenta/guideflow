@@ -379,6 +379,12 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
     try {
         console.log(`[INVENTORY] Starting background processing for ${items.length} items...`)
 
+        // Update status to generating
+        await supabase
+            .from('properties')
+            .update({ inventory_status: 'generating' })
+            .eq('id', currentPropId)
+
         // 1. Obtener manuales existentes para no duplicar
         const { data: existingManuals } = await supabase
             .from('property_manuals')
@@ -473,7 +479,13 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
         // Actualizar el listado en property_context
         await syncPropertyApplianceList(currentPropId, tenant_id)
 
-        console.log(`[INVENTORY] Finished. Processed ${itemsToProcess.length} items.`)
+        // Update status to completed
+        await supabase
+            .from('properties')
+            .update({ inventory_status: 'completed' })
+            .eq('id', currentPropId)
+
+        console.log('[INVENTORY] Background processing completed.')
         return { success: true, processed: itemsToProcess.length }
 
     } catch (error: any) {

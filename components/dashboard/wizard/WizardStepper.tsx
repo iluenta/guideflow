@@ -46,18 +46,20 @@ export const STEPS: Step[] = [
 ];
 
 export function WizardStepper() {
-    const { 
-        activeTab, 
-        handleTabChange, 
-        completedSteps, 
-        propertyId 
+    const {
+        activeTab,
+        handleTabChange,
+        completedSteps,
+        propertyId,
+        filteredSteps
     } = useWizard()
 
+    const activeSteps = STEPS.filter(s => filteredSteps.includes(s.id))
     const isLocked = !propertyId
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const currentStepIndex = STEPS.findIndex(s => s.id === activeTab);
-    const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
-    const currentStep = STEPS[currentStepIndex] || STEPS[0];
+    const currentStepIndex = activeSteps.findIndex(s => s.id === activeTab);
+    const progress = ((currentStepIndex + 1) / activeSteps.length) * 100;
+    const currentStep = activeSteps[currentStepIndex] || activeSteps[0];
 
     return (
         <div className="w-full bg-background pb-8 pt-4 sticky top-0 z-30">
@@ -93,11 +95,11 @@ export function WizardStepper() {
                     <div
                         className="absolute top-4 left-0 h-0.5 bg-primary -z-10 transition-all duration-500"
                         style={{
-                            width: `${(currentStepIndex / (STEPS.length - 1)) * 100}%`
+                            width: activeSteps.length > 1 ? `${(currentStepIndex / (activeSteps.length - 1)) * 100}%` : '0%'
                         }}
                     />
 
-                    {STEPS.map((step, index) => {
+                    {activeSteps.map((step, index) => {
                         const isCompleted = completedSteps.includes(step.id) || index < currentStepIndex;
                         const isCurrent = index === currentStepIndex;
                         const isStepLocked = isLocked && step.id !== 'property';
@@ -149,7 +151,7 @@ export function WizardStepper() {
                             </div>
                             <div className="text-left">
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                                    Paso {currentStepIndex + 1} de {STEPS.length}
+                                    Paso {currentStepIndex + 1} de {activeSteps.length}
                                 </p>
                                 <p className="text-sm font-bold text-navy">
                                     {currentStep.label}
@@ -170,7 +172,7 @@ export function WizardStepper() {
                                 className="absolute left-4 right-4 top-[140px] bg-white rounded-xl shadow-xl border border-slate-100 z-50 max-h-[60vh] overflow-y-auto"
                             >
                                 <div className="p-2">
-                                    {STEPS.map((step, index) => {
+                                    {activeSteps.map((step, index) => {
                                         const isCompleted = completedSteps.includes(step.id) || index < currentStepIndex;
                                         const isCurrent = index === currentStepIndex;
                                         const isStepLocked = isLocked && step.id !== 'property';

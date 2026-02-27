@@ -58,6 +58,17 @@ export async function saveWizardStep(
             if (error) throw error
             // Sincronizar RAG
             await syncWizardDataToRAG(data.id, currentTenantId, 'property', stepData)
+
+            // Insertar branding por defecto (Modern Minimal)
+            await supabase.from('property_branding').insert({
+                property_id: data.id,
+                tenant_id: currentTenantId,
+                theme_id: 'modern',
+                layout_theme_id: 'modern',
+                computed_theme: { _layout_theme_id: 'modern' },
+                updated_at: new Date().toISOString()
+            })
+
             revalidatePath('/dashboard/properties')
             return { success: true, property: data, isNew: true }
         }
