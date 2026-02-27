@@ -9,7 +9,14 @@ export async function GET() {
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[API-AUTH] Unauthorized access attempt or getUser error:', userError?.message)
+      }
       return NextResponse.json({ profile: null, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[API-AUTH] Authenticated user:', user.email)
     }
 
     // Get profile
@@ -20,9 +27,8 @@ export async function GET() {
       .single()
 
     if (profileError) {
-      // Error al obtener perfil - no exponer detalles sensibles
       if (process.env.NODE_ENV === 'development') {
-        console.error('Error getting profile')
+        console.error('[API-AUTH] Error getting profile:', profileError.message)
       }
       return NextResponse.json(
         { profile: null, error: 'Error al obtener perfil' },
@@ -32,9 +38,8 @@ export async function GET() {
 
     return NextResponse.json({ profile, error: null })
   } catch (error) {
-    // Error interno - no exponer detalles
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error in profile API route')
+      console.error('[API-AUTH] Fatal error in profile API route:', error)
     }
     return NextResponse.json(
       { profile: null, error: 'Internal server error' },

@@ -1,28 +1,31 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { createEdgeAdminClient } from '@/lib/supabase/edge'
 import { NextResponse, type NextRequest } from 'next/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
-export async function proxy(request: NextRequest) {
-    const { pathname, searchParams } = request.nextUrl
+export async function middleware(request: NextRequest) {
+    const pathname = request.nextUrl.pathname
+    const searchParams = request.nextUrl.searchParams
     const token = searchParams.get('token')
 
-    // 1. Skip proxy for static assets and favicon
+    // 1. Skip middleware for static assets, favicon, etc.
     if (
         pathname.startsWith('/_next') ||
         pathname.startsWith('/static') ||
         pathname === '/favicon.ico' ||
-        pathname === '/access-denied'
+        pathname === '/access-denied' ||
+        pathname.startsWith('/api/') // Skip API routes to avoid redundant checks
     ) {
         return NextResponse.next()
     }
 
-    // 2. Initialize Supabase Client
+    // 2. Initialize response
     let response = NextResponse.next({
         request: {
             headers: request.headers,
         },
     })
 
+    // 3. Initialize Supabase Client
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -69,21 +72,26 @@ export async function proxy(request: NextRequest) {
         }
     )
 
-    // Check authentication
-    const { data: { user } } = await supabase.auth.getUser()
+    // 4. Refresh session and get user
+    let user = null
+    try {
+        const { data } = await supabase.auth.getUser()
+        user = data.user
+    } catch (e) {
+        console.error('[MIDDLEWARE] Auth error:', e)
+    }
 
-    // 3. Protected Dashboard Routes
+    // 5. Protected Dashboard Routes
     if (pathname.startsWith('/dashboard') && !user) {
         return NextResponse.redirect(new URL('/auth/login', request.url))
     }
 
-    // 4. Redirect Authenticated Users away from Auth Pages
+    // 6. Redirect Authenticated Users away from Auth Pages
     if ((pathname.startsWith('/auth/login') || pathname.startsWith('/auth/signup')) && user) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    // 5. Guest Access Security (Fase 4)
-    // Identify guide routes (slug routes)
+    // 7. Guest Access Security (Fase 4 logic from proxy.ts)
     const reservedRoutes = [
         'dashboard', 'auth', 'api', 'access-denied',
         '_next', 'static', 'guide', 'p',
@@ -92,13 +100,16 @@ export async function proxy(request: NextRequest) {
     const pathSegments = pathname.split('/').filter(Boolean)
     const firstSegment = pathSegments[0]
 
-    // 5. Guest Access Security (Fase 4)
     // Identify guide routes (non-reserved routes)
     if (firstSegment && !reservedRoutes.includes(firstSegment)) {
+        // We use a separate admin client to verify property and tokens
+        // This avoids issues with RLS in the middleware
+        const supabaseAdmin = createSupabaseClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
 
-        const supabaseAdmin = createEdgeAdminClient()
-
-        // 5.1 Identify requested property (Try slug first, then ID fallback)
+        // Identify requested property
         let { data: requestedProperty } = await supabaseAdmin
             .from('properties')
             .select('id, tenant_id')
@@ -106,7 +117,7 @@ export async function proxy(request: NextRequest) {
             .maybeSingle()
 
         if (!requestedProperty) {
-            // Fallback to ID if segment matches UUID pattern
+            // Fallback to ID
             const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(firstSegment);
             if (isUUID) {
                 const { data: byId } = await supabaseAdmin
@@ -118,16 +129,14 @@ export async function proxy(request: NextRequest) {
             }
         }
 
-        // IMPORTANT: If no property found, it's NOT a guide route. Early return.
+        // If no property found, it's NOT a guide route. Return the response.
         if (!requestedProperty) {
             return response
         }
 
-        // 5.2 Smart Host Bypass: Only owners can bypass token check
+        // Host Bypass: Owners can bypass token check
         if (user) {
             let userTenantId = user.app_metadata?.tenant_id || user.user_metadata?.tenant_id
-
-            // Fallback to database if metadata is missing (e.g. dev login script)
             if (!userTenantId) {
                 const { data: profile } = await supabaseAdmin
                     .from('profiles')
@@ -137,56 +146,35 @@ export async function proxy(request: NextRequest) {
                 userTenantId = profile?.tenant_id
             }
 
-            console.log(`[ACL] Host Check: PropTenant=${requestedProperty.tenant_id}, UserTenant=${userTenantId}`);
-
             if (userTenantId && requestedProperty.tenant_id === userTenantId) {
-                console.log(`[ACL] BYPASS SUCCESS for user ${user.id}`);
                 return response
             }
         }
 
-        // Guests (and users accessing other communities) MUST have a token
+        // Guests MUST have a token
         if (!token) {
-            console.warn(`[ACL] ACCESS DENIED: No token for ${pathname}`);
             return NextResponse.redirect(new URL('/access-denied?reason=token_required', request.url))
         }
 
         const cleanToken = token.trim();
-
-        // 5.3 Validate Token with Strict Property Binding
         const { data: access, error: dbError } = await supabaseAdmin
             .from('guest_access_tokens')
             .select('*')
             .eq('access_token', cleanToken)
-            .eq('property_id', requestedProperty.id) // BINDING: Must match propertyId
+            .eq('property_id', requestedProperty.id)
             .single()
 
-        if (dbError || !access) {
-            console.error(`[SECURITY] INVALID: Token "${cleanToken}" for property "${requestedProperty.id}"`);
-            return NextResponse.redirect(new URL(`/access-denied?reason=invalid`, request.url))
-        }
-
-        if (!access.is_active) {
-            return NextResponse.redirect(new URL('/access-denied?reason=inactive', request.url))
+        if (dbError || !access || !access.is_active) {
+            return NextResponse.redirect(new URL('/access-denied?reason=invalid', request.url))
         }
 
         const now = new Date()
         const validFrom = access.valid_from ? new Date(access.valid_from) : null
         const validUntil = access.valid_until ? new Date(access.valid_until) : null
 
-        if (!validFrom || isNaN(validFrom.getTime()) || !validUntil || isNaN(validUntil.getTime())) {
-            console.error('[SECURITY] Error: Invalid dates in DB')
-            return NextResponse.redirect(new URL('/access-denied?reason=invalid', request.url))
-        }
-
-        // Compare using UTC timestamps
-        if (now.getTime() < validFrom.getTime()) {
-            console.warn('[SECURITY] Access denied: Too early')
-            return NextResponse.redirect(new URL(`/access-denied?reason=too_early&date=${validFrom.toISOString()}`, request.url))
-        }
-
-        if (now.getTime() > validUntil.getTime()) {
-            return NextResponse.redirect(new URL('/access-denied?reason=expired', request.url))
+        if (!validFrom || !validUntil || now < validFrom || now > validUntil) {
+            const reason = now < (validFrom || now) ? 'too_early' : 'expired'
+            return NextResponse.redirect(new URL(`/access-denied?reason=${reason}`, request.url))
         }
     }
 
