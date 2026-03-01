@@ -169,7 +169,7 @@ export function WizardStepper() {
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute left-4 right-4 top-[140px] bg-white rounded-xl shadow-xl border border-slate-100 z-50 max-h-[60vh] overflow-y-auto"
+                                className="absolute left-4 right-4 top-[140px] bg-white rounded-xl shadow-sm border border-slate-100 z-50 max-h-[60vh] overflow-y-auto"
                             >
                                 <div className="p-2">
                                     {activeSteps.map((step, index) => {

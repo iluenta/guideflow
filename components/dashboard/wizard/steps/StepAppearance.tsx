@@ -1,10 +1,10 @@
 'use client'
 
 import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { TabsContent } from '@/components/ui/tabs'
-import { Upload, X, Loader2, Check } from 'lucide-react'
+import { Upload, X, Loader2, Check, Palette, Sparkles } from 'lucide-react'
 import { LAYOUT_THEMES, getLayoutTheme } from '@/lib/themes'
 import { useWizard } from '../WizardContext'
 import { getBrandingUploadUrl } from '@/app/actions/properties'
@@ -30,10 +30,8 @@ export default function StepAppearance({ value }: { value?: string }) {
             branding: {
                 ...prev.branding,
                 layout_theme_id: themeId,
-                theme_id: themeId, // backward compat
-                // Store the full computed_theme from the forced palette
+                theme_id: themeId,
                 computed_theme: theme,
-                // Clear any legacy custom color — theme palette is forced
                 custom_primary_color: null,
             }
         }))
@@ -71,18 +69,18 @@ export default function StepAppearance({ value }: { value?: string }) {
     }
 
     return (
-        <TabsContent value="appearance" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
-                <CardHeader className="bg-slate-50 border-b py-4 px-6">
-                    <CardTitle className="text-base font-bold text-navy">Guest Guide Studio</CardTitle>
-                    <CardDescription className="text-xs text-navy/50">
-                        Mismo contenido. Diferente alma. Cada propiedad merece su propia identidad.
-                    </CardDescription>
-                </CardHeader>
+        <TabsContent value="appearance" className="mt-0 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                {/* Theme Selector */}
+                <div className="lg:col-span-7 space-y-6 bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="h-9 w-9 rounded-xl bg-[#316263]/10 flex items-center justify-center text-[#316263]">
+                            <Palette className="h-4 w-4" />
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900">Selecciona un Estilo</h3>
+                    </div>
 
-                <CardContent className="p-6 space-y-6">
-                    {/* ── Theme Selector List ── */}
-                    <div className="space-y-2">
+                    <div className="grid gap-4">
                         {LAYOUT_THEMES.map((theme) => {
                             const isSelected = currentThemeId === theme.id
                             const isDisabled = !theme.implemented
@@ -93,116 +91,133 @@ export default function StepAppearance({ value }: { value?: string }) {
                                     onClick={() => !isDisabled && handleSelectTheme(theme.id)}
                                     disabled={isDisabled}
                                     className={cn(
-                                        'w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all duration-200',
+                                        'w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all duration-300 relative overflow-hidden group',
                                         isSelected
-                                            ? 'border-navy bg-navy/[0.03]'
+                                            ? 'border-[#316263] bg-[#316263]/5 ring-4 ring-[#316263]/5'
                                             : isDisabled
-                                            ? 'border-navy/10 opacity-50 cursor-not-allowed'
-                                            : 'border-navy/10 hover:border-navy/30 cursor-pointer'
+                                                ? 'border-slate-100 opacity-40 cursor-not-allowed'
+                                                : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
                                     )}
                                 >
-                                    {/* Icon */}
                                     <div className={cn(
-                                        'flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-xl',
+                                        'flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-sm transition-transform duration-500 group-hover:scale-110',
                                         theme.iconBg
                                     )}>
                                         {theme.icon}
                                     </div>
 
-                                    {/* Info */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-0.5">
-                                            <span className="font-bold text-sm text-navy">
+                                            <span className="font-bold text-base text-slate-900">
                                                 {theme.name}
                                             </span>
                                             {isDisabled && (
-                                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                                                <Badge variant="secondary" className="text-[9px] px-1.5 py-0 rounded-full uppercase tracking-tighter">
                                                     Próximamente
                                                 </Badge>
                                             )}
                                         </div>
-                                        <p className={cn('text-[11px] font-semibold mb-1', theme.tagColor)}>
+                                        <p className={cn('text-[9px] font-bold uppercase tracking-widest mb-1', theme.tagColor)}>
                                             {theme.tagline}
                                         </p>
-                                        <p className="text-[11px] text-navy/40 leading-tight truncate">
+                                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
                                             {theme.description}
                                         </p>
                                     </div>
 
-                                    {/* Checkmark */}
                                     <div className={cn(
-                                        'flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all',
+                                        'flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-500',
                                         isSelected
-                                            ? 'border-navy bg-navy'
-                                            : 'border-navy/20'
+                                            ? 'border-[#316263] bg-[#316263] scale-110 shadow-lg shadow-teal-900/20'
+                                            : 'border-slate-200'
                                     )}>
-                                        {isSelected && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                                        {isSelected && <Check className="w-5 h-5 text-white" strokeWidth={3} />}
                                     </div>
+
+                                    {isSelected && (
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-[#316263]/10 rounded-full -mr-12 -mt-12 blur-2xl" />
+                                    )}
                                 </button>
                             )
                         })}
                     </div>
+                </div>
 
-                    {/* ── "Lo que cambia con cada tema" info row ── */}
-                    <div className="rounded-xl bg-slate-50 p-4">
-                        <p className="text-[10px] font-black text-navy/30 tracking-[0.2em] uppercase mb-3">
-                            LO QUE CAMBIA CON CADA TEMA
-                        </p>
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-                            {[
-                                'Tipografía', 'Paleta de color',
-                                'Estructura de layout', 'Estilo de tarjetas',
-                                'Tratamiento del hero', 'Densidad visual',
-                            ].map((item) => (
-                                <div key={item} className="flex items-center gap-2 text-[11px] text-navy/50">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-navy/30 flex-shrink-0" />
-                                    {item}
-                                </div>
-                            ))}
+                {/* Branding & Info */}
+                <div className="lg:col-span-5 space-y-8">
+                    {/* Logo Section */}
+                    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="h-9 w-9 rounded-xl bg-teal-50 flex items-center justify-center text-[#316263]">
+                                <Sparkles className="h-4 w-4" />
+                            </div>
+                            <h3 className="text-base font-bold text-slate-900">Identidad Visual</h3>
+                        </div>
+
+                        <div className="space-y-4">
+                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Logotipo del Alojamiento</Label>
+                            <div className="relative group min-h-[180px] border-2 border-dashed border-slate-100 rounded-xl bg-slate-50 flex flex-col items-center justify-center p-6 transition-all hover:border-[#316263]/30 hover:bg-white cursor-pointer" onClick={triggerLogoUpload}>
+                                {data.branding?.custom_logo_url ? (
+                                    <div className="relative group w-full flex justify-center">
+                                        <img
+                                            src={data.branding.custom_logo_url}
+                                            alt="Logo"
+                                            className="max-h-24 object-contain drop-shadow-md"
+                                        />
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                setData((prev: any) => ({ ...prev, branding: { ...prev.branding, custom_logo_url: '' } }))
+                                            }}
+                                            className="absolute -top-3 -right-3 h-8 w-8 bg-white shadow-sm shadow-slate-200/40 rounded-xl text-red-500 flex items-center justify-center hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-center space-y-3">
+                                        <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center text-slate-300 mx-auto shadow-sm group-hover:text-[#316263] group-hover:rotate-12 transition-all duration-500">
+                                            <Upload className="w-6 h-6" />
+                                        </div>
+                                        <div className="space-y-0.5">
+                                            <p className="text-xs font-bold text-slate-900">Sube tu logotipo</p>
+                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">PNG o SVG (Max 500KB)</p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            className="h-10 rounded-xl px-6 text-xs font-bold uppercase tracking-widest border-slate-200 mt-2"
+                                            disabled={uploading}
+                                        >
+                                            {uploading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                                            Seleccionar
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
-                    {/* ── Logo Upload ── */}
-                    <div className="space-y-3 pt-2 border-t border-navy/5">
-                        <h3 className="px-1 text-[10px] font-black text-navy/30 tracking-[0.2em] uppercase">
-                            🏢 LOGO DE LA PROPIEDAD
-                        </h3>
-                        <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-navy/10 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-colors group">
-                            {data.branding?.custom_logo_url ? (
-                                <div className="relative group">
-                                    <img
-                                        src={data.branding.custom_logo_url}
-                                        alt="Logo"
-                                        className="max-h-24 object-contain"
-                                    />
-                                    <button
-                                        onClick={() => setData((prev: any) => ({ ...prev, branding: { ...prev.branding, custom_logo_url: '' } }))}
-                                        className="absolute -top-2 -right-2 p-1 bg-white shadow-md rounded-full text-navy/40 hover:text-red-500"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="text-center">
-                                    <Upload className="w-8 h-8 text-navy/20 mx-auto mb-2 group-hover:text-primary transition-colors" />
-                                    <p className="text-xs font-bold text-navy">Sube tu logotipo</p>
-                                    <p className="text-[10px] text-navy/30">PNG o SVG ligero (Max 500KB)</p>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="mt-4 h-8 text-[10px] font-bold uppercase tracking-wider"
-                                        disabled={uploading}
-                                        onClick={triggerLogoUpload}
-                                    >
-                                        {uploading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : null}
-                                        Seleccionar Archivo
-                                    </Button>
-                                </div>
-                            )}
+                    {/* Features List */}
+                    <div className="bg-[#111827] rounded-2xl p-6 text-white relative overflow-hidden shadow-sm shadow-slate-200/40">
+                        <div className="relative z-10">
+                            <p className="text-[10px] font-black text-teal-400 tracking-[0.3em] uppercase mb-6">Cada tema incluye</p>
+                            <div className="space-y-4">
+                                {[
+                                    'Tipografía curada', 'Paleta cromática exclusiva',
+                                    'Estructura de navegación', 'Animaciones premium',
+                                    'Densidad visual optimizada', 'Diseño Responsive'
+                                ].map((item) => (
+                                    <div key={item} className="flex items-center gap-4">
+                                        <div className="h-2 w-2 rounded-full bg-teal-500/50" />
+                                        <span className="text-sm font-medium text-slate-300">{item}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
+                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </TabsContent>
     )
 }

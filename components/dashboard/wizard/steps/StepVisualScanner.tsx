@@ -8,19 +8,19 @@ import { useWizard } from '../WizardContext'
 import { useToast } from '@/hooks/use-toast'
 
 export default function StepVisualScanner({ value }: { value?: string }) {
-    const { 
-        propertyId, 
-        property, 
-        setProperty, 
-        setCompletedSteps 
+    const {
+        propertyId,
+        property,
+        setProperty,
+        setCompletedSteps
     } = useWizard()
     const { toast } = useToast()
 
     const effectiveId = propertyId || property?.id || ''
 
     return (
-        <TabsContent value="visual-scanner" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
+        <TabsContent value="visual-scanner" className="mt-0 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl overflow-hidden">
                 <CardContent className="p-6">
                     <VisualScanner
                         key={effectiveId || 'no-property'}

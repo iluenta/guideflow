@@ -8,22 +8,16 @@ import { InventorySelector } from '@/components/dashboard/InventorySelector'
 import { useWizard } from '../WizardContext'
 
 export default function StepInventory({ value }: { value?: string }) {
-    const { 
-        data, 
-        setData, 
-        property 
+    const {
+        data,
+        setData,
+        property
     } = useWizard()
 
     return (
-        <TabsContent value="inventory" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
-                <CardHeader className="bg-slate-50 border-b py-3 px-4">
-                    <div>
-                        <CardTitle className="text-base">Inventario y Dotación</CardTitle>
-                        <CardDescription className="text-xs">Selecciona lo que tienes disponible para que la IA pueda guiar a tus huéspedes.</CardDescription>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-4">
+        <TabsContent value="inventory" className="mt-0 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl overflow-hidden">
+                <CardContent className="p-6">
                     {/* Status-aware banner */}
                     {property?.inventory_status === 'identifying' && (
                         <div className="flex items-center gap-3 p-4 mb-4 rounded-xl bg-blue-50 border border-blue-200 animate-in fade-in duration-300">

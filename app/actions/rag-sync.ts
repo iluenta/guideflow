@@ -1,8 +1,61 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { generateOpenAIEmbedding } from '@/lib/ai/openai'
+import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/openai'
 import { sanitizeUUID } from '@/lib/utils'
+
+/**
+ * Enriches TV manuals with explicit streaming app access info.
+ * Derives which apps have a direct button vs which require Home navigation
+ * from the manual content and host notes — so Gemini gets a fact, not an inference.
+ */
+function enrichTVManual(manualContent: string, hostNotes: string): string {
+    const isTV = /televisor|TV\b|tele\b|mando.*TV|televisión|television/i.test(manualContent)
+    if (!isTV) return manualContent
+
+    const knownStreamingApps = [
+        'Netflix', 'Disney+', 'HBO Max', 'HBO', 'Prime Video', 'Amazon Prime',
+        'YouTube', 'Apple TV+', 'Apple TV', 'Movistar+', 'Filmin',
+        'Rakuten TV', 'DAZN', 'Atresplayer', 'RTVE Play', 'SkyShowtime'
+    ]
+
+    // Busca las apps conocidas mencionadas cerca de "acceso directo" en el manual
+    const directButtonSection = manualContent.match(
+        /[Bb]otones?\s+de\s+acceso\s+directo[\s\S]{0,500}/
+    )?.[0] || ''
+
+    const appsWithButton: string[] = knownStreamingApps.filter(app =>
+        directButtonSection.toLowerCase().includes(app.toLowerCase())
+    )
+
+    // Extract available apps from host notes
+    const appsInNotes = knownStreamingApps.filter(app =>
+        hostNotes.toLowerCase().includes(app.toLowerCase())
+    )
+
+    if (appsWithButton.length === 0 && appsInNotes.length === 0) return manualContent
+
+    // Apps disponibles pero SIN botón directo
+    const appsOnlyViaHome = appsInNotes.filter(app =>
+        !appsWithButton.some((b: string) => b.toLowerCase() === app.toLowerCase())
+    )
+
+    let note = '\n\n## ACCESO A APPS DE STREAMING\n'
+
+    if (appsWithButton.length > 0) {
+        note += `\n**Apps con botón directo en el mando:** ${appsWithButton.join(', ')}.\n`
+        note += `Para estas apps: pulsa directamente su botón en el mando.\n`
+    }
+
+    if (appsOnlyViaHome.length > 0) {
+        note += `\n**Apps disponibles SIN botón directo (acceso por menú):** ${appsOnlyViaHome.join(', ')}.\n`
+        note += `Para estas apps: pulsa **Home** en el mando → navega con las flechas hasta la app → pulsa **OK**.\n`
+    }
+
+    note += `\n⚠️ REGLA: Si una app no aparece en la lista de botones directos, SIEMPRE se accede desde Home → menú de aplicaciones. Nunca asumir que tiene botón directo.`
+
+    return manualContent + note
+}
 
 /**
  * Synchronizes wizard data (FAQs and Context) to the unified context_embeddings table for RAG.
@@ -10,7 +63,6 @@ import { sanitizeUUID } from '@/lib/utils'
 export async function syncWizardDataToRAG(propertyId: string, tenantId: string | null | undefined, category: string, data: any, customClient?: any) {
     const supabase = customClient || await createClient()
 
-    // 🛡️ Defensa contra 22P02 (UUID inválido: string vacía O strings semánticos como "new")
     const currentPropId = sanitizeUUID(propertyId)
     const currentTenantId = sanitizeUUID(tenantId)
 
@@ -21,11 +73,10 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
 
     console.log(`[RAG-SYNC] Syncing ${category} for property ${currentPropId}...`)
 
-    // Mapeo de source_type según la categoría
     const sourceTypeMap: Record<string, string> = {
         'faqs': 'faq',
         'dining': 'recommendation',
-        'property': 'context', // Info básica es context
+        'property': 'context',
         'welcome': 'context',
         'access': 'context',
         'rules': 'context',
@@ -35,9 +86,6 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
     }
     const sourceType = sourceTypeMap[category] || 'context'
 
-    // 1. Limpiar fragmentos antiguos de esta fuente y categoría
-    // Usamos el propertyId como source_id para categorías del wizard, 
-    // pero filtramos por tipo y categoría específica en metadata para no borrar otros.
     await supabase.from('context_embeddings')
         .delete()
         .eq('property_id', currentPropId)
@@ -133,12 +181,9 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
         metadata = { category: category, type: 'context' }
     }
 
-    // 2. Generar embedding (OpenAI 1536)
     try {
         const embedding = await generateOpenAIEmbedding(contentToEmbed)
 
-        // Deterministic source_id per category to avoid collisions
-        // We take the property UUID and replace the last hex chars with a category index
         if (!currentPropId || currentPropId.length < 32) {
             console.error(`[RAG-SYNC] Invalid currentPropId: ${currentPropId}`);
             return;
@@ -148,7 +193,6 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
         const suffix = catIndex.toString(16).padStart(4, '0')
         const deterministicSourceId = currentPropId.substring(0, currentPropId.length - 4) + suffix
 
-        // 3. Insertar en la tabla unificada (Patrón Delete-then-Insert para evitar problemas con índices funcionales)
         await supabase.from('context_embeddings').delete().eq('source_id', deterministicSourceId)
 
         const { error: insError } = await supabase.from('context_embeddings').insert({
@@ -169,5 +213,89 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
 
     } catch (err: any) {
         console.error(`[RAG-SYNC] Embedding generation failed for ${category}:`, err.message)
+    }
+}
+
+/**
+ * Synchronizes a single manual to the RAG context.
+ */
+export async function syncManualToRAG(
+    propertyId: string,
+    tenantId: string | null | undefined,
+    manualId: string,
+    manualContent: string,
+    applianceName: string,
+    brand: string,
+    model?: string
+) {
+    const supabase = await createClient()
+
+    const currentPropId = sanitizeUUID(propertyId)
+    const currentTenantId = sanitizeUUID(tenantId)
+    const currentManualId = sanitizeUUID(manualId)
+
+    if (!currentManualId || !currentPropId) {
+        console.warn(`[RAG-SYNC-MANUAL] Skipping: Invalid IDs for ${applianceName}`)
+        return
+    }
+
+    console.log(`[RAG-SYNC-MANUAL] Syncing manual for ${applianceName} (${brand})...`)
+
+    try {
+        // 0. Fetch latest metadata to get host notes
+        const { data: manual } = await supabase
+            .from('property_manuals')
+            .select('metadata')
+            .eq('id', currentManualId)
+            .single()
+
+        const hostNotes = manual?.metadata?.notes || ''
+
+        // ✅ FIX: Enriquecer manuales de TV con nota explícita de acceso a streaming
+        // Esto evita que Gemini infiera por analogía que una app tiene botón directo
+        const enrichedManual = enrichTVManual(manualContent, hostNotes)
+
+        const augmentedContent = hostNotes
+            ? `[NOTAS DEL ANFITRIÓN]: ${hostNotes}\n\n${enrichedManual}`
+            : enrichedManual
+
+        // 1. Delete old embeddings for this manual
+        await supabase.from('context_embeddings').delete().eq('source_id', currentManualId)
+
+        // 2. Split content into logical chunks (approx 800-1000 chars)
+        const chunks = splitIntoChunks(augmentedContent, 800)
+
+        // 3. Generate embeddings with appliance context prepended to each chunk
+        const contextEmbeddings = await Promise.all(chunks.map(async (chunk, index) => {
+            const enrichedText = `[APARATO: ${brand} ${model || ''} ${applianceName}]\n${chunk}`
+            const embedding = await generateOpenAIEmbedding(enrichedText)
+
+            return {
+                property_id: currentPropId,
+                tenant_id: currentTenantId || null,
+                source_type: 'manual',
+                source_id: currentManualId,
+                content: enrichedText,
+                embedding: embedding,
+                metadata: {
+                    appliance: applianceName,
+                    brand: brand,
+                    model: model || '',
+                    chunk_index: index
+                }
+            }
+        }))
+
+        // 4. Batch insert
+        const { error: insError } = await supabase.from('context_embeddings').insert(contextEmbeddings)
+
+        if (insError) {
+            console.error(`[RAG-SYNC-MANUAL] Error inserting embeddings for ${applianceName}:`, insError.message)
+            throw insError
+        }
+
+        console.log(`[RAG-SYNC-MANUAL] SUCCESS: ${contextEmbeddings.length} chunks indexed for ${applianceName}.`)
+    } catch (err: any) {
+        console.error(`[RAG-SYNC-MANUAL] Sync failed for ${applianceName}:`, err.message)
     }
 }

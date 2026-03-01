@@ -31,37 +31,37 @@ interface RecommendationCardProps {
 }
 
 const categoryIcons: Record<string, any> = {
-    'restaurantes':  Utensils,
-    'italiano':      Pizza,
-    'mediterraneo':  Fish,
-    'hamburguesas':  Beef,
-    'asiatico':      UtensilsCrossed,
-    'alta_cocina':   Star,
+    'restaurantes': Utensils,
+    'italiano': Pizza,
+    'mediterraneo': Fish,
+    'hamburguesas': Beef,
+    'asiatico': UtensilsCrossed,
+    'alta_cocina': Star,
     'internacional': Globe,
-    'desayuno':      Coffee,
-    'compras':       ShoppingBag,
-    'cultura':       Landmark,
-    'naturaleza':    Trees,
-    'ocio':          Music,
-    'relax':         Coffee,
-    'todos':         Star
+    'desayuno': Coffee,
+    'compras': ShoppingBag,
+    'cultura': Landmark,
+    'naturaleza': Trees,
+    'ocio': Music,
+    'relax': Coffee,
+    'todos': Star
 }
 
 const categoryColors: Record<string, string> = {
-    'restaurantes':  'bg-orange-100 text-orange-700 border-orange-200',
-    'italiano':      'bg-red-100 text-red-700 border-red-200',
-    'mediterraneo':  'bg-sky-100 text-sky-700 border-sky-200',
-    'hamburguesas':  'bg-amber-100 text-amber-700 border-amber-200',
-    'asiatico':      'bg-rose-100 text-rose-700 border-rose-200',
-    'alta_cocina':   'bg-violet-100 text-violet-700 border-violet-200',
+    'restaurantes': 'bg-orange-100 text-orange-700 border-orange-200',
+    'italiano': 'bg-red-100 text-red-700 border-red-200',
+    'mediterraneo': 'bg-sky-100 text-sky-700 border-sky-200',
+    'hamburguesas': 'bg-amber-100 text-amber-700 border-amber-200',
+    'asiatico': 'bg-rose-100 text-rose-700 border-rose-200',
+    'alta_cocina': 'bg-violet-100 text-violet-700 border-violet-200',
     'internacional': 'bg-cyan-100 text-cyan-700 border-cyan-200',
-    'desayuno':      'bg-yellow-100 text-yellow-700 border-yellow-200',
-    'compras':       'bg-blue-100 text-blue-700 border-blue-200',
-    'cultura':       'bg-amber-100 text-amber-700 border-amber-200',
-    'naturaleza':    'bg-emerald-100 text-emerald-700 border-emerald-200',
-    'ocio':          'bg-purple-100 text-purple-700 border-purple-200',
-    'relax':         'bg-cyan-100 text-cyan-700 border-cyan-200',
-    'todos':         'bg-slate-100 text-slate-700 border-slate-200'
+    'desayuno': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+    'compras': 'bg-blue-100 text-blue-700 border-blue-200',
+    'cultura': 'bg-amber-100 text-amber-700 border-amber-200',
+    'naturaleza': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'ocio': 'bg-purple-100 text-purple-700 border-purple-200',
+    'relax': 'bg-cyan-100 text-cyan-700 border-cyan-200',
+    'todos': 'bg-slate-100 text-slate-700 border-slate-200'
 }
 
 export function RecommendationCard({ recommendation, onDelete, onClick, className }: RecommendationCardProps) {
@@ -76,7 +76,7 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
     return (
         <Card
             className={cn(
-                "relative group overflow-hidden border-none shadow-md hover:shadow-lg transition-all cursor-pointer bg-white rounded-3xl",
+                "relative group overflow-hidden border border-slate-100 shadow-md hover:shadow-xl transition-all cursor-pointer bg-white rounded-2xl",
                 className
             )}
             onClick={onClick}
@@ -84,19 +84,19 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
             <CardHeader className="p-5 pb-2">
                 <div className="flex justify-between items-start gap-4">
                     <div className="flex gap-3 items-center">
-                        <div className={cn("p-2 rounded-xl shrink-0 transition-transform group-hover:scale-110", colorClass)}>
+                        <div className={cn("p-2 rounded-lg shrink-0 transition-transform group-hover:scale-110", colorClass)}>
                             <Icon className="w-4 h-4" />
                         </div>
-                        <div className="space-y-0.5">
-                            <CardTitle className="text-base font-bold leading-tight line-clamp-1">{recommendation.name}</CardTitle>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{category}</p>
+                        <div className="space-y-0 text-left">
+                            <CardTitle className="text-sm font-bold leading-tight line-clamp-1 text-slate-900">{recommendation.name}</CardTitle>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{category}</p>
                         </div>
                     </div>
                     {onDelete && (
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="sm:opacity-0 sm:group-hover:opacity-100 text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all rounded-full shrink-0"
+                            className="sm:opacity-0 sm:group-hover:opacity-100 text-slate-200 hover:text-rose-500 hover:bg-rose-50 transition-all rounded-xl shrink-0"
                             onClick={(e) => {
                                 e.stopPropagation()
                                 onDelete()
@@ -129,20 +129,20 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
                 </div>
 
                 {recommendation.description && (
-                    <p className="text-slate-500 text-xs leading-relaxed line-clamp-2 mb-2 font-medium">
+                    <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-2 mb-2 font-medium text-left">
                         {recommendation.description}
                     </p>
                 )}
 
                 {note && (
-                    <p className="text-slate-400 text-xs italic font-medium">
+                    <p className="text-[#316263] text-[11px] italic font-bold text-left">
                         "{note}"
                     </p>
                 )}
             </CardContent>
 
             {/* Hover effect overlay */}
-            <div className="absolute inset-0 border-2 border-primary/0 group-hover:border-primary/10 rounded-3xl pointer-events-none transition-all" />
+            <div className="absolute inset-0 border-2 border-[#316263]/0 group-hover:border-[#316263]/10 rounded-2xl pointer-events-none transition-all" />
         </Card>
     )
 }

@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { syncWizardDataToRAG } from './rag-sync'
+import { syncWizardDataToRAG, syncManualToRAG } from './rag-sync'
 import { sanitizeUUID } from '@/lib/utils'
 
 function generateSlug(name: string): string {
@@ -414,15 +414,86 @@ export async function updateManualContent(manualId: string, propertyId: string, 
         await syncPropertyApplianceList(currentPropId, tenant_id)
     }
 
-    // Trigger RAG update (simplified: delete and re-insert is handled in manual-enrichment, 
-    // but here we might just want to delete let it be re-indexed or handle it here)
-    // For simplicity, let's keep it consistent with enrichManualWithHostNotes logic if possible
-    // But ManualEditDialog is for RAW editing.
+    // Trigger RAG update
+    const { data: manual } = await supabase
+        .from('property_manuals')
+        .select('appliance_name, brand, model')
+        .eq('id', manualId)
+        .single()
 
-    // We should probably just delete embeddings and they'll be missing, 
-    // OR call a sync function. For now, let's just delete to avoid stale data
-    // and ideally we'd have a 'reindex' button or auto-sync.
-    await supabase.from('context_embeddings').delete().eq('source_id', manualId)
+    if (manual) {
+        await syncManualToRAG(
+            currentPropId,
+            tenant_id,
+            manualId,
+            content,
+            manual.appliance_name,
+            manual.brand,
+            manual.model
+        )
+    }
+
+    revalidatePath(`/dashboard/properties/${currentPropId}`)
+}
+
+export async function saveManual(manualId: string, propertyId: string, updates: { manual_content?: string, notes?: string, is_revised?: boolean }) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) throw new Error('propertyId es requerido')
+
+    // Fetch existing details for sync and metadata
+    const { data: existing } = await supabase
+        .from('property_manuals')
+        .select('metadata, appliance_name, brand, model, manual_content')
+        .eq('id', manualId)
+        .single()
+
+    const newMetadata = {
+        ...(existing?.metadata || {}),
+        ...(updates.notes !== undefined ? { notes: updates.notes } : {}),
+        ...(updates.is_revised !== undefined ? { is_revised: updates.is_revised } : {}),
+        status: updates.is_revised ? 'reviewed' : (updates.manual_content ? 'edited' : (existing?.metadata?.status || 'pending'))
+    }
+
+    const updateFields: any = {
+        metadata: newMetadata,
+        updated_at: new Date().toISOString()
+    }
+
+    if (updates.manual_content !== undefined) {
+        updateFields.manual_content = updates.manual_content
+    }
+    const { error } = await supabase
+        .from('property_manuals')
+        .update(updateFields)
+        .eq('id', manualId)
+
+    if (error) throw new Error(error.message)
+
+    const tenant_id = await getTenantId(supabase, user)
+
+    // Re-index for RAG if content changed, if notes changed, or if it's the first time approval
+    if (updates.manual_content !== undefined || updates.notes !== undefined || updates.is_revised) {
+        const contentToSync = updates.manual_content ?? existing?.manual_content ?? ''
+        if (contentToSync) {
+            await syncManualToRAG(
+                currentPropId,
+                tenant_id,
+                manualId,
+                contentToSync,
+                existing?.appliance_name || 'Aparato',
+                existing?.brand || 'Genérico',
+                existing?.model
+            )
+        }
+    }
+
+    if (tenant_id) {
+        await syncPropertyApplianceList(currentPropId, tenant_id)
+    }
 
     revalidatePath(`/dashboard/properties/${currentPropId}`)
 }

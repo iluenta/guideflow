@@ -30,17 +30,9 @@ export default function StepAccess({ value }: { value?: string }) {
     } = useWizard()
 
     return (
-        <TabsContent value="access" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
-                <CardHeader className="bg-slate-50 border-b py-3 px-4">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <CardTitle className="text-base">Llegada y Acceso</CardTitle>
-                            <CardDescription className="text-xs">Cómo llegan tus huéspedes y cómo entran a la casa.</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-4 space-y-4">
+        <TabsContent value="access" className="mt-0 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl overflow-hidden">
+                <CardContent className="p-6 space-y-6">
                     <div className="space-y-3">
                         <Label className="text-sm font-semibold text-slate-700">Dirección Completa</Label>
                         <div className="relative">

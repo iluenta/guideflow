@@ -11,10 +11,10 @@ import { Clock, Info, MapPin, Upload, Trash2, Plus } from 'lucide-react'
 import { useWizard } from '../WizardContext'
 
 export default function StepCheckin({ value }: { value?: string }) {
-    const { 
-        data, 
-        setData, 
-        handleStepImageUpload 
+    const {
+        data,
+        setData,
+        handleStepImageUpload
     } = useWizard()
 
     const addStep = () => {
@@ -40,27 +40,23 @@ export default function StepCheckin({ value }: { value?: string }) {
     }
 
     return (
-        <TabsContent value="checkin" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
-                <CardHeader className="bg-slate-50 border-b py-3 px-4">
-                    <CardTitle className="text-base">Pasos del Check-in</CardTitle>
-                    <CardDescription className="text-xs">Define los pasos que debe seguir el huésped para entrar.</CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 space-y-6">
+        <TabsContent value="checkin" className="mt-0 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl overflow-hidden">
+                <CardContent className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                        <div className="space-y-2">
-                            <Label className="text-sm font-semibold text-slate-700">Horario de Check-in Disponible</Label>
+                        <div className="space-y-2 text-left">
+                            <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Horario de Check-in Disponible</Label>
                             <div className="relative">
                                 <Input
                                     placeholder="Ej: 15:00 - 22:00"
-                                    className="h-11 pl-10 bg-slate-50/50 border-slate-200 focus:bg-white transition-all rounded-xl"
+                                    className="h-12 pl-12 rounded-xl bg-slate-50/50 border-slate-100 focus:ring-2 focus:ring-[#316263]/20 font-medium"
                                     value={data.checkin.checkin_time}
                                     onChange={e => setData({ ...data, checkin: { ...data.checkin, checkin_time: e.target.value } })}
                                 />
-                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                             </div>
                         </div>
-                        <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-100 flex items-start gap-3">
+                        <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100 flex items-start gap-3">
                             <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
                             <p className="text-[11px] text-blue-700 leading-tight">
                                 <span className="font-bold">Contacto de asistencia:</span> Sincronizado automáticamente con tu "Contacto Preferente". Puedes cambiarlo en la pestaña anterior.
@@ -69,38 +65,38 @@ export default function StepCheckin({ value }: { value?: string }) {
                     </div>
 
                     <div className="space-y-4">
-                        <Label className="text-sm font-bold flex items-center gap-2">
-                            <Plus className="w-4 h-4" /> Pasos Numerados
+                        <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                            <Plus className="w-3 h-3" /> Pasos Numerados
                         </Label>
 
                         {/* Paso 1 Fijo: Dirección */}
-                        <div className="p-4 rounded-2xl border-2 border-slate-100 bg-slate-50/30 flex gap-4 opacity-80">
-                            <div className="h-8 w-8 rounded-full bg-navy text-white flex items-center justify-center font-bold text-sm shrink-0">1</div>
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2 font-bold text-sm text-navy">
-                                    <MapPin className="w-4 h-4" /> Dirección (Fijo)
+                        <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 flex gap-4 opacity-80">
+                            <div className="h-8 w-8 rounded-lg bg-[#316263] text-white flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                            <div className="space-y-1 text-left">
+                                <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
+                                    <MapPin className="w-3.5 h-3.5 text-[#316263]" /> Dirección (Automatico)
                                 </div>
-                                <p className="text-sm text-slate-500">{data.access.full_address || 'Introduce la dirección en la pestaña Acceso'}</p>
+                                <p className="text-xs text-slate-500 font-medium">{data.access.full_address || 'Introduce la dirección en la pestaña Acceso'}</p>
                             </div>
                         </div>
 
                         {/* Pasos Dinámicos */}
                         <div className="space-y-3">
                             {data.checkin.steps.map((step: any, idx: number) => (
-                                <div key={idx} className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm flex gap-4 animate-in slide-in-from-right-2 duration-200">
-                                    <div className="h-8 w-8 rounded-full bg-navy text-white flex items-center justify-center font-bold text-sm shrink-0">
+                                <div key={idx} className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm flex gap-4 animate-in slide-in-from-right-2 duration-200">
+                                    <div className="h-8 w-8 rounded-lg bg-[#316263] text-white flex items-center justify-center font-bold text-xs shrink-0">
                                         {idx + 2}
                                     </div>
-                                    <div className="flex-1 space-y-3">
+                                    <div className="flex-1 space-y-3 text-left">
                                         <div className="flex gap-2">
                                             <Input
                                                 placeholder="Título del paso (ej: Código del portero)"
-                                                className="font-bold border-none bg-slate-50/50 focus-visible:ring-0 h-9 flex-1"
+                                                className="font-bold border-none bg-slate-50/50 focus-visible:ring-0 h-10 flex-1 rounded-lg px-3"
                                                 value={step.title}
                                                 onChange={e => updateStep(idx, 'title', e.target.value)}
                                             />
                                             <select
-                                                className="h-9 px-2 rounded-md border-none bg-slate-50/50 text-xs font-semibold text-navy focus:ring-0"
+                                                className="h-10 px-3 rounded-lg border-none bg-slate-50/50 text-xs font-bold text-slate-700 focus:ring-0"
                                                 value={step.icon || 'Key'}
                                                 onChange={e => updateStep(idx, 'icon', e.target.value)}
                                             >
@@ -114,7 +110,7 @@ export default function StepCheckin({ value }: { value?: string }) {
                                         </div>
                                         <Textarea
                                             placeholder="Descripción o instrucciones..."
-                                            className="border-none bg-slate-50/30 focus-visible:ring-0 min-h-[60px] text-sm"
+                                            className="border-none bg-slate-50/30 focus-visible:ring-0 min-h-[80px] text-xs font-medium rounded-lg p-3"
                                             value={step.description}
                                             onChange={e => updateStep(idx, 'description', e.target.value)}
                                         />
@@ -165,7 +161,7 @@ export default function StepCheckin({ value }: { value?: string }) {
 
                             <Button
                                 variant="outline"
-                                className="w-full h-12 border-dashed border-2 rounded-2xl hover:bg-slate-50 text-slate-500 font-semibold"
+                                className="w-full h-12 border-dashed border-2 rounded-xl hover:bg-slate-50 text-slate-400 font-bold text-xs transition-all uppercase tracking-widest"
                                 onClick={addStep}
                             >
                                 <Plus className="w-4 h-4 mr-2" /> Añadir otro paso

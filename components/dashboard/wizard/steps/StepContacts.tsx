@@ -12,12 +12,12 @@ import { useWizard } from '../WizardContext'
 import { useToast } from '@/hooks/use-toast'
 
 export default function StepContacts({ value }: { value?: string }) {
-    const { 
-        data, 
-        setData, 
-        aiLoading, 
-        handleAIFill, 
-        property 
+    const {
+        data,
+        setData,
+        aiLoading,
+        handleAIFill,
+        property
     } = useWizard()
     const { toast } = useToast()
 
@@ -87,42 +87,34 @@ export default function StepContacts({ value }: { value?: string }) {
     }
 
     return (
-        <TabsContent value="contacts" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
-                <CardHeader className="bg-slate-50 border-b py-3 px-4">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <CardTitle className="text-base">Contactos y Emergencias</CardTitle>
-                            <CardDescription className="text-xs">Personas de contacto durante la estancia y servicios de emergencia.</CardDescription>
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 text-[10px] font-bold uppercase tracking-wider border-navy/20 text-navy hover:bg-navy/5"
-                            onClick={() => handleAIFill('contacts')}
-                            disabled={aiLoading === 'contacts' || (!data.access.full_address && !property?.full_address)}
-                        >
-                            {aiLoading === 'contacts' ? (
-                                <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                            ) : (
-                                <Sparkles className="w-3 h-3 mr-2" />
-                            )}
-                            {aiLoading === 'contacts' ? 'Generando...' : 'Autocompletar Emergencias'}
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-4 space-y-6">
+        <TabsContent value="contacts" className="mt-0 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl overflow-hidden">
+                <CardContent className="p-6 space-y-8">
                     {/* Contacto de Soporte */}
                     <div className="space-y-4">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-navy/40 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
                                 <ShieldAlert className="w-3 h-3" /> Soporte Oficial
-                            </div>
+                            </h3>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-[9px] font-bold uppercase tracking-wider border-[#316263]/20 text-[#316263] hover:bg-[#316263]/5 rounded-lg ml-auto mr-3"
+                                onClick={() => handleAIFill('contacts')}
+                                disabled={aiLoading === 'contacts' || (!data.access.full_address && !property?.full_address)}
+                            >
+                                {aiLoading === 'contacts' ? (
+                                    <Loader2 className="w-2.5 h-2.5 mr-1.5 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-2.5 h-2.5 mr-1.5" />
+                                )}
+                                {aiLoading === 'contacts' ? 'Generando...' : 'Autocompletar'}
+                            </Button>
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 className={cn(
-                                    "h-7 px-3 text-[10px] gap-1.5 rounded-full transition-all",
+                                    "h-7 px-3 text-[9px] gap-1.5 rounded-full transition-all",
                                     data.contacts.preferred_contact_id === 'support'
                                         ? "bg-green-100 text-green-700 hover:bg-green-100"
                                         : "bg-slate-100 text-slate-400 hover:bg-slate-200"
@@ -130,24 +122,24 @@ export default function StepContacts({ value }: { value?: string }) {
                                 onClick={() => setData({ ...data, contacts: { ...data.contacts, preferred_contact_id: 'support' } })}
                             >
                                 <Check className={cn("w-3 h-3", data.contacts.preferred_contact_id === 'support' ? "opacity-100" : "opacity-0")} />
-                                {data.contacts.preferred_contact_id === 'support' ? 'CONTACTO PREFERENTE' : 'MARCAR COMO PREFERENTE'}
+                                {data.contacts.preferred_contact_id === 'support' ? 'PREFERENTE' : 'MARCAR PREFERENTE'}
                             </Button>
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs">Nombre (Ej: Soporte GuideFlow)</Label>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="space-y-2 text-left">
+                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Nombre (Soporte)</Label>
                                 <Input
                                     placeholder="Ej: Atención al Cliente"
                                     value={data.contacts.support_name}
                                     onChange={e => setData({ ...data, contacts: { ...data.contacts, support_name: e.target.value } })}
-                                    className="bg-[#F9F6F2] border-none rounded-xl h-12"
+                                    className="h-12 rounded-xl bg-slate-50/50 border-slate-100 focus:ring-2 focus:ring-[#316263]/20 font-medium"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="support_phone" className="text-xs font-bold text-navy/60">Teléfono Principal (Llamadas)</Label>
+                            <div className="space-y-2 text-left">
+                                <Label htmlFor="support_phone" className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Teléfono Fijo</Label>
                                 <Input
                                     id="support_phone"
-                                    placeholder="Ej: 912345678"
+                                    placeholder="Ej: 912 34 56 78"
                                     value={data.contacts.support_phone}
                                     onChange={(e) => {
                                         const val = e.target.value;
@@ -157,20 +149,20 @@ export default function StepContacts({ value }: { value?: string }) {
                                             checkin: { ...prev.checkin, emergency_phone: val }
                                         }));
                                     }}
-                                    className="bg-[#F9F6F2] border-none rounded-xl h-12"
+                                    className="h-12 rounded-xl bg-slate-50/50 border-slate-100 focus:ring-2 focus:ring-[#316263]/20 font-medium"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="support_mobile" className="text-xs font-bold text-navy/60">Teléfono Móvil (WhatsApp)</Label>
+                            <div className="space-y-2 text-left">
+                                <Label htmlFor="support_mobile" className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Teléfono Móvil (WhatsApp)</Label>
                                 <Input
                                     id="support_mobile"
-                                    placeholder="Ej: 666123456"
+                                    placeholder="Ej: 666 12 34 56"
                                     value={data.contacts.support_mobile}
                                     onChange={(e) => setData((prev: any) => ({
                                         ...prev,
                                         contacts: { ...prev.contacts, support_mobile: e.target.value }
                                     }))}
-                                    className="bg-[#F9F6F2] border-none rounded-xl h-12"
+                                    className="h-12 rounded-xl bg-slate-50/50 border-slate-100 focus:ring-2 focus:ring-[#316263]/20 font-medium"
                                 />
                             </div>
                         </div>
@@ -178,24 +170,24 @@ export default function StepContacts({ value }: { value?: string }) {
 
                     {/* Contacto del Anfitrión */}
                     <div className="space-y-4 border-t pt-6">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-navy/40 flex items-center gap-2 flex-1">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
                                 <Sparkles className="w-3 h-3" /> Tu Contacto (Anfitrión)
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className={cn(
-                                        "h-7 px-3 text-[10px] gap-1.5 rounded-full transition-all ml-4",
-                                        data.contacts.preferred_contact_id === 'host'
-                                            ? "bg-green-100 text-green-700 hover:bg-green-100"
-                                            : "bg-slate-100 text-slate-400 hover:bg-slate-200"
-                                    )}
-                                    onClick={() => setData({ ...data, contacts: { ...data.contacts, preferred_contact_id: 'host' } })}
-                                >
-                                    <Check className={cn("w-3 h-3", data.contacts.preferred_contact_id === 'host' ? "opacity-100" : "opacity-0")} />
-                                    {data.contacts.preferred_contact_id === 'host' ? 'CONTACTO PREFERENTE' : 'MARCAR COMO PREFERENTE'}
-                                </Button>
                             </h3>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className={cn(
+                                    "h-7 px-3 text-[9px] gap-1.5 rounded-full transition-all ml-4",
+                                    data.contacts.preferred_contact_id === 'host'
+                                        ? "bg-green-100 text-green-700 hover:bg-green-100"
+                                        : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                                )}
+                                onClick={() => setData({ ...data, contacts: { ...data.contacts, preferred_contact_id: 'host' } })}
+                            >
+                                <Check className={cn("w-3 h-3", data.contacts.preferred_contact_id === 'host' ? "opacity-100" : "opacity-0")} />
+                                {data.contacts.preferred_contact_id === 'host' ? 'PREFERENTE' : 'MARCAR PREFERENTE'}
+                            </Button>
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -205,42 +197,42 @@ export default function StepContacts({ value }: { value?: string }) {
                                 Sincronizar Teléfono
                             </Button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs">Nombre</Label>
-                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3 h-12">
-                                    <div className="h-7 w-7 rounded-full bg-white flex items-center justify-center text-navy shadow-sm shrink-0">
-                                        <HomeIcon className="w-3.5 h-3.5" />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="space-y-2 text-left">
+                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Nombre</Label>
+                                <div className="p-3 rounded-xl bg-slate-50/50 border border-slate-100 flex items-center gap-3 h-12">
+                                    <div className="h-7 w-7 rounded-lg bg-white flex items-center justify-center text-[#316263] shadow-sm shrink-0">
+                                        <HomeIcon className="w-4 h-4" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-sm font-bold text-navy truncate">{data.welcome?.host_name || 'No definido'}</p>
+                                        <p className="text-sm font-bold text-slate-900 truncate">{data.welcome?.host_name || 'No definido'}</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="host_phone" className="text-xs font-bold text-navy/60">Teléfono Principal (Llamadas)</Label>
+                            <div className="space-y-2 text-left">
+                                <Label htmlFor="host_phone" className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Teléfono Principal</Label>
                                 <Input
                                     id="host_phone"
-                                    placeholder="Ej: 912345678"
+                                    placeholder="Ej: 912 34 56 78"
                                     value={data.contacts.host_phone}
                                     onChange={(e) => setData((prev: any) => ({
                                         ...prev,
                                         contacts: { ...prev.contacts, host_phone: e.target.value }
                                     }))}
-                                    className="bg-[#F9F6F2] border-none rounded-xl h-12"
+                                    className="h-12 rounded-xl bg-slate-50/50 border-slate-100 focus:ring-2 focus:ring-[#316263]/20 font-medium"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="host_mobile" className="text-xs font-bold text-navy/60">Teléfono Móvil (WhatsApp)</Label>
+                            <div className="space-y-2 text-left">
+                                <Label htmlFor="host_mobile" className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Teléfono Móvil</Label>
                                 <Input
                                     id="host_mobile"
-                                    placeholder="Ej: 666123456"
+                                    placeholder="Ej: 666 12 34 56"
                                     value={data.contacts.host_mobile}
                                     onChange={(e) => setData((prev: any) => ({
                                         ...prev,
                                         contacts: { ...prev.contacts, host_mobile: e.target.value }
                                     }))}
-                                    className="bg-[#F9F6F2] border-none rounded-xl h-12"
+                                    className="h-12 rounded-xl bg-slate-50/50 border-slate-100 focus:ring-2 focus:ring-[#316263]/20 font-medium"
                                 />
                             </div>
                         </div>
@@ -248,36 +240,36 @@ export default function StepContacts({ value }: { value?: string }) {
 
                     {/* Emergencias IA */}
                     <div className="space-y-4 border-t pt-6">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-navy/40 flex items-center gap-2">
+                        <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
                             <AlertTriangle className="w-3 h-3" /> Emergencias Locales
                         </h3>
 
                         <div className="space-y-3">
                             {data.contacts.emergency_contacts.map((contact: any, idx: number) => (
-                                <div key={contact.id || idx} className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm flex items-center gap-4 group">
+                                <div key={contact.id || idx} className="p-4 rounded-xl border border-slate-100 bg-slate-50/30 flex items-center gap-4 group transition-all hover:bg-white hover:shadow-md">
                                     <div className="h-10 w-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
-                                        {contact.type === 'policia'    && <Shield className="w-5 h-5" />}
-                                        {contact.type === 'guardia'    && <ShieldAlert className="w-5 h-5" />}
-                                        {contact.type === 'bomberos'   && <Flame className="w-5 h-5" />}
-                                        {contact.type === 'salud'      && <HeartPulse className="w-5 h-5" />}
-                                        {contact.type === 'farmacia'   && <Pill className="w-5 h-5" />}
-                                        {contact.type === 'veterinario'&& <PawPrint className="w-5 h-5" />}
-                                        {contact.type === 'taxi'       && <Car className="w-5 h-5" />}
+                                        {contact.type === 'policia' && <Shield className="w-5 h-5" />}
+                                        {contact.type === 'guardia' && <ShieldAlert className="w-5 h-5" />}
+                                        {contact.type === 'bomberos' && <Flame className="w-5 h-5" />}
+                                        {contact.type === 'salud' && <HeartPulse className="w-5 h-5" />}
+                                        {contact.type === 'farmacia' && <Pill className="w-5 h-5" />}
+                                        {contact.type === 'veterinario' && <PawPrint className="w-5 h-5" />}
+                                        {contact.type === 'taxi' && <Car className="w-5 h-5" />}
                                         {contact.type === 'mantenimiento' && <Wrench className="w-5 h-5" />}
-                                        {contact.type === 'telefono'   && <Phone className="w-5 h-5" />}
-                                        {(!contact.type || !['policia','guardia','bomberos','salud','farmacia','veterinario','taxi','mantenimiento','telefono'].includes(contact.type)) && <AlertTriangle className="w-5 h-5" />}
+                                        {contact.type === 'telefono' && <Phone className="w-5 h-5" />}
+                                        {(!contact.type || !['policia', 'guardia', 'bomberos', 'salud', 'farmacia', 'veterinario', 'taxi', 'mantenimiento', 'telefono'].includes(contact.type)) && <AlertTriangle className="w-5 h-5" />}
                                     </div>
-                                    <div className="flex-1 space-y-3">
+                                    <div className="flex-1 space-y-3 text-left">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <Input
                                                 placeholder="Nombre del servicio"
-                                                className="font-bold border-none bg-slate-50 h-9"
+                                                className="font-bold border-slate-100 bg-white h-9 rounded-lg px-3"
                                                 value={contact.name ?? ''}
                                                 onChange={e => updateEmergencyContact(idx, 'name', e.target.value)}
                                             />
                                             <Input
                                                 placeholder="Teléfono (ej: +34...)"
-                                                className="border-none bg-slate-50 h-9"
+                                                className="border-slate-100 bg-white h-9 rounded-lg px-3"
                                                 value={contact.phone ?? ''}
                                                 onChange={e => updateEmergencyContact(idx, 'phone', e.target.value)}
                                             />
@@ -286,14 +278,14 @@ export default function StepContacts({ value }: { value?: string }) {
                                             <div className="md:col-span-3">
                                                 <Input
                                                     placeholder="Dirección exacta para navegación"
-                                                    className="border-none bg-slate-50 h-9 text-xs"
+                                                    className="border-slate-100 bg-white h-9 rounded-lg px-3 text-xs"
                                                     value={contact.address || ''}
                                                     onChange={e => updateEmergencyContact(idx, 'address', e.target.value)}
                                                 />
                                             </div>
                                             <Input
-                                                placeholder="Distancia (ej: 5 min)"
-                                                className="border-none bg-slate-50 h-9 text-xs"
+                                                placeholder="Distancia"
+                                                className="border-slate-100 bg-white h-9 rounded-lg px-3 text-xs"
                                                 value={contact.distance || ''}
                                                 onChange={e => updateEmergencyContact(idx, 'distance', e.target.value)}
                                             />
@@ -322,12 +314,12 @@ export default function StepContacts({ value }: { value?: string }) {
 
                     {/* Otros Contactos */}
                     <div className="space-y-4 border-t pt-6">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-navy/40 flex items-center gap-2">
-                            <Plus className="w-3 h-3" /> Otros Contactos (Taxi, Mantenimiento...)
+                        <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                            <Plus className="w-3 h-3" /> Otros Contactos
                         </h3>
                         <div className="space-y-3">
                             {data.contacts.custom_contacts.map((contact: any, idx: number) => (
-                                <div key={contact.id || idx} className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm flex items-center gap-4 group">
+                                <div key={contact.id || idx} className="p-4 rounded-xl border border-slate-100 bg-slate-50/30 flex items-center gap-4 group transition-all hover:bg-white hover:shadow-md">
                                     <div className="flex flex-col items-center gap-1">
                                         <button
                                             onClick={() => setData({ ...data, contacts: { ...data.contacts, preferred_contact_id: contact.id } })}
@@ -345,16 +337,16 @@ export default function StepContacts({ value }: { value?: string }) {
                                             <span className="text-[7px] font-black text-green-600 uppercase tracking-tighter">PREFERENTE</span>
                                         )}
                                     </div>
-                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
                                         <Input
                                             placeholder="Etiqueta (ej: Radio Taxi)"
-                                            className="font-bold border-none bg-slate-50/50 h-9"
+                                            className="font-bold border-slate-100 bg-white h-9 rounded-lg px-3"
                                             value={contact.name ?? ''}
                                             onChange={e => updateCustomContact(idx, 'name', e.target.value)}
                                         />
                                         <Input
                                             placeholder="Teléfono"
-                                            className="border-none bg-slate-50/50 h-9"
+                                            className="border-slate-100 bg-white h-9 rounded-lg px-3"
                                             value={contact.phone ?? ''}
                                             onChange={e => updateCustomContact(idx, 'phone', e.target.value)}
                                         />
@@ -380,6 +372,6 @@ export default function StepContacts({ value }: { value?: string }) {
                     </div>
                 </CardContent>
             </Card>
-        </TabsContent>
+        </TabsContent >
     )
 }

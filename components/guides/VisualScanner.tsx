@@ -160,19 +160,7 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
 
     return (
         <div className="relative space-y-6 pb-4">
-            {/* Header / Intro */}
-            <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-semibold">Escáner Visual con IA</h3>
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
-                        {photos.length}/30
-                    </span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                    Sube fotos de tu propiedad para que la IA detecte automáticamente servicios,
-                    normas y detalles importantes para tu guía.
-                </p>
-            </div>
+/* El encabezado se ha eliminado porque ya lo proporciona SectionView */
 
             {/* Property ID Validation Warning */}
             {!isValidPropertyId && (
@@ -259,11 +247,10 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
 
             {/* MultiPhotoSelector / Dropzone - Slimmer */}
             <div
-                className={`border-2 border-dashed rounded-3xl p-6 flex flex-col items-center justify-center transition-all cursor-pointer group ${
-                    !isValidPropertyId 
-                        ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50' 
+                className={`border-2 border-dashed rounded-3xl p-6 flex flex-col items-center justify-center transition-all cursor-pointer group ${!isValidPropertyId
+                        ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
                         : 'border-primary/20 bg-primary/5 hover:bg-primary/10'
-                }`}
+                    }`}
                 onClick={() => isValidPropertyId && fileInputRef.current?.click()}
             >
                 <input
@@ -276,9 +263,8 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                     onChange={handleFileChange}
                     disabled={!isValidPropertyId}
                 />
-                <div className={`h-12 w-12 rounded-full flex items-center justify-center text-primary group-hover:scale-110 transition-transform mb-3 ${
-                    !isValidPropertyId ? 'bg-gray-200 text-gray-400' : 'bg-primary/10'
-                }`}>
+                <div className={`h-12 w-12 rounded-full flex items-center justify-center text-primary group-hover:scale-110 transition-transform mb-3 ${!isValidPropertyId ? 'bg-gray-200 text-gray-400' : 'bg-primary/10'
+                    }`}>
                     <Camera className="h-6 w-6" />
                 </div>
                 <div className="text-center">
@@ -286,7 +272,7 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                         {isValidPropertyId ? 'Abrir cámara o subir fotos' : 'Guarda la propiedad primero'}
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {isValidPropertyId 
+                        {isValidPropertyId
                             ? 'Hasta 30 fotos de electrodomésticos o estancias'
                             : 'El escáner visual está deshabilitado hasta guardar la propiedad'
                         }
@@ -298,7 +284,7 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
             {photos.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {photos.map((photo) => (
-                        <Card key={photo.id} className="relative aspect-square rounded-2xl overflow-hidden group border-none shadow-md">
+                        <Card key={photo.id} className="relative aspect-square rounded-2xl overflow-hidden group border-none shadow-sm">
                             <Image
                                 src={photo.preview}
                                 alt="Preview"

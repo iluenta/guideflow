@@ -60,6 +60,7 @@ import { ManualEnrichmentDialog } from './ManualEnrichmentDialog'
 import { HITLValidation } from './HITLValidation'
 import { VisualScanner } from './VisualScanner'
 import { ManualEditDialog } from './ManualEditDialog'
+import { ManualsSection } from '@/components/dashboard/wizard/sections/ManualsSection'
 
 interface GuideManagerProps {
     property: Property
@@ -544,84 +545,13 @@ export function GuideManager({ property, initialSections, manuals }: GuideManage
 
                     {/* Manuales Técnicos */}
                     <TabsContent value="manuals" className="space-y-8 animate-in fade-in-50 zoom-in-95 duration-500">
-                        <div className="bg-slate-900 shadow-2xl rounded-[2rem] p-10 text-white relative overflow-hidden">
-                            <div className="relative z-10 flex gap-8 items-center">
-                                <div className="h-20 w-20 rounded-3xl bg-white/10 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/20">
-                                    <FileText className="h-10 w-10" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-xl font-bold mb-2">Base de Conocimientos Técnica</h4>
-                                    <p className="opacity-80 leading-relaxed font-medium">
-                                        Manuales oficiales y notas del anfitrión. La IA usa esto para dar respuestas 100% precisas.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {allManuals.length === 0 ? (
-                            <Card className="border-dashed border-2 py-20 flex flex-col items-center justify-center text-center rounded-[2.5rem] bg-muted/5">
-                                <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary">
-                                    <Upload className="h-8 w-8" />
-                                </div>
-                                <h3 className="text-lg font-bold">Añadir Manual Oficial (PDF)</h3>
-                                <p className="text-sm text-muted-foreground max-w-sm mt-2 mb-8">
-                                    La IA procesará el documento y lo dividirá en secciones funcionales automáticamente.
-                                </p>
-                                <Button className="rounded-2xl h-12 px-8 font-bold gap-2">
-                                    <Plus className="h-5 w-5" />
-                                    Subir Manual o Pegar Link
-                                </Button>
-                            </Card>
-                        ) : (
-                            <div className="grid gap-6">
-                                {allManuals.map((manual) => (
-                                    <Card key={manual.id} className="border shadow-sm rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-300">
-                                        <CardContent className="p-8 flex items-center gap-6">
-                                            <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                                                <FileText className="h-8 w-8" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h4 className="font-bold text-lg">{manual.appliance_name}</h4>
-                                                    <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
-                                                        {manual.brand} {manual.model}
-                                                    </Badge>
-                                                </div>
-                                                <p className="text-xs text-muted-foreground line-clamp-1">
-                                                    ID: {manual.id} • Actualizado: {new Date(manual.updated_at).toLocaleDateString()}
-                                                </p>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    className="rounded-2xl h-11 px-5 font-bold gap-2 border-slate-200"
-                                                    onClick={() => setEnrichingManual(manual)}
-                                                >
-                                                    <Sparkles className="h-4 w-4" />
-                                                    Añadir Notas
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-11 w-11 rounded-2xl text-slate-300 hover:text-slate-600"
-                                                    onClick={() => setEditingManualContent(manual)}
-                                                >
-                                                    <Edit2 className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-11 w-11 rounded-2xl text-destructive/20 hover:text-destructive hover:bg-destructive/5"
-                                                    onClick={() => handleDeleteManual(manual.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
+                        <ManualsSection
+                            manuals={allManuals}
+                            onAdd={() => setActiveTab('visual')}
+                            onEdit={(manual) => setEditingManualContent(manual)}
+                            onDelete={(id) => handleDeleteManual(id)}
+                            onAddNotes={(manual) => setEnrichingManual(manual)}
+                        />
                     </TabsContent>
                 </Tabs>
             </CardContent>

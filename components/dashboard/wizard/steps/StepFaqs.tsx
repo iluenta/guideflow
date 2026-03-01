@@ -10,11 +10,11 @@ import { Plus, Trash2, Sparkles } from 'lucide-react'
 import { useWizard } from '../WizardContext'
 
 export default function StepFaqs({ value }: { value?: string }) {
-    const { 
-        data, 
-        setData, 
-        aiLoading, 
-        handleAIFill 
+    const {
+        data,
+        setData,
+        aiLoading,
+        handleAIFill
     } = useWizard()
 
     const updateFaq = (idx: number, field: string, value: string) => {
@@ -30,52 +30,48 @@ export default function StepFaqs({ value }: { value?: string }) {
     }
 
     const addFaq = () => {
-        setData({ 
-            ...data, 
-            faqs: [...data.faqs, { question: '', answer: '', category: 'custom' }] 
+        setData({
+            ...data,
+            faqs: [...data.faqs, { question: '', answer: '', category: 'custom' }]
         })
     }
 
     return (
-        <TabsContent value="faqs" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
-                <CardHeader className="bg-slate-50 border-b flex flex-row justify-between items-center py-3 px-4">
-                    <div>
-                        <CardTitle className="text-base">Guía del Alojamiento</CardTitle>
-                        <CardDescription className="text-xs">Anticípate a las dudas de tus huéspedes y explica cómo funciona todo.</CardDescription>
+        <TabsContent value="faqs" className="mt-0 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl overflow-hidden">
+                <CardContent className="p-6 space-y-6">
+                    <div className="flex justify-end mb-4">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 text-[10px] font-bold uppercase tracking-wider border-slate-200 rounded-xl hover:bg-[#316263] hover:text-white transition-all"
+                            onClick={() => handleAIFill('faqs')}
+                            disabled={aiLoading === 'faqs'}
+                        >
+                            {aiLoading === 'faqs' ? 'Generando...' : <><Sparkles className="w-3 w-3 mr-2" /> Auto-generar</>}
+                        </Button>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-9 text-[10px] font-bold uppercase tracking-wider"
-                        onClick={() => handleAIFill('faqs')}
-                        disabled={aiLoading === 'faqs'}
-                    >
-                        {aiLoading === 'faqs' ? 'Generando...' : <><Sparkles className="w-4 h-4 mr-2" /> Auto-generar Guía</>}
-                    </Button>
-                </CardHeader>
-                <CardContent className="p-4 space-y-4">
                     {data.faqs.map((faq: any, idx: number) => (
-                        <div key={idx} className="space-y-4 p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
+                        <div key={idx} className="space-y-4 p-5 rounded-xl border border-slate-100 bg-slate-50/50 transition-all hover:bg-white hover:shadow-md group animate-in slide-in-from-right-2 duration-200">
                             <div className="flex gap-4">
-                                <div className="flex-1 space-y-4">
+                                <div className="flex-1 space-y-4 text-left">
                                     <Input
                                         placeholder="Pregunta"
                                         value={faq.question ?? ''}
                                         onChange={e => updateFaq(idx, 'question', e.target.value)}
-                                        className="font-bold border-none bg-transparent focus-visible:ring-0 px-0 h-11"
+                                        className="font-bold border-none bg-transparent focus-visible:ring-0 px-0 h-10 text-base text-slate-900"
                                     />
                                     <Textarea
                                         placeholder="Respuesta..."
                                         value={faq.answer ?? ''}
                                         onChange={e => updateFaq(idx, 'answer', e.target.value)}
-                                        className="border-none bg-transparent focus-visible:ring-0 px-0 min-h-[100px]"
+                                        className="border-none bg-transparent focus-visible:ring-0 px-0 min-h-[100px] text-xs font-medium text-slate-500 leading-relaxed"
                                     />
                                 </div>
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="text-slate-400 hover:text-destructive"
+                                    className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all self-start"
                                     onClick={() => removeFaq(idx)}
                                 >
                                     <Trash2 className="w-4 h-4" />
@@ -85,8 +81,8 @@ export default function StepFaqs({ value }: { value?: string }) {
                     ))}
 
                     <Button
-                        variant="ghost"
-                        className="w-full border-dashed border-2 hover:bg-primary/5"
+                        variant="outline"
+                        className="w-full h-12 border-dashed border-2 rounded-xl hover:bg-slate-50 text-slate-400 font-bold text-xs uppercase tracking-widest transition-all"
                         onClick={addFaq}
                     >
                         <Plus className="w-4 h-4 mr-2" /> Añadir Sección a la Guía

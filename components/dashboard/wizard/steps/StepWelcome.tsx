@@ -12,37 +12,33 @@ export default function StepWelcome({ value }: { value?: string }) {
     const { data, setData } = useWizard()
 
     return (
-        <TabsContent value="welcome" className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
-                <CardHeader className="bg-slate-50 border-b py-3 px-4">
-                    <CardTitle className="text-base">Saludo de Bienvenida</CardTitle>
-                    <CardDescription className="text-xs">Lo primero que verán tus huéspedes al abrir la guía.</CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 space-y-4">
+        <TabsContent value="welcome" className="mt-0 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl overflow-hidden">
+                <CardContent className="p-6 space-y-5">
                     <div className="space-y-4 w-full">
-                        <div className="space-y-2">
-                            <Label>Título del Saludo</Label>
+                        <div className="space-y-2 text-left">
+                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Título del Saludo</Label>
                             <Input
                                 placeholder="Ej: ¡Bienvenidos a Casa Marina!"
-                                className="h-11"
+                                className="h-12 rounded-xl bg-slate-50/50 border-slate-100 focus:ring-2 focus:ring-[#316263]/20 font-medium px-4"
                                 value={data.welcome.title}
                                 onChange={e => setData({ ...data, welcome: { ...data.welcome, title: e.target.value } })}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label>Nombre del Anfitrión</Label>
+                        <div className="space-y-2 text-left">
+                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nombre del Anfitrión</Label>
                             <Input
                                 placeholder="Ej: María & Juan"
-                                className="h-11"
+                                className="h-12 rounded-xl bg-slate-50/50 border-slate-100 focus:ring-2 focus:ring-[#316263]/20 font-medium px-4"
                                 value={data.welcome?.host_name || ''}
                                 onChange={e => setData({ ...data, welcome: { ...data.welcome, host_name: e.target.value } })}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label>Mensaje Personal</Label>
+                        <div className="space-y-2 text-left">
+                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Mensaje Personal</Label>
                             <Textarea
                                 placeholder="Ej: Estamos encantados de teneros aquí. Disfrutad de vuestra estancia..."
-                                className="min-h-[140px]"
+                                className="min-h-[160px] rounded-xl bg-slate-50/50 border-slate-100 focus:ring-2 focus:ring-[#316263]/20 p-5 text-sm font-medium leading-relaxed"
                                 value={data.welcome?.message || ''}
                                 onChange={e => setData({ ...data, welcome: { ...data.welcome, message: e.target.value } })}
                             />

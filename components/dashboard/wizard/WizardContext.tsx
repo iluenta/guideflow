@@ -14,7 +14,7 @@ import { harmonizeThemeFromPrimary } from '@/lib/color-harmonizer'
 import { DEFAULT_ITEMS } from '@/components/dashboard/InventorySelector'
 import { isValidUUID } from '@/lib/utils'
 
-export const steps = ['property', 'appearance', 'access', 'welcome', 'contacts', 'checkin', 'rules', 'tech', 'visual-scanner', 'inventory', 'dining', 'faqs']
+export const steps = ['property', 'appearance', 'access', 'welcome', 'contacts', 'checkin', 'rules', 'tech', 'visual-scanner', 'appliance-manuals', 'inventory', 'dining', 'faqs']
 
 interface WizardContextType {
     // State

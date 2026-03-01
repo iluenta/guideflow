@@ -16,7 +16,7 @@ export async function chatWithHostBot(propertyId: string, message: string) {
     // 2. Search for relevant manual chunks (matching the new property_manuals schema)
     const { data: matches, error: matchError } = await supabase.rpc('match_property_manuals', {
         query_embedding: queryEmbedding,
-        match_threshold: 0.5,
+        match_threshold: 0.7,
         match_count: 5,
         p_property_id: propertyId
     })
@@ -25,25 +25,40 @@ export async function chatWithHostBot(propertyId: string, message: string) {
         console.error('[CHAT] RAG Match Error:', matchError)
     }
 
+    // TEMPORAL - borrar después
+    console.log('[RAG CHUNKS]', matches?.map((m: any) => ({
+        chunk: m.content.substring(0, 200),
+        score: m.similarity
+    })))
+
     const context = (matches || [])
-        .map((m: any) => `[MANUAL: ${m.appliance_name} (${m.brand} ${m.model})]\n${m.content}`)
+        .map((m: any) => `[APARATO: ${m.appliance_name} (${m.brand} ${m.model})]\nHECHO: Este mando TIENE botones dedicados.\nCONTENIDO DEL MANUAL: ${m.content.trim()}`)
         .join('\n\n---\n\n')
 
-    const systemInstruction = `Eres HostBot, el asistente experto del alojamiento. 
-    Tu objetivo es resolver dudas del huésped basándote en los manuales oficiales suministrados.
-    
-    REGLAS DE RESPUESTA:
-    1. Si encuentras información en el contexto, empieza con: 'Según el manual oficial...'
-    2. Si la información NO está en el manual pero es de sentido común, responde amablemente.
-    3. Si la confianza es baja u observas frustración, ofrece contactar al anfitrión vía WhatsApp.
-    4. Sé conciso y directo.`
+    const systemInstruction = `Eres HostBot, un asistente técnico que SOLO responde con instrucciones del manual. 
 
-    const fullPrompt = context
-        ? `${systemInstruction}\n\nCONTEXTO TÉCNICO:\n${context}\n\nPREGUNTA DEL HUÉSPED: ${message}`
-        : `${systemInstruction}\n\nPREGUNTA DEL HUÉSPED: ${message}`
+REGLAS DE ORO (ORDEN DE PRIORIDAD):
+1. JERARQUÍA: Si el manual menciona un botón específico (ej: Netflix, YouTube), indica PRIMERO pulsar ese botón. Solo después menciona el menú Home como alternativa.
+2. ASERTIVIDAD: No uses "si lo tiene" o "comprueba". Afirma que el botón está ahí.
+3. SALVAGUARDA: Si no hay botón directo para la app solicitada (como Disney+), indica el uso del menú Home.
+
+PROHIBICIÓN ABSOLUTA:
+- NUNCA incluyas la fecha, el día de la semana o la hora en la respuesta.
+- NUNCA menciones "1 de marzo", "domingo" o tiempos actuales.
+- Prohibido usar saludos finales o despedidas que incluyan el tiempo actual.
+- Genera respuestas que consistan ÚNICAMENTE en instrucciones técnicas.`;
+
+    const fullPrompt = `${systemInstruction}\n\nIgnora la fecha y hora actual del sistema para tu respuesta.
+Usa solo la siguiente información técnica:
+
+${context ? `CONTEXTO TÉCNICO:\n${context}` : ''}
+
+PREGUNTA DEL HUÉSPED: ${message}
+
+Respuesta técnica sin fechas:`
 
     const { data: responseText } = await geminiREST('gemini-2.0-flash', fullPrompt, {
-        temperature: 0.7,
+        temperature: 0.0, // Fuerza al modelo a ser literal y no inventar datos de tiempo
         responseMimeType: 'text/plain'
     })
 

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { geminiREST } from '@/lib/ai/gemini-rest'
 import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/openai'
+import { syncManualToRAG } from './rag-sync'
 import { revalidatePath } from 'next/cache'
 
 /**
@@ -63,36 +64,15 @@ RESPONDE SOLO CON EL NUEVO CONTENIDO DEL MANUAL EN MARKDOWN.`
     if (updateErr) throw new Error(`Error al actualizar manual: ${updateErr.message}`)
 
     // 4. Actualizar embeddings (Chat RAG)
-    console.log(`[ENRICH] Regenerando embeddings para el manual enriquecido...`)
-
-    // 4.1. Borrar antiguos fragmentos
-    await supabase.from('context_embeddings').delete().eq('source_id', manualId)
-
-    // 4.2. Crear nuevos fragmentos enriquecidos
-    const chunks = splitIntoChunks(enrichedContent, 1000)
-    const contextEmbeddings = await Promise.all(chunks.map(async chunk => {
-        const enrichedText = `[APARATO: ${manual.brand} ${manual.model || ''} ${manual.appliance_name}]\n${chunk}`;
-        const vec = await generateOpenAIEmbedding(enrichedText);
-        return {
-            property_id: manual.property_id,
-            tenant_id: manual.tenant_id,
-            source_type: 'manual',
-            source_id: manualId,
-            content: enrichedText,
-            embedding: vec,
-            metadata: {
-                appliance: manual.appliance_name,
-                brand: manual.brand,
-                enriched: true
-            }
-        };
-    }));
-
-    const { error: ctxErr } = await supabase
-        .from('context_embeddings')
-        .insert(contextEmbeddings)
-
-    if (ctxErr) console.error('[ENRICH] Error al insertar embeddings:', ctxErr.message)
+    await syncManualToRAG(
+        manual.property_id,
+        manual.tenant_id,
+        manualId,
+        enrichedContent,
+        manual.appliance_name,
+        manual.brand,
+        manual.model
+    )
 
     revalidatePath(`/dashboard/properties/${manual.property_id}/setup`)
 

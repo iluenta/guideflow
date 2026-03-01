@@ -13,62 +13,64 @@ export function WizardNavigation() {
         handleBack,
         loading,
         aiLoading,
-        propertyId,
+        property,
         filteredSteps
     } = useWizard()
 
     const currentIndex = filteredSteps.indexOf(activeTab)
     const isFirstStep = currentIndex === 0
     const isLastStep = currentIndex === filteredSteps.length - 1
-    const canContinue = propertyId || isFirstStep
+
+    const isIngesting = !!aiLoading || property?.inventory_status === 'identifying' || property?.inventory_status === 'generating'
+    const isActionDisabled = loading || isIngesting
+    const canContinue = (property?.id || isFirstStep) && !isIngesting
 
     return (
-        <div className="fixed bottom-24 left-0 right-0 md:sticky md:bottom-0 bg-transparent md:bg-white md:border-t md:border-slate-100 md:rounded-b-2xl md:mt-8 z-40 px-6 md:p-4">
-            <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-                <div className="flex-1 shrink-0">
-                    {!isFirstStep && (
-                        <Button
-                            variant="outline"
-                            onClick={handleBack}
-                            disabled={loading}
-                            className="w-11 h-11 md:w-auto md:h-auto md:px-0 md:py-0 md:border-none md:bg-transparent rounded-full md:rounded-none bg-white text-slate-500 hover:text-navy shadow-lg md:shadow-none border-slate-200"
-                        >
-                            <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 md:mr-2" />
-                            <span className="hidden md:inline font-bold text-xs">Anterior</span>
-                        </Button>
-                    )}
-                </div>
-
-                <div className="flex-1 flex justify-end">
+        <div className="mt-16 pb-10 flex items-center justify-between gap-6 max-w-4xl">
+            <div className="flex-1">
+                {!isFirstStep && (
                     <Button
-                        onClick={handleNext}
-                        disabled={loading || !!aiLoading || !canContinue}
-                        className={cn(
-                            "rounded-full md:rounded-xl shadow-xl transition-all duration-300 w-14 h-14 md:w-auto md:min-w-[200px] md:h-11",
-                            isLastStep
-                                ? "bg-green-600 hover:bg-green-700 shadow-green-200"
-                                : "bg-primary hover:bg-primary/90 shadow-primary/20"
-                        )}
+                        variant="ghost"
+                        onClick={handleBack}
+                        disabled={isActionDisabled}
+                        className="h-11 px-6 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-white transition-all font-bold flex items-center gap-3 text-sm"
                     >
-                        {loading || aiLoading ? (
-                            <span className="flex items-center gap-2">
-                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                                <span className="hidden md:inline">
-                                    {aiLoading ? 'Procesando IA...' : 'Guardando...'}
-                                </span>
-                            </span>
-                        ) : (
-                            <>
-                                {isLastStep ? <CheckCircle className="w-6 h-6 md:w-4 md:h-4 md:mr-1" /> : <Save className="w-6 h-6 md:w-4 md:h-4 md:mr-1" />}
-                                <span className="hidden md:inline ml-1 font-bold text-xs uppercase tracking-wider">
-                                    {isLastStep ? 'Finalizar Guía' : 'Guardar y Continuar'}
-                                </span>
-                                {!isLastStep && <ArrowRight className="hidden md:inline w-4 h-4 ml-1" />}
-                            </>
-                        )}
+                        <ArrowLeft className="w-6 h-6" />
+                        Atrás
                     </Button>
-                </div>
+                )}
             </div>
+
+            <div className="flex-[2] flex justify-center">
+                <Button
+                    onClick={handleNext}
+                    disabled={isActionDisabled || !canContinue}
+                    className={cn(
+                        "h-12 px-10 rounded-xl transition-all duration-500 shadow-md flex items-center gap-3 text-sm font-bold group min-w-[220px]",
+                        isLastStep
+                            ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20"
+                            : "bg-[#111827] hover:bg-[#111827]/90 shadow-slate-900/30"
+                    )}
+                >
+                    {loading || aiLoading ? (
+                        <div className="flex items-center gap-4">
+                            <div className="h-5 w-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            <span>{aiLoading ? 'Procesando IA...' : 'Guardando...'}</span>
+                        </div>
+                    ) : (
+                        <>
+                            <span>{isLastStep ? 'Finalizar Configuración' : 'Guardar y Continuar'}</span>
+                            {isLastStep ? (
+                                <CheckCircle className="w-5 h-5" />
+                            ) : (
+                                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            )}
+                        </>
+                    )}
+                </Button>
+            </div>
+
+            <div className="flex-1" />
         </div>
     );
 }
