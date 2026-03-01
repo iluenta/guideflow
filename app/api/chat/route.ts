@@ -22,18 +22,19 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { messages, propertyId: legacyPropertyId, accessToken, language = 'es' } = await req.json();
+        const { messages, propertyId: legacyPropertyId, accessToken, language = 'es', guestSessionId } = await req.json();
         const lastMessage = messages[messages.length - 1].content;
         const ip = req.headers.get('x-forwarded-for') || 'unknown';
         const userAgent = req.headers.get('user-agent') || 'unknown';
 
         let propertyId = legacyPropertyId;
         let propertyTier: 'standard' | 'premium' | 'enterprise' = 'standard';
+        let tenantId: string | null = null;
 
         const checkHaltStatus = async (pidToCheck: string) => {
             const { data: propertyStatus, error: propError } = await supabase
                 .from('properties')
-                .select('id, tier, is_halted, halt_expires_at, halt_reason')
+                .select('id, tier, is_halted, halt_expires_at, halt_reason, tenant_id')
                 .eq('id', pidToCheck)
                 .single();
 
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
             }
 
             propertyTier = (propertyStatus.tier as any) || 'standard';
+            if (propertyStatus.tenant_id) tenantId = propertyStatus.tenant_id;
 
             if (propertyStatus.is_halted) {
                 const now = new Date();
@@ -287,8 +289,14 @@ export async function POST(req: Request) {
         ]);
 
         // Recomendaciones directas de DB (solo si aplica)
-        // Usamos el foodSubtype del clasificador directamente — no más regex de subcategoría
-        const foodSubcatFromIntent = intent.foodSubtype ? [intent.foodSubtype] : [];
+        let foodSubcatFromIntent: string[] = [];
+        if (intent.intent === 'recommendation_food') {
+            if (intent.isGenericFood || !intent.foodSubtype || intent.foodSubtype === 'general') {
+                foodSubcatFromIntent = ['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'cafe', 'tapas'];
+            } else {
+                foodSubcatFromIntent = [intent.foodSubtype];
+            }
+        }
         const activityTypes = intent.intent === 'recommendation_activity' ? ['ocio', 'naturaleza', 'cultura', 'relax'] : [];
         const shoppingTypes = intent.intent === 'recommendation_shopping' ? ['compras', 'supermercados'] : [];
         const detectedTypes = [...foodSubcatFromIntent, ...activityTypes, ...shoppingTypes];
@@ -333,7 +341,7 @@ export async function POST(req: Request) {
 
         // isGenericFood viene directamente del clasificador
         const isGenericFood = intent.isGenericFood;
-        const ALL_FOOD_TYPES = ['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno'];
+        const ALL_FOOD_TYPES = ['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'cafe', 'tapas'];
         const allFoodRecs = directRecommendations.filter(r => ALL_FOOD_TYPES.includes(getType(r)));
         const foodCatsInDB = Array.from(new Set(allFoodRecs.map(r => getType(r))));
 
@@ -342,6 +350,7 @@ export async function POST(req: Request) {
             'mediterraneo': 'RESTAURANTES_MEDITERRANEOS', 'hamburguesas': 'HAMBURGUESAS_Y_AMERICANO',
             'asiatico': 'COCINA_ASIATICA', 'alta_cocina': 'ALTA_COCINA',
             'internacional': 'COCINA_INTERNACIONAL', 'desayuno': 'CAFETERIAS_Y_DESAYUNOS',
+            'cafe': 'CAFETERIAS', 'tapas': 'TAPAS',
             'ocio': 'LUGARES_DE_OCIO', 'compras': 'TIENDAS_Y_COMPRAS',
             'naturaleza': 'NATURALEZA_Y_PARQUES', 'cultura': 'CULTURA_Y_VISITAS',
             'relax': 'RELAX_Y_BIENESTAR',
@@ -380,7 +389,8 @@ export async function POST(req: Request) {
                         'restaurantes': 'Restaurantes', 'italiano': 'Italiana',
                         'mediterraneo': 'Mediterránea', 'hamburguesas': 'Hamburguesas',
                         'asiatico': 'Asiática', 'alta_cocina': 'Alta cocina',
-                        'internacional': 'Internacional', 'desayuno': 'Desayunos / Cafeterías'
+                        'internacional': 'Internacional', 'desayuno': 'Desayunos',
+                        'cafe': 'Cafeterías', 'tapas': 'Tapas'
                     };
                     const catSummary = foodCatsInDB.map(c => catLabelNames[c] || c).join(', ');
                     return [`[CATEGORIAS_DISPONIBLES_COMIDA]: ${catSummary}`];
@@ -516,7 +526,8 @@ ${noInventionAnchor}`;
                 'restaurantes': 'Restaurantes generales', 'italiano': 'Italiana',
                 'mediterraneo': 'Mediterránea', 'hamburguesas': 'Hamburguesas',
                 'asiatico': 'Asiática', 'alta_cocina': 'Alta cocina',
-                'internacional': 'Internacional', 'desayuno': 'Desayunos / Cafeterías'
+                'internacional': 'Internacional', 'desayuno': 'Desayunos',
+                'cafe': 'Cafeterías', 'tapas': 'Tapas'
             };
             const availableCatNames = foodCatsInDB.map(c => catLabelNames[c] || c).join(', ');
             const hasDirectRecs = isRecommendationQuery && directRecommendations.length > 0;
@@ -601,6 +612,7 @@ ${noInventionAnchor}`;
                 let eventBuffer = '';
                 let accumulatedText = '';
                 let mapMarkerBuffer = '';
+                let globalAccumulatedText = '';
 
                 try {
                     while (true) {
@@ -617,6 +629,7 @@ ${noInventionAnchor}`;
                                     const json = JSON.parse(line.substring(6));
                                     const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
                                     if (text) {
+                                        globalAccumulatedText += text;
                                         if (language === 'es') {
                                             if (text.includes('[[') || mapMarkerBuffer) {
                                                 mapMarkerBuffer += text;
@@ -676,6 +689,34 @@ ${noInventionAnchor}`;
                             accumulatedText, 'es', language, { propertyId, context: 'chat' }
                         );
                         controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(translatedChunk)}\n`));
+                    }
+
+                    if (propertyId && guestSessionId && globalAccumulatedText.length > 0) {
+                        try {
+                            const newMessages = [...messages, { role: 'assistant', content: globalAccumulatedText, timestamp: new Date().toISOString() }];
+
+                            const { data: existingChat } = await supabase
+                                .from('guest_chats')
+                                .select('id')
+                                .eq('guest_session_id', guestSessionId)
+                                .maybeSingle();
+
+                            if (existingChat) {
+                                await supabase.from('guest_chats').update({
+                                    messages: newMessages,
+                                    updated_at: new Date().toISOString()
+                                }).eq('id', existingChat.id);
+                            } else {
+                                await supabase.from('guest_chats').insert({
+                                    property_id: propertyId,
+                                    tenant_id: tenantId,
+                                    guest_session_id: guestSessionId,
+                                    messages: newMessages
+                                });
+                            }
+                        } catch (err: any) {
+                            console.error('[CHAT LOG] Failed to log chat:', err.message);
+                        }
                     }
                 } catch (e) {
                     console.error('[CHAT] Streaming error:', e);

@@ -8,7 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TrendingUp, TrendingDown, Calendar, DollarSign, Users, Percent } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { TrendingUp, TrendingDown, Calendar, DollarSign, Users, Percent, MessageSquare } from "lucide-react";
 
 const stats = [
   {
@@ -93,17 +95,25 @@ export default function AnalyticsPage() {
             Rendimiento de tus alojamientos
           </p>
         </div>
-        <Select defaultValue="6m">
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7d">Ultimos 7 dias</SelectItem>
-            <SelectItem value="30d">Ultimos 30 dias</SelectItem>
-            <SelectItem value="6m">Ultimos 6 meses</SelectItem>
-            <SelectItem value="1y">Ultimo ano</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="gap-2 shadow-sm" asChild>
+            <Link href="/dashboard/analytics/conversations">
+              <MessageSquare className="w-4 h-4" />
+              Ver Conversaciones
+            </Link>
+          </Button>
+          <Select defaultValue="6m">
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Ultimos 7 dias</SelectItem>
+              <SelectItem value="30d">Ultimos 30 dias</SelectItem>
+              <SelectItem value="6m">Ultimos 6 meses</SelectItem>
+              <SelectItem value="1y">Ultimo ano</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -116,9 +126,8 @@ export default function AnalyticsPage() {
                   <stat.icon className="h-5 w-5 text-primary" />
                 </div>
                 <div
-                  className={`flex items-center gap-1 text-sm ${
-                    stat.trend === "up" ? "text-accent" : "text-destructive"
-                  }`}
+                  className={`flex items-center gap-1 text-sm ${stat.trend === "up" ? "text-accent" : "text-destructive"
+                    }`}
                 >
                   {stat.trend === "up" ? (
                     <TrendingUp className="h-4 w-4" />
@@ -234,11 +243,10 @@ export default function AnalyticsPage() {
                     </td>
                     <td className="py-4 text-right">
                       <span
-                        className={`${
-                          property.occupancy >= 80
+                        className={`${property.occupancy >= 80
                             ? "text-accent"
                             : "text-foreground"
-                        }`}
+                          }`}
                       >
                         {property.occupancy}%
                       </span>

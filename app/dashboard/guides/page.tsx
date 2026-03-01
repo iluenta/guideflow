@@ -75,7 +75,7 @@ export default async function GuidesPage({
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                      {property.location}
+                      {property.full_address || property.city || '- Ubicación sin definir -'}
                     </p>
                   </div>
 

@@ -69,15 +69,15 @@ export function HamburgerMenu({
 
     // Visibility Logic
     const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
-    const hasRules = !!context?.find(c => c.category === 'rules')?.content || 
-                     !!context?.find(c => c.category === 'checkin')?.content ||
-                     !!sections?.find(s => s.title?.toLowerCase().includes('normas') || s.title?.toLowerCase().includes('reglas'));
+    const hasRules = !!context?.find(c => c.category === 'rules')?.content ||
+        !!context?.find(c => c.category === 'checkin')?.content ||
+        !!sections?.find(s => s.title?.toLowerCase().includes('normas') || s.title?.toLowerCase().includes('reglas'));
     const hasManuals = manuals.length > 0;
     const hasCheckin = !!context?.find(c => c.category === 'checkin')?.content?.steps?.length;
-    
+
     const eatRecs = recommendations.filter(r => r.type === 'restaurant' || r.type === 'cafe' || r.type === 'bar');
     const doRecs = recommendations.filter(r => r.type === 'activity' || r.type === 'park' || r.type === 'museum' || r.type === 'landmark');
-    const shopRecs = recommendations.filter(r => r.type === 'shopping' || r.type === 'market' || r.type === 'pharmacy');
+    const shopRecs = recommendations.filter(r => ['shopping', 'market', 'pharmacy', 'compras', 'supermercados'].includes(r.type));
 
     const menuGroups = [
         {

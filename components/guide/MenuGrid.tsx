@@ -39,12 +39,12 @@ interface MenuGridProps {
     sections?: any[];
 }
 
-export function MenuGrid({ 
-    onNavigate, 
-    welcomeData, 
-    imageUrl, 
-    currentLanguage = 'es', 
-    accessToken, 
+export function MenuGrid({
+    onNavigate,
+    welcomeData,
+    imageUrl,
+    currentLanguage = 'es',
+    accessToken,
     propertyId,
     manuals = [],
     recommendations = [],
@@ -141,19 +141,19 @@ export function MenuGrid({
 
     // Visibility Logic
     const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
-    const hasRules = !!context?.find(c => c.category === 'rules')?.content || 
-                     !!context?.find(c => c.category === 'checkin')?.content ||
-                     !!sections?.find(s => s.title?.toLowerCase().includes('normas') || s.title?.toLowerCase().includes('reglas'));
+    const hasRules = !!context?.find(c => c.category === 'rules')?.content ||
+        !!context?.find(c => c.category === 'checkin')?.content ||
+        !!sections?.find(s => s.title?.toLowerCase().includes('normas') || s.title?.toLowerCase().includes('reglas'));
     const hasManuals = manuals.length > 0;
     const hasCheckin = !!context?.find(c => c.category === 'checkin')?.content?.steps?.length;
-    
+
     const EAT_TYPES = new Set(['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'restaurant', 'cafe', 'bar']);
-    const DO_TYPES  = new Set(['naturaleza', 'cultura', 'ocio', 'relax', 'activity', 'park', 'museum', 'landmark']);
-    const SHOP_TYPES = new Set(['compras', 'shopping', 'market', 'pharmacy']);
+    const DO_TYPES = new Set(['naturaleza', 'cultura', 'ocio', 'relax', 'activity', 'park', 'museum', 'landmark']);
+    const SHOP_TYPES = new Set(['compras', 'supermercados', 'shopping', 'market', 'pharmacy', 'supermarket']);
 
     const getRecType = (r: any) => (r.type || r.category || '').toLowerCase();
-    const eatRecs  = recommendations.filter(r => EAT_TYPES.has(getRecType(r)));
-    const doRecs   = recommendations.filter(r => DO_TYPES.has(getRecType(r)));
+    const eatRecs = recommendations.filter(r => EAT_TYPES.has(getRecType(r)));
+    const doRecs = recommendations.filter(r => DO_TYPES.has(getRecType(r)));
     const shopRecs = recommendations.filter(r => SHOP_TYPES.has(getRecType(r)));
 
     const triggerHaptic = (pattern: number | number[] = 10) => {
@@ -171,11 +171,11 @@ export function MenuGrid({
     const { content: labelEssentials } = useLocalizedContent('LO ESENCIAL', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelExplore } = useLocalizedContent('EXPLORA', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelAccommodation } = useLocalizedContent('TU ALOJAMIENTO', currentLanguage, 'ui_label', accessToken, propertyId);
-    
+
     const { content: labelHouseInfo } = useLocalizedContent('Info Casa', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelRulesShort } = useLocalizedContent('Normas', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelManualShort } = useLocalizedContent('Guía de USO', currentLanguage, 'ui_label', accessToken, propertyId);
-    
+
     // Quick Actions
     const { content: labelEatNearby } = useLocalizedContent('Dónde Comer', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelEatDesc } = useLocalizedContent('Restaurantes y cafeterías locales', currentLanguage, 'ui_label', accessToken, propertyId);

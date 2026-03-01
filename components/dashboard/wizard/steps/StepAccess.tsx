@@ -130,6 +130,16 @@ export default function StepAccess({ value }: { value?: string }) {
                                     size="sm"
                                     className="h-8 text-[10px] flex-1 font-bold"
                                     onClick={() => {
+                                        setData((prev: any) => ({
+                                            ...prev,
+                                            access: {
+                                                ...prev.access,
+                                                from_airport: null,
+                                                from_train: null,
+                                                parking: null,
+                                                nearby_transport: []
+                                            }
+                                        }))
                                         handleAIFill('transport')
                                         setShowRegenerateAlert(false)
                                     }}

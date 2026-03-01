@@ -97,12 +97,12 @@ export function Fase11Home({
     }, [recommendations, timeInfo.category]);
 
     const hasRecommendations = recommendations && recommendations.length > 0;
-    const EAT_SET  = new Set(['restaurantes','italiano','mediterraneo','hamburguesas','asiatico','alta_cocina','internacional','desayuno','restaurant','restaurante','cafe','bar','food','comida']);
-    const DO_SET   = new Set(['naturaleza','cultura','ocio','relax','activity','actividad','actividades','park','parque','museum','museo','landmark','experiencias','experience']);
-    const SHOP_SET = new Set(['compras','shopping','market','mercado','pharmacy','farmacia','supermarket','supermercado']);
+    const EAT_SET = new Set(['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'restaurant', 'restaurante', 'cafe', 'bar', 'food', 'comida']);
+    const DO_SET = new Set(['naturaleza', 'cultura', 'ocio', 'relax', 'activity', 'actividad', 'actividades', 'park', 'parque', 'museum', 'museo', 'landmark', 'experiencias', 'experience']);
+    const SHOP_SET = new Set(['compras', 'shopping', 'market', 'mercado', 'pharmacy', 'farmacia', 'supermarket', 'supermercado', 'supermercados']);
     const getRType = (r: any) => (r.type || r.category || '').toLowerCase();
-    const eatRecs  = recommendations.filter(r => EAT_SET.has(getRType(r)));
-    const doRecs   = recommendations.filter(r => DO_SET.has(getRType(r)));
+    const eatRecs = recommendations.filter(r => EAT_SET.has(getRType(r)));
+    const doRecs = recommendations.filter(r => DO_SET.has(getRType(r)));
     const shopRecs = recommendations.filter(r => SHOP_SET.has(getRType(r)));
 
     const { content: localizedTipName } = useLocalizedContent(tipRecommendation?.name || '', currentLanguage, 'recommendations', accessToken, propertyId);
@@ -158,9 +158,9 @@ export function Fase11Home({
                     >
                         <ArrowLeft size={20} />
                     </button>
-                    <LanguageSelector 
-                        currentLanguage={currentLanguage} 
-                        onLanguageChange={onLanguageChange} 
+                    <LanguageSelector
+                        currentLanguage={currentLanguage}
+                        onLanguageChange={onLanguageChange}
                     />
                 </div>
 

@@ -20,7 +20,6 @@ export async function POST(req: Request) {
     const { propertyId, section, existingData } = await req.json();
     console.log(`[AI-API] Request received. Property: ${propertyId}, Section: ${section}`);
 
-    // Validación básica de propertyId (evitar strings no-UUID que rompen Supabase)
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyId);
 
     if (!isUuid || propertyId === 'address-only') {
@@ -36,7 +35,6 @@ export async function POST(req: Request) {
 
     const supabase = getSupabase();
 
-    // Obtener detalles de la propiedad para el contexto geográfico
     const { data: property, error: propError } = await supabase
       .from('properties')
       .select('name, city, country, neighborhood, description')
@@ -53,19 +51,28 @@ export async function POST(req: Request) {
 
     const fullAddress = existingData?.address || `${property.city}${property.neighborhood ? `, ${property.neighborhood}` : ''}${property.country ? `, ${property.country}` : ''}`;
 
-    // Extracción de ciudad mejorada (derecha a izquierda)
     let finalCity = property.city || 'Desconocida';
 
+    // Para refinar textsearch en pueblos pequeños (ej: Vera en lugar de Almería entera)
     if (existingData?.address) {
       const parts = (existingData.address as string).split(',').map((p: string) => p.trim());
-      // Buscamos la primera parte desde el final que sea una ciudad probable (más de 2 letras y no solo números)
-      for (let i = parts.length - 1; i >= 0; i--) {
-        const p = parts[i].replace(/^\d{5}\s+/, '').trim(); // Eliminar código postal si existe
-        if (p.length > 2 && !/^\d+$/.test(p)) {
-          finalCity = p;
-          break;
-        }
+      // Filtrar países explícitos y números, para coger el pueblo y la provincia
+      const countriesToFilter = ['españa', 'espana', 'spain', 'francia', 'france', 'italia', 'italy', 'portugal'];
+      const validParts = parts
+        .map(p => p.replace(/^\d{5}\s+/, '').trim())
+        .filter(p =>
+          p.length > 2 &&
+          !/^\d+$/.test(p) &&
+          !countriesToFilter.includes(p.toLowerCase()) &&
+          p.toLowerCase() !== property.country?.toLowerCase()
+        );
+
+      if (validParts.length > 0) {
+        // Cogemos el pueblo/barrio y la ciudad/provincia principales
+        finalCity = validParts.slice(-2).join(', ');
       }
+    } else if (property.neighborhood && property.city) {
+      finalCity = `${property.neighborhood}, ${property.city}`;
     }
 
     if (finalCity === 'Desconocida' && property.country) {
@@ -102,7 +109,6 @@ export async function POST(req: Request) {
       }
     }
 
-
     // ─── PROMPTS para Gemini ──────────────────────────────────────────────────
     let prompt = '';
 
@@ -114,22 +120,23 @@ export async function POST(req: Request) {
       const seen = new Set(existingNames.map((n: string) => n.toLowerCase()));
 
       // ── 2. Subcategory → Google Places type + keyword mapping ────────────────
+      // Flexibilizamos mucho las keywords para que nearbysearch no devuelva 0 resultados.
       const SUBCATEGORY_MAP: Record<string, { placeType: string; keyword?: string }> = {
         todos: { placeType: 'restaurant' },
         restaurantes: { placeType: 'restaurant' },
-        italiano: { placeType: 'restaurant', keyword: 'italiano pizza pasta' },
-        mediterraneo: { placeType: 'restaurant', keyword: 'mediterráneo tapas mariscos' },
-        hamburguesas: { placeType: 'restaurant', keyword: 'hamburguesa burger' },
-        asiatico: { placeType: 'restaurant', keyword: 'sushi japonés chino thai asiático' },
-        alta_cocina: { placeType: 'restaurant', keyword: 'alta cocina gourmet' },
-        internacional: { placeType: 'restaurant', keyword: 'internacional fusión' },
-        desayuno: { placeType: 'cafe', keyword: 'desayuno brunch cafetería' },
-        compras: { placeType: 'shopping_mall', keyword: 'centro comercial moda fashion ropa tiendas típicas souvenirs' },
-        supermercados: { placeType: 'supermarket', keyword: 'mercadona dia carrefour lidl aldi mercado abastos alimentación' },
-        cultura: { placeType: 'museum', keyword: 'museo monumento cultura' },
+        italiano: { placeType: 'restaurant', keyword: 'italiano|pizza' },
+        mediterraneo: { placeType: 'restaurant', keyword: 'mediterráneo|tapas|marisco' },
+        hamburguesas: { placeType: 'restaurant', keyword: 'hamburguesa|burger' },
+        asiatico: { placeType: 'restaurant', keyword: 'sushi|asiático|chino' },
+        alta_cocina: { placeType: 'restaurant', keyword: 'alta cocina|gourmet' },
+        internacional: { placeType: 'restaurant', keyword: 'internacional|fusión' },
+        desayuno: { placeType: 'cafe', keyword: 'desayuno|brunch|cafetería' },
+        compras: { placeType: 'shopping_mall', keyword: 'centro comercial|ropa' },
+        supermercados: { placeType: 'supermarket', keyword: 'supermercado|mercadona|carrefour' },
+        cultura: { placeType: 'museum', keyword: 'museo|monumento' },
         naturaleza: { placeType: 'park' },
-        ocio: { placeType: 'bar', keyword: 'ocio entretenimiento' },
-        relax: { placeType: 'spa', keyword: 'spa relax bienestar' },
+        ocio: { placeType: 'bar', keyword: 'ocio|pub|coctel' },
+        relax: { placeType: 'spa', keyword: 'spa|relax|masaje' },
       };
       const catConfig = SUBCATEGORY_MAP[selectedCat] || SUBCATEGORY_MAP['restaurantes'];
 
@@ -146,9 +153,8 @@ export async function POST(req: Request) {
 
           if (loc) {
             const { lat, lng } = loc;
-            const radius = 3000; // Increased radius for search
+            const radius = 5000; // Incrementamos a 5km para zonas rurales / pueblos pequeños
 
-            // Define which categories to search for 'todos'
             const categoriesToIterate = selectedCat === 'todos'
               ? ['restaurantes', 'compras', 'cultura', 'naturaleza', 'ocio']
               : [selectedCat];
@@ -157,21 +163,35 @@ export async function POST(req: Request) {
 
             for (const cat of categoriesToIterate) {
               const config = SUBCATEGORY_MAP[cat] || SUBCATEGORY_MAP['restaurantes'];
-              let nearbyUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${config.placeType}&language=es&key=${placesKey}`;
-              if (config.keyword) nearbyUrl += `&keyword=${encodeURIComponent(config.keyword)}`;
 
-              const nearbyRes = await fetch(nearbyUrl);
-              const nearbyData = await nearbyRes.json();
+              // Volvemos a nearbysearch pero con lat/lng estrictos y radius.
+              // textsearch ignora parcial o totalmente lat/lng si la query incluye una gran ciudad.
+              let searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${config.placeType}&language=es&key=${placesKey}`;
+              if (config.keyword) {
+                searchUrl += `&keyword=${encodeURIComponent(config.keyword)}`;
+              }
 
-              const currentResults = (nearbyData.results || [])
+              const searchRes = await fetch(searchUrl);
+              const searchData = await searchRes.json();
+
+              // TEMPORAL - ver qué devuelve Google antes del filtro
+              console.log(`[PLACES] Raw results for ${cat}:`, searchData.results?.length,
+                'status:', searchData.status,
+                'after rating filter:', (searchData.results || []).filter((p: any) => (p.rating || 0) >= 3.5).length
+              );
+
+              const currentResults = (searchData.results || [])
                 .filter((p: any) => !seen.has((p.name || '').toLowerCase()) && (p.rating || 0) >= 3.5)
-                .slice(0, selectedCat === 'todos' ? 4 : 10) // 4 for each if 'todos', else 10
+                .slice(0, selectedCat === 'todos' ? 4 : 10)
+                // ── OPCIÓN C: extraemos todos los datos factuales disponibles ──
                 .map((p: any) => ({
                   google_place_id: p.place_id,
                   name: p.name,
                   address: p.vicinity,
-                  rating: p.rating,
-                  price_level: p.price_level,
+                  rating: p.rating ?? null,
+                  user_ratings_total: p.user_ratings_total ?? 0,
+                  price_level: p.price_level ?? null,
+                  types: (p.types || []).slice(0, 3), // máx 3 para no inflar el prompt
                   category: cat === 'todos' ? 'restaurantes' : cat,
                   map_url: `https://www.google.com/maps/place/?q=place_id:${p.place_id}`,
                   is_ai_generated: false
@@ -179,7 +199,6 @@ export async function POST(req: Request) {
 
               placesResults = [...placesResults, ...currentResults];
 
-              // Prevent too many requests for 'todos'
               if (selectedCat === 'todos' && placesResults.length >= 20) break;
             }
           }
@@ -188,49 +207,54 @@ export async function POST(req: Request) {
         }
       }
 
-      // ── 4. Fallback Selection & Hybrid Logic ─────────────────────────────────
-      let finalPlacesToEnrich = placesResults.slice(0, 20);
-      let needsAiCompletion = finalPlacesToEnrich.length < (selectedCat === 'todos' ? 10 : 3);
+      // ── 4. Selección final — Opción C: nunca inventamos lugares ─────────────
+      const finalPlacesToEnrich = placesResults.slice(0, 20);
 
-      if (finalPlacesToEnrich.length === 0 && !needsAiCompletion) {
-        return new Response(JSON.stringify({ recommendations: [] }), { headers: { 'Content-Type': 'application/json' } });
+      if (finalPlacesToEnrich.length === 0) {
+        return new Response(JSON.stringify({ recommendations: [] }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
       }
 
-      const catDesc = selectedCat === 'todos' ? 'diversas categorías (Restaurantes, Compras, Cultura, Naturaleza, Ocio)' : `la categoría "${selectedCat}"`;
-
-      // ── 5. Gemini Enrichment & Completion ────────────────────────────────────
+      // ── 5. Gemini Enrichment — solo datos factuales ──────────────────────────
       const priceMap: Record<number, string> = { 0: '€', 1: '€', 2: '€€', 3: '€€€', 4: '€€€€' };
-      const completionCount = needsAiCompletion ? 2 : 0;
 
-      const enrichPrompt = `Eres un guía local experto de ${finalCity} con conocimiento profundo de la zona (${fullAddress}).
-      
-${needsAiCompletion ? `Solo he encontrado ${placesResults.length} puntos oficiales. TU TAREA:
-1. Enriquece los resultados REALES que te paso.
-2. INVENTA ${completionCount} lugares adicionales VEROSÍMILES de ${catDesc} que podrían existir en esta zona pero que no aparecen en el mapa oficial. Márcalos como AI-generated.
-` : `Enriquece estos resultados REALES de Google Maps de la categoría "${selectedCat}":`}
+      const enrichPrompt = `Eres un crítico gastronómico local de ${finalCity}. Escribe descripciones CORTAS, ESPECÍFICAS y VARIADAS para cada lugar.
 
-Para cada lugar, proporciona:
-- description: 2-3 frases auténticas y apetecibles.
-- personal_note: Un consejo práctico (ej. "reserva con antelación", "pide el postre X").
-${selectedCat === 'todos' ? '- category: Si el lugar es inventado, asígnale una categoría válida (restaurantes, italiano, mediterraneo, hamburguesas, asiatico, desayuno, compras, supermercados, cultura, naturaleza, ocio).' : ''}
+REGLAS:
+- Evalúa rigurosamente si el restaurante encaja en la Categoría buscada (${selectedCat}).
+- is_match: booleano (true/false). Si buscas 'italiano' y el local se llama 'Asador El Cordobés' o 'Cocina Extremeña', pon false. Si encaja o es ambiguo/genérico, pon true.
+- Infiere el tipo de local a partir de su NOMBRE (ej: "Bombay Tacos" → cocina india/mexicana fusión, "La Bodeguita" → bar de tapas tradicional, "Cafetería Terraza" → desayunos y brunch al aire libre).
+- NO uses frases genéricas como "ofrece opciones de comida".
+- description: 2 frases concretas sobre QUÉ tipo de cocina o experiencia ofrece, inferido del nombre. Diferente para cada local.
+- personal_note: consejo ÚNICO y específico para ese local concreto. Varía según:
+    · Rating ≥ 4.5 + muchas reseñas → destaca que es de los mejores de la zona
+    · Rating 3.5-4.2 + precio € → "Buena relación calidad-precio para comer sin gastar mucho."
+    · Precio €€€+ → "Reserva con antelación, reserva recomendada."
+    · Nombre sugiere terraza/exterior → "Pide mesa en la terraza si el tiempo acompaña."
 
-Lugares actuales:
-${finalPlacesToEnrich.map((p, i) => `${i + 1}. "${p.name}" (Categoría: ${p.category || selectedCat}) @ ${p.address}`).join('\n')}
+Categoría buscada: ${selectedCat}
+Zona: ${fullAddress}
 
-Responde SOLO con JSON:
+Lugares:
+${finalPlacesToEnrich.map((p, i) => {
+        const stars = p.rating ? `⭐ ${p.rating}/5` : 'sin valoración';
+        const reviews = p.user_ratings_total ? `${p.user_ratings_total} reseñas` : 'sin reseñas';
+        const price = p.price_level != null ? priceMap[p.price_level] : '?';
+        return `${i + 1}. "${p.name}" | ${stars} (${reviews}) | Precio: ${price} | ${p.address}`;
+      }).join('\n')}
+
+Responde SOLO con JSON válido:
 {
   "enriched": [
-    { "index": 0, "description": "...", "personal_note": "..." }
+    { "index": 0, "is_match": true, "description": "...", "personal_note": "..." }
   ]
-  ${needsAiCompletion ? `, "completed": [
-    { "name": "...", "description": "...", "personal_note": "...", "price_range": "€€"${selectedCat === 'todos' ? ', "category": "..." ' : ''} }
-  ]` : ''}
 }`;
 
       const genAI = getGenAI();
       const model = genAI.getGenerativeModel({
         model: 'gemini-2.0-flash',
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.3 }
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
       });
 
       const enrichRes = await model.generateContent(enrichPrompt);
@@ -241,55 +265,39 @@ Responde SOLO con JSON:
         console.error('[AI-FILL] Failed to parse enrichment:', e);
       }
 
-      // Build recommendations array
+      // ── 6. Construir array final — solo lugares reales ───────────────────────
       const recommendations: any[] = [];
 
-      // Add real enriched ones
       finalPlacesToEnrich.forEach((p, i) => {
-        const e = parsedEnrichment.enriched?.find((x: any) => x.index === i) || { description: '', personal_note: '' };
+        const e = parsedEnrichment.enriched?.find((x: any) => x.index === i);
+
+        // Si el usuario pidió una categoría específica y Gemini dice explícitamente que no encaja, lo saltamos.
+        if (selectedCat !== 'todos' && e && e.is_match === false) {
+          console.log(`[AI-FILL] Filtrado por IA (no match): ${p.name}`);
+          return;
+        }
+
+        const safeE = e || { description: '', personal_note: '' };
         const catToUse = p.category || (selectedCat === 'todos' ? 'restaurantes' : selectedCat);
+
         recommendations.push({
           id: `places_${p.google_place_id}`,
           name: p.name,
           category: catToUse,
           type: catToUse,
-          description: e.description,
-          personal_note: e.personal_note,
+          description: safeE.description,
+          personal_note: safeE.personal_note,
           distance: '',
           time: '',
-          price_range: priceMap[p.price_level] ?? '€€',
+          price_range: p.price_level != null ? priceMap[p.price_level] : '€€',
           map_url: p.map_url,
           google_place_id: p.google_place_id,
         });
       });
 
-      // Add AI completed ones if needed
-      if (needsAiCompletion && parsedEnrichment.completed) {
-        parsedEnrichment.completed.forEach((ai: any, i: number) => {
-          const aiCat = ai.category || (selectedCat === 'todos' ? 'restaurantes' : selectedCat);
-          recommendations.push({
-            id: `ai_comp_${Date.now()}_${i}`,
-            name: ai.name,
-            category: aiCat,
-            type: aiCat,
-            description: ai.description,
-            personal_note: `[IA] ${ai.personal_note}`,
-            distance: '',
-            time: '',
-            price_range: ai.price_range || '€€',
-            map_url: '',
-            google_place_id: null,
-          });
-        });
-      }
-
       return new Response(JSON.stringify({ recommendations }), {
         headers: { 'Content-Type': 'application/json' }
       });
-
-      // ── 6. Fallback Catch-all (Should rarely be reached if Places is active) ───
-      console.warn('[PLACES] Complete fallback required');
-
 
     } else if (section === 'tech') {
       prompt = `Asistente técnico para alojamiento turístico. Genera consejos básicos para Smart TV y WiFi. JSON con clave "tech_info".`;

@@ -15,21 +15,21 @@ interface GuestChatProps {
     accessToken?: string
 }
 
-function QuickReplyButton({ 
-    reply, 
-    currentLanguage, 
-    accessToken, 
+function QuickReplyButton({
+    reply,
+    currentLanguage,
+    accessToken,
     propertyId, // FASE 17
-    onClick 
-}: { 
-    reply: string, 
-    currentLanguage: string, 
+    onClick
+}: {
+    reply: string,
+    currentLanguage: string,
     accessToken?: string,
     propertyId?: string, // FASE 17
-    onClick: (reply: string) => void 
+    onClick: (reply: string) => void
 }) {
     const { content: localizedReply } = useLocalizedContent(reply, currentLanguage, 'chat_quick_reply', accessToken, propertyId);
-    
+
     return (
         <button
             onClick={() => onClick(localizedReply)}
@@ -42,7 +42,7 @@ function QuickReplyButton({
 
 function CopyButton({ text }: { text: string }) {
     const [copied, setCopied] = useState(false);
-    
+
     const handleCopy = async () => {
         try {
             await navigator.clipboard.writeText(text);
@@ -62,7 +62,7 @@ function CopyButton({ text }: { text: string }) {
             setTimeout(() => setCopied(false), 2000);
         }
     };
-    
+
     return (
         <button
             type="button"
@@ -78,7 +78,7 @@ function CopyButton({ text }: { text: string }) {
             {copied ? (
                 <>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
+                        <polyline points="20 6 9 17 4 12" />
                     </svg>
                     <span>Copiado</span>
                 </>
@@ -86,8 +86,8 @@ function CopyButton({ text }: { text: string }) {
                 <>
                     <span>{text}</span>
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-40">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                     </svg>
                 </>
             )}
@@ -122,13 +122,24 @@ function injectWifiMarkers(content: string): string {
 
 export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', accessToken }: GuestChatProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [guestSessionId, setGuestSessionId] = useState('');
+
+    useEffect(() => {
+        let sid = localStorage.getItem('guideflow_guest_session_id');
+        if (!sid) {
+            sid = crypto.randomUUID();
+            localStorage.setItem('guideflow_guest_session_id', sid);
+        }
+        setGuestSessionId(sid);
+    }, []);
 
     const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
         api: '/api/chat',
-        body: { 
-            propertyId, 
+        body: {
+            propertyId,
             language: currentLanguage,
-            accessToken
+            accessToken,
+            guestSessionId
         },
     })
 
@@ -293,7 +304,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                 </p>
                                 <div className="grid grid-cols-2 gap-3">
                                     {quickReplies.map((reply, i) => (
-                                        <QuickReplyButton 
+                                        <QuickReplyButton
                                             key={i}
                                             reply={reply}
                                             currentLanguage={currentLanguage}
@@ -309,104 +320,104 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                         <div className="p-6 space-y-6">
                             {messages.map((m) => {
                                 const processedContent = injectWifiMarkers(m.content)
-                                    .replace(/\[\[COPY:([^\]]+)\]\]/g, (_match, val) => `[${val}](copy:${encodeURIComponent(val)})`)
+                                    .replace(/\[\[COPY:(.+?)\]\]/g, (_match, val) => `[${val}](copy:${encodeURIComponent(val)})`)
                                     .replace(/\[\[MAP:([^:]+):([^\]]+)\]\]/g, (_match, address, label) => `[${label}](maps:${encodeURIComponent(address)})`)
                                     .replace(/(?<!\d|\[)(\+?\d{9,15})(?!\d|\])/g, '[$1](tel_wa:$1)');
 
                                 return (
-                                <div
-                                    key={m.id}
-                                    className={cn(
-                                        "flex w-full animate-in fade-in slide-in-from-bottom-2 duration-300",
-                                        m.role === 'user' ? "justify-end" : "justify-start"
-                                    )}
-                                >
-                                    <div className={cn(
-                                        "flex items-end gap-3 max-w-[85%]",
-                                        m.role === 'user' ? "flex-row-reverse" : "flex-row"
-                                    )}>
+                                    <div
+                                        key={m.id}
+                                        className={cn(
+                                            "flex w-full animate-in fade-in slide-in-from-bottom-2 duration-300",
+                                            m.role === 'user' ? "justify-end" : "justify-start"
+                                        )}
+                                    >
                                         <div className={cn(
-                                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm",
-                                            m.role === 'user' ? "bg-stone-100 text-primary" : "bg-primary text-white text-[10px]"
+                                            "flex items-end gap-3 max-w-[85%]",
+                                            m.role === 'user' ? "flex-row-reverse" : "flex-row"
                                         )}>
-                                            {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-                                        </div>
-                                        <div className={cn(
-                                            "px-5 py-3.5 rounded-2xl text-[14px] leading-relaxed",
-                                            m.role === 'user'
-                                                ? "bg-primary text-white rounded-br-none shadow-md font-medium"
-                                                : "bg-stone-50 text-primary/90 rounded-bl-none border border-stone-100"
-                                        )}>
-                                            <div className="text-[14px] leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-800 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1">
-                                                <ReactMarkdown
-                                                    remarkPlugins={[remarkGfm]}
-                                                    urlTransform={(url) => url}
-                                                    components={{
-                                                        a: ({ node, href, children, ...props }) => {
-                                                            if (href?.startsWith('copy:')) {
-                                                                const value = decodeURIComponent(href.slice('copy:'.length));
-                                                                return <CopyButton text={value} />;
-                                                            }
-                                                            // tel_wa: — existing phone + WhatsApp button
-                                                            if (href?.startsWith('tel_wa:')) {
-                                                                const num = href.split(':')[1];
-                                                                const cleanNum = num.replace(/\D/g, '');
-                                                                return (
-                                                                    <span className="inline-flex items-center gap-1.5 bg-primary/5 px-2 py-0.5 rounded-lg border border-primary/10 font-bold text-primary">
-                                                                        {children}
-                                                                        <span className="inline-flex items-center gap-1 ml-1 pl-1 border-l border-primary/20">
-                                                                            <a
-                                                                                href={`tel:${num}`}
-                                                                                className="p-1 hover:bg-primary/10 rounded-md transition-colors inline-flex"
-                                                                                title={callTitle}
-                                                                            >
-                                                                                <Phone className="w-3.5 h-3.5" />
-                                                                            </a>
-                                                                            <a
-                                                                                href={`https://wa.me/${cleanNum}`}
-                                                                                target="_blank"
-                                                                                rel="noopener noreferrer"
-                                                                                className="p-1 hover:bg-green-50 rounded-md transition-colors text-green-600 inline-flex"
-                                                                                title={whatsappTitle}
-                                                                            >
-                                                                                <MessageCircle className="w-3.5 h-3.5" />
-                                                                            </a>
+                                            <div className={cn(
+                                                "w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm",
+                                                m.role === 'user' ? "bg-stone-100 text-primary" : "bg-primary text-white text-[10px]"
+                                            )}>
+                                                {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                                            </div>
+                                            <div className={cn(
+                                                "px-5 py-3.5 rounded-2xl text-[14px] leading-relaxed",
+                                                m.role === 'user'
+                                                    ? "bg-primary text-white rounded-br-none shadow-md font-medium"
+                                                    : "bg-stone-50 text-primary/90 rounded-bl-none border border-stone-100"
+                                            )}>
+                                                <div className="text-[14px] leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-800 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1">
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkGfm]}
+                                                        urlTransform={(url) => url}
+                                                        components={{
+                                                            a: ({ node, href, children, ...props }) => {
+                                                                if (href?.startsWith('copy:')) {
+                                                                    const value = decodeURIComponent(href.slice('copy:'.length));
+                                                                    return <CopyButton text={value} />;
+                                                                }
+                                                                // tel_wa: — existing phone + WhatsApp button
+                                                                if (href?.startsWith('tel_wa:')) {
+                                                                    const num = href.split(':')[1];
+                                                                    const cleanNum = num.replace(/\D/g, '');
+                                                                    return (
+                                                                        <span className="inline-flex items-center gap-1.5 bg-primary/5 px-2 py-0.5 rounded-lg border border-primary/10 font-bold text-primary">
+                                                                            {children}
+                                                                            <span className="inline-flex items-center gap-1 ml-1 pl-1 border-l border-primary/20">
+                                                                                <a
+                                                                                    href={`tel:${num}`}
+                                                                                    className="p-1 hover:bg-primary/10 rounded-md transition-colors inline-flex"
+                                                                                    title={callTitle}
+                                                                                >
+                                                                                    <Phone className="w-3.5 h-3.5" />
+                                                                                </a>
+                                                                                <a
+                                                                                    href={`https://wa.me/${cleanNum}`}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="p-1 hover:bg-green-50 rounded-md transition-colors text-green-600 inline-flex"
+                                                                                    title={whatsappTitle}
+                                                                                >
+                                                                                    <MessageCircle className="w-3.5 h-3.5" />
+                                                                                </a>
+                                                                            </span>
                                                                         </span>
-                                                                    </span>
-                                                                );
+                                                                    );
+                                                                }
+                                                                // maps: — new tappable map button (Apple Maps on iOS, Google Maps elsewhere)
+                                                                if (href?.startsWith('maps:')) {
+                                                                    const encodedAddress = href.slice('maps:'.length);
+                                                                    const isIOS = typeof window !== 'undefined' && /iPhone|iPad|iPod/.test(window.navigator.userAgent);
+                                                                    const mapsUrl = isIOS
+                                                                        ? `maps://?q=${encodedAddress}`
+                                                                        : `https://maps.google.com/?q=${encodedAddress}`;
+                                                                    return (
+                                                                        <a
+                                                                            href={mapsUrl}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium border border-blue-200 hover:bg-blue-100 active:scale-95 transition-all"
+                                                                        >
+                                                                            <span className="text-base leading-none">📍</span>
+                                                                            {decodeURIComponent(String(children))}
+                                                                        </a>
+                                                                    );
+                                                                }
+                                                                return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+                                                            },
+                                                            code: ({ node, inline, children, ...props }: any) => {
+                                                                return <code {...props} className="bg-primary/5 text-primary px-1 rounded-sm">{children}</code>;
                                                             }
-                                                            // maps: — new tappable map button (Apple Maps on iOS, Google Maps elsewhere)
-                                                            if (href?.startsWith('maps:')) {
-                                                                const encodedAddress = href.slice('maps:'.length);
-                                                                const isIOS = typeof window !== 'undefined' && /iPhone|iPad|iPod/.test(window.navigator.userAgent);
-                                                                const mapsUrl = isIOS
-                                                                    ? `maps://?q=${encodedAddress}`
-                                                                    : `https://maps.google.com/?q=${encodedAddress}`;
-                                                                return (
-                                                                    <a
-                                                                        href={mapsUrl}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium border border-blue-200 hover:bg-blue-100 active:scale-95 transition-all"
-                                                                    >
-                                                                        <span className="text-base leading-none">📍</span>
-                                                                        {decodeURIComponent(String(children))}
-                                                                    </a>
-                                                                );
-                                                            }
-                                                            return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
-                                                        },
-                                                        code: ({ node, inline, children, ...props }: any) => {
-                                                            return <code {...props} className="bg-primary/5 text-primary px-1 rounded-sm">{children}</code>;
-                                                        }
-                                                    }}
-                                                >
-                                                    {processedContent}
-                                                </ReactMarkdown>
+                                                        }}
+                                                    >
+                                                        {processedContent}
+                                                    </ReactMarkdown>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
                                 );
                             })}
 
