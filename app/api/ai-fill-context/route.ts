@@ -219,29 +219,46 @@ export async function POST(req: Request) {
       // ── 5. Gemini Enrichment — solo datos factuales ──────────────────────────
       const priceMap: Record<number, string> = { 0: '€', 1: '€', 2: '€€', 3: '€€€', 4: '€€€€' };
 
-      const enrichPrompt = `Eres un crítico gastronómico local de ${finalCity}. Escribe descripciones CORTAS, ESPECÍFICAS y VARIADAS para cada lugar.
+      const isTodos = selectedCat === 'todos';
+      const isNonFood = !['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno'].includes(selectedCat);
+
+      const role = (isTodos || isNonFood)
+        ? `Eres un experto local en turismo y gastronomía de ${finalCity}.`
+        : `Eres un crítico gastronómico local de ${finalCity}.`;
+
+      const categoryInstruction = isTodos
+        ? `- Evalúa rigurosamente si cada lugar encaja en su [Categoría Asignada] (indicada entre corchetes).`
+        : `- Evalúa rigurosamente si el lugar encaja en la Categoría buscada (${selectedCat}).`;
+
+      const matchInstruction = isTodos
+        ? `- is_match: booleano. Si la categoría es [ITALIANO] pero el local ofrece evidente comida mexicana, pon false. Si encaja con su categoría asignada o es ambiguo, pon true.`
+        : `- is_match: booleano (true/false). Si buscas 'italiano' y el local se llama 'Asador El Cordobés' o 'Cocina Extremeña', pon false. Si encaja o es ambiguo/genérico, pon true.`;
+
+      const enrichPrompt = `${role} Escribe descripciones CORTAS, ESPECÍFICAS y VARIADAS para cada lugar.
 
 REGLAS:
-- Evalúa rigurosamente si el restaurante encaja en la Categoría buscada (${selectedCat}).
-- is_match: booleano (true/false). Si buscas 'italiano' y el local se llama 'Asador El Cordobés' o 'Cocina Extremeña', pon false. Si encaja o es ambiguo/genérico, pon true.
-- Infiere el tipo de local a partir de su NOMBRE (ej: "Bombay Tacos" → cocina india/mexicana fusión, "La Bodeguita" → bar de tapas tradicional, "Cafetería Terraza" → desayunos y brunch al aire libre).
-- NO uses frases genéricas como "ofrece opciones de comida".
-- description: 2 frases concretas sobre QUÉ tipo de cocina o experiencia ofrece, inferido del nombre. Diferente para cada local.
+${categoryInstruction}
+${matchInstruction}
+- Infiere el tipo de lugar a partir de su NOMBRE y CATEGORÍA.
+- Si es un restaurante, habla de su comida. Si es un parque o museo, habla de la experiencia y qué ver. Si es una tienda, habla de lo que venden.
+- NO uses frases genéricas como "ofrece comida" o "es un lugar para visitar".
+- description: 2 frases concretas sobre QUÉ tipo de experiencia, producto o cocina ofrece, inferido del nombre o su categoría. Diferente para cada lugar.
 - personal_note: consejo ÚNICO y específico para ese local concreto. Varía según:
     · Rating ≥ 4.5 + muchas reseñas → destaca que es de los mejores de la zona
-    · Rating 3.5-4.2 + precio € → "Buena relación calidad-precio para comer sin gastar mucho."
-    · Precio €€€+ → "Reserva con antelación, reserva recomendada."
-    · Nombre sugiere terraza/exterior → "Pide mesa en la terraza si el tiempo acompaña."
+    · Rating 3.5-4.2 + precio € → "Buena relación calidad-precio para disfrutar sin gastar mucho."
+    · Precio €€€+ → "Reserva recomendable con antelación."
+    · Parques/Ocio → "Ideal para dar un paseo o desconectar un rato."
+    · Tiendas/Supermercados → "Práctico para abastecerte durante tu estancia."
 
-Categoría buscada: ${selectedCat}
-Zona: ${fullAddress}
+${!isTodos ? `Categoría buscada: ${selectedCat}\n` : ''}Zona: ${fullAddress}
 
 Lugares:
 ${finalPlacesToEnrich.map((p, i) => {
         const stars = p.rating ? `⭐ ${p.rating}/5` : 'sin valoración';
         const reviews = p.user_ratings_total ? `${p.user_ratings_total} reseñas` : 'sin reseñas';
         const price = p.price_level != null ? priceMap[p.price_level] : '?';
-        return `${i + 1}. "${p.name}" | ${stars} (${reviews}) | Precio: ${price} | ${p.address}`;
+        const categoryLabel = p.category ? `[${p.category.toUpperCase()}] ` : '';
+        return `${i + 1}. ${categoryLabel}"${p.name}" | ${stars} (${reviews}) | Precio: ${price} | ${p.address}`;
       }).join('\n')}
 
 Responde SOLO con JSON válido:
