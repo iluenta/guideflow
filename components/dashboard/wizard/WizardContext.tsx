@@ -143,7 +143,7 @@ export function WizardProvider({
     const isAltaMode = searchParams.get('mode') === 'alta' || !effectivePropertyId
     const filteredSteps = useMemo(() => {
         if (isAltaMode) {
-            return steps.filter(s => s !== 'appearance' && s !== 'visual-scanner')
+            return steps.filter(s => s !== 'appearance' && s !== 'visual-scanner' && s !== 'appliance-manuals')
         }
         return steps
     }, [isAltaMode])
