@@ -153,7 +153,8 @@ export async function POST(req: Request) {
 
           if (loc) {
             const { lat, lng } = loc;
-            const radius = 5000; // Incrementamos a 5km para zonas rurales / pueblos pequeños
+            const initialRadius = 1500; // 1.5km para priorizar locales de cercanía/barrio
+            const fallbackRadius = 5000; // 5km para zonas rurales o afueras con menos densidad
 
             const categoriesToIterate = selectedCat === 'todos'
               ? ['restaurantes', 'compras', 'cultura', 'naturaleza', 'ocio']
@@ -164,15 +165,21 @@ export async function POST(req: Request) {
             for (const cat of categoriesToIterate) {
               const config = SUBCATEGORY_MAP[cat] || SUBCATEGORY_MAP['restaurantes'];
 
-              // Volvemos a nearbysearch pero con lat/lng estrictos y radius.
-              // textsearch ignora parcial o totalmente lat/lng si la query incluye una gran ciudad.
-              let searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${config.placeType}&language=es&key=${placesKey}`;
-              if (config.keyword) {
-                searchUrl += `&keyword=${encodeURIComponent(config.keyword)}`;
-              }
+              const buildUrl = (r: number) => {
+                let url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${r}&type=${config.placeType}&language=es&key=${placesKey}`;
+                if (config.keyword) url += `&keyword=${encodeURIComponent(config.keyword)}`;
+                return url;
+              };
 
-              const searchRes = await fetch(searchUrl);
-              const searchData = await searchRes.json();
+              let searchRes = await fetch(buildUrl(initialRadius));
+              let searchData = await searchRes.json();
+
+              // Si Google encuentra pocos sitios a 1.5km (ej: en pueblos), ampliamos mágicamente a 5km
+              if ((searchData.results || []).length < 8) {
+                console.log(`[PLACES] Expanding to 5km for ${cat} (only ${searchData.results?.length} found at 1.5km)`);
+                searchRes = await fetch(buildUrl(fallbackRadius));
+                searchData = await searchRes.json();
+              }
 
               // TEMPORAL - ver qué devuelve Google antes del filtro
               console.log(`[PLACES] Raw results for ${cat}:`, searchData.results?.length,
