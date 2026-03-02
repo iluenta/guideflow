@@ -153,8 +153,6 @@ export async function POST(req: Request) {
 
           if (loc) {
             const { lat, lng } = loc;
-            const initialRadius = 1500; // 1.5km para priorizar locales de cercanía/barrio
-            const fallbackRadius = 5000; // 5km para zonas rurales o afueras con menos densidad
 
             const categoriesToIterate = selectedCat === 'todos'
               ? ['restaurantes', 'compras', 'cultura', 'naturaleza', 'ocio']
@@ -165,26 +163,30 @@ export async function POST(req: Request) {
             for (const cat of categoriesToIterate) {
               const config = SUBCATEGORY_MAP[cat] || SUBCATEGORY_MAP['restaurantes'];
 
-              const buildUrl = (r: number) => {
-                let url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${r}&type=${config.placeType}&language=es&key=${placesKey}`;
-                if (config.keyword) url += `&keyword=${encodeURIComponent(config.keyword)}`;
-                return url;
-              };
+              // Cuando rankby=distance está activo, NO se puede usar radius.
+              // Google devolverá los 20 lugares que coincidan estrictamente desde el más cercano al más lejano.
+              let searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&type=${config.placeType}&language=es&key=${placesKey}`;
+              if (config.keyword) {
+                searchUrl += `&keyword=${encodeURIComponent(config.keyword)}`;
+              }
 
-              let searchRes = await fetch(buildUrl(initialRadius));
+              let searchRes = await fetch(searchUrl);
               let searchData = await searchRes.json();
 
-              // Si Google encuentra pocos sitios a 1.5km (ej: en pueblos), ampliamos mágicamente a 5km
-              if ((searchData.results || []).length < 8) {
-                console.log(`[PLACES] Expanding to 5km for ${cat} (only ${searchData.results?.length} found at 1.5km)`);
-                searchRes = await fetch(buildUrl(fallbackRadius));
+              // Si por algún motivo de la keyword hiper-estricta devuelve 0, probamos un fallback suavizando (quitando keyword)
+              // pero manteniendo tipo y cercanía.
+              if ((searchData.results || []).length < 2 && config.keyword) {
+                console.log(`[PLACES] Fallback to general type for ${cat}`);
+                const fallbackUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&type=${config.placeType}&language=es&key=${placesKey}`;
+                searchRes = await fetch(fallbackUrl);
                 searchData = await searchRes.json();
               }
 
               // TEMPORAL - ver qué devuelve Google antes del filtro
+              const rawPlacesLog = (searchData.results || []).slice(0, 10).map((r: any) => `${r.name} (rat:${r.rating} rev:${r.user_ratings_total})`);
               console.log(`[PLACES] Raw results for ${cat}:`, searchData.results?.length,
                 'status:', searchData.status,
-                'after rating filter:', (searchData.results || []).filter((p: any) => (p.rating || 0) >= 3.5).length
+                'top 10 raw:', rawPlacesLog
               );
 
               const currentResults = (searchData.results || [])
