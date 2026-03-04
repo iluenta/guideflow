@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react"
-
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -16,7 +15,6 @@ import {
   Settings,
   Menu,
   X,
-  ChevronLeft,
   Bell,
   User,
   CalendarCheck,
@@ -57,18 +55,13 @@ export default function DashboardLayout({
   const router = useRouter();
   const { profile, loading: profileLoading } = useUserProfile();
 
-  // Monitor user inactivity - logout after 24h of inactivity
-  useInactivity({
-    timeoutMinutes: 1440, // 24 hours
-  });
+  useInactivity({ timeoutMinutes: 1440 });
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      // Fallback en cliente por si el redirect del Server Action no se aplica
       router.push("/auth/login");
     } catch (error) {
-      // Error al cerrar sesión - no exponer detalles
       router.push("/auth/login");
     }
   };
@@ -76,6 +69,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-background">
       <GlobalErrorHandler />
+
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -165,17 +159,21 @@ export default function DashboardLayout({
 
       {/* Main content */}
       <div className="lg:pl-64">
+
         {/* Top bar */}
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-8">
-          <div className="flex items-center gap-4">
-            <button
-              className="lg:hidden invisible md:visible"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-6 w-6 text-foreground" />
-            </button>
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-white px-4 lg:px-8">
+
+          {/* Izquierda: logo en móvil (en desktop el logo está en el sidebar) */}
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex lg:hidden items-center gap-2">
+              <Logo size={28} className="rounded-xl shadow-sm" />
+              <span className="text-lg font-black text-foreground tracking-tight">
+                GuideFlow
+              </span>
+            </Link>
           </div>
 
+          {/* Derecha: campana + usuario */}
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
@@ -190,7 +188,7 @@ export default function DashboardLayout({
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-48 z-[100] bg-white shadow-xl border border-slate-200">
                 {profileLoading ? (
                   <div className="px-2 py-1.5 text-sm text-muted-foreground">
                     Cargando...
@@ -221,10 +219,12 @@ export default function DashboardLayout({
         </header>
 
         {/* Page content */}
-        <main className="min-h-[calc(100vh-4rem)] p-4 lg:p-8 pb-24 lg:pb-8">{children}</main>
+        <main className="min-h-[calc(100vh-4rem)] p-4 lg:p-8 pb-24 lg:pb-8">
+          {children}
+        </main>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t border-border lg:hidden px-6 h-20 flex items-center justify-between shadow-[0_-4px_20px_-1px_rgba(0,0,0,0.1)]">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border lg:hidden px-6 h-20 flex items-center justify-between shadow-[0_-4px_20px_-1px_rgba(0,0,0,0.1)]">
           {navigation.slice(0, 5).map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -233,7 +233,7 @@ export default function DashboardLayout({
                 href={item.href}
                 className={cn(
                   "flex flex-col items-center gap-1 min-w-[64px] transition-all",
-                  isActive ? "text-primary scale-110" : "text-muted-foreground"
+                  isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <div className={cn(
@@ -242,7 +242,9 @@ export default function DashboardLayout({
                 )}>
                   <item.icon className="h-5 w-5" />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-tighter">{item.name}</span>
+                <span className="text-[10px] font-bold uppercase tracking-tighter">
+                  {item.name}
+                </span>
               </Link>
             );
           })}

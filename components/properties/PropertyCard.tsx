@@ -15,7 +15,8 @@ interface PropertyCardProps {
 
 export function PropertyCard({ property }: PropertyCardProps) {
     return (
-        <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-slate-200 bg-white">
+            {/* Imagen */}
             <div className="relative aspect-video overflow-hidden">
                 {property.main_image_url ? (
                     <Image
@@ -25,56 +26,61 @@ export function PropertyCard({ property }: PropertyCardProps) {
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                 ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <span className="text-muted-foreground text-sm">Sin imagen</span>
+                    <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                        <span className="text-slate-400 text-sm">Sin imagen</span>
                     </div>
                 )}
             </div>
 
+            {/* Nombre y ubicación */}
             <CardHeader className="p-4 pb-0">
-                <h3 className="font-semibold text-lg line-clamp-1 group-hover:text-primary transition-colors">
+                <h3 className="font-semibold text-lg line-clamp-1 text-slate-900 group-hover:text-primary transition-colors">
                     {property.name}
                 </h3>
-                <div className="flex items-center gap-1 text-muted-foreground text-sm">
-                    <MapPin className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-1 text-slate-500 text-sm">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
                     <span className="line-clamp-1">
-                        {property.city ? `${property.city}${property.country ? `, ${property.country}` : ''}` : 'Sin ubicación'}
+                        {property.city
+                            ? `${property.city}${property.country ? `, ${property.country}` : ''}`
+                            : 'Sin ubicación'}
                     </span>
                 </div>
             </CardHeader>
 
-            <CardContent className="p-4 pt-4">
+            {/* Stats */}
+            <CardContent className="p-4 pt-3">
                 <div className="grid grid-cols-3 gap-2">
-                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/50 border border-border/50">
+                    <div className="flex flex-col items-center p-2 rounded-lg bg-slate-50 border border-slate-200">
                         <Users className="h-4 w-4 text-primary mb-1" />
-                        <span className="text-xs font-medium">{property.guests} Huéspedes</span>
+                        <span className="text-xs font-semibold text-slate-700">{property.guests} Huéspedes</span>
                     </div>
-                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/50 border border-border/50">
+                    <div className="flex flex-col items-center p-2 rounded-lg bg-slate-50 border border-slate-200">
                         <Bed className="h-4 w-4 text-primary mb-1" />
-                        <span className="text-xs font-medium">{property.beds} Hab.</span>
+                        <span className="text-xs font-semibold text-slate-700">{property.beds} Hab.</span>
                     </div>
-                    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/50 border border-border/50">
+                    <div className="flex flex-col items-center p-2 rounded-lg bg-slate-50 border border-slate-200">
                         <Bath className="h-4 w-4 text-primary mb-1" />
-                        <span className="text-xs font-medium">{property.baths} Baños</span>
+                        <span className="text-xs font-semibold text-slate-700">{property.baths} Baños</span>
                     </div>
                 </div>
             </CardContent>
 
+            {/* Botones */}
             <CardFooter className="p-4 pt-0 flex flex-col gap-2">
                 <div className="grid grid-cols-2 gap-2 w-full">
                     <AutoBuildDialog
                         propertyId={property.id}
                         onComplete={() => { }}
                     />
-                    <Button variant="secondary" className="gap-2 text-xs" asChild>
+                    <Button variant="secondary" className="gap-2 text-xs bg-[#316263] hover:bg-[#316263]/90 text-white" asChild>
                         <Link href={`/${property.slug || property.id}`} target="_blank">
                             <ExternalLink className="h-3.5 w-3.5" />
                             Ver Guía
                         </Link>
                     </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-2 w-full mt-2">
-                    <Button variant="outline" className="gap-2 text-xs border-primary/20 text-primary hover:bg-primary/5 h-9" asChild>
+                <div className="grid grid-cols-2 gap-2 w-full">
+                    <Button variant="outline" className="gap-2 text-xs border-slate-200 text-slate-700 hover:bg-slate-50 h-9" asChild>
                         <Link href={`/dashboard/properties/${property.id}/setup`}>
                             <Sparkles className="h-3.5 w-3.5" />
                             Configurar
