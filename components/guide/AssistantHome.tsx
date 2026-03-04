@@ -88,7 +88,7 @@ export function AssistantHome({
             label: currentLanguage === 'es' ? 'Aparcar / Garaje' : 'Parking',
             icon: MapPin,
             color: 'bg-purple-50 text-purple-600 border-purple-100',
-            show: !!(accessData.parking_info || accessData.garage_spot || accessData.parking_instructions || accessData.parking)
+            show: Boolean((accessData.parking_info && accessData.parking_info.trim() !== '') || (accessData.garage_spot && accessData.garage_spot.trim() !== '') || (accessData.parking_instructions && accessData.parking_instructions.trim() !== '') || (accessData.parking && typeof accessData.parking === 'string' && accessData.parking.trim() !== ''))
         },
         {
             id: 'eat',

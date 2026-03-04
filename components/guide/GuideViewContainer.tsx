@@ -156,6 +156,8 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                     accessToken={accessToken}
                     propertyId={property.id}
                     themeId={themeId}
+                    context={displayContext}
+                    recommendations={displayRecommendations}
                 />
             );
         }
@@ -176,6 +178,9 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                     accessToken={accessToken}
                     propertyId={property.id}
                     themeId={themeId}
+                    context={displayContext}
+                    sections={sections}
+                    manuals={displayManuals}
                 />
             );
         }
@@ -359,10 +364,10 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         </header>
 
                         <div className="relative z-10 bg-beige">
-                            <MenuGrid 
-                                onNavigate={handleNavigate} 
-                                welcomeData={welcomeData} 
-                                imageUrl={property.main_image_url} 
+                            <MenuGrid
+                                onNavigate={handleNavigate}
+                                welcomeData={welcomeData}
+                                imageUrl={property.main_image_url}
                                 currentLanguage={language}
                                 accessToken={accessToken}
                                 propertyId={property.id}

@@ -38,6 +38,9 @@ interface Fase11HomeProps {
     accessToken?: string;
     propertyId?: string;
     themeId?: string;
+    context?: any[];
+    sections?: any[];
+    manuals?: any[];
 }
 
 const container = {
@@ -69,8 +72,19 @@ export function Fase11Home({
     accessToken,
     propertyId,
     themeId = 'modern',
+    context = [],
+    sections = [],
+    manuals = [],
 }: Fase11HomeProps) {
     const t = getGuideTheme(themeId)
+
+    const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
+    const hasCheckin = !!context?.find(c => c.category === 'checkin')?.content?.steps?.length;
+
+    // Evaluate if there are actual rules text inside the section
+    const rulesSection = sections?.find(s => s.type === 'rules');
+    const hasRules = !!(rulesSection?.content && rulesSection.content.length > 5);
+    const hasManuals = manuals && manuals.length > 0;
 
     // Dynamic Translations
     const { content: localizedPropertyName } = useLocalizedContent(propertyName, currentLanguage, 'general', accessToken, propertyId);
@@ -250,24 +264,28 @@ export function Fase11Home({
                         {labelLoIndispensable}
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
-                        <button
-                            onClick={() => onNavigate('checkin')}
-                            className={cn('flex flex-col items-center justify-center p-4 rounded-2xl shadow-lg active:scale-95 transition-all', t.actionBtn)}
-                        >
-                            <Key size={24} className="mb-2 opacity-90" />
-                            <span className="text-[9px] font-black tracking-widest uppercase">
-                                Check In
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => onNavigate('wifi')}
-                            className={cn('flex flex-col items-center justify-center p-4 rounded-2xl shadow-sm active:scale-95 transition-all', t.chipBg, t.chipIconColor)}
-                        >
-                            <Wifi size={24} className="mb-2" />
-                            <span className={cn('text-[9px] font-black tracking-widest uppercase', t.chipLabel)}>
-                                WiFi
-                            </span>
-                        </button>
+                        {hasCheckin && (
+                            <button
+                                onClick={() => onNavigate('checkin')}
+                                className={cn('flex flex-col items-center justify-center p-4 rounded-2xl shadow-lg active:scale-95 transition-all', t.actionBtn)}
+                            >
+                                <Key size={24} className="mb-2 opacity-90" />
+                                <span className="text-[9px] font-black tracking-widest uppercase">
+                                    Check In
+                                </span>
+                            </button>
+                        )}
+                        {hasWifi && (
+                            <button
+                                onClick={() => onNavigate('wifi')}
+                                className={cn('flex flex-col items-center justify-center p-4 rounded-2xl shadow-sm active:scale-95 transition-all', t.chipBg, t.chipIconColor)}
+                            >
+                                <Wifi size={24} className="mb-2" />
+                                <span className={cn('text-[9px] font-black tracking-widest uppercase', t.chipLabel)}>
+                                    WiFi
+                                </span>
+                            </button>
+                        )}
                         <button
                             onClick={() => onNavigate('emergency')}
                             className="flex flex-col items-center justify-center p-4 bg-red-50 text-red-600 border border-red-100 rounded-2xl shadow-sm active:scale-95 transition-all"
@@ -322,10 +340,10 @@ export function Fase11Home({
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
                         {[
-                            { id: 'house-info', icon: Info, label: labelInfo },
-                            { id: 'rules', icon: FileText, label: labelNormas },
-                            { id: 'manuals', icon: Book, label: labelManual }
-                        ].map((navItem) => (
+                            { id: 'house-info', icon: Info, label: labelInfo, show: true },
+                            { id: 'rules', icon: FileText, label: labelNormas, show: hasRules },
+                            { id: 'manuals', icon: Book, label: labelManual, show: hasManuals }
+                        ].filter(item => item.show).map((navItem) => (
                             <button
                                 key={navItem.id}
                                 onClick={() => onNavigate(navItem.id)}

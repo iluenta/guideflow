@@ -31,6 +31,8 @@ interface Fase11WelcomeProps {
     accessToken?: string;
     propertyId?: string;
     themeId?: string;
+    context?: any[];
+    recommendations?: any[];
 }
 
 const container: Variants = {
@@ -68,8 +70,25 @@ export function Fase11Welcome({
     accessToken,
     propertyId,
     themeId = 'modern',
+    context = [],
+    recommendations = [],
 }: Fase11WelcomeProps) {
     const t = getGuideTheme(themeId)
+    const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
+    const accessData = context?.find(c => c.category === 'access')?.content || {};
+    const hasParking = Boolean(
+        (accessData.parking_info && accessData.parking_info.trim() !== '') ||
+        (accessData.garage_spot && accessData.garage_spot.trim() !== '') ||
+        (accessData.parking_instructions && accessData.parking_instructions.trim() !== '') ||
+        (accessData.parking && typeof accessData.parking === 'string' && accessData.parking.trim() !== '')
+    );
+
+    // Eat recommendations logic
+    const EAT_TYPES = new Set(['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'restaurant', 'cafe', 'bar']);
+    const getRecType = (r: any) => (r.type || r.category || '').toLowerCase();
+    const eatRecs = recommendations.filter(r => EAT_TYPES.has(getRecType(r)));
+    const hasEat = eatRecs.length > 0;
+
     const { content: localizedPropertyName } = useLocalizedContent(propertyName, currentLanguage, 'general', accessToken, propertyId);
     const { content: welcomeHomeLabel } = useLocalizedContent('Bienvenido a casa', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: greetingLabel } = useLocalizedContent('Hola', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -114,9 +133,9 @@ export function Fase11Welcome({
                 <div className={cn('absolute inset-0', t.heroOverlay)} />
 
                 <div className="absolute top-4 right-4 z-20">
-                    <LanguageSelector 
-                        currentLanguage={currentLanguage} 
-                        onLanguageChange={onLanguageChange} 
+                    <LanguageSelector
+                        currentLanguage={currentLanguage}
+                        onLanguageChange={onLanguageChange}
                     />
                 </div>
 
@@ -174,11 +193,11 @@ export function Fase11Welcome({
                         // ── Stacked layout: 4-col circular badge + label below (Coastal) ──
                         <div className="grid grid-cols-4 gap-2">
                             {[
-                                { id: 'wifi', icon: Wifi, label: 'WiFi', type: 'nav', target: 'wifi' },
-                                { id: 'access', icon: Key, label: labelAcceso, type: 'nav', target: 'checkin' },
-                                { id: 'parking', icon: MapPin, label: labelParking, type: 'chat', query: queryParking },
-                                { id: 'eat', icon: Utensils, label: labelComer, type: 'chat', query: queryComer }
-                            ].map((chip, i) => (
+                                { id: 'wifi', icon: Wifi, label: 'WiFi', type: 'nav', target: 'wifi', show: hasWifi },
+                                { id: 'access', icon: Key, label: labelAcceso, type: 'nav', target: 'checkin', show: true },
+                                { id: 'parking', icon: MapPin, label: labelParking, type: 'chat', query: queryParking, show: hasParking },
+                                { id: 'eat', icon: Utensils, label: labelComer, type: 'chat', query: queryComer, show: hasEat }
+                            ].filter(c => c.show).map((chip, i) => (
                                 <button
                                     key={chip.id}
                                     onClick={() => chip.type === 'nav' ? onNavigate(chip.target!) : onChatQuery(chip.query!)}
@@ -200,11 +219,11 @@ export function Fase11Welcome({
                         // ── Inline layout: 2×2 icon-left (Modern / Urban) ──
                         <div className="grid grid-cols-2 gap-3">
                             {[
-                                { id: 'wifi', icon: Wifi, label: 'WiFi', type: 'nav', target: 'wifi' },
-                                { id: 'access', icon: Key, label: labelAcceso, type: 'nav', target: 'checkin' },
-                                { id: 'parking', icon: MapPin, label: labelParking, type: 'chat', query: queryParking },
-                                { id: 'eat', icon: Utensils, label: labelComer, type: 'chat', query: queryComer }
-                            ].map((chip) => (
+                                { id: 'wifi', icon: Wifi, label: 'WiFi', type: 'nav', target: 'wifi', show: hasWifi },
+                                { id: 'access', icon: Key, label: labelAcceso, type: 'nav', target: 'checkin', show: true },
+                                { id: 'parking', icon: MapPin, label: labelParking, type: 'chat', query: queryParking, show: hasParking },
+                                { id: 'eat', icon: Utensils, label: labelComer, type: 'chat', query: queryComer, show: hasEat }
+                            ].filter(c => c.show).map((chip) => (
                                 <button
                                     key={chip.id}
                                     onClick={() => chip.type === 'nav' ? onNavigate(chip.target!) : onChatQuery(chip.query!)}
