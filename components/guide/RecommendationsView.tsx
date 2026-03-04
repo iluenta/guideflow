@@ -61,26 +61,26 @@ interface RecommendationsViewProps {
     propertyId?: string; // FASE 17
 }
 
-function RecommendationCard({ 
-    rec, 
-    isExpanded, 
-    toggleExpand, 
-    currentLanguage, 
-    accessToken, 
+function RecommendationCard({
+    rec,
+    isExpanded,
+    toggleExpand,
+    currentLanguage,
+    accessToken,
     getMapsUrl,
     propertyId // FASE 17
-}: { 
-    rec: Recommendation, 
-    isExpanded: boolean, 
+}: {
+    rec: Recommendation,
+    isExpanded: boolean,
     toggleExpand: (id: string) => void,
-    currentLanguage: string, 
+    currentLanguage: string,
     accessToken?: string,
     getMapsUrl: (rec: Recommendation) => string,
     propertyId?: string // FASE 17
 }) {
     const { content: localizedName } = useLocalizedContent(rec.name, currentLanguage, 'recommendation_name', accessToken, propertyId);
     const { content: localizedDescription } = useLocalizedContent(rec.description || '', currentLanguage, 'recommendation_description', accessToken, propertyId);
-    
+
     // Check for nested metadata or direct props
     const rawPrice = rec.price_range || rec.metadata?.price_range || '';
     const rawTime = rec.time || rec.metadata?.time || '';
@@ -211,21 +211,21 @@ function RecommendationCard({
 }
 
 const categoryConfigs: Record<string, { icon: any, color: string, bgColor: string, activeBg: string, hex: string }> = {
-    restaurantes:  { icon: UtensilsCrossed, color: 'text-orange-600',  bgColor: 'bg-orange-50',  activeBg: 'bg-orange-600',  hex: '#EA580C' },
-    italiano:      { icon: Pizza,           color: 'text-red-600',     bgColor: 'bg-red-50',     activeBg: 'bg-red-600',     hex: '#DC2626' },
-    mediterraneo:  { icon: Fish,            color: 'text-sky-600',     bgColor: 'bg-sky-50',     activeBg: 'bg-sky-600',     hex: '#0284C7' },
-    hamburguesas:  { icon: Beef,            color: 'text-amber-700',   bgColor: 'bg-amber-50',   activeBg: 'bg-amber-700',   hex: '#B45309' },
-    asiatico:      { icon: UtensilsCrossed, color: 'text-rose-600',    bgColor: 'bg-rose-50',    activeBg: 'bg-rose-600',    hex: '#E11D48' },
-    alta_cocina:   { icon: Star,            color: 'text-violet-600',  bgColor: 'bg-violet-50',  activeBg: 'bg-violet-600',  hex: '#7C3AED' },
-    internacional: { icon: Globe,           color: 'text-cyan-600',    bgColor: 'bg-cyan-50',    activeBg: 'bg-cyan-600',    hex: '#0891B2' },
-    naturaleza:    { icon: Mountain,        color: 'text-emerald-600', bgColor: 'bg-emerald-50', activeBg: 'bg-emerald-600', hex: '#059669' },
-    cultura:       { icon: Landmark,        color: 'text-amber-600',   bgColor: 'bg-amber-50',   activeBg: 'bg-amber-600',   hex: '#D97706' },
-    ocio:          { icon: Music,           color: 'text-pink-600',    bgColor: 'bg-pink-50',    activeBg: 'bg-pink-600',    hex: '#DB2777' },
-    relax:         { icon: Waves,           color: 'text-teal-600',    bgColor: 'bg-teal-50',    activeBg: 'bg-teal-600',    hex: '#0D9488' },
-    compras:       { icon: ShoppingBag,     color: 'text-indigo-600',  bgColor: 'bg-indigo-50',  activeBg: 'bg-indigo-600',  hex: '#4F46E5' },
-    supermercados: { icon: Store,           color: 'text-blue-600',    bgColor: 'bg-blue-50',    activeBg: 'bg-blue-600',    hex: '#2563EB' },
-    desayuno:      { icon: Coffee,          color: 'text-amber-700',   bgColor: 'bg-amber-50',   activeBg: 'bg-amber-700',   hex: '#B45309' },
-    todos:         { icon: Star,            color: 'text-navy/40',     bgColor: 'bg-white',      activeBg: 'bg-navy',        hex: '#1E3A5F' }
+    restaurantes: { icon: UtensilsCrossed, color: 'text-orange-600', bgColor: 'bg-orange-50', activeBg: 'bg-orange-600', hex: '#EA580C' },
+    italiano: { icon: Pizza, color: 'text-red-600', bgColor: 'bg-red-50', activeBg: 'bg-red-600', hex: '#DC2626' },
+    mediterraneo: { icon: Fish, color: 'text-sky-600', bgColor: 'bg-sky-50', activeBg: 'bg-sky-600', hex: '#0284C7' },
+    hamburguesas: { icon: Beef, color: 'text-amber-700', bgColor: 'bg-amber-50', activeBg: 'bg-amber-700', hex: '#B45309' },
+    asiatico: { icon: UtensilsCrossed, color: 'text-rose-600', bgColor: 'bg-rose-50', activeBg: 'bg-rose-600', hex: '#E11D48' },
+    alta_cocina: { icon: Star, color: 'text-violet-600', bgColor: 'bg-violet-50', activeBg: 'bg-violet-600', hex: '#7C3AED' },
+    internacional: { icon: Globe, color: 'text-cyan-600', bgColor: 'bg-cyan-50', activeBg: 'bg-cyan-600', hex: '#0891B2' },
+    naturaleza: { icon: Mountain, color: 'text-emerald-600', bgColor: 'bg-emerald-50', activeBg: 'bg-emerald-600', hex: '#059669' },
+    cultura: { icon: Landmark, color: 'text-amber-600', bgColor: 'bg-amber-50', activeBg: 'bg-amber-600', hex: '#D97706' },
+    ocio: { icon: Music, color: 'text-pink-600', bgColor: 'bg-pink-50', activeBg: 'bg-pink-600', hex: '#DB2777' },
+    relax: { icon: Waves, color: 'text-teal-600', bgColor: 'bg-teal-50', activeBg: 'bg-teal-600', hex: '#0D9488' },
+    compras: { icon: ShoppingBag, color: 'text-indigo-600', bgColor: 'bg-indigo-50', activeBg: 'bg-indigo-600', hex: '#4F46E5' },
+    supermercados: { icon: Store, color: 'text-blue-600', bgColor: 'bg-blue-50', activeBg: 'bg-blue-600', hex: '#2563EB' },
+    desayuno: { icon: Coffee, color: 'text-amber-700', bgColor: 'bg-amber-50', activeBg: 'bg-amber-700', hex: '#B45309' },
+    todos: { icon: Star, color: 'text-navy/40', bgColor: 'bg-white', activeBg: 'bg-navy', hex: '#1E3A5F' }
 };
 
 const groupConfigs = {
@@ -236,15 +236,15 @@ const groupConfigs = {
         // All eat subcategories are valid in this group
         categories: ['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno'],
         pills: [
-            { id: 'todos',         label: 'Todos',            type: 'todos' },
-            { id: 'restaurantes',  label: 'Restaurantes',     type: 'restaurantes' },
-            { id: 'italiano',      label: 'Italiano',         type: 'italiano' },
-            { id: 'mediterraneo',  label: 'Mediterráneo',     type: 'mediterraneo' },
-            { id: 'hamburguesas',  label: 'Hamburguesas',     type: 'hamburguesas' },
-            { id: 'asiatico',      label: 'Asiático',         type: 'asiatico' },
-            { id: 'alta_cocina',   label: 'Alta Cocina',      type: 'alta_cocina' },
-            { id: 'internacional', label: 'Internacional',    type: 'internacional' },
-            { id: 'desayuno',      label: 'Cafés',            type: 'desayuno' },
+            { id: 'todos', label: 'Todos', type: 'todos' },
+            { id: 'restaurantes', label: 'Restaurantes', type: 'restaurantes' },
+            { id: 'italiano', label: 'Italiano', type: 'italiano' },
+            { id: 'mediterraneo', label: 'Mediterráneo', type: 'mediterraneo' },
+            { id: 'hamburguesas', label: 'Hamburguesas', type: 'hamburguesas' },
+            { id: 'asiatico', label: 'Asiático', type: 'asiatico' },
+            { id: 'alta_cocina', label: 'Alta Cocina', type: 'alta_cocina' },
+            { id: 'internacional', label: 'Internacional', type: 'internacional' },
+            { id: 'desayuno', label: 'Cafés', type: 'desayuno' },
         ]
     },
     do: {
@@ -253,11 +253,11 @@ const groupConfigs = {
         heroDesc: 'Experiencias únicas y rincones especiales seleccionados para ti.',
         categories: ['naturaleza', 'cultura', 'ocio', 'relax'],
         pills: [
-            { id: 'todos',      label: 'Todo',       type: 'todos' },
+            { id: 'todos', label: 'Todo', type: 'todos' },
             { id: 'naturaleza', label: 'Naturaleza', type: 'naturaleza' },
-            { id: 'cultura',    label: 'Cultura',    type: 'cultura' },
-            { id: 'relax',      label: 'Relax',      type: 'relax' },
-            { id: 'ocio',       label: 'Ocio',       type: 'ocio' }
+            { id: 'cultura', label: 'Cultura', type: 'cultura' },
+            { id: 'relax', label: 'Relax', type: 'relax' },
+            { id: 'ocio', label: 'Ocio', type: 'ocio' }
         ]
     },
     shopping: {
@@ -266,18 +266,18 @@ const groupConfigs = {
         heroDesc: 'Mercados tradicionales, tiendas de artesanía y todo lo necesario para tu estancia.',
         categories: ['compras', 'supermercados'],
         pills: [
-            { id: 'todos',   label: 'Todo',    type: 'todos' },
+            { id: 'todos', label: 'Todo', type: 'todos' },
             { id: 'compras', label: 'Tiendas', type: 'compras' },
             { id: 'supermercados', label: 'Supermercados', type: 'supermercados' }
         ]
     }
 };
 
-export function RecommendationsView({ 
-    onBack, 
-    recommendations, 
-    group, 
-    currentLanguage = 'es', 
+export function RecommendationsView({
+    onBack,
+    recommendations,
+    group,
+    currentLanguage = 'es',
     city,
     accessToken,
     propertyId // FASE 17
@@ -302,6 +302,13 @@ export function RecommendationsView({
     const { content: labelOcio } = useLocalizedContent('Ocio', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelCompras } = useLocalizedContent('Tiendas', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelSuper } = useLocalizedContent('Súper / Mercados', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelItaliano } = useLocalizedContent('Italiano', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelMediterraneo } = useLocalizedContent('Mediterráneo', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelHamburguesas } = useLocalizedContent('Hamburguesas', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelAsiatico } = useLocalizedContent('Asiático', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelAltaCocina } = useLocalizedContent('Alta Cocina', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelInternacional } = useLocalizedContent('Internacional', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelFooter } = useLocalizedContent('Recomendaciones seleccionadas por el anfitrión', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const pillLabels: Record<string, string | undefined> = {
         todos: labelTodo,
@@ -312,7 +319,13 @@ export function RecommendationsView({
         relax: labelRelax,
         ocio: labelOcio,
         compras: labelCompras,
-        supermercados: labelSuper
+        supermercados: labelSuper,
+        italiano: labelItaliano,
+        mediterraneo: labelMediterraneo,
+        hamburguesas: labelHamburguesas,
+        asiatico: labelAsiatico,
+        alta_cocina: labelAltaCocina,
+        internacional: labelInternacional
     };
 
     const filteredRecommendations = useMemo(() => {
@@ -333,13 +346,13 @@ export function RecommendationsView({
 
         const locationContext = city ? ` ${city}` : '';
         const query = encodeURIComponent(`${rec.name}${locationContext}`);
-        
+
         const isIOS = typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent);
         const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
 
         if (isIOS) return `maps://?q=${query}`;
         if (isAndroid) return `geo:0,0?q=${query}`;
-        
+
         return `https://www.google.com/maps/search/?api=1&query=${query}`;
     };
 
@@ -404,7 +417,7 @@ export function RecommendationsView({
                 <div className="px-6 space-y-4">
                     {filteredRecommendations.length > 0 ? (
                         filteredRecommendations.map((rec) => (
-                            <RecommendationCard 
+                            <RecommendationCard
                                 key={rec.id}
                                 rec={rec}
                                 isExpanded={expandedId === rec.id}
@@ -429,7 +442,7 @@ export function RecommendationsView({
             {/* Mockup powered text */}
             <div className="px-6 mt-8 mb-4 text-center opacity-20">
                 <p className="text-[8px] text-navy uppercase font-black tracking-[0.3em]">
-                    Recomendaciones seleccionadas por el anfitrión
+                    {labelFooter}
                 </p>
             </div>
         </div>

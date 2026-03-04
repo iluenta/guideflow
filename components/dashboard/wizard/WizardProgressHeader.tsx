@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { ChevronRight, ExternalLink, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -23,6 +24,7 @@ export function WizardProgressHeader({
     const strokeDashoffset = circumference - (progress / 100) * circumference
 
     return (
+        // Main property wizard navigation header
         <header className="bg-white border-b border-slate-100 sticky top-0 z-40 h-16">
             <div className="max-w-[1600px] mx-auto px-6 lg:px-10 h-full">
                 <div className="flex items-center justify-between h-full">
@@ -35,7 +37,9 @@ export function WizardProgressHeader({
                         </button>
 
                         <nav className="flex items-center gap-3 text-sm font-medium">
-                            <span className="text-slate-400">Propiedades</span>
+                            <Link href="/dashboard/properties" className="text-slate-400 hover:text-slate-900 hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 rounded px-1 -mx-1">
+                                Propiedades
+                            </Link>
                             <ChevronRight className="h-4 w-4 text-slate-300" />
                             <span className="text-slate-900 bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100 italic font-serif">
                                 {propertyName}

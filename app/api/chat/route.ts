@@ -208,7 +208,7 @@ export async function POST(req: Request) {
             if (intent.intent === 'recommendation_activity') {
                 ragQuery = `${ragQuery} ocio actividades turismo visitar lugares qué hacer`;
             } else if (intent.intent === 'recommendation_shopping') {
-                ragQuery = `${ragQuery} tiendas compras mercado comercios`;
+                ragQuery = `${ragQuery} tiendas compras mercado comercios ropa moda zapatos centro comercial mall clothing`;
             } else {
                 ragQuery = `${ragQuery} ${expansionTerms.join(' ')} recomendaciones zona`;
             }

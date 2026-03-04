@@ -61,7 +61,7 @@ VALORES PERMITIDOS para "intent":
 - "appliance_usage": cómo usar un electrodoméstico, instrucciones, cómo poner la lavadora, hacer café, etc.
 - "recommendation_food": quiere comer, cenar, desayunar, tomar algo, le apetece algo, tiene hambre, busca restaurante, bar, cafetería
 - "recommendation_activity": qué hacer, ocio, turismo, museos, visitas, actividades, noche, copas
-- "recommendation_shopping": tiendas, compras, souvenirs, centro comercial, mercado
+- "recommendation_shopping": tiendas, compras, souvenirs, centro comercial, mercado, ropa, zapatos, moda, clothing store, mall, fashion, supermercado
 - "recommendation_other": otras recomendaciones que no encajan en las anteriores
 - "property_info": WiFi, contraseña, normas, check-in, check-out, acceso, llaves, parking, dirección
 - "standard": cualquier otra pregunta que no encaje arriba

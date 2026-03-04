@@ -25,9 +25,9 @@ export async function POST(req: Request) {
         // 1. Validation with Zod
         const result = translateSchema.safeParse(body);
         if (!result.success) {
-            return NextResponse.json({ 
-                error: 'Parámetros inválidos', 
-                details: result.error.format() 
+            return NextResponse.json({
+                error: 'Parámetros inválidos',
+                details: result.error.format()
             }, { status: 400 });
         }
 
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
                     .select('id')
                     .eq('id', bodyPropertyId)
                     .single();
-                
+
                 if (propertyExists) {
                     isAuthenticated = true; // Authorized as public
                     propertyId = bodyPropertyId;
@@ -102,17 +102,17 @@ export async function POST(req: Request) {
             const now = new Date();
             const expires = propStatus.halt_expires_at ? new Date(propStatus.halt_expires_at) : null;
             if (!expires || now < expires) {
-                return NextResponse.json({ 
-                    error: 'Servicio pausado temporalmente', 
+                return NextResponse.json({
+                    error: 'Servicio pausado temporalmente',
                     reason: 'property_halted',
-                    details: propStatus.halt_reason 
+                    details: propStatus.halt_reason
                 }, { status: 403 });
             }
         }
 
         // 3. Rate Limiting
         const rateLimitKey = accessToken ? `trans:token:${accessToken}` : `trans:ip:${ip}`;
-        const maxRequests = accessToken ? 500 : 100;
+        const maxRequests = accessToken ? 1000 : 500; // Increased to 500/min per IP due to component-level translations (e.g. 60 reqs per AI recommendations page)
 
         const limit = await RateLimiter.checkLimit(rateLimitKey, {
             windowMs: 60 * 1000,
@@ -146,9 +146,9 @@ export async function POST(req: Request) {
             propertyId,
             isAuthenticated
         });
-        return NextResponse.json({ 
+        return NextResponse.json({
             error: 'Error interno del servidor',
-            details: error.message 
+            details: error.message
         }, { status: 500 });
     }
 }

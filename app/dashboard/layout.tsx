@@ -174,13 +174,6 @@ export default function DashboardLayout({
             >
               <Menu className="h-6 w-6 text-foreground" />
             </button>
-            <Link
-              href="/"
-              className="hidden items-center gap-2 text-sm text-muted-foreground hover:text-foreground lg:flex"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Volver a inicio
-            </Link>
           </div>
 
           <div className="flex items-center gap-2">

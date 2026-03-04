@@ -23,6 +23,7 @@ interface EmergencyContact {
     address?: string;
     type: string;
     distance?: string;
+    place_id?: string;
 }
 
 interface EmergencyViewProps {
@@ -43,22 +44,22 @@ interface EmergencyViewProps {
     propertyId?: string; // FASE 17
 }
 
-function ContactItem({ 
-    contact, 
-    idx, 
-    currentLanguage, 
-    accessToken, 
-    getIcon, 
-    getMapsUrl, 
+function ContactItem({
+    contact,
+    idx,
+    currentLanguage,
+    accessToken,
+    getIcon,
+    getMapsUrl,
     isCustom = false,
     propertyId // FASE 17
-}: { 
-    contact: any, 
-    idx: number, 
-    currentLanguage: string, 
+}: {
+    contact: any,
+    idx: number,
+    currentLanguage: string,
     accessToken?: string,
     getIcon: (type: string) => any,
-    getMapsUrl: (name: string, address?: string) => string,
+    getMapsUrl: (name: string, address?: string, placeId?: string) => string,
     isCustom?: boolean,
     propertyId?: string // FASE 17
 }) {
@@ -106,7 +107,7 @@ function ContactItem({
             </div>
             <div className="flex items-center gap-2 relative z-10">
                 <a
-                    href={getMapsUrl(contact.name, contact.address)}
+                    href={getMapsUrl(contact.name, contact.address, contact.place_id)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-9 h-9 bg-primary/[0.04] text-primary rounded-full flex items-center justify-center hover:bg-primary/[0.08] transition-all active:scale-95 shrink-0 shadow-sm"
@@ -170,12 +171,19 @@ export function EmergencyView({
     };
 
     // getMapsUrl: same logic as GuestChat — Apple Maps on iOS, Google Maps elsewhere
-    const getMapsUrl = (name: string, address?: string) => {
+    const getMapsUrl = (name: string, address?: string, placeId?: string) => {
         const query = encodeURIComponent(address || name);
         const isIOS = typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(window.navigator.userAgent);
-        return isIOS
-            ? `maps://?q=${query}`
-            : `https://www.google.com/maps/search/?api=1&query=${query}`;
+
+        if (isIOS) {
+            return `maps://?q=${query}`;
+        }
+
+        if (placeId) {
+            return `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${placeId}`;
+        }
+
+        return `https://www.google.com/maps/search/?api=1&query=${query}`;
     };
 
     return (
@@ -260,7 +268,7 @@ export function EmergencyView({
                         </h3>
                         <div className="space-y-3">
                             {(contactsData.emergency_contacts || []).map((contact, idx) => (
-                                <ContactItem 
+                                <ContactItem
                                     key={`${contact.id}-${idx}`}
                                     contact={contact}
                                     idx={idx}
@@ -283,7 +291,7 @@ export function EmergencyView({
                         </h3>
                         <div className="grid grid-cols-1 gap-3">
                             {(contactsData.custom_contacts || []).map((contact, idx) => (
-                                <ContactItem 
+                                <ContactItem
                                     key={`${contact.id}-${idx}`}
                                     contact={contact}
                                     idx={idx}

@@ -276,12 +276,21 @@ export default function StepContacts({ value }: { value?: string }) {
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                                             <div className="md:col-span-3">
-                                                <Input
-                                                    placeholder="Dirección exacta para navegación"
-                                                    className="border-slate-100 bg-white h-9 rounded-lg px-3 text-xs"
-                                                    value={contact.address || ''}
-                                                    onChange={e => updateEmergencyContact(idx, 'address', e.target.value)}
-                                                />
+                                                <div className="relative">
+                                                    <Input
+                                                        placeholder="Dirección exacta para navegación"
+                                                        className={cn("border-slate-100 bg-white h-9 rounded-lg px-3 text-xs w-full", contact.place_id && "pr-8 border-[#316263]/40 bg-[#316263]/5")}
+                                                        value={contact.address || ''}
+                                                        onChange={e => updateEmergencyContact(idx, 'address', e.target.value)}
+                                                    />
+                                                    {contact.place_id && (
+                                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 bg-white rounded-md p-1 shadow-sm border border-slate-100" title="Ubicación GPS enlazada">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#316263]">
+                                                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" />
+                                                            </svg>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                             <Input
                                                 placeholder="Distancia"

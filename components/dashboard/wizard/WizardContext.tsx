@@ -722,7 +722,7 @@ export function WizardProvider({
                     category,
                     existingNames: data.dining.map((r: any) => r.name)
                 }
-                : (isTransport ? { address: finalAddressToUse, coordinates: activeGeocodingResult } : undefined)
+                : (isTransport || section === 'contacts' ? { address: finalAddressToUse, coordinates: activeGeocodingResult } : undefined)
         }
 
         console.log(`[AI-FILL] Initializing request...`, {

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { generateArrivalInstructions } from '@/lib/arrival/generator-final';
+import { generateArrivalInstructions } from '../../../lib/arrival/generator-final';
 
 const getSupabase = () => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -347,67 +347,102 @@ REGLA DE ORO: NO inventes detalles físicos específicos si no están en la desc
 RESPONDE SOLO EL JSON con la clave "faqs" y una lista de objetos { question, answer }.`;
 
     } else if (section === 'contacts') {
-      prompt = `Eres un experto en servicios de emergencia y recursos sanitarios de ${finalCity}, España.
+      const placesKey = process.env.GOOGLE_PLACES_API_KEY;
+      const c = existingData?.coordinates;
+      let placesContext = '';
 
-UBICACIÓN EXACTA: ${fullAddress}
+      if (placesKey && c?.lat && c?.lng) {
+        try {
+          const typesToSearch = [
+            { type: 'pharmacy', label: 'Farmacias' },
+            { type: 'hospital', keyword: 'urgencias', label: 'Hospitales/Urgencias' },
+            { type: 'doctor', keyword: 'centro de salud', label: 'Centros de Salud Públicos' },
+            { type: 'police', label: 'Comisarías de Policía/Guardia Civil' },
+            { type: 'fire_station', label: 'Bomberos' },
+            { type: 'veterinary_care', keyword: 'urgencias', label: 'Urgencias Veterinarias' }
+          ];
 
-TAREA: Generar una lista COMPLETA y REAL de contactos de emergencia y servicios esenciales 
-para un huésped que no conoce la zona. Prioriza los más cercanos a la ubicación indicada.
+          let allFetched: string[] = [];
+          for (const t of typesToSearch) {
+            let url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${c.lat},${c.lng}&rankby=distance&type=${t.type}&language=es&key=${placesKey}`;
+            if (t.keyword) url += `&keyword=${t.keyword}`;
 
-SERVICIOS A INCLUIR (en este orden de prioridad):
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.results && data.results.length > 0) {
+              const top3 = data.results.slice(0, 3).map((r: any) => `- ${r.name} (${r.vicinity || 'Dirección desconocida'}) [ID_MAPS: ${r.place_id || 'n/a'}]`);
+              allFetched.push(`[${t.label} CERCANOS VERIFICADOS VÍA RADAR]`);
+              allFetched.push(...top3);
+            }
+          }
+          if (allFetched.length > 0) {
+            placesContext = `\n\n--- DATOS DE LOCACIONES REALES OBTENIDAS POR GPS ---\n(Úsalos como base inicial. Nota: si falta el teléfono aquí, usa tu conocimiento interno para rellenarlo)\n` + allFetched.join('\n');
+            console.log('[AI-FILL] Injected factual Places DB for contacts:', allFetched.length, 'lines');
+          }
+        } catch (e) {
+          console.warn('[AI-FILL] Failed to fetch external places context for contacts', e);
+        }
+      }
 
-1. EMERGENCIAS GENERALES (siempre incluir):
-   - 112 Emergencias General
-   - 091 Policía Nacional (con dirección de la comisaría más cercana)
-   - 062 Guardia Civil (con dirección del puesto más cercano)
-   - 080 Bomberos locales (con dirección del parque más cercano)
+      const coordsStr = c ? `\nCOORDENADAS GPS (EPICENTRO DE BÚSQUEDA): Latitud ${c.lat}, Longitud ${c.lng}` : '';
 
-2. URGENCIAS MÉDICAS:
-   - Hospital general más cercano con urgencias 24h (nombre real, dirección, teléfono)
-   - Centro de salud más cercano (nombre real, dirección, teléfono, horario)
-   - PAC o Punto de Atención Continuada más cercano si existe (24h preferente)
-   - Cruz Roja local si tiene servicio de urgencias en la zona
+      prompt = `Eres un hiper-especialista en geolocalización de servicios de emergencia en España.
 
-3. FARMACIAS:
-   - Farmacia de guardia 24h más cercana (si existe permanente en la zona)
-   - Al menos 1-2 farmacias cercanas a la dirección con horario habitual
-   - Teléfono del turno de guardia de farmacias de la provincia
+UBICACIÓN EXACTA DEL ALOJAMIENTO: ${fullAddress} ${coordsStr}
+(IGNORA el nombre genérico de la ciudad si es amplio. USA LAS COORDENADAS GPS como centro absoluto para buscar).
+${placesContext}
 
-4. VETERINARIA (para huéspedes con mascotas):
-   - Clínica veterinaria de urgencias 24h más cercana (nombre real, dirección, teléfono)
-   - Al menos 1 clínica veterinaria cercana con horario normal como alternativa
+TAREA: Generar una lista COMPLETA y ÚTIL de contactos de emergencia y servicios esenciales 
+para un huésped que se aloja en esta dirección. Aprovecha los DATOS DE LOCACIONES REALES que te he pasado, y complétalos con tu conocimiento.
 
-5. OTROS SERVICIOS ÚTILES:
-   - Taxi local o radiotaxi de la zona (teléfono real)
-   - Grúa o asistencia en carretera (si zona turística)
+SERVICIOS A INCLUIR(en este orden de prioridad):
+
+      1. EMERGENCIAS GENERALES(siempre incluir):
+      - 112 Emergencias General
+        - 091 Policía Nacional(con dirección de la comisaría más cercana o puesto de Guardia Civil)
+          - 062 Guardia Civil
+            - 080 Bomberos locales
+
+      2. URGENCIAS MÉDICAS:
+      - Hospital general más cercano con urgencias 24h(nombre, dirección, teléfono)
+        - Centro de salud más cercano(nombre, dirección, teléfono)
+
+      3. FARMACIAS:
+      - Farmacia más cercana o farmacia de guardia
+
+      4. VETERINARIA(para huéspedes con mascotas):
+      - Clínica veterinaria más cercana (si es posible de urgencias)
+
+      5. OTROS SERVICIOS ÚTILES:
+      - Taxi local o radiotaxi de la zona
 
 REGLAS CRÍTICAS:
-- Usa SOLO nombres, direcciones y teléfonos REALES y verificables
-- Si no tienes certeza de un dato concreto, usa el número genérico nacional (ej: 112) en lugar de inventar
-- Prioriza servicios 24h
-- La distancia debe ser realista desde ${fullAddress}
+      - RELLENA los teléfonos usando tu conocimiento interno si los datos GPS no lo incluyen.
+      - NUNCA omitas un servicio esencial (como Policía u Hospital) solo porque te falte un dato. Si te falta el teléfono pero sabes que el hospital existe, deja el teléfono en blanco ("") en el JSON, pero MANTÉN el bloque en el array.
+      - Para los lugares obtenidos por GPS o por tu base de datos y que estés seguro, DEBES incluir su ID en maps si se te dio [ID_MAPS: ...] en el campo "place_id". Si no tiene ID o es un servicio general (como el 112), pon null.
+      - Distancias realistas (ej: "5 min", "10 min en coche").
 
-ESTRUCTURA JSON EXIGIDA:
-{
-  "emergency_contacts": [
-    { "id": "emergencias_112", "name": "Emergencias General", "phone": "112", "address": "Servicio de cobertura nacional", "distance": "Inmediato", "type": "emergency" },
-    { "id": "policia_nacional", "name": "Policía Nacional", "phone": "091", "address": "[Dirección real comisaría más cercana]", "distance": "[X min]", "type": "policia" },
-    { "id": "guardia_civil", "name": "Guardia Civil", "phone": "062", "address": "[Dirección real puesto más cercano]", "distance": "[X min]", "type": "policia" },
-    { "id": "bomberos", "name": "Bomberos", "phone": "080", "address": "[Dirección real parque más cercano]", "distance": "[X min]", "type": "emergency" },
-    { "id": "hospital_urgencias", "name": "[Nombre real hospital]", "phone": "[Teléfono real]", "address": "[Dirección real] — Urgencias 24h", "distance": "[X min en coche]", "type": "salud" },
-    { "id": "centro_salud", "name": "[Nombre real centro salud o PAC]", "phone": "[Teléfono real]", "address": "[Dirección real] — [Horario]", "distance": "[X min]", "type": "salud" },
-    { "id": "farmacia_guardia", "name": "Farmacia de Guardia", "phone": "[Teléfono guardia provincial]", "address": "[Dirección o 'rotativa por la zona']", "distance": "[X min]", "type": "farmacia" },
-    { "id": "farmacia_cercana", "name": "[Nombre real farmacia]", "phone": "[Teléfono real]", "address": "[Dirección real] — [Horario]", "distance": "[X min]", "type": "farmacia" },
-    { "id": "veterinaria_urgencias", "name": "[Nombre real clínica veterinaria]", "phone": "[Teléfono real]", "address": "[Dirección real] — [24h / Horario]", "distance": "[X min]", "type": "veterinaria" },
-    { "id": "taxi_local", "name": "Radio Taxi ${finalCity}", "phone": "[Teléfono real radiotaxi local]", "address": "Servicio zona", "distance": "Bajo demanda", "type": "transporte" }
-  ]
-}
+ESTRUCTURA JSON EXIGIDA (EJEMPLO - DEVUELVE SOLO LOS OBJETOS PARA LOS QUE TENGAS DATOS REALES E IGNORA EL RESTO):
+      {
+        "emergency_contacts": [
+          { "id": "emergencias_112", "name": "Emergencias General", "phone": "112", "address": "Servicio de cobertura nacional", "distance": "Inmediato", "type": "emergency", "place_id": null },
+          { "id": "policia_nacional", "name": "Policía Nacional", "phone": "091", "address": "[Dirección real comisaría más cercana]", "distance": "[X min]", "type": "policia", "place_id": "[ID_MAPS string]" },
+          { "id": "guardia_civil", "name": "Guardia Civil", "phone": "062", "address": "[Dirección real puesto más cercano]", "distance": "[X min]", "type": "policia", "place_id": "[ID_MAPS string]" },
+          { "id": "bomberos", "name": "Bomberos", "phone": "080", "address": "[Dirección real parque más cercano]", "distance": "[X min]", "type": "emergency", "place_id": "[ID_MAPS string]" },
+          { "id": "hospital_urgencias", "name": "[Nombre real hospital]", "phone": "[Teléfono real]", "address": "[Dirección real] — Urgencias 24h", "distance": "[X min en coche]", "type": "salud", "place_id": "[ID_MAPS string]" },
+          { "id": "centro_salud", "name": "[Nombre real centro salud o PAC]", "phone": "[Teléfono real]", "address": "[Dirección real] — [Horario]", "distance": "[X min]", "type": "salud", "place_id": "[ID_MAPS string]" },
+          { "id": "farmacia_guardia", "name": "Farmacia de Guardia", "phone": "[Teléfono guardia provincial]", "address": "[Dirección o 'rotativa por la zona']", "distance": "[X min]", "type": "farmacia", "place_id": "[ID_MAPS string]" },
+          { "id": "farmacia_cercana", "name": "[Nombre real farmacia]", "phone": "[Teléfono real]", "address": "[Dirección real] — [Horario]", "distance": "[X min]", "type": "farmacia", "place_id": "[ID_MAPS string]" },
+          { "id": "veterinaria_urgencias", "name": "[Nombre real clínica veterinaria]", "phone": "[Teléfono real]", "address": "[Dirección real] — [24h / Horario]", "distance": "[X min]", "type": "veterinaria", "place_id": "[ID_MAPS string]" },
+          { "id": "taxi_local", "name": "Radio Taxi ${finalCity}", "phone": "[Teléfono real radiotaxi local]", "address": "Servicio zona", "distance": "Bajo demanda", "type": "transporte", "place_id": null }
+        ]
+      }
 
 RESPONDE ÚNICAMENTE CON EL JSON VÁLIDO, sin texto adicional.`;
     }
 
     if (!prompt) {
-      return new Response(JSON.stringify({ error: `Sección no soportada: ${section}` }), {
+      return new Response(JSON.stringify({ error: `Sección no soportada: ${section} ` }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });

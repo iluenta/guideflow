@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plane, Train, Car, Bus, Pencil, Check, X, Sparkles, AlertTriangle, Plus } from 'lucide-react'
+import { Plane, Train, Car, Bus, Pencil, Check, X, Sparkles, AlertTriangle, Plus, MapPin } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Card, CardContent } from '@/components/ui/card'
@@ -24,6 +24,15 @@ interface TransportInfoProps {
     progress?: number
 }
 
+// ── Hay contenido real generado ───────────────────────────────────────────────
+function hasContent(data: TransportData): boolean {
+    return !!(
+        data.from_airport?.instructions ||
+        data.from_train?.instructions ||
+        data.parking?.info
+    )
+}
+
 export default function TransportInfo({
     data,
     onEdit,
@@ -35,19 +44,16 @@ export default function TransportInfo({
     const [tempValue, setTempValue] = useState<string>('')
     const [regeneratingSection, setRegeneratingSection] = useState<string | null>(null)
 
+    // ── Generando ─────────────────────────────────────────────────────────────
     if (isGenerating && !regeneratingSection) {
         return (
             <div className="mb-6 bg-primary/5 border border-primary/10 rounded-2xl p-6 animate-pulse">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-                        <span className="font-medium text-slate-800">
-                            🤖 Generando rutas de transporte...
-                        </span>
+                        <span className="font-medium text-slate-800">🤖 Generando rutas de transporte...</span>
                     </div>
-                    <span className="text-sm font-bold text-primary">
-                        {progress}%
-                    </span>
+                    <span className="text-sm font-bold text-primary">{progress}%</span>
                 </div>
                 <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
                     <div
@@ -62,8 +68,25 @@ export default function TransportInfo({
         )
     }
 
-    // Simplificamos: Mostramos siempre el contenedor si hay datos de acceso básicos
-    // para permitir al usuario añadir o regenerar información.
+    // ── NUEVO: Sin dirección todavía — estado vacío explicativo ───────────────
+    if (!hasContent(data) && !isGenerating) {
+        return (
+            <div className="mt-6 border-t border-slate-100 pt-6">
+                <div className="rounded-2xl border border-dashed border-[#316263]/30 bg-[#316263]/5 px-6 py-10 text-center">
+                    <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#316263]/10">
+                        <MapPin className="h-5 w-5 text-[#316263]" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-700">
+                        Escribe la dirección para generar las instrucciones
+                    </p>
+                    <p className="mt-1.5 text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+                        En cuanto introduzcas la dirección, generaremos automáticamente
+                        el mapa y las instrucciones de llegada desde el aeropuerto, tren y en coche.
+                    </p>
+                </div>
+            </div>
+        )
+    }
 
     const handleEditStart = (section: string, currentText: string) => {
         setEditingSection(section)
@@ -95,7 +118,6 @@ export default function TransportInfo({
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-                {/* Aeropuerto */}
                 <TransportSection
                     icon={<Plane className="w-4 h-4" />}
                     title="Desde el Aeropuerto"
@@ -111,7 +133,6 @@ export default function TransportInfo({
                     metadata={`${data.from_airport?.duration || '-'} • ${data.from_airport?.price_range || '-'}`}
                 />
 
-                {/* Tren */}
                 <TransportSection
                     icon={<Train className="w-4 h-4" />}
                     title="Desde la Estación de Tren"
@@ -127,7 +148,6 @@ export default function TransportInfo({
                     metadata={`${data.from_train?.duration || '-'} • ${data.from_train?.price_range || '-'}`}
                 />
 
-                {/* Parking */}
                 <TransportSection
                     icon={<Car className="w-4 h-4" />}
                     title="Aparcamiento / Coche"
@@ -143,7 +163,6 @@ export default function TransportInfo({
                     metadata={`${data.parking?.distance || '-'} • ${data.parking?.price || '-'}`}
                 />
 
-                {/* Transporte Cercano */}
                 {Array.isArray(data.nearby_transport) && (
                     <div className="bg-white/50 border border-slate-100 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-3">
@@ -156,23 +175,23 @@ export default function TransportInfo({
                                 size="sm"
                                 className="h-7 px-2 text-[10px] text-primary hover:text-primary-hover hover:bg-primary/5 flex items-center gap-1"
                                 onClick={() => {
-                                    const newList = [...(data.nearby_transport || []), { type: 'Bus', name: '', distance: '' }];
-                                    onEdit('nearby_transport', newList);
+                                    const newList = [...(data.nearby_transport || []), { type: 'Bus', name: '', distance: '' }]
+                                    onEdit('nearby_transport', newList)
                                 }}
                             >
                                 <Plus className="w-3 h-3" /> Añadir
                             </Button>
                         </div>
                         <div className="space-y-2">
-                            {Array.isArray(data.nearby_transport) && data.nearby_transport.map((item, idx) => (
+                            {data.nearby_transport.map((item, idx) => (
                                 <div key={idx} className="flex flex-col bg-white p-3 rounded-lg border border-slate-100 shadow-sm gap-2 group relative">
                                     <div className="flex items-center gap-2">
                                         <select
                                             value={item.type}
                                             onChange={(e) => {
-                                                const newList = [...(data.nearby_transport || [])];
-                                                newList[idx] = { ...newList[idx], type: e.target.value };
-                                                onEdit('nearby_transport', newList);
+                                                const newList = [...(data.nearby_transport || [])]
+                                                newList[idx] = { ...newList[idx], type: e.target.value }
+                                                onEdit('nearby_transport', newList)
                                             }}
                                             className="text-[10px] font-bold uppercase tracking-tight bg-slate-50 border-none rounded p-1 outline-none text-primary"
                                         >
@@ -187,9 +206,9 @@ export default function TransportInfo({
                                             value={item.name}
                                             placeholder="Nombre de la línea o estación"
                                             onChange={(e) => {
-                                                const newList = [...(data.nearby_transport || [])];
-                                                newList[idx] = { ...newList[idx], name: e.target.value };
-                                                onEdit('nearby_transport', newList);
+                                                const newList = [...(data.nearby_transport || [])]
+                                                newList[idx] = { ...newList[idx], name: e.target.value }
+                                                onEdit('nearby_transport', newList)
                                             }}
                                             className="text-[11px] font-medium text-slate-700 flex-1 border-none outline-none focus:ring-1 focus:ring-primary/20 rounded px-1"
                                         />
@@ -197,9 +216,9 @@ export default function TransportInfo({
                                             value={item.distance}
                                             placeholder="Distancia (ej: 5 min)"
                                             onChange={(e) => {
-                                                const newList = [...(data.nearby_transport || [])];
-                                                newList[idx] = { ...newList[idx], distance: e.target.value };
-                                                onEdit('nearby_transport', newList);
+                                                const newList = [...(data.nearby_transport || [])]
+                                                newList[idx] = { ...newList[idx], distance: e.target.value }
+                                                onEdit('nearby_transport', newList)
                                             }}
                                             className="text-[10px] text-slate-400 w-20 text-right border-none outline-none focus:ring-1 focus:ring-primary/20 rounded px-1"
                                         />
@@ -208,8 +227,8 @@ export default function TransportInfo({
                                             size="sm"
                                             className="h-6 w-6 p-0 text-slate-300 hover:text-red-500"
                                             onClick={() => {
-                                                const newList = (data.nearby_transport || []).filter((_, i) => i !== idx);
-                                                onEdit('nearby_transport', newList);
+                                                const newList = (data.nearby_transport || []).filter((_, i) => i !== idx)
+                                                onEdit('nearby_transport', newList)
                                             }}
                                         >
                                             <X className="w-3 h-3" />
@@ -222,10 +241,12 @@ export default function TransportInfo({
                 )}
             </div>
 
+            {/* MODIFICADO: aviso solo cuando hay contenido generado */}
             <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-4 flex items-start gap-3">
-                <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5" />
+                <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                 <p className="text-[11px] text-amber-800 leading-relaxed">
-                    <strong>Revisa los textos generados.</strong> La IA puede cometer errores. Puedes editar cualquier sección pulsando el icono del lápiz.
+                    <strong>Revisa los textos generados.</strong> La IA puede cometer errores.
+                    Puedes editar cualquier sección pulsando el icono del lápiz ✏️
                 </p>
             </div>
         </div>
@@ -250,7 +271,6 @@ interface SectionProps {
 function TransportSection({
     icon, title, content, isEditing, onEdit, onSave, onCancel, onRegenerate, isRegenerating, tempValue, setTempValue, metadata
 }: SectionProps) {
-    // Solo ocultamos si no hay contenido Y no hay posibilidad de regenerar (evita secciones vacías inútiles)
     if (!content && !isEditing && !isRegenerating && !onRegenerate) return null
 
     return (

@@ -320,6 +320,8 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                         <div className="p-6 space-y-6">
                             {messages.map((m) => {
                                 const processedContent = injectWifiMarkers(m.content)
+                                    // Strip out any hallucinated internal RAG citations (e.g. [[GUÍA_TÉCNICA: Hervidor]])
+                                    .replace(/\[\[(?!COPY:|MAP:)[^\]]+\]\]/gi, '')
                                     .replace(/\[\[COPY:(.+?)\]\]/g, (_match, val) => `[${val}](copy:${encodeURIComponent(val)})`)
                                     .replace(/\[\[MAP:([^:]+):([^\]]+)\]\]/g, (_match, address, label) => `[${label}](maps:${encodeURIComponent(address)})`)
                                     .replace(/(?<!\d|\[)(\+?\d{9,15})(?!\d|\])/g, '[$1](tel_wa:$1)');
