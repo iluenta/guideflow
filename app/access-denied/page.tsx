@@ -34,6 +34,11 @@ export default async function AccessDeniedPage({
             icon: <ShieldAlert className="h-12 w-12 text-slate-400" />,
             title: "Acceso restringido",
             description: "Para acceder a esta guía necesitas un enlace privado proporcionado por tu anfitrión."
+        },
+        property_inactive: {
+            icon: <Ban className="h-12 w-12 text-slate-500" />,
+            title: "Guía no disponible",
+            description: "La propiedad asociada a esta guía no se encuentra activa en este momento."
         }
     }[reason as string] || {
         icon: <ShieldAlert className="h-12 w-12 text-red-500" />,

@@ -112,7 +112,7 @@ export async function middleware(request: NextRequest) {
         // Identify requested property
         let { data: requestedProperty } = await supabaseAdmin
             .from('properties')
-            .select('id, tenant_id')
+            .select('id, tenant_id, status')
             .eq('slug', firstSegment)
             .maybeSingle()
 
@@ -122,7 +122,7 @@ export async function middleware(request: NextRequest) {
             if (isUUID) {
                 const { data: byId } = await supabaseAdmin
                     .from('properties')
-                    .select('id, tenant_id')
+                    .select('id, tenant_id, status')
                     .eq('id', firstSegment)
                     .maybeSingle()
                 requestedProperty = byId
@@ -149,6 +149,11 @@ export async function middleware(request: NextRequest) {
             if (userTenantId && requestedProperty.tenant_id === userTenantId) {
                 return response
             }
+        }
+
+        // 3. Status check: If not active, guests cannot enter
+        if (requestedProperty.status !== 'active') {
+            return NextResponse.redirect(new URL('/access-denied?reason=property_inactive', request.url))
         }
 
         // Guests MUST have a token

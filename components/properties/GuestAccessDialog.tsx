@@ -12,9 +12,10 @@ import { addDays, format } from "date-fns";
 interface GuestAccessDialogProps {
     propertyId: string;
     propertyName: string;
+    children?: React.ReactNode;
 }
 
-export function GuestAccessDialog({ propertyId, propertyName }: GuestAccessDialogProps) {
+export function GuestAccessDialog({ propertyId, propertyName, children }: GuestAccessDialogProps) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [guestName, setGuestName] = useState("");
@@ -69,10 +70,14 @@ export function GuestAccessDialog({ propertyId, propertyName }: GuestAccessDialo
             }
         }}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 h-9">
-                    <Share2 className="h-3.5 w-3.5" />
-                    Compartir
-                </Button>
+                {children ? (
+                    children
+                ) : (
+                    <Button variant="outline" className="gap-2 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 h-9">
+                        <Share2 className="h-3.5 w-3.5" />
+                        Compartir
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[450px] rounded-[2rem]">
                 <DialogHeader>

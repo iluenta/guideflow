@@ -3,22 +3,24 @@
 import { useState, useEffect } from 'react'
 import { getProperties, Property } from '@/app/actions/properties'
 import { PropertyCard } from '@/components/properties/PropertyCard'
-import { PropertyForm } from '@/components/properties/PropertyForm'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, Building2, SlidersHorizontal } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Plus, Search, LayoutGrid, List, Building2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
+
+const FILTERS = ['Todas', 'Activas', 'Borradores', 'Archivadas'] as const
+type Filter = typeof FILTERS[number]
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [activeFilter, setActiveFilter] = useState<Filter>('Todas')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
-  useEffect(() => {
-    fetchProperties()
-  }, [])
+  useEffect(() => { fetchProperties() }, [])
 
   async function fetchProperties() {
     try {
@@ -32,89 +34,151 @@ export default function PropertiesPage() {
     }
   }
 
-  const filteredProperties = properties.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    (p.full_address || '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = properties.filter(p => {
+    const matchSearch =
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.full_address || '').toLowerCase().includes(search.toLowerCase())
 
+    const matchFilter =
+      activeFilter === 'Todas' ? true :
+        activeFilter === 'Activas' ? (p as any).status === 'active' :
+          activeFilter === 'Borradores' ? (p as any).status === 'draft' :
+            activeFilter === 'Archivadas' ? (p as any).status === 'archived' :
+              true
 
-  const handleAdd = () => {
-    // Ya no se usa, usamos Link directamente
-  }
+    return matchSearch && matchFilter
+  })
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6">
+
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Mis Propiedades</h1>
-          <p className="text-muted-foreground mt-1">
-            Gestiona tus alojamientos y configura sus guías.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Mis Propiedades</h1>
+          <p className="text-slate-400 text-sm mt-0.5">Gestiona tus alojamientos y sus guías digitales.</p>
         </div>
-        <Button asChild className="h-11 px-6 gap-2 shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30">
+        <Button asChild className="h-10 px-5 gap-2 bg-[#316263] hover:bg-[#316263]/90 text-white shadow-md shadow-[#316263]/20 rounded-xl">
           <Link href="/dashboard/properties/new">
-            <Plus className="h-5 w-5" />
-            Añadir propiedad
+            <Plus className="h-4 w-4" />
+            Nueva Propiedad
           </Link>
         </Button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre o ubicación..."
-            className="pl-9 h-10 bg-card/50"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      {/* Filters toolbar */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-2 flex flex-col md:flex-row items-center justify-between gap-3">
+
+        {/* Filtros de estado */}
+        <div className="flex items-center gap-1 w-full md:w-auto overflow-x-auto">
+          {FILTERS.map(filter => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={cn(
+                "px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
+                activeFilter === filter
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+              )}
+            >
+              {filter}
+            </button>
+          ))}
         </div>
-        <Button variant="outline" className="gap-2 h-10">
-          <SlidersHorizontal className="h-4 w-4" />
-          Filtros
-        </Button>
+
+        {/* Buscador + toggle vista */}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+            <Input
+              placeholder="Buscar propiedad..."
+              className="pl-9 h-9 bg-slate-50 border-slate-200 rounded-xl text-sm focus:ring-[#316263]/20"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="hidden md:block h-6 w-px bg-slate-200" />
+
+          {/* Toggle grid / lista */}
+          <div className="flex items-center bg-slate-50 rounded-xl p-1 border border-slate-200 gap-0.5">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={cn(
+                "p-1.5 rounded-lg transition-all",
+                viewMode === 'grid'
+                  ? "bg-white shadow-sm text-[#316263]"
+                  : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn(
+                "p-1.5 rounded-lg transition-all",
+                viewMode === 'list'
+                  ? "bg-white shadow-sm text-[#316263]"
+                  : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
+      {/* Grid / Lista */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="space-y-4">
-              <Skeleton className="aspect-video w-full rounded-xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-2/3" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
+          {[1, 2, 3].map(i => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="aspect-video w-full rounded-2xl" />
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
             </div>
           ))}
         </div>
-      ) : filteredProperties.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProperties.map((property) => (
-            <PropertyCard
-              key={property.id}
-              property={property}
-            />
+      ) : filtered.length > 0 ? (
+        <div className={cn(
+          "grid gap-6",
+          viewMode === 'grid'
+            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+            : "grid-cols-1"
+        )}>
+          {filtered.map(property => (
+            <PropertyCard key={property.id} property={property} />
           ))}
+
+          {/* Card añadir nueva propiedad */}
+          <Link
+            href="/dashboard/properties/new"
+            className="group border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center min-h-[280px] hover:border-[#316263]/40 hover:bg-[#316263]/5 transition-all"
+          >
+            <div className="h-14 w-14 rounded-full bg-slate-100 group-hover:bg-[#316263]/10 flex items-center justify-center mb-3 transition-colors">
+              <Plus className="h-7 w-7 text-slate-400 group-hover:text-[#316263]" />
+            </div>
+            <h3 className="text-base font-bold text-slate-700 group-hover:text-[#316263]">Añadir Propiedad</h3>
+            <p className="text-sm text-slate-400 mt-1">Configura un nuevo alojamiento</p>
+          </Link>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-2xl border-2 border-dashed border-muted-foreground/10 bg-muted/5">
-          <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <Building2 className="h-8 w-8 text-primary" />
+        <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+          <div className="h-16 w-16 bg-[#316263]/10 rounded-full flex items-center justify-center mb-4">
+            <Building2 className="h-8 w-8 text-[#316263]" />
           </div>
-          <h2 className="text-xl font-semibold">No se encontraron propiedades</h2>
-          <p className="text-muted-foreground mt-2 max-w-xs mx-auto">
-            {search ? 'Intenta con otros términos de búsqueda.' : 'Parece que aún no has añadido ninguna propiedad. ¡Empieza ahora!'}
+          <h2 className="text-lg font-semibold text-slate-900">No se encontraron propiedades</h2>
+          <p className="text-slate-400 text-sm mt-1.5 max-w-xs">
+            {search ? 'Intenta con otros términos.' : 'Aún no has añadido ninguna propiedad.'}
           </p>
           {!search && (
-            <Button asChild variant="secondary" className="mt-6">
-              <Link href="/dashboard/properties/new">
-                Añadir mi primera propiedad
-              </Link>
+            <Button asChild className="mt-5 bg-[#316263] hover:bg-[#316263]/90 text-white rounded-xl">
+              <Link href="/dashboard/properties/new">Añadir mi primera propiedad</Link>
             </Button>
           )}
         </div>
       )}
-
     </div>
   )
 }

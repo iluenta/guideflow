@@ -19,6 +19,28 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     const property = await getPropertyBySlug(slug)
     if (!property) notFound()
 
+    // 1.5. Validate property status
+    // If it's not active, only the owner can view it
+    if (property.status !== 'active') {
+        const { data: { session } } = await supabase.auth.getSession()
+        let isOwner = false
+        if (session?.user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('tenant_id')
+                .eq('id', session.user.id)
+                .single()
+
+            if (profile?.tenant_id === property.tenant_id) {
+                isOwner = true
+            }
+        }
+
+        if (!isOwner) {
+            notFound() // Don't show the guide to the public if not active
+        }
+    }
+
     // 2. Validate token and get guest info if available
     let guestName = ''
     if (token) {

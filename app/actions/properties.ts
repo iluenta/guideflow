@@ -43,7 +43,7 @@ export type Property = {
     beds: number
     baths: number
     guests: number
-    description: string | null
+    status: 'draft' | 'active' | 'archived'
     main_image_url: string | null
     theme_config: any
     latitude: number | null
@@ -76,10 +76,9 @@ export async function getProperties() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
 
-    // Even if we have a public SELECT policy, we explicitly filter by tenant
-    // in the dashboard to avoid showing everyone's properties.
     const tenant_id = await getTenantId(supabase, user)
 
+    // 1. Propiedades base
     const { data, error } = await supabase
         .from('properties')
         .select('*')
@@ -91,7 +90,92 @@ export async function getProperties() {
         return []
     }
 
-    return data as Property[]
+    const properties = data as Property[]
+    if (properties.length === 0) return []
+
+    const propertyIds = properties.map(p => p.id)
+
+    // 2. Queries paralelas para calcular completedSteps por propiedad
+    const [
+        { data: contextRows },
+        { data: faqRows },
+        { data: recRows },
+        { data: brandingRows },
+    ] = await Promise.all([
+        // Categorías del wizard guardadas en property_context
+        supabase
+            .from('property_context')
+            .select('property_id, category')
+            .in('property_id', propertyIds),
+
+        // FAQs
+        supabase
+            .from('property_faqs')
+            .select('property_id')
+            .in('property_id', propertyIds),
+
+        // Recomendaciones locales
+        supabase
+            .from('property_recommendations')
+            .select('property_id')
+            .in('property_id', propertyIds),
+
+        // Branding / apariencia
+        supabase
+            .from('property_branding')
+            .select('property_id')
+            .in('property_id', propertyIds),
+    ])
+
+    // Steps totales del wizard (los mismos que filteredSteps en WizardContext)
+    const TOTAL_STEPS = [
+        'property', 'appearance', 'access', 'welcome', 'contacts',
+        'checkin', 'rules', 'tech', 'visual-scanner', 'appliance-manuals',
+        'inventory', 'dining', 'faqs'
+    ]
+
+    // 3. Calcular guide_completion por propiedad
+    return properties.map(property => {
+        const completed = new Set<string>()
+
+        // 'property' — siempre completado si la propiedad existe
+        completed.add('property')
+
+        // inventory / visual-scanner
+        if (
+            (property as any).inventory_status === 'completed' ||
+            (property as any).inventory_status === 'generating'
+        ) {
+            completed.add('inventory')
+            completed.add('visual-scanner')
+        }
+
+        // Categorías de property_context
+        contextRows
+            ?.filter(r => r.property_id === property.id)
+            .forEach(r => completed.add(r.category))
+
+        // faqs
+        if (faqRows?.some(r => r.property_id === property.id)) {
+            completed.add('faqs')
+        }
+
+        // dining / recomendaciones
+        if (recRows?.some(r => r.property_id === property.id)) {
+            completed.add('dining')
+        }
+
+        // appearance / branding
+        if (brandingRows?.some(r => r.property_id === property.id)) {
+            completed.add('appearance')
+        }
+
+        const guide_completion = Math.round(
+            (completed.size / TOTAL_STEPS.length) * 100
+        )
+
+        return { ...property, guide_completion }
+    })
 }
 
 export async function getProperty(id: string) {
@@ -250,6 +334,32 @@ export async function updateProperty(id: string, formData: Partial<Property>) {
 
     revalidatePath('/dashboard/properties')
     revalidatePath(`/dashboard/properties/${id}`)
+    return data as Property
+}
+
+export async function updatePropertyStatus(id: string, newStatus: 'draft' | 'active' | 'archived') {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const currentPropId = sanitizeUUID(id)
+    if (!currentPropId) throw new Error('ID de propiedad inválido')
+
+    const { data, error } = await supabase
+        .from('properties')
+        .update({ status: newStatus })
+        .eq('id', currentPropId)
+        .select()
+        .single()
+
+    if (error) {
+        console.error('Error updating property status:', error.message)
+        throw new Error('No se pudo actualizar el estado de la propiedad.')
+    }
+
+    revalidatePath('/dashboard/properties')
+    revalidatePath(`/dashboard/properties/${currentPropId}`)
     return data as Property
 }
 
