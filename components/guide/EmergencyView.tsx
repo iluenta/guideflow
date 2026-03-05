@@ -41,7 +41,8 @@ interface EmergencyViewProps {
     currentLanguage?: string;
     onLanguageChange?: (lang: string) => void;
     accessToken?: string;
-    propertyId?: string; // FASE 17
+    propertyId?: string;
+    disabledLanguage?: boolean;
 }
 
 function ContactItem({
@@ -147,7 +148,8 @@ export function EmergencyView({
     currentLanguage = 'es',
     onLanguageChange,
     accessToken,
-    propertyId // FASE 17
+    propertyId,
+    disabledLanguage = false
 }: EmergencyViewProps) {
     const isEs = currentLanguage === 'es';
 
@@ -193,6 +195,7 @@ export function EmergencyView({
                 onBack={onBack}
                 currentLanguage={currentLanguage}
                 onLanguageChange={onLanguageChange}
+                disabledLanguage={disabledLanguage}
             />
 
             <motion.div

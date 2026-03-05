@@ -1,4 +1,4 @@
-import { TinyColor } from '@ctrl/tinycolor';
+import { TinyColor, readability } from '@ctrl/tinycolor';
 import { Theme, ThemeColors } from './themes';
 
 /**
@@ -75,7 +75,7 @@ export function validateContrast(
     const fg = new TinyColor(foreground);
     const bg = new TinyColor(background);
 
-    const ratio = fg.getContrast(bg);
+    const ratio = readability(fg, bg);
     const passes = ratio >= 4.5; // WCAG AA
 
     return { passes, ratio };

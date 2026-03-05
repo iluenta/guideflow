@@ -17,6 +17,7 @@ import {
     Clock,
     Star
 } from 'lucide-react';
+import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { LanguageSelector } from '@/components/guide/LanguageSelector';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
@@ -41,6 +42,7 @@ interface Fase11HomeProps {
     context?: any[];
     sections?: any[];
     manuals?: any[];
+    disabledLanguage?: boolean;
 }
 
 const container = {
@@ -75,6 +77,7 @@ export function Fase11Home({
     context = [],
     sections = [],
     manuals = [],
+    disabledLanguage = false,
 }: Fase11HomeProps) {
     const t = getGuideTheme(themeId)
 
@@ -93,6 +96,7 @@ export function Fase11Home({
     const { content: labelBuenosDias } = useLocalizedContent('BUENOS DÍAS', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelBuenasTardes } = useLocalizedContent('BUENAS TARDES', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelBuenasNoches } = useLocalizedContent('BUENAS NOCHES', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: greetingLabel } = useLocalizedContent('Hola', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const timeInfo = useMemo(() => {
         const hour = new Date().getHours();
@@ -138,6 +142,7 @@ export function Fase11Home({
     const { content: labelInfo } = useLocalizedContent('Info', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelNormas } = useLocalizedContent('Normas', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelManual } = useLocalizedContent('Manual', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const locationName = location.split(',')[0].trim();
     const { content: labelDescubreLocation } = useLocalizedContent(`Descubre ${locationName}`, currentLanguage, 'ui_label', accessToken, propertyId);
@@ -152,10 +157,13 @@ export function Fase11Home({
             {/* Header with Hero Image */}
             <div className="relative h-48 w-full overflow-hidden">
                 {heroImage && heroImage.trim() !== '' ? (
-                    <img
+                    <Image
                         src={heroImage}
                         alt={propertyName}
-                        className="w-full h-full object-cover"
+                        fill
+                        priority
+                        sizes="100vw"
+                        className="object-cover"
                     />
                 ) : (
                     <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
@@ -175,12 +183,13 @@ export function Fase11Home({
                     <LanguageSelector
                         currentLanguage={currentLanguage}
                         onLanguageChange={onLanguageChange}
+                        disabled={disabledLanguage}
                     />
                 </div>
 
                 <div className="absolute bottom-10 left-6">
                     <p className={cn('text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-1', t.heroSubLabel)}>
-                        {guestName ? (currentLanguage === 'es' ? `Hola ${guestName}` : `Hello ${guestName}`) : labelTuGuia}
+                        {guestName ? `${greetingLabel} ${guestName}` : labelTuGuia}
                     </p>
                     <h1 className={cn(
                         'text-2xl font-bold tracking-tight',
@@ -361,7 +370,7 @@ export function Fase11Home({
                 {/* Footer */}
                 <motion.div variants={item} className="mt-8 text-center opacity-30">
                     <p className="text-[9px] font-black text-navy tracking-[0.4em] uppercase">
-                        Powered by GuideFlow
+                        {poweredByLabel} GuideFlow
                     </p>
                 </motion.div>
             </div>

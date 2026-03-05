@@ -12,6 +12,7 @@ import {
     Sparkles,
     ArrowRight
 } from 'lucide-react';
+import Image from 'next/image';
 import { LanguageSelector } from '@/components/guide/LanguageSelector';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { getGuideTheme } from '@/lib/guide-theme';
@@ -33,6 +34,7 @@ interface Fase11WelcomeProps {
     themeId?: string;
     context?: any[];
     recommendations?: any[];
+    disabledLanguage?: boolean;
 }
 
 const container: Variants = {
@@ -72,6 +74,7 @@ export function Fase11Welcome({
     themeId = 'modern',
     context = [],
     recommendations = [],
+    disabledLanguage = false,
 }: Fase11WelcomeProps) {
     const t = getGuideTheme(themeId)
     const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
@@ -98,6 +101,7 @@ export function Fase11Welcome({
     const { content: yourStayLabel } = useLocalizedContent('Tu Estancia', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: houseGuideLabel } = useLocalizedContent('Guía de la Casa', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: everythingYouNeedLabel } = useLocalizedContent('Todo lo que necesitas saber', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', currentLanguage, 'ui_label', accessToken, propertyId);
 
     // Chip Labels
     const { content: labelAcceso } = useLocalizedContent('Acceso', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -118,13 +122,14 @@ export function Fase11Welcome({
             {/* Hero Section */}
             <div className="relative h-[45vh] w-full overflow-hidden">
                 {heroImage && heroImage.trim() !== '' ? (
-                    <motion.img
-                        initial={{ scale: 1.1 }}
-                        animate={{ scale: 1 }}
-                        transition={{ duration: 1.5, ease: 'easeOut' }}
+                    <Image
                         src={heroImage}
                         alt={propertyName}
-                        className="w-full h-full object-cover"
+                        fill
+                        priority
+                        sizes="100vw"
+                        className="object-cover"
+                        loading="eager"
                     />
                 ) : (
                     <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-700" />
@@ -136,6 +141,7 @@ export function Fase11Welcome({
                     <LanguageSelector
                         currentLanguage={currentLanguage}
                         onLanguageChange={onLanguageChange}
+                        disabled={disabledLanguage}
                     />
                 </div>
 
@@ -267,7 +273,7 @@ export function Fase11Welcome({
                 {/* Footer */}
                 <motion.div variants={item} className="mt-8 text-center">
                     <p className="text-[9px] font-black text-gray-300 tracking-[0.4em] uppercase">
-                        Powered by GuideFlow
+                        {poweredByLabel} GuideFlow
                     </p>
                 </motion.div>
             </div>

@@ -548,9 +548,9 @@ export function GuideManager({ property, initialSections, manuals }: GuideManage
                         <ManualsSection
                             manuals={allManuals}
                             onAdd={() => setActiveTab('visual')}
-                            onEdit={(manual) => setEditingManualContent(manual)}
+                            onEdit={(manual: any) => setEditingManualContent(manual)}
                             onDelete={(id) => handleDeleteManual(id)}
-                            onAddNotes={(manual) => setEnrichingManual(manual)}
+                            onAddNotes={(manual: any) => setEnrichingManual(manual)}
                         />
                     </TabsContent>
                 </Tabs>

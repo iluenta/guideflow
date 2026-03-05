@@ -20,19 +20,25 @@ interface Language {
 interface LanguageSelectorProps {
     currentLanguage?: string;
     onLanguageChange: (lang: string) => void;
+    disabled?: boolean;
 }
 
-const SUPPORTED_LANGUAGES: Language[] = [
+export const SUPPORTED_LANGUAGES: Language[] = [
     { code: 'es', name: 'Spanish', native_name: 'Español', flag_emoji: '🇪🇸' },
     { code: 'en', name: 'English', native_name: 'English', flag_emoji: '🇬🇧' },
     { code: 'fr', name: 'French', native_name: 'Français', flag_emoji: '🇫🇷' },
     { code: 'de', name: 'German', native_name: 'Deutsch', flag_emoji: '🇩🇪' },
     { code: 'it', name: 'Italian', native_name: 'Italiano', flag_emoji: '🇮🇹' },
     { code: 'pt', name: 'Portuguese', native_name: 'Português', flag_emoji: '🇵🇹' },
+    { code: 'ca', name: 'Catalan', native_name: 'Català', flag_emoji: 'CA' },
+    { code: 'gl', name: 'Galician', native_name: 'Galego', flag_emoji: 'GL' },
+    { code: 'eu', name: 'Basque', native_name: 'Euskara', flag_emoji: 'EU' },
 ];
 
-export function LanguageSelector({ currentLanguage = 'es', onLanguageChange }: LanguageSelectorProps) {
+export function LanguageSelector({ currentLanguage = 'es', onLanguageChange, disabled = false }: LanguageSelectorProps) {
     const current = SUPPORTED_LANGUAGES.find(l => l.code === currentLanguage) || SUPPORTED_LANGUAGES[0];
+
+    if (disabled) return null;
 
     return (
         <DropdownMenu>
@@ -64,7 +70,9 @@ export function LanguageSelector({ currentLanguage = 'es', onLanguageChange }: L
                         `}
                     >
                         <div className="flex items-center gap-3">
-                            <span className="text-xl">{lang.flag_emoji}</span>
+                            <span className={lang.flag_emoji.length === 2 ? "text-[10px] font-bold w-5 text-center" : "text-xl w-5 text-center"}>
+                                {lang.flag_emoji}
+                            </span>
                             <div className="flex flex-col">
                                 <span className="text-sm">{lang.native_name}</span>
                                 <span className="text-[10px] opacity-50 font-medium">{lang.name}</span>

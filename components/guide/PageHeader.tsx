@@ -6,13 +6,15 @@ interface PageHeaderProps {
     onBack: () => void;
     currentLanguage?: string;
     onLanguageChange?: (lang: string) => void;
+    disabledLanguage?: boolean;
 }
 
 export function PageHeader({
     title,
     onBack,
     currentLanguage = 'es',
-    onLanguageChange
+    onLanguageChange,
+    disabledLanguage = false
 }: PageHeaderProps) {
     return (
         <div className="sticky top-0 z-40 w-full bg-surface/80 backdrop-blur-md border-b border-primary/5 px-4 py-4 flex items-center justify-between">
@@ -31,6 +33,7 @@ export function PageHeader({
                 <LanguageSelector
                     currentLanguage={currentLanguage}
                     onLanguageChange={onLanguageChange}
+                    disabled={disabledLanguage}
                 />
             ) : (
                 <div className="w-8 shrink-0" />

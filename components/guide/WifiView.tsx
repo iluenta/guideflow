@@ -14,7 +14,8 @@ interface WifiViewProps {
     currentLanguage?: string;
     onLanguageChange?: (lang: string) => void;
     accessToken?: string;
-    propertyId?: string; // FASE 17
+    propertyId?: string;
+    disabledLanguage?: boolean;
 }
 
 export function WifiView({
@@ -25,7 +26,8 @@ export function WifiView({
     currentLanguage = 'es',
     onLanguageChange,
     accessToken,
-    propertyId // FASE 17
+    propertyId,
+    disabledLanguage = false
 }: WifiViewProps) {
     const [copied, setCopied] = useState<'network' | 'password' | null>(null);
     const { content: localizedNotes, isTranslating: notesLoading } = useLocalizedContent(notes || '', currentLanguage || 'es', 'wifi_notes', accessToken, propertyId);
@@ -42,10 +44,11 @@ export function WifiView({
     return (
         <div className="min-h-screen bg-background font-sans">
             <PageHeader
-                title="WiFi"
+                title={localizedNetLabel || "WiFi"}
                 onBack={onBack}
                 currentLanguage={currentLanguage}
                 onLanguageChange={onLanguageChange}
+                disabledLanguage={disabledLanguage}
             />
 
             <div className="p-5 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-md mx-auto">

@@ -100,87 +100,56 @@ export async function middleware(request: NextRequest) {
     const pathSegments = pathname.split('/').filter(Boolean)
     const firstSegment = pathSegments[0]
 
-    // Identify guide routes (non-reserved routes)
+    // Identify guide routes    // Identify requested property
+    let requestedProperty = null
+    // pathSegments and firstSegment are already defined above
+    // const pathSegments = pathname.split('/').filter(Boolean)
+    // const firstSegment = pathSegments[0]
+
     if (firstSegment && !reservedRoutes.includes(firstSegment)) {
-        // We use a separate admin client to verify property and tokens
-        // This avoids issues with RLS in the middleware
         const supabaseAdmin = createSupabaseClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         )
 
-        // Identify requested property
-        let { data: requestedProperty } = await supabaseAdmin
+        const { data: prop } = await supabaseAdmin
             .from('properties')
             .select('id, tenant_id, status')
             .eq('slug', firstSegment)
             .maybeSingle()
 
-        if (!requestedProperty) {
-            // Fallback to ID
-            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(firstSegment);
-            if (isUUID) {
-                const { data: byId } = await supabaseAdmin
-                    .from('properties')
-                    .select('id, tenant_id, status')
-                    .eq('id', firstSegment)
-                    .maybeSingle()
-                requestedProperty = byId
-            }
-        }
+        requestedProperty = prop
+    }
 
-        // If no property found, it's NOT a guide route. Return the response.
-        if (!requestedProperty) {
-            return response
-        }
+    // 7. Token -> Cookie Redirect (NEW FLOW)
+    if (requestedProperty && token) {
+        // We found a guide route and a token in the URL
+        const cookieName = `gf_token_${firstSegment}`
 
-        // Host Bypass: Owners can bypass token check
-        if (user) {
-            let userTenantId = user.app_metadata?.tenant_id || user.user_metadata?.tenant_id
-            if (!userTenantId) {
-                const { data: profile } = await supabaseAdmin
-                    .from('profiles')
-                    .select('tenant_id')
-                    .eq('id', user.id)
-                    .single()
-                userTenantId = profile?.tenant_id
-            }
+        // 1. Create response that sets the cookie
+        const redirectResponse = NextResponse.redirect(new URL(pathname, request.url))
 
-            if (userTenantId && requestedProperty.tenant_id === userTenantId) {
-                return response
-            }
-        }
+        redirectResponse.cookies.set({
+            name: cookieName,
+            value: token.trim(),
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 60 * 60 * 24 * 30 // 30 days
+        })
 
-        // 3. Status check: If not active, guests cannot enter
-        if (requestedProperty.status !== 'active') {
-            return NextResponse.redirect(new URL('/access-denied?reason=property_inactive', request.url))
-        }
+        return redirectResponse
+    }
 
-        // Guests MUST have a token
-        if (!token) {
-            return NextResponse.redirect(new URL('/access-denied?reason=token_required', request.url))
-        }
-
-        const cleanToken = token.trim();
-        const { data: access, error: dbError } = await supabaseAdmin
-            .from('guest_access_tokens')
-            .select('*')
-            .eq('access_token', cleanToken)
-            .eq('property_id', requestedProperty.id)
-            .single()
-
-        if (dbError || !access || !access.is_active) {
-            return NextResponse.redirect(new URL('/access-denied?reason=invalid', request.url))
-        }
-
-        const now = new Date()
-        const validFrom = access.valid_from ? new Date(access.valid_from) : null
-        const validUntil = access.valid_until ? new Date(access.valid_until) : null
-
-        if (!validFrom || !validUntil || now < validFrom || now > validUntil) {
-            const reason = now < (validFrom || now) ? 'too_early' : 'expired'
-            return NextResponse.redirect(new URL(`/access-denied?reason=${reason}`, request.url))
-        }
+    // 8. Normal Auth/Host handling (Existing logic, slightly simplified as page.tsx will do hard validation)
+    if (requestedProperty) {
+        // If it's a guide route, we let it through to page.tsx
+        // page.tsx will handle:
+        // - Host bypass
+        // - Token/Cookie validation
+        // - Redirection to access-denied
+        return response
     }
 
     return response

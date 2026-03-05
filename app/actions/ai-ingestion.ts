@@ -313,8 +313,22 @@ FORMATO DE SALIDA (JSON ESTRICTO):
     }
 }
 
-export async function ingestPropertyData(propertyId: string, url: string, options: { overwrite: boolean }) {
-    throw new Error('La ingesta desde URL (Airbnb/Booking) está deshabilitada.')
+export async function ingestPropertyData(propertyId: string, url: string, options: { overwrite: boolean }): Promise<{ requiresConfirmation?: boolean; sectionCount?: number }> {
+    const supabase = await createClient()
+
+    // VerificaciÃ³n de seguridad para no sobreescribir sin confirmaciÃ³n
+    if (!options.overwrite) {
+        const { count } = await supabase
+            .from('guide_sections')
+            .select('*', { count: 'exact', head: true })
+            .eq('property_id', propertyId)
+
+        if (count && count > 0) {
+            return { requiresConfirmation: true, sectionCount: count }
+        }
+    }
+
+    throw new Error('La ingesta automática desde URL (Airbnb/Booking) está deshabilitada temporalmente.')
 }
 
 export async function processInventoryManuals(propertyId: string, items: any[]) {

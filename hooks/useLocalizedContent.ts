@@ -5,26 +5,179 @@ import { useState, useEffect } from 'react';
 /**
  * Hook to handle on-demand translation of content blocks.
  */
-// Simple global cache to avoid redundant requests for the same string/lang in the same session
 const translationCache: Record<string, string> = {};
 
+/**
+ * FASE 18: Ultra-robust cleaning to strip ANY leaked JSON, objects, or artifacts.
+ */
+function cleanTranslation(val: any): string {
+    if (!val) return "";
+
+    // 1. Handle actual objects
+    if (typeof val === 'object' && !Array.isArray(val) && val !== null) {
+        // Check for any key that looks like a translation result (case-insensitive)
+        const keys = Object.keys(val);
+        const lowerKeys = keys.map(k => k.toLowerCase());
+
+        // Priority sequence for candidates
+        const priorities = ['t', 'translated', 'translation', 'text', 'result', 'o', 'original', 'value'];
+        for (const p of priorities) {
+            const idx = lowerKeys.indexOf(p);
+            if (idx !== -1) return cleanTranslation(val[keys[idx]]);
+        }
+
+        // Final fallback: just take the first value if it's a string
+        const values = Object.values(val);
+        if (values.length > 0) return cleanTranslation(values[0]);
+
+        return JSON.stringify(val);
+    }
+
+    // 2. Handle arrays
+    if (Array.isArray(val)) {
+        return val.length > 0 ? cleanTranslation(val[0]) : "";
+    }
+
+    // 3. Handle strings (might be stringified JSON)
+    if (typeof val === 'string') {
+        const trimmed = val.trim();
+
+        // Recursive JSON cleaning
+        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            try {
+                const parsed = JSON.parse(trimmed);
+                return cleanTranslation(parsed);
+            } catch (e) {
+                // Not valid JSON, try regex extraction
+                const match = trimmed.match(/"(?:o|t|translated|translation|text|value)":\s*"([^"]+)"/i);
+                if (match) return match[1];
+            }
+        }
+
+        // Quote stripping
+        if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+            return trimmed.slice(1, -1);
+        }
+
+        return trimmed;
+    }
+
+    return String(val);
+}
+
+/**
+ * Seeds the cache with pre-translated content from the server.
+ */
+export function seedTranslationCache(translations: Record<string, string>) {
+    Object.entries(translations).forEach(([key, value]) => {
+        translationCache[key] = cleanTranslation(value);
+    });
+}
+
+// Group for batching
+interface BatchQueueItem {
+    text: string;
+    resolve: (val: string) => void;
+}
+
+// FASE 18: Multi-Context Batching Coordinator
+class TranslationManager {
+    private static batchGroups: Map<string, {
+        queue: Map<string, BatchQueueItem>;
+        timer: NodeJS.Timeout | null;
+    }> = new Map();
+
+    private static BATCH_DELAY = 150;
+
+    static async request(
+        text: string,
+        language: string,
+        propertyId: string,
+        accessToken?: string,
+        contextType: string = 'ui'
+    ): Promise<string> {
+        const cacheKey = `${language}:${text}:${propertyId || 'global'}`;
+        const groupKey = `${language}:${propertyId || 'global'}:${accessToken || 'none'}`;
+
+        return new Promise((resolve) => {
+            if (!this.batchGroups.has(groupKey)) {
+                this.batchGroups.set(groupKey, { queue: new Map(), timer: null });
+            }
+
+            const group = this.batchGroups.get(groupKey)!;
+            group.queue.set(cacheKey, { text, resolve });
+
+            if (!group.timer) {
+                group.timer = setTimeout(() => this.processGroup(groupKey), this.BATCH_DELAY);
+            }
+        });
+    }
+
+    private static async processGroup(groupKey: string) {
+        const group = this.batchGroups.get(groupKey);
+        if (!group) return;
+
+        const currentQueue = new Map(group.queue);
+        group.queue.clear();
+        group.timer = null;
+
+        const entries = Array.from(currentQueue.entries());
+        if (entries.length === 0) return;
+
+        const [language, propertyId, accessToken] = groupKey.split(':');
+        const textsToTranslate = entries.map(([_, item]) => item.text);
+
+        try {
+            const response = await fetch('/api/translate-guide', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    batch: textsToTranslate,
+                    targetLanguage: language,
+                    propertyId: propertyId === 'global' ? undefined : propertyId,
+                    accessToken: accessToken === 'none' ? undefined : accessToken,
+                    contextType: 'ui' // Default to ui for batches
+                })
+            });
+
+            if (!response.ok) throw new Error(`API Error ${response.status}`);
+
+            const data = await response.json();
+            const translations = data.translations || [];
+
+            entries.forEach(([cacheKey, item], index) => {
+                const rawTranslated = translations[index];
+                const translated = cleanTranslation(rawTranslated);
+
+                if (translated) {
+                    translationCache[cacheKey] = translated;
+                    item.resolve(translated);
+                } else {
+                    item.resolve(item.text);
+                }
+            });
+        } catch (err) {
+            console.error('[TranslationManager] Fatal Error:', err);
+            entries.forEach(([_, item]) => item.resolve(item.text));
+        }
+    }
+}
+
 export function useLocalizedContent(
-    text: string, 
-    language: string, 
-    contextType: string = 'general', 
+    text: string,
+    language: string,
+    contextType: string = 'general',
     accessToken?: string,
-    propertyId?: string // FASE 17: Added propertyId for multi-tenancy
+    propertyId?: string
 ) {
     const isSpanish = !text || language === 'es';
-    
-    // Check global cache first
+
     const cacheKey = `${language}:${text}:${propertyId || 'global'}`;
     const cachedValue = translationCache[cacheKey];
 
-    // If translation is needed and not cached, we start with an empty string to avoid "language popping"
-    const initialState = isSpanish ? text : (cachedValue || '');
+    const initialState = isSpanish ? text : (cachedValue || text);
     const [content, setContent] = useState(initialState);
-    const [isTranslating, setIsTranslating] = useState(false);
+    const [isTranslating, setIsTranslating] = useState(!isSpanish && !cachedValue);
 
     useEffect(() => {
         if (isSpanish) {
@@ -32,55 +185,26 @@ export function useLocalizedContent(
             return;
         }
 
-        // If we have a cached value, use it immediately
         if (cachedValue) {
             setContent(cachedValue);
             return;
         }
 
         const translate = async () => {
-            // Guard: If we don't have a propertyId and no accessToken, we can't authorize the translation
-            // This avoids 401 errors during initial render/state settle
-            if (!accessToken && !propertyId) {
-                console.warn('[useLocalizedContent] Skipping translation: missing propertyId and accessToken');
-                return;
-            }
+            if (!accessToken && !propertyId) return;
 
             setIsTranslating(true);
             try {
-                const response = await fetch('/api/translate-guide', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text,
-                        targetLanguage: language,
-                        contextType,
-                        accessToken,
-                        propertyId // FASE 17: Passing propertyId
-                    })
-                });
-
-                if (response.status === 429) {
-                    console.warn('[useLocalizedContent] Rate limited (429), falling back to original text');
-                    setContent(text);
-                    return;
-                }
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    console.error(`[useLocalizedContent] API Error ${response.status}:`, errorData);
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                if (data.translatedText) {
-                    translationCache[cacheKey] = data.translatedText;
-                    setContent(data.translatedText);
-                } else {
-                    setContent(text);
-                }
+                const translated = await TranslationManager.request(
+                    text,
+                    language,
+                    propertyId!,
+                    accessToken,
+                    contextType
+                );
+                setContent(translated);
             } catch (error) {
-                console.error('[useLocalizedContent] Translation error, falling back:', error);
+                console.error('[useLocalizedContent] Error:', error);
                 setContent(text);
             } finally {
                 setIsTranslating(false);

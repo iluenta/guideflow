@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Bed, Bath, Users, Info, MapPin } from 'lucide-react';
+import Image from 'next/image';
 import { PageHeader } from './PageHeader';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { cn } from '@/lib/utils';
@@ -7,9 +8,12 @@ import { cn } from '@/lib/utils';
 interface HouseInfoViewProps {
     onBack: () => void;
     property: any;
+    welcomeData?: any;
     currentLanguage?: string;
+    onLanguageChange?: (lang: string) => void;
     accessToken?: string;
-    propertyId?: string; // FASE 17
+    propertyId?: string;
+    disabledLanguage?: boolean;
 }
 
 const container = {
@@ -27,12 +31,15 @@ const item = {
     show: { opacity: 1, y: 0 }
 };
 
-export function HouseInfoView({ 
-    onBack, 
-    property, 
-    currentLanguage = 'es', 
+export function HouseInfoView({
+    onBack,
+    property,
+    welcomeData,
+    currentLanguage = 'es',
+    onLanguageChange,
     accessToken,
-    propertyId // FASE 17
+    propertyId,
+    disabledLanguage = false
 }: HouseInfoViewProps) {
     const { content: labelHouseInfoTitle } = useLocalizedContent('Info Casa', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelAboutProperty } = useLocalizedContent('Sobre la propiedad', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -47,7 +54,7 @@ export function HouseInfoView({
     const { content: subIdeal } = useLocalizedContent('Ideal para su estancia', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const { content: localizedName } = useLocalizedContent(property.name, currentLanguage, 'property_name', accessToken, propertyId);
-    const { content: localizedDescription } = useLocalizedContent(property.description, currentLanguage, 'property_description', accessToken, propertyId);
+    const { content: localizedDescription } = useLocalizedContent(welcomeData?.message || '', currentLanguage, 'welcome_message', accessToken, propertyId);
 
     const features = [
         {
@@ -81,6 +88,8 @@ export function HouseInfoView({
                 title={labelHouseInfoTitle}
                 onBack={onBack}
                 currentLanguage={currentLanguage}
+                onLanguageChange={onLanguageChange}
+                disabledLanguage={disabledLanguage}
             />
 
             <div className="px-6 pb-24 max-w-md mx-auto w-full">
@@ -89,10 +98,12 @@ export function HouseInfoView({
                     <motion.div variants={item} className="mt-6 mb-6">
                         <div className="rounded-3xl overflow-hidden shadow-card h-44 relative group">
                             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <img
+                            <Image
                                 src={property.main_image_url}
                                 alt={property.name}
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                fill
+                                sizes="(max-width: 768px) 100vw, 400px"
+                                className="object-cover transition-transform duration-700 group-hover:scale-105"
                             />
                         </div>
                     </motion.div>
@@ -131,7 +142,7 @@ export function HouseInfoView({
                 </motion.div>
 
                 {/* About Section */}
-                {property.description && (
+                {welcomeData?.message && (
                     <motion.div variants={item} className="mb-10">
                         <div className="bg-primary/[0.02] rounded-3xl p-6 border border-primary/[0.05]">
                             <div className="flex items-center gap-2.5 mb-4">
@@ -143,7 +154,7 @@ export function HouseInfoView({
                                 </h3>
                             </div>
                             <div className={cn(
-                                "text-[14px] text-slate-800/80 leading-relaxed font-medium text-left",
+                                "text-[14px] text-slate-800/80 leading-relaxed font-medium text-left whitespace-pre-line",
                                 !localizedDescription && "space-y-2"
                             )}>
                                 {localizedDescription ? (

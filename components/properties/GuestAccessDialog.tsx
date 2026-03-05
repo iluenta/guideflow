@@ -1,13 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import {
+    Dialog, DialogContent, DialogHeader, DialogTitle,
+    DialogDescription, DialogFooter, DialogBody, DialogTrigger
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Share2, Copy, Check, Calendar, User, Loader2 } from "lucide-react";
+import { Share2, Copy, Check, Calendar, User, Loader2, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { addDays, format } from "date-fns";
+import { SUPPORTED_LANGUAGES } from "@/components/guide/LanguageSelector";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface GuestAccessDialogProps {
     propertyId: string;
@@ -23,6 +34,7 @@ export function GuestAccessDialog({ propertyId, propertyName, children }: GuestA
     const [checkoutDate, setCheckoutDate] = useState(format(addDays(new Date(), 3), "yyyy-MM-dd"));
     const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const [selectedLanguage, setSelectedLanguage] = useState("es");
 
     async function handleGenerate() {
         setLoading(true);
@@ -30,23 +42,16 @@ export function GuestAccessDialog({ propertyId, propertyName, children }: GuestA
             const response = await fetch("/api/create-guest-access", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    propertyId,
-                    guestName,
-                    checkinDate,
-                    checkoutDate
-                })
+                body: JSON.stringify({ propertyId, guestName, checkinDate, checkoutDate, language: selectedLanguage })
             });
-
             const data = await response.json();
             if (response.ok) {
-                const fullUrl = `${window.location.origin}${data.url}`;
-                setGeneratedUrl(fullUrl);
+                setGeneratedUrl(`${window.location.origin}${data.url}`);
                 toast.success("Enlace generado correctamente");
             } else {
                 toast.error(data.error || "Error al generar el enlace");
             }
-        } catch (error) {
+        } catch {
             toast.error("Error de conexión");
         } finally {
             setLoading(false);
@@ -64,117 +69,144 @@ export function GuestAccessDialog({ propertyId, propertyName, children }: GuestA
     return (
         <Dialog open={open} onOpenChange={(val) => {
             setOpen(val);
-            if (!val) {
-                setGeneratedUrl(null);
-                setGuestName("");
-            }
+            if (!val) { setGeneratedUrl(null); setGuestName(""); }
         }}>
             <DialogTrigger asChild>
-                {children ? (
-                    children
-                ) : (
-                    <Button variant="outline" className="gap-2 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 h-9">
+                {children ?? (
+                    <Button variant="outline" className="gap-2 text-xs border-slate-200 text-slate-600 hover:bg-slate-50 h-9 rounded-xl">
                         <Share2 className="h-3.5 w-3.5" />
                         Compartir
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[450px] rounded-[2rem]">
+
+            <DialogContent className="sm:max-w-[440px]">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-black">Generar Enlace Seguro</DialogTitle>
-                    <DialogDescription className="font-medium">
-                        Crea un acceso temporal personalizado para tu huésped en <span className="text-emerald-600 font-bold">{propertyName}</span>.
+                    <DialogTitle>Generar Enlace Seguro</DialogTitle>
+                    <DialogDescription>
+                        Crea un acceso temporal para tu huésped en{' '}
+                        <span className="font-semibold text-[#316263]">{propertyName}</span>.
                     </DialogDescription>
                 </DialogHeader>
 
                 {!generatedUrl ? (
-                    <div className="space-y-6 py-4">
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="guestName" className="font-bold flex items-center gap-2">
-                                    <User className="h-4 w-4 text-slate-400" /> Nombre del Huésped
+                    <>
+                        <DialogBody className="space-y-4">
+                            {/* Nombre */}
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                    <User className="h-3.5 w-3.5" /> Nombre del Huésped
                                 </Label>
                                 <Input
-                                    id="guestName"
                                     placeholder="Ej: Juan Pérez"
-                                    className="rounded-xl"
+                                    className="h-11 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-[#316263]/20"
                                     value={guestName}
-                                    onChange={(e) => setGuestName(e.target.value)}
+                                    onChange={e => setGuestName(e.target.value)}
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="checkinDate" className="font-bold flex items-center gap-2">
-                                        <Calendar className="h-4 w-4 text-slate-400" /> Check-in
+
+                            {/* Idioma */}
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                    <Globe className="h-3.5 w-3.5" /> Idioma de la Guía
+                                </Label>
+                                <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                                    <SelectTrigger className="w-full h-11 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-[#316263]/20">
+                                        <SelectValue placeholder="Selecciona un idioma" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white rounded-xl border-slate-100">
+                                        {SUPPORTED_LANGUAGES.map((lang) => (
+                                            <SelectItem key={lang.code} value={lang.code}>
+                                                <span className="mr-2">{lang.flag_emoji}</span>
+                                                {lang.native_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Fechas */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Calendar className="h-3.5 w-3.5" /> Check-in
                                     </Label>
                                     <Input
-                                        id="checkinDate"
                                         type="date"
-                                        className="rounded-xl"
+                                        className="h-11 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-[#316263]/20"
                                         value={checkinDate}
-                                        onChange={(e) => setCheckinDate(e.target.value)}
+                                        onChange={e => setCheckinDate(e.target.value)}
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="checkoutDate" className="font-bold flex items-center gap-2">
-                                        <Calendar className="h-4 w-4 text-slate-400" /> Check-out
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Calendar className="h-3.5 w-3.5" /> Check-out
                                     </Label>
                                     <Input
-                                        id="checkoutDate"
                                         type="date"
-                                        className="rounded-xl"
+                                        className="h-11 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-[#316263]/20"
                                         value={checkoutDate}
-                                        onChange={(e) => setCheckoutDate(e.target.value)}
+                                        onChange={e => setCheckoutDate(e.target.value)}
                                     />
                                 </div>
                             </div>
-                            <p className="text-[10px] text-slate-400 font-medium -mt-2">
+                            <p className="text-[10px] text-slate-400">
                                 El huésped tendrá acceso desde 2 días antes hasta 2 días después.
                             </p>
-                        </div>
-                        <Button
-                            className="w-full h-12 rounded-2xl font-black bg-slate-900 text-white hover:bg-slate-800 shadow-xl shadow-black/10"
-                            onClick={handleGenerate}
-                            disabled={loading}
-                        >
-                            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Share2 className="h-4 w-4 mr-2" />}
-                            Generar Enlace de Invitado
-                        </Button>
-                    </div>
+                        </DialogBody>
+
+                        <DialogFooter>
+                            <Button
+                                className="w-full h-11 rounded-xl font-bold bg-[#316263] hover:bg-[#316263]/90 text-white shadow-sm shadow-[#316263]/20"
+                                onClick={handleGenerate}
+                                disabled={loading}
+                            >
+                                {loading
+                                    ? <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    : <Share2 className="h-4 w-4 mr-2" />
+                                }
+                                Generar Enlace de Invitado
+                            </Button>
+                        </DialogFooter>
+                    </>
                 ) : (
-                    <div className="space-y-6 py-4 animate-in fade-in zoom-in duration-300">
-                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 space-y-3">
-                            <p className="text-[11px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-2">
-                                <Check className="h-3 w-3" /> Enlace listo para compartir
-                            </p>
-                            <div className="flex gap-2">
-                                <Input
-                                    readOnly
-                                    value={generatedUrl}
-                                    className="bg-white border-emerald-200 rounded-xl font-medium text-xs h-10"
-                                />
-                                <Button
-                                    size="icon"
-                                    className="h-10 w-10 shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700"
-                                    onClick={copyToClipboard}
-                                >
-                                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                                </Button>
+                    <>
+                        <DialogBody className="space-y-4 animate-in fade-in zoom-in duration-300">
+                            {/* Enlace generado */}
+                            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 space-y-3">
+                                <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 flex items-center gap-1.5">
+                                    <Check className="h-3.5 w-3.5" /> Enlace listo para compartir
+                                </p>
+                                <div className="flex gap-2">
+                                    <Input
+                                        readOnly
+                                        value={generatedUrl}
+                                        className="bg-white border-emerald-200 rounded-xl text-xs h-10 font-mono"
+                                    />
+                                    <Button
+                                        size="icon"
+                                        className="h-10 w-10 shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
+                                        onClick={copyToClipboard}
+                                    >
+                                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-sm text-slate-500 font-medium">
+                            <p className="text-xs text-slate-400 text-center">
                                 Puedes enviar este enlace por WhatsApp o Booking.
                             </p>
+                        </DialogBody>
+
+                        <DialogFooter>
                             <Button
                                 variant="ghost"
-                                className="mt-2 text-xs font-bold text-slate-400"
+                                className="text-xs font-semibold text-slate-400 hover:text-slate-600"
                                 onClick={() => setGeneratedUrl(null)}
                             >
                                 Generar otro diferente
                             </Button>
-                        </div>
-                    </div>
+                        </DialogFooter>
+                    </>
                 )}
             </DialogContent>
         </Dialog>

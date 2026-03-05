@@ -14,10 +14,10 @@ export class Translator {
     if (!text || targetLang === sourceLang) return text;
 
     if (!propertyId) {
-       console.warn('[TRANSLATOR] Warning: No propertyId provided, checking context for ID');
-       // Try to extract propertyId if it's passed in context string (common pattern in this app)
-       const idMatch = context?.match(/property_id:([a-f0-9-]{36})/);
-       propertyId = idMatch ? idMatch[1] : undefined;
+      console.warn('[TRANSLATOR] Warning: No propertyId provided, checking context for ID');
+      // Try to extract propertyId if it's passed in context string (common pattern in this app)
+      const idMatch = context?.match(/property_id:([a-f0-9-]{36})/);
+      propertyId = idMatch ? idMatch[1] : undefined;
     }
 
     if (!propertyId) {
@@ -29,13 +29,43 @@ export class Translator {
       text,
       sourceLang,
       targetLang,
-      { 
-        propertyId, 
-        context: 'ui' 
+      {
+        propertyId,
+        context: 'ui'
       }
     );
 
     return translated;
+  }
+
+  static async translateBatch(
+    texts: string[],
+    targetLang: string,
+    sourceLang: string = 'es',
+    context?: string,
+    propertyId?: string
+  ): Promise<{ translations: string[] }> {
+    if (!texts || texts.length === 0) return { translations: [] };
+    if (targetLang === sourceLang) return { translations: texts };
+
+    if (!propertyId) {
+      const idMatch = context?.match(/property_id:([a-f0-9-]{36})/);
+      propertyId = idMatch ? idMatch[1] : undefined;
+    }
+
+    if (!propertyId) {
+      console.error('[TRANSLATOR] CRITICAL: No propertyId for batch translation.');
+      return { translations: texts };
+    }
+
+    const { translations } = await TranslationService.translateBatch(
+      texts,
+      sourceLang,
+      targetLang,
+      { propertyId, context: 'ui' }
+    );
+
+    return { translations };
   }
 
   // Legacy methods kept but emptied to avoid breaking potential internal links or if I missed a call
@@ -49,6 +79,7 @@ export class Translator {
     const names: Record<string, string> = {
       es: 'Spanish', en: 'English', fr: 'French', de: 'German',
       it: 'Italian', pt: 'Portuguese', ca: 'Catalan', nl: 'Dutch',
+      gl: 'Galician', eu: 'Basque',
       zh: 'Chinese', ja: 'Japanese', ko: 'Korean', ru: 'Russian'
     };
     return names[code] || code;

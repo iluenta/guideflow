@@ -51,20 +51,35 @@ export function AssistantHome({
     const { content: valueSubtitle } = useLocalizedContent('Ya conozco este apartamento por dentro y por fuera.', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: browseLabel } = useLocalizedContent('¿Prefieres navegar por la guía?', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: exploreFullLabel } = useLocalizedContent('Explorar guía completa', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', currentLanguage, 'ui_label', accessToken, propertyId);
+
+    // Chip Localizations
+    const { content: labelWifi } = useLocalizedContent('Conexión WiFi', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: queryWifi } = useLocalizedContent('¿Cuál es la clave del WiFi?', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelVitro } = useLocalizedContent('Cocina / Vitro', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: queryVitro } = useLocalizedContent('¿Cómo funciona la vitrocerámica o los fuegos?', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelEntrar } = useLocalizedContent('Cómo entrar', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: queryEntrar } = useLocalizedContent('¿Cómo entro al apartamento?', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelParking } = useLocalizedContent('Aparcar / Garaje', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: queryParking } = useLocalizedContent('¿Dónde está mi plaza de garaje?', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelComer } = useLocalizedContent('Comer cerca', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: queryComer } = useLocalizedContent('¿Dónde puedo comer cerca?', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelVisitar } = useLocalizedContent('Qué visitar', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: queryVisitar } = useLocalizedContent('¿Qué puedo visitar?', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const allChips = [
         {
             id: 'wifi',
-            query: currentLanguage === 'es' ? '¿Cuál es la clave del WiFi?' : 'What is the WiFi password?',
-            label: currentLanguage === 'es' ? 'Conexión WiFi' : 'WiFi Connection',
+            query: queryWifi,
+            label: labelWifi,
             icon: Wifi,
             color: 'bg-blue-50 text-blue-600 border-blue-100',
             show: !!(techData.wifi_password || techData.wifi_ssid || techData.router_notes)
         },
         {
             id: 'vitro',
-            query: currentLanguage === 'es' ? '¿Cómo funciona la vitrocerámica o los fuegos?' : 'How does the stove or cooktop work?',
-            label: currentLanguage === 'es' ? 'Cocina / Vitro' : 'Stove / Cooktop',
+            query: queryVitro,
+            label: labelVitro,
             icon: Settings,
             color: 'bg-orange-50 text-orange-600 border-orange-100',
             show: manuals.some(m => {
@@ -76,32 +91,32 @@ export function AssistantHome({
         },
         {
             id: 'access',
-            query: currentLanguage === 'es' ? '¿Cómo entro al apartamento?' : 'How do I enter the apartment?',
-            label: currentLanguage === 'es' ? 'Cómo entrar' : 'How to enter',
+            query: queryEntrar,
+            label: labelEntrar,
             icon: Key,
             color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
             show: !!(checkinData.instructions || accessData.instructions || accessData.entry_code || accessData.checkin_instructions || (checkinData.steps && checkinData.steps.length > 0))
         },
         {
             id: 'parking',
-            query: currentLanguage === 'es' ? '¿Dónde está mi plaza de garaje?' : 'Where is my parking spot?',
-            label: currentLanguage === 'es' ? 'Aparcar / Garaje' : 'Parking',
+            query: queryParking,
+            label: labelParking,
             icon: MapPin,
             color: 'bg-purple-50 text-purple-600 border-purple-100',
             show: Boolean((accessData.parking_info && accessData.parking_info.trim() !== '') || (accessData.garage_spot && accessData.garage_spot.trim() !== '') || (accessData.parking_instructions && accessData.parking_instructions.trim() !== '') || (accessData.parking && typeof accessData.parking === 'string' && accessData.parking.trim() !== ''))
         },
         {
             id: 'eat',
-            query: currentLanguage === 'es' ? '¿Dónde puedo comer cerca?' : 'Where can I eat nearby?',
-            label: currentLanguage === 'es' ? 'Comer cerca' : 'Eat nearby',
+            query: queryComer,
+            label: labelComer,
             icon: Utensils,
             color: 'bg-rose-50 text-rose-600 border-rose-100',
             show: recommendations.some(r => r.group === 'eat')
         },
         {
             id: 'visit',
-            query: currentLanguage === 'es' ? '¿Qué puedo visitar?' : 'What can I visit?',
-            label: currentLanguage === 'es' ? 'Qué visitar' : 'Sightseeing',
+            query: queryVisitar,
+            label: labelVisitar,
             icon: Info,
             color: 'bg-indigo-50 text-indigo-600 border-indigo-100',
             show: recommendations.some(r => r.group === 'do' || r.group === 'visit')
@@ -206,7 +221,7 @@ export function AssistantHome({
             {/* Brand Footer */}
             <div className="mt-auto pt-12 text-center pb-8 opacity-20">
                 <p className="text-[9px] text-navy uppercase font-black tracking-[0.4em]">
-                    Powered by GuideFlow
+                    {poweredByLabel} GuideFlow
                 </p>
             </div>
 

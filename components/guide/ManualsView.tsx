@@ -27,7 +27,8 @@ interface ManualsViewProps {
     currentLanguage?: string;
     onLanguageChange?: (lang: string) => void;
     accessToken?: string;
-    propertyId?: string; // FASE 17
+    propertyId?: string;
+    disabledLanguage?: boolean;
 }
 
 export function ManualsView({
@@ -37,7 +38,8 @@ export function ManualsView({
     currentLanguage = 'es',
     onLanguageChange,
     accessToken,
-    propertyId // FASE 17
+    propertyId,
+    disabledLanguage = false
 }: ManualsViewProps) {
     const hasFaqs = faqs.length > 0;
     const hasManuals = manuals.length > 0;
@@ -54,6 +56,7 @@ export function ManualsView({
                 onBack={onBack}
                 currentLanguage={currentLanguage}
                 onLanguageChange={onLanguageChange}
+                disabledLanguage={disabledLanguage}
             />
 
             <div className="px-5 pb-10">
@@ -63,8 +66,8 @@ export function ManualsView({
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
                             {labelGuiasUsoCaps}
                         </p>
-                        <HowToAccordion 
-                            items={faqs} 
+                        <HowToAccordion
+                            items={faqs}
                             currentLanguage={currentLanguage}
                             accessToken={accessToken}
                             propertyId={propertyId}

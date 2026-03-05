@@ -12,7 +12,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { propertyId, guestName, checkinDate, checkoutDate } = await req.json();
+        const { propertyId, guestName, checkinDate, checkoutDate, language } = await req.json();
 
         if (!propertyId || !checkinDate || !checkoutDate) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -63,6 +63,7 @@ export async function POST(req: Request) {
                 valid_until: validUntil.toISOString(),
                 checkin_date: checkinDate,
                 checkout_date: checkoutDate,
+                language: language || 'es',
                 is_active: true
             });
 

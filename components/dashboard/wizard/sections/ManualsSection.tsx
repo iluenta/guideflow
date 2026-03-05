@@ -35,6 +35,9 @@ interface ManualsSectionProps {
     onDelete?: (id: string) => void
     onSave?: (id: string, updates: { manual_content: string, notes: string }) => Promise<void>
     onRegenerate?: (manual: Manual) => Promise<void>
+    onAdd?: () => void
+    onEdit?: (manual: Manual) => void
+    onAddNotes?: (manual: Manual) => void
 }
 
 export function ManualsSection({

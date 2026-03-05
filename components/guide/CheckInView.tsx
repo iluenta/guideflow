@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowLeft, MapPin, Copy, Phone, ExternalLink, Key, Lock, DoorOpen, Info, Wifi, Check, MessageSquare } from 'lucide-react';
+import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from './PageHeader';
 import { cn } from '@/lib/utils';
@@ -28,22 +29,23 @@ interface CheckInViewProps {
     preferredContactPhone?: string;
     onLanguageChange?: (lang: string) => void;
     accessToken?: string;
-    propertyId?: string; // FASE 17
+    propertyId?: string;
+    disabledLanguage?: boolean;
 }
 
-function StepItem({ 
-    step, 
-    idx, 
-    currentLanguage, 
-    accessToken, 
+function StepItem({
+    step,
+    idx,
+    currentLanguage,
+    accessToken,
     propertyId, // FASE 17
-    getIcon, 
-    isCode, 
-    handleCopy 
-}: { 
-    step: CheckinStep, 
-    idx: number, 
-    currentLanguage: string, 
+    getIcon,
+    isCode,
+    handleCopy
+}: {
+    step: CheckinStep,
+    idx: number,
+    currentLanguage: string,
     accessToken?: string,
     propertyId?: string, // FASE 17
     getIcon: (iconName: string) => any,
@@ -53,7 +55,7 @@ function StepItem({
     const { content: localizedTitle } = useLocalizedContent(step.title, currentLanguage, 'checkin_step_title', accessToken, propertyId);
     const { content: localizedDescription } = useLocalizedContent(step.description, currentLanguage, 'checkin_step_description', accessToken, propertyId);
     const { content: copyCodeLabel } = useLocalizedContent('Copiar código', currentLanguage, 'ui_label', accessToken, propertyId);
-    
+
     const StepIcon = getIcon(step.icon);
 
     return (
@@ -75,16 +77,16 @@ function StepItem({
                         {localizedDescription}
                     </p>
 
-                    {step.image_url && (
-                        <div className="mb-4 rounded-2xl overflow-hidden border border-primary/5 shadow-inner bg-primary/[0.02]">
-                            <img
-                                src={step.image_url}
-                                alt={step.title}
-                                className="w-full h-auto object-cover max-h-[300px] transition-transform duration-700 hover:scale-105"
-                                loading="lazy"
-                            />
-                        </div>
-                    )}
+                    <div className="mb-4 rounded-2xl overflow-hidden border border-primary/5 shadow-inner bg-primary/[0.02] relative min-h-[200px]">
+                        <Image
+                            src={step.image_url || ''}
+                            alt={step.title}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 400px"
+                            className="object-cover transition-transform duration-700 hover:scale-105"
+                            loading="lazy"
+                        />
+                    </div>
 
                     {isCode(step.description) && (
                         <button
@@ -126,11 +128,12 @@ export function CheckInView({
     preferredContactPhone,
     onLanguageChange,
     accessToken,
-    propertyId // FASE 17
+    propertyId,
+    disabledLanguage = false
 }: CheckInViewProps) {
     const { toast } = useToast();
     const steps = checkinData.steps || [];
- 
+
     // Localized strings
     const { content: pageTitle } = useLocalizedContent('Llegada', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: checkinAvailableLabel } = useLocalizedContent('Check-in disponible', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -200,6 +203,7 @@ export function CheckInView({
                 onBack={onBack}
                 currentLanguage={currentLanguage}
                 onLanguageChange={onLanguageChange}
+                disabledLanguage={disabledLanguage}
             />
 
             <motion.div
@@ -251,13 +255,13 @@ export function CheckInView({
 
                     {/* Dynamic Steps */}
                     {steps.map((step, idx) => (
-                        <StepItem 
-                            key={idx} 
-                            step={step} 
-                            idx={idx} 
-                            currentLanguage={currentLanguage} 
-                            accessToken={accessToken} 
-                            propertyId={propertyId} 
+                        <StepItem
+                            key={idx}
+                            step={step}
+                            idx={idx}
+                            currentLanguage={currentLanguage}
+                            accessToken={accessToken}
+                            propertyId={propertyId}
                             getIcon={getIcon}
                             isCode={isCode}
                             handleCopy={handleCopy}

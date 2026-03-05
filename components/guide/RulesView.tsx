@@ -12,12 +12,13 @@ interface RulesViewProps {
     currentLanguage?: string;
     onLanguageChange?: (lang: string) => void;
     accessToken?: string;
-    propertyId?: string; // FASE 17
+    propertyId?: string;
+    disabledLanguage?: boolean;
 }
 
 function RuleItem({ rule, currentLanguage, accessToken, propertyId }: { rule: any, currentLanguage: string, accessToken?: string, propertyId?: string }) {
     const { content: localizedText } = useLocalizedContent(rule.text, currentLanguage, 'house_rule', accessToken, propertyId);
-    
+
     return (
         <motion.div
             variants={item}
@@ -65,13 +66,14 @@ export function RulesView({
     currentLanguage = 'es',
     onLanguageChange,
     accessToken,
-    propertyId // FASE 17
+    propertyId,
+    disabledLanguage = false
 }: RulesViewProps) {
     const rules = rulesData?.rules_items || [];
     const { content: localizedCaution } = useLocalizedContent(
         "Gracias por respetar estas normas 🙏",
         currentLanguage || 'es',
-        'house_rules_footer',
+        ' house_rules_footer',
         accessToken,
         propertyId
     );
@@ -112,18 +114,19 @@ export function RulesView({
                 onBack={onBack}
                 currentLanguage={currentLanguage}
                 onLanguageChange={onLanguageChange}
+                disabledLanguage={disabledLanguage}
             />
 
             <div className="px-6 pb-24 max-w-md mx-auto w-full">
                 {/* Rules List */}
                 <div className="mt-6 space-y-3">
                     {rules.map((rule: any, i: number) => (
-                        <RuleItem 
-                            key={i} 
-                            rule={rule} 
-                            currentLanguage={currentLanguage} 
-                            accessToken={accessToken} 
-                            propertyId={propertyId} 
+                        <RuleItem
+                            key={i}
+                            rule={rule}
+                            currentLanguage={currentLanguage}
+                            accessToken={accessToken}
+                            propertyId={propertyId}
                         />
                     ))}
                 </div>

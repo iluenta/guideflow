@@ -6,11 +6,13 @@ import { RateLimiter } from '@/lib/security/rate-limiter';
 import { z } from 'zod';
 
 const translateSchema = z.object({
-    text: z.string().min(1).max(10000),
-    targetLanguage: z.string().length(2),
-    sourceLanguage: z.string().length(2).optional().default('es'),
+    text: z.string().min(1).max(10000).optional(),
+    batch: z.array(z.string()).optional(), // FOTC Fix: allow array for prefetching
+    targetLanguage: z.string(),
+    sourceLanguage: z.string().optional().default('es'),
     contextType: z.string().optional().default('general'),
-    accessToken: z.string().optional()
+    accessToken: z.string().optional(),
+    propertyId: z.string().optional()
 });
 
 export async function POST(req: Request) {
@@ -21,6 +23,7 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const ip = req.headers.get('x-forwarded-for') || 'unknown';
+        console.log(`[API_TRANSLATE] 📥 Request for "${body.targetLanguage || '?'}" | Batch: ${!!body.batch} | HasToken: ${!!body.accessToken}`);
 
         // 1. Validation with Zod
         const result = translateSchema.safeParse(body);
@@ -125,12 +128,29 @@ export async function POST(req: Request) {
         }
 
         if (targetLanguage === sourceLanguage) {
+            if (result.data.batch) {
+                const echo: Record<string, string> = {};
+                result.data.batch.forEach(t => echo[t] = t);
+                return NextResponse.json({ translations: echo });
+            }
             return NextResponse.json({ translatedText: text });
         }
 
         // 4. Perform Translation (FASE 17: Passing propertyId)
+        if (result.data.batch) {
+            const { translations: results } = await Translator.translateBatch(
+                result.data.batch,
+                targetLanguage,
+                sourceLanguage,
+                `This is part of UI labels for a vacation rental guest.`,
+                propertyId
+            );
+
+            return NextResponse.json({ translations: results });
+        }
+
         const translatedText = await Translator.translateText(
-            text,
+            text!,
             targetLanguage,
             sourceLanguage,
             `This is part of a ${contextType} for a vacation rental guest.`,

@@ -58,7 +58,8 @@ interface RecommendationsViewProps {
     onLanguageChange?: (lang: string) => void;
     city?: string;
     accessToken?: string;
-    propertyId?: string; // FASE 17
+    propertyId?: string;
+    disabledLanguage?: boolean;
 }
 
 function RecommendationCard({
@@ -236,7 +237,7 @@ const groupConfigs = {
         // All eat subcategories are valid in this group
         categories: ['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno'],
         pills: [
-            { id: 'todos', label: 'Todos', type: 'todos' },
+            { id: 'todos', label: 'Todo', type: 'todos' },
             { id: 'restaurantes', label: 'Restaurantes', type: 'restaurantes' },
             { id: 'italiano', label: 'Italiano', type: 'italiano' },
             { id: 'mediterraneo', label: 'Mediterráneo', type: 'mediterraneo' },
@@ -280,7 +281,8 @@ export function RecommendationsView({
     currentLanguage = 'es',
     city,
     accessToken,
-    propertyId // FASE 17
+    propertyId,
+    disabledLanguage = false
 }: RecommendationsViewProps) {
     const [selectedCategory, setSelectedCategory] = useState('todos');
     const [expandedId, setExpandedId] = useState<string | null>(null);

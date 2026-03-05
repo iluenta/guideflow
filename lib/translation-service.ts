@@ -1,11 +1,9 @@
 import { createEdgeAdminClient } from '@/lib/supabase/edge';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Cache Configuration
 const MAX_MEMORY_CACHE = 500;
 const memoryCache = new Map<string, string>();
 
-// Types
 export interface TranslationOptions {
   propertyId?: string;
   context?: 'chat' | 'rag_query' | 'ui';
@@ -19,179 +17,166 @@ export interface TranslationMetrics {
   cacheLevel?: 'memory' | 'database' | 'none';
 }
 
-/**
- * Phase 15: Specialized Translation Service with Multi-Level Caching
- */
 export class TranslationService {
   private static genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
-  private static model = TranslationService.genAI.getGenerativeModel({ 
-    model: "gemini-2.0-flash",
-    systemInstruction: "You are a professional direct translator. You only output the direct translation of the provided text. Never provide explanations, multiple options, alternatives, or any content other than the translated string itself."
-  });
 
-  /**
-   * Main translation method with L1/L2/L3 strategy
-   * FASE 17: propertyId is now REQUIRED for multi-tenancy security.
-   */
-  static async translate(
-    text: string,
-    sourceLang: string,
-    targetLang: string,
-    options: TranslationOptions // Now required to contain propertyId
-  ): Promise<{ text: string; metrics: TranslationMetrics }> {
-    const startTime = Date.now();
-    const propertyId = options?.propertyId;
+  private static cleanTranslation(val: any): string {
+    if (!val) return "";
 
-    if (!propertyId) {
-      console.error('[TRANSLATION] CRITICAL SECURITY ERROR: Missing propertyId for translation');
-      throw new Error('Multi-tenancy violation: propertyId is required');
-    }
-    
-    // 0. Cleanup and Bypass
-    const cleanText = text?.replace(/\r\n/g, '\n').trim() || "";
-    const textLength = cleanText.length;
-
-    if (!cleanText || sourceLang === targetLang) {
-      return {
-        text: cleanText,
-        metrics: { cacheHit: true, translationTimeMs: Date.now() - startTime, textLength, cacheLevel: 'memory' }
-      };
-    }
-
-    // Stable Cache Key (FASE 17: Include propertyId to isolate L1 memory cache)
-    const cacheKey = `${propertyId}:${cleanText}|${sourceLang}|${targetLang}`;
-    const hash = await this.generateHash(cacheKey);
-
-    // 1. L1: Memory Cache
-    if (!options?.skipCache && memoryCache.has(cacheKey)) {
-      const cached = memoryCache.get(cacheKey)!;
-      return {
-        text: cached,
-        metrics: { cacheHit: true, translationTimeMs: Date.now() - startTime, textLength, cacheLevel: 'memory' }
-      };
-    }
-
-    const supabase = createEdgeAdminClient();
-
-    // 2. L2: Supabase Cache (Isolated by property_id)
-    if (!options?.skipCache) {
-      try {
-        const { data: cached, error } = await supabase
-          .from('translation_cache')
-          .select('translated_text')
-          .eq('hash', hash)
-          .eq('property_id', propertyId)
-          .maybeSingle();
-
-        if (error) {
-          console.error('[TRANSLATION] L2 lookup error:', {
-            errorMessage: error.message,
-            errorCode: error.code,
-            hashPreview: hash.substring(0, 8),
-            propertyId
-          });
-        }
-
-        if (cached && !error) {
-          const translationTimeMs = Date.now() - startTime;
-          console.log(`[TRANSLATION] 💾 L2 Cache HIT | Prop: ${propertyId.substring(0,8)} | hash: ${hash.substring(0,8)}...`);
-
-          // Update usage asynchronously
-          this.updateCacheUsage(supabase, hash, propertyId);
-
-          // Save to L1
-          this.saveToMemory(cacheKey, cached.translated_text);
-
-          return {
-            text: cached.translated_text,
-            metrics: { cacheHit: true, translationTimeMs, textLength, cacheLevel: 'database' }
-          };
-        } else if (!error) {
-           console.log(`[TRANSLATION] L2 NOT FOUND | hash: ${hash.substring(0, 8)}... | property: ${propertyId}`);
-        }
-      } catch (err) {
-        console.warn('[TRANSLATION] L2 lookup exception:', err);
+    // 1. Objects
+    if (typeof val === 'object' && !Array.isArray(val) && val !== null) {
+      const keys = Object.keys(val);
+      const lowerKeys = keys.map(k => k.toLowerCase());
+      const priorities = ['t', 'translated', 'translation', 'text', 'result', 'o', 'original', 'value'];
+      for (const p of priorities) {
+        const idx = lowerKeys.indexOf(p);
+        if (idx !== -1) return TranslationService.cleanTranslation(val[keys[idx]]);
       }
+      const values = Object.values(val);
+      if (values.length > 0) return TranslationService.cleanTranslation(values[0]);
+      return JSON.stringify(val);
     }
 
-    // 3. L3: Gemini API (Cache MISS)
-    console.log(`[TRANSLATION] ❌ Cache MISS | Prop: ${propertyId.substring(0,8)} | hash: ${hash.substring(0,8)}...`);
-    
-    try {
-      const prompt = `Translate the following text from ${sourceLang} to ${targetLang}. 
-      Return ONLY the translated text. Do NOT include any explanations, alternatives, or preamble.
-      Context: ${options?.context || 'general vacation rental assistance'}.
-      
-      Text to translate: ${cleanText}`;
+    // 2. Arrays
+    if (Array.isArray(val)) return val.length > 0 ? TranslationService.cleanTranslation(val[0]) : "";
 
-      const result = await this.model.generateContent(prompt);
-      const translatedText = result.response.text().trim();
-      const translationTimeMs = Date.now() - startTime;
-
-      console.log(`[TRANSLATION] ✅ Translated in ${translationTimeMs}ms`);
-
-      // Avoid blocking the main response
-      await Promise.allSettled([
-        this.saveToDB(supabase, {
-          property_id: propertyId, // CRITICAL: Save with propertyId
-          hash,
-          source_text: cleanText,
-          source_lang: sourceLang,
-          target_lang: targetLang,
-          translated_text: translatedText,
-          translation_time_ms: translationTimeMs,
-          source_type: options?.context === 'rag_query' ? 'rag_query' : 'chat_text',
-          translation_method: 'gemini-api',
-          cost_usd: 0
-        }),
-        this.logMetrics(supabase, {
-          cacheHit: false,
-          translationTimeMs,
-          textLength,
-          cacheLevel: 'none'
-        }, sourceLang, targetLang, options)
-      ]);
-      
-      this.saveToMemory(cacheKey, translatedText);
-
-      return {
-        text: translatedText,
-        metrics: { cacheHit: false, translationTimeMs, textLength, cacheLevel: 'none' }
-      };
-
-    } catch (err) {
-      console.error('[TRANSLATION] L3/Gemini failed:', err);
-      return {
-        text: cleanText,
-        metrics: { cacheHit: false, translationTimeMs: Date.now() - startTime, textLength, cacheLevel: 'none' }
-      };
+    // 3. Strings
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          return TranslationService.cleanTranslation(parsed);
+        } catch (e) {
+          const match = trimmed.match(/"(?:o|t|translated|translation|text|value)":\s*"([^"]+)"/i);
+          if (match) return match[1];
+        }
+      }
+      if (trimmed.startsWith('"') && trimmed.endsWith('"')) return trimmed.slice(1, -1);
+      return trimmed;
     }
+    return String(val);
   }
 
-  /**
-   * Batch translation
-   */
   static async translateBatch(
     texts: string[],
     sourceLang: string,
     targetLang: string,
-    options: TranslationOptions // Now required
+    options: TranslationOptions
   ) {
     const startTime = Date.now();
-    const results = await Promise.all(
-      texts.map(t => this.translate(t, sourceLang, targetLang, options))
+    const propertyId = options?.propertyId;
+    if (!propertyId) throw new Error('propertyId required');
+
+    const results: string[] = new Array(texts.length).fill("");
+    const missingIndices: number[] = [];
+
+    const getLangName = (code: string) => {
+      const names: Record<string, string> = { es: 'Spanish', en: 'English', fr: 'French', de: 'German', it: 'Italian', pt: 'Portuguese', ca: 'Catalan', gl: 'Galician', eu: 'Basque', nl: 'Dutch' };
+      return names[code] || code;
+    };
+
+    const hashes = await Promise.all(
+      texts.map(async (t) => {
+        const cleanText = t?.trim() || "";
+        if (!cleanText || sourceLang === targetLang) return "";
+        const cacheKey = `${propertyId}:${cleanText}|${sourceLang}|${targetLang}`;
+        return this.generateHash(cacheKey);
+      })
     );
 
-    const hitRate = (results.filter(r => r.metrics.cacheHit).length / texts.length) * 100;
+    for (let i = 0; i < texts.length; i++) {
+      const cleanText = texts[i]?.trim() || "";
+      if (!cleanText || sourceLang === targetLang) {
+        results[i] = cleanText;
+        continue;
+      }
 
-    return {
-      translations: results.map(r => r.text),
-      totalTimeMs: Date.now() - startTime,
-      cacheHitRate: hitRate
-    };
+      const cacheKey = `${propertyId}:${cleanText}|${sourceLang}|${targetLang}`;
+      if (!options?.skipCache && memoryCache.has(cacheKey)) {
+        results[i] = TranslationService.cleanTranslation(memoryCache.get(cacheKey)!);
+      } else {
+        missingIndices.push(i);
+      }
+    }
+
+    if (missingIndices.length === 0) {
+      return { translations: results, totalTimeMs: Date.now() - startTime, cacheHitRate: 100 };
+    }
+
+    const supabase = createEdgeAdminClient();
+
+    if (!options?.skipCache) {
+      const pendingHashes = missingIndices.map(idx => hashes[idx]);
+      try {
+        const { data: cachedItems } = await supabase.from('translation_cache').select('hash, translated_text').eq('property_id', propertyId).in('hash', pendingHashes);
+        if (cachedItems?.length) {
+          const cacheMap = new Map(cachedItems.map((item: any) => [item.hash, item.translated_text]));
+          const stillMissing: number[] = [];
+          for (const idx of missingIndices) {
+            const hash = hashes[idx];
+            if (cacheMap.has(hash)) {
+              const cleaned = TranslationService.cleanTranslation(cacheMap.get(hash)!);
+              results[idx] = cleaned;
+              const cacheKey = `${propertyId}:${texts[idx].trim()}|${sourceLang}|${targetLang}`;
+              TranslationService.saveToMemory(cacheKey, cleaned);
+            } else { stillMissing.push(idx); }
+          }
+          missingIndices.splice(0, missingIndices.length, ...stillMissing);
+        }
+      } catch (err) { console.warn('[TRANSLATION] L2 failed:', err); }
+    }
+
+    if (missingIndices.length === 0) {
+      return { translations: results, totalTimeMs: Date.now() - startTime, cacheHitRate: (results.filter(r => r !== "").length / texts.length) * 100 };
+    }
+
+    try {
+      const batchPayload = missingIndices.reduce((acc, idx) => { acc[idx] = texts[idx].trim(); return acc; }, {} as Record<number, string>);
+      const prompt = `Translate from ${getLangName(sourceLang)} to ${getLangName(targetLang)}. 
+      Output JSON with SAME keys. Values MUST be PLAIN STRINGS. NO objects.
+      
+      CONTEXT: This is for a luxury vacation rental digital guide (concierge). Tone should be helpful and professional.
+      
+      CRITICAL FOR GALICIAN (gl) AND PORTUGUESE (pt):
+      - Ensure the translation is purely the target language, NOT Spanish.
+      - DO NOT return the same string if it's Spanish.
+      - Even if the strings are identical in some cases, ensure the grammar and specific vocabulary of the target language is used.
+      - For Galician: 'Tu Estancia' -> 'A túa estadía', 'Guía de la Casa' -> 'Guía da casa', 'Llegada' -> 'Chegada'.
+      - For Portuguese: 'Tu Estancia' -> 'A sua estadia', 'Guía de la Casa' -> 'Guia da Casa', 'Hola' -> 'Olá', 'Bienvenido a casa' -> 'Bem-vindo a casa'.
+      
+      Payload: ${JSON.stringify(batchPayload)}`;
+
+      const batchModel = TranslationService.genAI.getGenerativeModel({ model: "gemini-2.0-flash", generationConfig: { responseMimeType: "application/json" } });
+      const result = await batchModel.generateContent(prompt);
+      const translatedBatch = JSON.parse(result.response.text());
+      console.log(`[TRANSLATION-AI] 🤖 Response for ${targetLang}:`, translatedBatch);
+      const dbRecords: any[] = [];
+
+      for (const idx of missingIndices) {
+        const cleaned = TranslationService.cleanTranslation(translatedBatch[idx] || translatedBatch[String(idx)]);
+        if (cleaned) {
+          results[idx] = cleaned;
+          const cacheKey = `${propertyId}:${texts[idx].trim()}|${sourceLang}|${targetLang}`;
+          TranslationService.saveToMemory(cacheKey, cleaned);
+          dbRecords.push({
+            property_id: propertyId, hash: hashes[idx], source_text: texts[idx].trim(), source_lang: sourceLang, target_lang: targetLang,
+            translated_text: cleaned, translation_time_ms: Math.floor((Date.now() - startTime) / missingIndices.length), source_type: 'ui_batch', translation_method: 'gemini-batch'
+          });
+        } else { results[idx] = texts[idx]; }
+      }
+      if (dbRecords.length > 0) TranslationService.saveToDBBulk(supabase, dbRecords);
+    } catch (err) {
+      console.error('[TRANSLATION] L3 failed:', err);
+      for (const idx of missingIndices) { if (!results[idx]) results[idx] = texts[idx]; }
+    }
+
+    return { translations: results, totalTimeMs: Date.now() - startTime, cacheHitRate: (results.filter((r, i) => r !== "" && !missingIndices.includes(i)).length / texts.length) * 100 };
   }
 
-  // --- PRIVATE HELPERS ---
+  private static async saveToDBBulk(supabase: any, records: any[]) {
+    try { await supabase.from('translation_cache').upsert(records, { onConflict: 'hash,property_id' }); } catch (e) { }
+  }
 
   private static async generateHash(text: string): Promise<string> {
     const encoder = new TextEncoder();
@@ -207,48 +192,5 @@ export class TranslationService {
       if (firstKey) memoryCache.delete(firstKey);
     }
     memoryCache.set(key, value);
-  }
-
-  private static async saveToDB(supabase: any, data: any) {
-    try {
-      // FASE 17: Upsert on composite key (hash, property_id)
-      const { error } = await supabase.from('translation_cache').upsert(data, { onConflict: 'hash,property_id' });
-      if (error) console.error('[TRANSLATION] Save error:', error.message);
-    } catch (e) {
-      console.error('[TRANSLATION] Save exception:', e);
-    }
-  }
-
-  private static async updateCacheUsage(supabase: any, hash: string, propertyId: string) {
-    try {
-      // FASE 17: Track usage by both hash and property
-      await supabase.rpc('increment_translation_usage', { 
-        p_hash: hash,
-        p_property_id: propertyId
-      });
-    } catch (e) {
-      // Sliently fail usage tracking
-    }
-  }
-
-  private static async logMetrics(
-    supabase: any,
-    metrics: TranslationMetrics,
-    sourceLang: string,
-    targetLang: string,
-    options?: TranslationOptions
-  ) {
-    try {
-      await supabase.from('translation_metrics').insert({
-        property_id: options?.propertyId,
-        source_lang: sourceLang,
-        target_lang: targetLang,
-        cache_hit: metrics.cacheHit,
-        translation_time_ms: metrics.translationTimeMs,
-        text_length: metrics.textLength
-      });
-    } catch (e) {
-      // Sliently fail metrics
-    }
   }
 }

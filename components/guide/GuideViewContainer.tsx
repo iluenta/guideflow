@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useLocalizedContent, seedTranslationCache } from '@/hooks/useLocalizedContent';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MenuGrid } from '@/components/guide/MenuGrid';
 import { WifiView } from '@/components/guide/WifiView';
 import { RulesView } from '@/components/guide/RulesView';
@@ -33,17 +34,50 @@ interface GuideViewContainerProps {
     context?: any[];
     guestName?: string;
     accessToken?: string;
+    tokenLanguage?: string;
+    initialLanguage?: string;
+    initialTranslations?: Record<string, string>;
 }
 
-export function GuideViewContainer({ property, branding, sections, manuals, recommendations, faqs = [], context, guestName, accessToken }: GuideViewContainerProps) {
+export function GuideViewContainer({
+    property,
+    branding,
+    sections,
+    manuals,
+    recommendations,
+    faqs = [],
+    context,
+    guestName,
+    accessToken,
+    tokenLanguage,
+    initialLanguage = 'es',
+    initialTranslations = {}
+}: GuideViewContainerProps) {
     // Resolve themeId: proper column (after migration 031) or JSONB fallback
     const themeId: string =
         branding?.layout_theme_id ||
         (branding?.computed_theme as any)?._layout_theme_id ||
         'modern'
+
+    // Seed the translation cache before the first render
+    useMemo(() => {
+        if (Object.keys(initialTranslations).length > 0) {
+            const propertyId = property.id;
+            const formatted: Record<string, string> = {};
+
+            Object.entries(initialTranslations).forEach(([original, translated]) => {
+                // Seed both property-specific and global tags to be safe
+                formatted[`${initialLanguage}:${original}:${propertyId}`] = translated;
+                formatted[`${initialLanguage}:${original}:global`] = translated;
+            });
+
+            seedTranslationCache(formatted);
+        }
+    }, [initialTranslations, initialLanguage, property.id]);
+
     const [currentPage, setCurrentPage] = useState<string | null>('welcome');
     const [activeTab, setActiveTab] = useState('hub');
-    const [language, setLanguage] = useState<string>('es');
+    const [language, setLanguage] = useState<string>(initialLanguage);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // --- CACHE & OFFLINE LOGIC ---
@@ -78,17 +112,14 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
     const displayFaqs = faqs || localData?.faqs || [];
 
     const welcomeData = displayContext?.find((c: any) => c.category === 'welcome')?.content;
+    const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', language, 'ui_label', accessToken, property.id);
 
-    // Auto-detect browser language
+    // Persist manual language choice via cookie
     useEffect(() => {
-        const browserLang = navigator.language.split('-')[0];
-        const supported = ['es', 'en', 'fr', 'de', 'it', 'pt'];
-        if (supported.includes(browserLang)) {
-            setLanguage(browserLang);
-        } else {
-            setLanguage('en'); // Default to English if not supported
+        if (!tokenLanguage && language) {
+            document.cookie = `preferred_lang=${language};path=/;max-age=31536000;SameSite=Lax`;
         }
-    }, []);
+    }, [language, tokenLanguage]);
 
     const handleNavigate = (pageId: string) => {
         setCurrentPage(pageId);
@@ -158,6 +189,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                     themeId={themeId}
                     context={displayContext}
                     recommendations={displayRecommendations}
+                    disabledLanguage={!!tokenLanguage}
                 />
             );
         }
@@ -181,6 +213,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                     context={displayContext}
                     sections={sections}
                     manuals={displayManuals}
+                    disabledLanguage={!!tokenLanguage}
                 />
             );
         }
@@ -198,6 +231,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         onLanguageChange={setLanguage}
                         accessToken={accessToken}
                         propertyId={property.id}
+                        disabledLanguage={!!tokenLanguage}
                     />
                 );
             case 'rules':
@@ -214,6 +248,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         onLanguageChange={setLanguage}
                         accessToken={accessToken}
                         propertyId={property.id}
+                        disabledLanguage={!!tokenLanguage}
                     />
                 );
             case 'manuals':
@@ -226,6 +261,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         onLanguageChange={setLanguage}
                         accessToken={accessToken}
                         propertyId={property.id}
+                        disabledLanguage={!!tokenLanguage}
                     />
                 );
             case 'check-in':
@@ -258,8 +294,10 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         currentLanguage={language}
                         preferredContactName={prefName}
                         preferredContactPhone={prefPhone}
+                        onLanguageChange={setLanguage}
                         accessToken={accessToken}
                         propertyId={property.id}
+                        disabledLanguage={!!tokenLanguage}
                     />
                 );
             }
@@ -274,6 +312,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         onLanguageChange={setLanguage}
                         accessToken={accessToken}
                         propertyId={property.id}
+                        disabledLanguage={!!tokenLanguage}
                     />
                 );
             }
@@ -282,9 +321,12 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                     <HouseInfoView
                         onBack={handleBack}
                         property={property}
+                        welcomeData={welcomeData}
                         currentLanguage={language}
+                        onLanguageChange={setLanguage}
                         accessToken={accessToken}
                         propertyId={property.id}
+                        disabledLanguage={!!tokenLanguage}
                     />
                 );
             case 'eat':
@@ -298,6 +340,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         city={property.city}
                         accessToken={accessToken}
                         propertyId={property.id}
+                        disabledLanguage={!!tokenLanguage}
                     />
                 );
             case 'do':
@@ -312,6 +355,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         city={property.city}
                         accessToken={accessToken}
                         propertyId={property.id}
+                        disabledLanguage={!!tokenLanguage}
                     />
                 );
             case 'shopping':
@@ -326,6 +370,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                         city={property.city}
                         accessToken={accessToken}
                         propertyId={property.id}
+                        disabledLanguage={!!tokenLanguage}
                     />
                 );
             case 'explore':
@@ -341,11 +386,13 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
 
                             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 max-w-[60%]">
                                 {branding?.custom_logo_url && branding.custom_logo_url.trim() !== '' ? (
-                                    <div className="h-10 flex items-center">
-                                        <img
+                                    <div className="h-10 relative w-[120px]">
+                                        <Image
                                             src={branding.custom_logo_url}
                                             alt={property.name}
-                                            className="h-full w-auto max-w-[120px] object-contain"
+                                            fill
+                                            sizes="120px"
+                                            className="object-contain object-left"
                                         />
                                     </div>
                                 ) : (
@@ -359,6 +406,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
                                 <LanguageSelector
                                     currentLanguage={language}
                                     onLanguageChange={setLanguage}
+                                    disabled={!!tokenLanguage}
                                 />
                             </div>
                         </header>
@@ -380,7 +428,7 @@ export function GuideViewContainer({ property, branding, sections, manuals, reco
 
                         <div className="px-6 pb-24 text-center opacity-30">
                             <p className="text-[9px] text-navy uppercase font-black tracking-[0.4em]">
-                                Powered by GuideFlow Premium
+                                {poweredByLabel} GuideFlow Premium
                             </p>
                         </div>
                     </div>
