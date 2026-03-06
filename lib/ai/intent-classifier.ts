@@ -67,29 +67,30 @@ VALORES PERMITIDOS para "intent":
 - "standard": cualquier otra pregunta que no encaje arriba
 
 VALORES PERMITIDOS para "foodSubtype" (solo si intent es "recommendation_food"):
-- "desayuno": desayuno, brunch, café, tostadas, croissant, mañana, primera comida del día
+- "desayuno": desayuno, brunch, café, mañana, primera comida del día
 - "almuerzo": comida del mediodía, almuerzo, menú del día
 - "cena": cena, cenar, noche, por la noche
-- "tapas": tapas, pinchos, vino, caña, aperitivo
-- "cafe": café solo, cortado, tomar un café, cafetería (sin comida)
-- "italiano": pizza, pasta, italiano, risotto
+- "tapas": tapas, pinchos, aperitivo
+- "cafe": café solo, cortado, tomar un café, cafetería
+- "italiano": pizza, pasta, risotto
 - "mediterraneo": mediterráneo, griega, mariscos, pescado
 - "hamburguesas": hamburguesa, burger, americano
 - "asiatico": asiático, japonés, chino, thai, sushi, ramen, wok
-- "alta_cocina": alta cocina, gourmet, fine dining, estrella michelin
+- "alta_cocina": gourmet, fine dining, estrella michelin
 - "internacional": internacional, fusión, variado
 - "general": quiere comer pero no especifica tipo de cocina ni momento del día
 - null: si intent NO es "recommendation_food"
 
-Para "isGenericFood": true si el intent es "recommendation_food" Y no hay un subtipo específico de cocina
-(es decir, el huésped no especifica si quiere italiano, sushi, etc. — solo quiere comer algo).
-Ponlo false si hay un subtipo de cocina concreto (italiano, asiatico, etc.) aunque no sea el momento del día.
+Para "isGenericFood": true si el huésped NO ha especificado un tipo de COCINA (ej: italiano, asiático, hamburguesería). 
+- Si solo dice "tengo hambre", "donde como", "donde ceno", "donde desayuno" -> isGenericFood: true.
+- Si dice "donde como pizza", "restaurante sushi para cenar" -> isGenericFood: false (especifica cocina).
 
 Para "detectedErrorCode": extrae el código en mayúsculas si existe (ej: "E5", "F21", "EA0"). null si no hay código.
 
 EJEMPLOS:
-- "no he desayunado, donde me recomiendas" → intent: "recommendation_food", foodSubtype: "desayuno", isGenericFood: false
+- "no he desayunado, donde me recomiendas" → intent: "recommendation_food", foodSubtype: "desayuno", isGenericFood: true
 - "llevo horas sin probar bocado" → intent: "recommendation_food", foodSubtype: "general", isGenericFood: true
+- "donde puedo cenar algo rico" → intent: "recommendation_food", foodSubtype: "cena", isGenericFood: true
 - "me apetece una pizza" → intent: "recommendation_food", foodSubtype: "italiano", isGenericFood: false
 - "la lavadora pone E5" → intent: "error_code", detectedErrorCode: "E5"
 - "huele a quemado" → intent: "emergency"

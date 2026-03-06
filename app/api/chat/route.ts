@@ -289,9 +289,12 @@ export async function POST(req: Request) {
         ]);
 
         // Recomendaciones directas de DB (solo si aplica)
+        // Detectamos si es una búsqueda de comida genérica (sin tipo de cocina)
+        const isGenericFoodSearch = intent.intent === 'recommendation_food' && intent.isGenericFood;
+
         let foodSubcatFromIntent: string[] = [];
         if (intent.intent === 'recommendation_food') {
-            if (intent.isGenericFood || !intent.foodSubtype || intent.foodSubtype === 'general') {
+            if (isGenericFoodSearch || !intent.foodSubtype || intent.foodSubtype === 'general') {
                 foodSubcatFromIntent = ['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'cafe', 'tapas'];
             } else {
                 foodSubcatFromIntent = [intent.foodSubtype];
@@ -386,7 +389,7 @@ export async function POST(req: Request) {
             // C. Recomendaciones de DB
             ...(isRecommendationQuery && directRecommendations.length > 0 ? (() => {
                 // Generic food → solo mostrar categorías disponibles para el flujo concierge
-                if (isGenericFood && foodCatsInDB.length > 1) {
+                if (isGenericFoodSearch && foodCatsInDB.length > 1) {
                     const catLabelNames: Record<string, string> = {
                         'restaurantes': 'Restaurantes', 'italiano': 'Italiana',
                         'mediterraneo': 'Mediterránea', 'hamburguesas': 'Hamburguesas',
@@ -431,7 +434,7 @@ export async function POST(req: Request) {
                 .filter((c: any) => {
                     const sourceType = c.source_type?.toLowerCase() || '';
                     const isRec = sourceType === 'recommendation' || sourceType === 'recommendations';
-                    if (isGenericFood && isRec) return false;
+                    if (isGenericFoodSearch && isRec) return false;
                     return true;
                 })
                 .map((c: any) => {
@@ -537,15 +540,17 @@ ${noInventionAnchor}`;
             const recommendationGuidance = isRecommendationQuery ? `
 # GUÍA PARA RECOMENDACIONES LOCALES:
 ${hasDirectRecs ? (
-                    isGenericFood && foodCatsInDB.length > 1 ? `
+                    isGenericFoodSearch && foodCatsInDB.length > 1 ? `
 - El CONTEXTO tiene recomendaciones de estas CATEGORÍAS: ${availableCatNames}.
-- Como el huésped preguntó de forma genérica, haz UNA sola pregunta de cualificación listando las categorías disponibles.
-- No listes restaurantes todavía. Espera la respuesta del huésped para saber qué le apetece.
-- EJEMPLO: "¡Claro! ¿Tienes alguna preferencia? Tengo recomendaciones de: **Italiana**, **Mediterránea** y **Hamburguesas** 😊"` : `
+- Como el huésped preguntó de forma genérica o solo por un momento del día (cena/comida), haz UNA sola pregunta de cualificación enumerando las categorías disponibles para que el huésped elija.
+- NO listes nombres de locales todavía. Espera su respuesta.
+- EJEMPLO: "¡Claro! ¿Qué te apetece para cenar? Tengo recomendaciones de: **Italiana**, **Asiática**, **Tapas** y **Hamburguesas** 😊"` : `
+- El CONTEXTO ya incluye las recomendaciones del anfitrión.
 - Da 3-5 opciones COPIANDO literalmente los nombres que aparecen tras "**" en esas etiquetas.
-- Formato OBLIGATORIO: "**[Nombre exacto del local]** ([distancia si existe]) — [descripción breve]."
-- El nombre del local DEBE estar siempre entre doble asterisco para que aparezca destacado.
-- ⛔ PROHIBIDO: Inventar un nombre que no aparezca textualmente en el CONTEXTO.`
+- Formato OBLIGATORIO: "**[Nombre]** ([distancia]) — [breve descripción]."
+- El nombre del local DEBE estar SIEMPRE entre doble asterisco para que aparezca en negrita.
+- EJEMPLO: "**Restaurante Pepito** (a 5 min) — Comida casera deliciosa."
+- ⛔ PROHIBIDO: Usar listas separadas por comas. Usa una lista con guiones (-).`
                 ) : `
 - Si no hay recomendaciones en el contexto, di amablemente que no tienes lista guardada y sugiere preguntar a ${supportContact}.`
                 }
@@ -574,6 +579,8 @@ ${mapFormatBlock}
 6. ⛔ No incluyas etiquetas internas en tu respuesta ([GUÍA_TÉCNICA], [NOTAS DEL ANFITRIÓN], etc.).
 7. ⛔ No menciones el modelo específico del aparato. Usa solo el nombre común ("el microondas").
 8. ❌ NUNCA menciones "el manual" ni "la documentación".
+9. ⛔ BOLD EN RECOMENDACIONES: El nombre de los restaurantes/tiendas debe ir SIEMPRE en negrita (**Nombre**).
+
 ${recommendationGuidance}
 
 # CONTEXTO:
