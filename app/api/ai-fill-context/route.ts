@@ -170,6 +170,11 @@ export async function POST(req: Request) {
         `- ${r.name} (${r.gfCategory}): ${r.vicinity || r.formatted_address}. Calificación: ${r.rating || 'N/A'}`
       ).join('\n');
 
+      const isTodos = selectedCat === 'todos';
+      const numRequested = isTodos ? 20 : 6;
+
+      const existingNamesStr = (existingData?.existingNames || []).join(', ');
+
       const prompt = `Actúa como un experto anfitrión local. Tu tarea es generar una lista de recomendaciones de ${selectedCat} para una guía turística.
 PROPIEDAD: "${property.name}" en ${property.city}.
 
@@ -177,11 +182,13 @@ RESULTADOS DE GOOGLE PLACES (Contexto):
 ${placesContext || 'No se encontraron resultados específicos de Google Places. Usa tu conocimiento general de la zona.'}
 
 INSTRUCCIONES:
-1. Genera exactamente 4-6 recomendaciones.
-2. Devuelve un objeto JSON con un array llamado "recommendations".
-3. Cada objeto debe tener: "name", "description" (máx 150 caracteres), "distance" (estimada desde la propiedad), "type" (slug de categoría: restaurant, shopping, culture, nature, leisure, relax).
-4. El tono debe ser hospitalario y personal.
-5. NO incluyas texto fuera del JSON.
+1. Genera exactamente ${numRequested} recomendaciones${isTodos ? ' (aprox. 4 de cada categoría: restaurantes, compras, cultura, naturaleza, ocio, relax)' : ''}.
+2. **NO DUPLIQUES** estos sitios que ya tengo en mi lista: ${existingNamesStr || 'ninguno'}.
+3. Devuelve un objeto JSON con un array llamado "recommendations".
+4. Cada objeto debe tener obligatoriamente: "name", "description" (máx 150 caracteres), "distance" (ej: "500m", "5 min en coche"), y "type" (DEBE SER UNO DE ESTOS SLUGS: restaurantes, compras, cultura, naturaleza, ocio, relax).
+5. Es MUY IMPORTANTE que el campo "type" sea exactamente uno de los slugs permitidos para que el filtro de la interfaz funcione.
+6. El tono debe ser hospitalario y personal.
+7. NO incluyas texto fuera del JSON.
 
 JSON:`;
 
