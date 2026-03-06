@@ -193,4 +193,23 @@ export class TranslationService {
     }
     memoryCache.set(key, value);
   }
+
+  static async translate(
+    text: string,
+    sourceLang: string,
+    targetLang: string,
+    options: TranslationOptions
+  ): Promise<{ text: string; metrics?: TranslationMetrics }> {
+    const startTime = Date.now();
+    const { translations } = await this.translateBatch([text], sourceLang, targetLang, options);
+
+    return {
+      text: translations[0] || text,
+      metrics: {
+        cacheHit: false,
+        translationTimeMs: Date.now() - startTime,
+        textLength: text.length
+      }
+    };
+  }
 }
