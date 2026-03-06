@@ -151,7 +151,7 @@ export async function POST(req: Request) {
                     const { text: translatedQuery, metrics } = await TranslationService.translate(
                         ragQuery, language, 'es', { propertyId, context: 'rag_query' }
                     );
-                    console.log(`[TRANSLATION] RAG Query:`, { cacheHit: metrics.cacheHit, timeMs: metrics.translationTimeMs });
+                    console.log(`[TRANSLATION] RAG Query:`, { cacheHit: metrics?.cacheHit || false, timeMs: metrics?.translationTimeMs || 0 });
                     return translatedQuery;
                 } catch (err: any) {
                     console.warn('[TRANSLATION] RAG Query failed, using original:', err.message);
@@ -318,7 +318,7 @@ export async function POST(req: Request) {
 
             console.log('[CHAT-DEBUG] Direct recs from DB:', {
                 count: directRecommendations.length,
-                types: detectedTypes
+                requestedTypes: detectedTypes
             });
         }
 
@@ -339,11 +339,13 @@ export async function POST(req: Request) {
         const brandRegex = new RegExp(`\\b(${commonBrands.join('|')})\\b`, 'gi');
         const getType = (r: any) => (r.type || r.category || 'general').toLowerCase();
 
-        // isGenericFood viene directamente del clasificador
+        // foodCatsInDB calculation moved up for logging
         const isGenericFood = intent.isGenericFood;
         const ALL_FOOD_TYPES = ['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'cafe', 'tapas'];
         const allFoodRecs = directRecommendations.filter(r => ALL_FOOD_TYPES.includes(getType(r)));
         const foodCatsInDB = Array.from(new Set(allFoodRecs.map(r => getType(r))));
+
+        console.log('[CHAT-DEBUG] Recommended Categories:', foodCatsInDB);
 
         const catLabelMap: Record<string, string> = {
             'restaurantes': 'RESTAURANTES_GENERALES', 'italiano': 'RESTAURANTES_ITALIANOS',
@@ -384,7 +386,7 @@ export async function POST(req: Request) {
             // C. Recomendaciones de DB
             ...(isRecommendationQuery && directRecommendations.length > 0 ? (() => {
                 // Generic food → solo mostrar categorías disponibles para el flujo concierge
-                if (isGenericFood && foodCatsInDB.length > 2) {
+                if (isGenericFood && foodCatsInDB.length > 1) {
                     const catLabelNames: Record<string, string> = {
                         'restaurantes': 'Restaurantes', 'italiano': 'Italiana',
                         'mediterraneo': 'Mediterránea', 'hamburguesas': 'Hamburguesas',
@@ -535,14 +537,14 @@ ${noInventionAnchor}`;
             const recommendationGuidance = isRecommendationQuery ? `
 # GUÍA PARA RECOMENDACIONES LOCALES:
 ${hasDirectRecs ? (
-                    isGenericFood && foodCatsInDB.length > 2 ? `
+                    isGenericFood && foodCatsInDB.length > 1 ? `
 - El CONTEXTO tiene recomendaciones de estas CATEGORÍAS: ${availableCatNames}.
 - Como el huésped preguntó de forma genérica, haz UNA sola pregunta de cualificación listando las categorías disponibles.
-- No listes restaurantes todavía. Espera la respuesta del huésped.
+- No listes restaurantes todavía. Espera la respuesta del huésped para saber qué le apetece.
 - EJEMPLO: "¡Claro! ¿Tienes alguna preferencia? Tengo recomendaciones de: **Italiana**, **Mediterránea** y **Hamburguesas** 😊"` : `
-- El CONTEXTO ya incluye las recomendaciones del anfitrión en etiquetas como [CAFETERIAS_Y_DESAYUNOS], [RESTAURANTES_ITALIANOS], etc.
 - Da 3-5 opciones COPIANDO literalmente los nombres que aparecen tras "**" en esas etiquetas.
-- Formato: "**[Nombre exacto]** ([distancia]) — [descripción breve]."
+- Formato OBLIGATORIO: "**[Nombre exacto del local]** ([distancia si existe]) — [descripción breve]."
+- El nombre del local DEBE estar siempre entre doble asterisco para que aparezca destacado.
 - ⛔ PROHIBIDO: Inventar un nombre que no aparezca textualmente en el CONTEXTO.`
                 ) : `
 - Si no hay recomendaciones en el contexto, di amablemente que no tienes lista guardada y sugiere preguntar a ${supportContact}.`
