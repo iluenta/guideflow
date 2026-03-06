@@ -55,26 +55,19 @@ export async function POST(req: Request) {
     let finalCity = property.city || 'Desconocida';
 
     const SUBCATEGORY_MAP: Record<string, { placeType: string; keyword?: string }> = {
-      restaurantes: { placeType: 'restaurant', keyword: 'restaurante|comer|cenar' },
-      compras: { placeType: 'supermarket', keyword: 'supermercado|tienda|compras' },
-      cultura: { placeType: 'museum', keyword: 'museo|cultura|monumento' },
-      naturaleza: { placeType: 'park', keyword: 'parque|naturaleza|vistas' },
-      ocio: { placeType: 'tourist_attraction', keyword: 'atraccion|ocio|diversion' },
-      relax: { placeType: 'spa', keyword: 'spa|relax|masaje' },
+      restaurantes: { placeType: 'restaurant', keyword: 'restaurante' },
+      compras: { placeType: 'supermarket', keyword: 'supermercado' },
+      cultura: { placeType: 'museum', keyword: 'museo' },
+      naturaleza: { placeType: 'park', keyword: 'naturaleza' },
+      ocio: { placeType: 'tourist_attraction', keyword: 'turismo' },
+      relax: { placeType: 'spa', keyword: 'spa' },
     };
     const selectedCat = existingData?.category || 'restaurantes';
 
     // ── 1. Arrivals Logic ────────────────────────────────────────────────────
     if (section === 'arrival') {
       try {
-        const result = await generateArrivalInstructions({
-          propertyId,
-          propertyName: property.name,
-          city: property.city,
-          country: property.country,
-          neighborhood: property.neighborhood,
-          fullAddress: property.full_address
-        });
+        const result = await generateArrivalInstructions(property.full_address || fallbackAddress);
         return new Response(JSON.stringify(result), {
           headers: { 'Content-Type': 'application/json' }
         });
@@ -139,17 +132,23 @@ export async function POST(req: Request) {
                 searchUrl += `&keyword=${encodeURIComponent(config.keyword)}`;
               }
 
+              console.log(`[PLACES] Fetching nearby for ${cat}: ${searchUrl.replace(placesKey, 'KEY_MASKED')}`);
               let searchRes = await fetch(searchUrl);
               let searchData = await searchRes.json();
+              console.log(`[PLACES] Nearby status: ${searchData.status}, results: ${searchData.results?.length || 0}`);
+
               debugLog.push({ cat, status: searchData.status, results: searchData.results?.length || 0, type: 'nearby' });
 
               // Fallback a textsearch si nearby no devuelve nada
               if ((searchData.results || []).length === 0) {
-                console.log(`[PLACES] Fallback to textsearch for ${cat}`);
                 const query = `${config.keyword || config.placeType} cerca de ${existingData?.address || fullAddress}`;
                 const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=20000&language=es&key=${placesKey}`;
+
+                console.log(`[PLACES] Fallback textsearch for ${cat}: ${textSearchUrl.replace(placesKey, 'KEY_MASKED')}`);
                 searchRes = await fetch(textSearchUrl);
                 searchData = await searchRes.json();
+                console.log(`[PLACES] Textsearch status: ${searchData.status}, results: ${searchData.results?.length || 0}`);
+
                 debugLog.push({ cat, status: searchData.status, results: searchData.results?.length || 0, type: 'textsearch', query });
               }
 
@@ -189,7 +188,11 @@ JSON:`;
       const result = await model.generateContent(prompt);
       const responseText = result.response.text();
       const jsonClean = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      const recommendations = JSON.parse(jsonClean);
+      const parsed = JSON.parse(jsonClean);
+      // Gemini can return { recommendations: [...] } or just [...]. We want the array.
+      const recommendations = Array.isArray(parsed.recommendations)
+        ? parsed.recommendations
+        : (Array.isArray(parsed) ? parsed : []);
 
       return new Response(JSON.stringify({ recommendations, debugLog }), {
         headers: { 'Content-Type': 'application/json' }
