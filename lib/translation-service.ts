@@ -132,38 +132,57 @@ export class TranslationService {
     }
 
     try {
-      const batchPayload = missingIndices.reduce((acc, idx) => { acc[idx] = texts[idx].trim(); return acc; }, {} as Record<number, string>);
+      const batchPayload = missingIndices.reduce((acc, idx) => { acc[idx] = texts[idx].trim(); return acc; }, {} as Record<string, string>);
       const prompt = `Translate from ${getLangName(sourceLang)} to ${getLangName(targetLang)}. 
       Output JSON with SAME keys. Values MUST be PLAIN STRINGS. NO objects.
       
       CONTEXT: This is for a luxury vacation rental digital guide (concierge). Tone should be helpful and professional.
       
-      CRITICAL FOR GALICIAN (gl) AND PORTUGUESE (pt):
-      - Ensure the translation is purely the target language, NOT Spanish.
-      - DO NOT return the same string if it's Spanish.
-      - Even if the strings are identical in some cases, ensure the grammar and specific vocabulary of the target language is used.
-      - For Galician: 'Tu Estancia' -> 'A túa estadía', 'Guía de la Casa' -> 'Guía da casa', 'Llegada' -> 'Chegada'.
-      - For Portuguese: 'Tu Estancia' -> 'A sua estadia', 'Guía de la Casa' -> 'Guia da Casa', 'Hola' -> 'Olá', 'Bienvenido a casa' -> 'Bem-vindo a casa'.
-      
       Payload: ${JSON.stringify(batchPayload)}`;
 
-      const batchModel = TranslationService.genAI.getGenerativeModel({ model: "gemini-2.0-flash", generationConfig: { responseMimeType: "application/json" } });
+      const batchModel = TranslationService.genAI.getGenerativeModel({
+        model: "gemini-2.0-flash",
+        generationConfig: { responseMimeType: "application/json" }
+      });
+
       const result = await batchModel.generateContent(prompt);
-      const translatedBatch = JSON.parse(result.response.text());
+      const responseText = result.response.text();
+      let translatedBatch: any;
+
+      try {
+        translatedBatch = JSON.parse(responseText);
+      } catch (e) {
+        console.error('[TRANSLATION-AI] ❌ Failed to parse Gemini response as JSON:', responseText);
+        throw e;
+      }
+
       console.log(`[TRANSLATION-AI] 🤖 Response for ${targetLang}:`, translatedBatch);
       const dbRecords: any[] = [];
 
       for (const idx of missingIndices) {
-        const cleaned = TranslationService.cleanTranslation(translatedBatch[idx] || translatedBatch[String(idx)]);
+        // Highly resilient access: check index, string index, or even array access if Gemini slipped
+        const rawVal = translatedBatch[idx] !== undefined ? translatedBatch[idx] : translatedBatch[String(idx)];
+        const cleaned = TranslationService.cleanTranslation(rawVal);
+
         if (cleaned) {
           results[idx] = cleaned;
           const cacheKey = `${propertyId}:${texts[idx].trim()}|${sourceLang}|${targetLang}`;
           TranslationService.saveToMemory(cacheKey, cleaned);
           dbRecords.push({
-            property_id: propertyId, hash: hashes[idx], source_text: texts[idx].trim(), source_lang: sourceLang, target_lang: targetLang,
-            translated_text: cleaned, translation_time_ms: Math.floor((Date.now() - startTime) / missingIndices.length), source_type: 'ui_batch', translation_method: 'gemini-batch'
+            property_id: propertyId,
+            hash: hashes[idx],
+            source_text: texts[idx].trim(),
+            source_lang: sourceLang,
+            target_lang: targetLang,
+            translated_text: cleaned,
+            translation_time_ms: Math.floor((Date.now() - startTime) / missingIndices.length),
+            source_type: 'ui_batch',
+            translation_method: 'gemini-batch'
           });
-        } else { results[idx] = texts[idx]; }
+        } else {
+          console.warn(`[TRANSLATION-AI] ⚠️ Missing or empty result for index ${idx}:`, texts[idx]);
+          results[idx] = texts[idx];
+        }
       }
       if (dbRecords.length > 0) TranslationService.saveToDBBulk(supabase, dbRecords);
     } catch (err) {

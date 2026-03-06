@@ -12,6 +12,7 @@ import { MapPin, Menu } from 'lucide-react';
 import { GuestChat } from '@/components/guide/GuestChat';
 import { LanguageSelector } from '@/components/guide/LanguageSelector';
 import { ChatOnboarding } from '@/components/guide/ChatOnboarding';
+import supabaseLoader from '@/lib/image-loader';
 
 import { BottomNav } from '@/components/guide/BottomNav';
 import { CheckInView } from '@/components/guide/CheckInView';
@@ -388,6 +389,7 @@ export function GuideViewContainer({
                                 {branding?.custom_logo_url && branding.custom_logo_url.trim() !== '' ? (
                                     <div className="h-10 relative w-[120px]">
                                         <Image
+                                            loader={supabaseLoader}
                                             src={branding.custom_logo_url}
                                             alt={property.name}
                                             fill

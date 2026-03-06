@@ -227,6 +227,8 @@ export async function POST(req: Request) {
                 aire: ['aire acondicionado', 'climatizador', 'frío', 'calor', 'temperatura', 'mando', 'ventilador'],
                 hervidor: ['hervidor', 'hervir', 'agua', 'temperatura', 'ebullición'],
                 frigorifico: ['frigorífico', 'nevera', 'congelador', 'temperatura', 'frío'],
+                cocinar: ['cocinar', 'cocina', 'vitrocerámica', 'fuegos', 'sartenes', 'ollas', 'menaje', 'utensilios', 'microondas', 'horno', 'platos', 'comer en casa', 'stay at home'],
+                casa: ['quedarse', 'casa', 'alojamiento', 'apartamento', 'estar', 'descansar', 'instalaciones', 'sofá', 'piscina', 'terraza', 'vistas'],
             }
 
             const msgLower = lastMessage.toLowerCase()
@@ -234,7 +236,9 @@ export async function POST(req: Request) {
                 msgLower.includes(appliance) ||
                 (appliance === 'tv' && /tele|disney|netflix|prime|youtube|canal|streaming|hdmi|serie|pelicula|película/i.test(msgLower)) ||
                 (appliance === 'aire' && /aire|ac\b|clima|calefacc/i.test(msgLower)) ||
-                (appliance === 'frigorifico' && /nevera|frigo|congelador/i.test(msgLower))
+                (appliance === 'frigorifico' && /nevera|frigo|congelador/i.test(msgLower)) ||
+                (appliance === 'cocinar' && /cook|cocinar|hacer de comer|comida en casa/i.test(msgLower)) ||
+                (appliance === 'casa' && /stay|home|staying|inside|house|en casa|quedarse/i.test(msgLower))
             )
 
             const expansionTerms = detectedAppliance
@@ -484,10 +488,10 @@ Cuando menciones una dirección física concreta, escríbela así:
 Solo usa este formato cuando tengas la dirección exacta en el CONTEXTO. No inventes direcciones.`;
 
         const noInventionAnchor = `
-⛔ REGLA FINAL ABSOLUTA:
-Si la información solicitada NO está en el CONTEXTO (excepto si estás en un flujo de recomendación con etiquetas [CATEGORIAS_DISPONIBLES_...], [RESTAURANTES_...], [RECOMENDACIONES_...], [CAFETERIAS_...], [LUGARES_...], etc.), responde exactamente:
-"No tengo esa información guardada. Contacta con ${supportContact}."
-NUNCA completes, asumas, deduzcas ni inventes con conocimiento externo al CONTEXTO.`;
+⛔ REGLA DE INFORMACIÓN FALTANTE:
+1. Si el huésped pregunta sobre COCINAR o QUEDARSE EN CASA y no tienes detalles específicos en el contexto: "No tengo detalles específicos guardados sobre eso, pero puedes usar la cocina y las instalaciones del alojamiento. Para dudas concretas sobre el equipamiento, contacta con ${supportContact}."
+2. Para cualquier otra información que NO esté en el CONTEXTO (excepto flujos de recomendación), responde exactamente: "No tengo esa información guardada. Contacta con ${supportContact}."
+3. NUNCA inventes con conocimiento externo al CONTEXTO.`;
 
         let systemInstruction: string;
 

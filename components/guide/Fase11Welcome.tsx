@@ -17,6 +17,7 @@ import { LanguageSelector } from '@/components/guide/LanguageSelector';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { getGuideTheme } from '@/lib/guide-theme';
 import { cn } from '@/lib/utils';
+import supabaseLoader from '@/lib/image-loader';
 
 
 interface Fase11WelcomeProps {
@@ -123,13 +124,13 @@ export function Fase11Welcome({
             <div className="relative h-[45vh] w-full overflow-hidden">
                 {heroImage && heroImage.trim() !== '' ? (
                     <Image
+                        loader={supabaseLoader}
                         src={heroImage}
                         alt={propertyName}
                         fill
                         priority
                         sizes="100vw"
                         className="object-cover"
-                        loading="eager"
                     />
                 ) : (
                     <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-700" />

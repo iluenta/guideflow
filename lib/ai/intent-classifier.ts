@@ -63,7 +63,7 @@ VALORES PERMITIDOS para "intent":
 - "recommendation_activity": qué hacer, ocio, turismo, museos, visitas, actividades, noche, copas
 - "recommendation_shopping": tiendas, compras, souvenirs, centro comercial, mercado, ropa, zapatos, moda, clothing store, mall, fashion, supermercado
 - "recommendation_other": otras recomendaciones que no encajan en las anteriores
-- "property_info": WiFi, contraseña, normas, check-in, check-out, acceso, llaves, parking, dirección
+- "property_info": WiFi, contraseña, normas, check-in, check-out, acceso, llaves, parking, dirección, COCINAR, quedarse en casa, equipamiento del hogar, cocina, estar en el alojamiento.
 - "standard": cualquier otra pregunta que no encaje arriba
 
 VALORES PERMITIDOS para "foodSubtype" (solo si intent es "recommendation_food"):

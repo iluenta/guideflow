@@ -77,17 +77,16 @@ export function seedTranslationCache(translations: Record<string, string>) {
 // Group for batching
 interface BatchQueueItem {
     text: string;
-    resolve: (val: string) => void;
+    resolvers: ((val: string) => void)[];
 }
 
-// FASE 18: Multi-Context Batching Coordinator
 class TranslationManager {
     private static batchGroups: Map<string, {
         queue: Map<string, BatchQueueItem>;
         timer: NodeJS.Timeout | null;
     }> = new Map();
 
-    private static BATCH_DELAY = 150;
+    private static BATCH_DELAY = 50; // Faster batching
 
     static async request(
         text: string,
@@ -105,7 +104,12 @@ class TranslationManager {
             }
 
             const group = this.batchGroups.get(groupKey)!;
-            group.queue.set(cacheKey, { text, resolve });
+
+            if (group.queue.has(cacheKey)) {
+                group.queue.get(cacheKey)!.resolvers.push(resolve);
+            } else {
+                group.queue.set(cacheKey, { text, resolvers: [resolve] });
+            }
 
             if (!group.timer) {
                 group.timer = setTimeout(() => this.processGroup(groupKey), this.BATCH_DELAY);
@@ -151,14 +155,16 @@ class TranslationManager {
 
                 if (translated) {
                     translationCache[cacheKey] = translated;
-                    item.resolve(translated);
+                    item.resolvers.forEach(resolve => resolve(translated));
                 } else {
-                    item.resolve(item.text);
+                    item.resolvers.forEach(resolve => resolve(item.text));
                 }
             });
         } catch (err) {
             console.error('[TranslationManager] Fatal Error:', err);
-            entries.forEach(([_, item]) => item.resolve(item.text));
+            entries.forEach(([_, item]) => {
+                item.resolvers.forEach(resolve => resolve(item.text));
+            });
         }
     }
 }

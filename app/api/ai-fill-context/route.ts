@@ -56,7 +56,15 @@ export async function POST(req: Request) {
 
     const SUBCATEGORY_MAP: Record<string, { placeType: string; keyword?: string }> = {
       restaurantes: { placeType: 'restaurant', keyword: 'restaurante' },
-      compras: { placeType: 'supermarket', keyword: 'supermercado' },
+      italiano: { placeType: 'restaurant', keyword: 'italiano pizza' },
+      mediterraneo: { placeType: 'restaurant', keyword: 'mediterraneo pescado' },
+      hamburguesas: { placeType: 'restaurant', keyword: 'hamburguesas burgers' },
+      asiatico: { placeType: 'restaurant', keyword: 'asiatico sushi' },
+      alta_cocina: { placeType: 'restaurant', keyword: 'gourmet michelin' },
+      internacional: { placeType: 'restaurant', keyword: 'internacional' },
+      desayuno: { placeType: 'cafe', keyword: 'desayuno brunch cafe' },
+      compras: { placeType: 'shopping_mall', keyword: 'tiendas' },
+      supermercados: { placeType: 'supermarket', keyword: 'supermercado' },
       cultura: { placeType: 'museum', keyword: 'museo' },
       naturaleza: { placeType: 'park', keyword: 'naturaleza' },
       ocio: { placeType: 'tourist_attraction', keyword: 'turismo' },
@@ -119,7 +127,7 @@ export async function POST(req: Request) {
 
           if (lat && lng) {
             const categoriesToIterate = selectedCat === 'todos'
-              ? ['restaurantes', 'compras', 'cultura', 'naturaleza', 'ocio']
+              ? ['restaurantes', 'compras', 'supermercados', 'cultura', 'naturaleza', 'ocio', 'desayuno']
               : [selectedCat];
 
             console.log(`[PLACES] Searching for categories:`, categoriesToIterate);
@@ -171,7 +179,8 @@ export async function POST(req: Request) {
       ).join('\n');
 
       const isTodos = selectedCat === 'todos';
-      const numRequested = isTodos ? 20 : 6;
+      const numRequested = isTodos ? 25 : 6;
+      const categoryListSlugs = `restaurantes, italiano, mediterraneo, hamburguesas, asiatico, alta_cocina, internacional, desayuno, compras, supermercados, cultura, naturaleza, ocio, relax`;
 
       const existingNamesStr = (existingData?.existingNames || []).join(', ');
 
@@ -182,13 +191,14 @@ RESULTADOS DE GOOGLE PLACES (Contexto):
 ${placesContext || 'No se encontraron resultados específicos de Google Places. Usa tu conocimiento general de la zona.'}
 
 INSTRUCCIONES:
-1. Genera exactamente ${numRequested} recomendaciones${isTodos ? ' (aprox. 4 de cada categoría: restaurantes, compras, cultura, naturaleza, ocio, relax)' : ''}.
+1. Genera exactamente ${numRequested} recomendaciones${isTodos ? ` (distribuidas equilibradamente entre esta lista de categorías: ${categoryListSlugs})` : ''}.
 2. **NO DUPLIQUES** estos sitios que ya tengo en mi lista: ${existingNamesStr || 'ninguno'}.
 3. Devuelve un objeto JSON con un array llamado "recommendations".
-4. Cada objeto debe tener obligatoriamente: "name", "description" (máx 150 caracteres), "distance" (ej: "500m", "5 min en coche"), y "type" (DEBE SER UNO DE ESTOS SLUGS: restaurantes, compras, cultura, naturaleza, ocio, relax).
-5. Es MUY IMPORTANTE que el campo "type" sea exactamente uno de los slugs permitidos para que el filtro de la interfaz funcione.
-6. El tono debe ser hospitalario y personal.
-7. NO incluyas texto fuera del JSON.
+4. Cada objeto debe tener obligatoriamente: "name", "description" (máx 150 caracteres), "distance" (ej: "500m", "5 min en coche"), y "type".
+5. **CRÍTICO**: El campo "type" DEBE ser exactamente uno de estos slugs (EN MINÚSCULAS): ${categoryListSlugs}.
+6. Si la categoría es gastronómica, intenta asignar el slug más específico (ej: "italiano" en lugar de "restaurantes" si es una pizzería).
+7. El tono debe ser hospitalario y personal.
+8. NO incluyas texto fuera del JSON.
 
 JSON:`;
 
