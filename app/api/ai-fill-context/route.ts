@@ -1,13 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import { createEdgeAdminClient } from '@/lib/supabase/edge';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { generateArrivalInstructions } from '../../../lib/arrival/generator-final';
 
-const getSupabase = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error('Credenciales de Supabase no configuradas');
-  return createClient(url, key);
-};
+export const runtime = 'edge';
 
 const getGenAI = () => {
   const key = process.env.GOOGLE_AI_API_KEY;
@@ -33,7 +28,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const supabase = getSupabase();
+    const supabase = createEdgeAdminClient();
 
     const { data: property, error: propError } = await supabase
       .from('properties')
@@ -42,8 +37,13 @@ export async function POST(req: Request) {
       .single();
 
     if (propError || !property) {
-      console.error('[AI-FILL] Property not found:', propertyId, propError);
-      return new Response(JSON.stringify({ error: 'Propiedad no encontrada en la base de datos' }), {
+      console.error('[AI-FILL] Property not found. ID:', propertyId, 'Error:', propError);
+      return new Response(JSON.stringify({
+        error: 'Propiedad no encontrada en la base de datos',
+        debug: 'PROPERTY_NOT_FOUND',
+        propertyId,
+        supabaseError: propError
+      }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' }
       });
