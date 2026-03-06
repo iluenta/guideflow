@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
     const { data: property, error: propError } = await supabase
       .from('properties')
-      .select('name, city, country, neighborhood')
+      .select('name, city, country, neighborhood, latitude, longitude, full_address')
       .eq('id', propertyId)
       .single();
 
@@ -49,7 +49,8 @@ export async function POST(req: Request) {
       });
     }
 
-    const fullAddress = existingData?.address || `${property.city}${property.neighborhood ? `, ${property.neighborhood}` : ''}${property.country ? `, ${property.country}` : ''}`;
+    const fallbackAddress = `${property.city}${property.neighborhood ? `, ${property.neighborhood}` : ''}${property.country ? `, ${property.country}` : ''}`;
+    const fullAddress = existingData?.address || property.full_address || fallbackAddress;
 
     let finalCity = property.city || 'Desconocida';
 
@@ -146,13 +147,27 @@ export async function POST(req: Request) {
 
       if (placesKey) {
         try {
-          const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${placesKey}`;
-          const geoRes = await fetch(geoUrl);
-          const geoData = await geoRes.json();
-          const loc = geoData.results?.[0]?.geometry?.location;
+          let lat = property.latitude;
+          let lng = property.longitude;
 
-          if (loc) {
-            const { lat, lng } = loc;
+          if (!lat || !lng) {
+            console.log(`[PLACES] No stored coordinates. Geocoding address: "${fullAddress}"`);
+            const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${placesKey}`;
+            const geoRes = await fetch(geoUrl);
+            const geoData = await geoRes.json();
+
+            if (geoData.status !== 'OK') {
+              console.error(`[PLACES] Geocoding failed: ${geoData.status}`, geoData.error_message || '');
+            } else {
+              const loc = geoData.results?.[0]?.geometry?.location;
+              lat = loc?.lat;
+              lng = loc?.lng;
+            }
+          } else {
+            console.log(`[PLACES] Using stored coordinates: ${lat}, ${lng}`);
+          }
+
+          if (lat && lng) {
 
             const categoriesToIterate = selectedCat === 'todos'
               ? ['restaurantes', 'compras', 'cultura', 'naturaleza', 'ocio']
