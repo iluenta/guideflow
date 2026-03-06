@@ -144,6 +144,7 @@ export async function POST(req: Request) {
       // ── 3. Google Places Search Logic ───────────────────────────────────────
       const placesKey = process.env.GOOGLE_PLACES_API_KEY;
       let placesResults: any[] = [];
+      let debugLog: any[] = [];
 
       if (placesKey) {
         try {
@@ -187,14 +188,16 @@ export async function POST(req: Request) {
 
               let searchRes = await fetch(searchUrl);
               let searchData = await searchRes.json();
+              debugLog.push({ cat, status: searchData.status, results: searchData.results?.length || 0, type: 'nearby', url: searchUrl.replace(placesKey, 'KEY_MASKED') });
 
-              // Si por algún motivo de la keyword hiper-estricta devuelve 0, probamos un fallback suavizando (quitando keyword)
-              // pero manteniendo tipo y cercanía.
-              if ((searchData.results || []).length < 2 && config.keyword) {
-                console.log(`[PLACES] Fallback to general type for ${cat}`);
-                const fallbackUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&type=${config.placeType}&language=es&key=${placesKey}`;
-                searchRes = await fetch(fallbackUrl);
+              // Si por algún motivo devuelve 0, probamos textsearch que es más robusto en zonas con pocos locales
+              if ((searchData.results || []).length === 0) {
+                console.log(`[PLACES] Fallback to textsearch for ${cat}`);
+                const query = `${config.keyword || config.placeType} cerca de ${fullAddress}`;
+                const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=20000&language=es&key=${placesKey}`;
+                searchRes = await fetch(textSearchUrl);
                 searchData = await searchRes.json();
+                debugLog.push({ cat, status: searchData.status, results: searchData.results?.length || 0, type: 'textsearch', query });
               }
 
               // TEMPORAL - ver qué devuelve Google antes del filtro
@@ -336,7 +339,7 @@ Responde SOLO con JSON válido:
         });
       });
 
-      return new Response(JSON.stringify({ recommendations }), {
+      return new Response(JSON.stringify({ recommendations, debugLog }), {
         headers: { 'Content-Type': 'application/json' }
       });
 
