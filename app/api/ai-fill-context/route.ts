@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
     const { data: property, error: propError } = await supabase
       .from('properties')
-      .select('name, city, country, neighborhood, description')
+      .select('name, city, country, neighborhood')
       .eq('id', propertyId)
       .single();
 
@@ -334,7 +334,7 @@ Responde SOLO con JSON válido:
     } else if (section === 'faqs') {
       const { checkin_time, quiet_hours } = existingData || {};
       prompt = `Eres un experto anfitrión de un alojamiento turístico llamado "${property.name}" en ${property.city}. 
-DESCRIPCIÓN: ${property.description || 'Alojamiento vacacional'}.
+DESCRIPCIÓN: Alojamiento vacacional en ${property.city}.
 DATOS ESPECÍFICOS: 
 - Check-in: ${checkin_time || 'A convenir'}
 - Horas de silencio: ${quiet_hours || '22:00 - 08:00'}
