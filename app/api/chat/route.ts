@@ -5,7 +5,7 @@ import { validateAccessToken, generateDeviceFingerprint, logSuspiciousActivity }
 import { RateLimiter } from '@/lib/security/rate-limiter';
 import { TranslationService } from '@/lib/translation-service';
 import { NotificationService } from '@/lib/notifications';
-import { classifyIntent, intentToStrategy, isRecommendation, isAppliance } from '@/lib/ai/intent-classifier';
+import { classifyIntent, intentToStrategy, isRecommendation, isAppliance, TASK_TO_CONTEXT } from '@/lib/ai/intent-classifier';
 
 export const runtime = 'edge';
 
@@ -135,15 +135,12 @@ export async function POST(req: Request) {
         }
 
         // ═══════════════════════════════════════════════════════
-        // 2. CLASIFICACIÓN DE INTENT (reemplaza todos los regex)
+        // 2. CLASIFICACIÓN DE INTENT
         // ═══════════════════════════════════════════════════════
         const recentContext = messages.slice(-10).map((m: any) => m.content).join(' ');
 
-        // Clasificador e intent detection corren en paralelo con la traducción RAG
-        // para no añadir latencia secuencial
         const intentPromise = classifyIntent(lastMessage, recentContext);
 
-        // Traducción RAG en paralelo con el clasificador
         let ragQuery = lastMessage;
         const translateRagIfNeeded = async () => {
             if (language !== 'es') {
@@ -161,7 +158,6 @@ export async function POST(req: Request) {
             return ragQuery;
         };
 
-        // Esperamos ambos en paralelo
         const [intent, translatedBase] = await Promise.all([intentPromise, translateRagIfNeeded()]);
         ragQuery = translatedBase;
 
@@ -169,12 +165,15 @@ export async function POST(req: Request) {
         const isRecommendationQuery = isRecommendation(intent);
         const isApplianceQuery = isAppliance(intent);
         const isApplianceUsageQuery = intent.intent === 'appliance_usage';
+        const isApplianceTaskQuery = intent.intent === 'appliance_task';  // ← NUEVO
         const isEmergency = intent.intent === 'emergency';
         const detectedErrorCode = intent.detectedErrorCode;
+        const detectedTask = intent.detectedTask || null  // ← NUEVO
 
         console.log('[CHAT-DEBUG] Intent classified:', {
             chatStrategy,
             intent: intent.intent,
+            detectedTask,
             foodSubtype: intent.foodSubtype,
             detectedErrorCode,
             isGenericFood: intent.isGenericFood,
@@ -186,6 +185,7 @@ export async function POST(req: Request) {
         // ═══════════════════════════════════════════════════════
         if (detectedErrorCode) {
             ragQuery = `${ragQuery} código error ${detectedErrorCode} diagnóstico problemas tabla`;
+
         } else if (isRecommendationQuery) {
             const expansionMap: Record<string, string[]> = {
                 desayuno: ['desayuno', 'café', 'cafetería', 'brunch', 'tostadas', 'panadería'],
@@ -212,23 +212,31 @@ export async function POST(req: Request) {
             } else {
                 ragQuery = `${ragQuery} ${expansionTerms.join(' ')} recomendaciones zona`;
             }
-
             console.log('[CHAT-DEBUG] Expanded recommendation query:', ragQuery);
+
+        } else if (isApplianceTaskQuery && detectedTask) {
+            // ── NUEVO: appliance_task usa TASK_TO_CONTEXT para expandir el RAG ──
+            const taskContext = TASK_TO_CONTEXT[detectedTask]
+            if (taskContext) {
+                ragQuery = `${ragQuery} ${taskContext.ragTerms}`
+            } else {
+                ragQuery = `${ragQuery} instrucciones pasos usar aparato`
+            }
+            console.log('[CHAT-DEBUG] Task expansion:', { detectedTask, ragQuery: ragQuery.substring(0, 120) })
+
         } else if (isApplianceUsageQuery) {
-            // Expansión dirigida al aparato detectado en el mensaje
+            // appliance_usage: el huésped pregunta por un aparato concreto
             const applianceHints: Record<string, string[]> = {
                 tv: ['televisor', 'TV', 'tele', 'pantalla', 'mando', 'canales', 'streaming', 'netflix', 'disney', 'prime', 'youtube', 'hdmi', 'apps', 'aplicaciones'],
                 lavadora: ['lavadora', 'lavar', 'centrifugar', 'ciclo', 'programa', 'tambor', 'centrifugado'],
                 lavavajillas: ['lavavajillas', 'fregar', 'vajilla', 'programa', 'pastilla', 'detergente'],
-                horno: ['horno', 'temperatura', 'cocinar', 'precalentar', 'bandeja', 'pirólisis', 'grill'],
+                horno: ['horno', 'temperatura', 'cocinar', 'precalentar', 'bandeja', 'pizza', 'pirólisis', 'grill'],
                 microondas: ['microondas', 'calentar', 'descongelar', 'potencia', 'segundos', 'plato giratorio'],
                 cafetera: ['cafetera', 'café', 'espresso', 'cápsula', 'depósito', 'vapor', 'molinillo'],
                 calentador: ['calentador', 'agua caliente', 'boiler', 'termo', 'temperatura', 'presión'],
                 aire: ['aire acondicionado', 'climatizador', 'frío', 'calor', 'temperatura', 'mando', 'ventilador'],
                 hervidor: ['hervidor', 'hervir', 'agua', 'temperatura', 'ebullición'],
                 frigorifico: ['frigorífico', 'nevera', 'congelador', 'temperatura', 'frío'],
-                cocinar: ['cocinar', 'cocina', 'vitrocerámica', 'fuegos', 'sartenes', 'ollas', 'menaje', 'utensilios', 'microondas', 'horno', 'platos', 'comer en casa', 'stay at home'],
-                casa: ['quedarse', 'casa', 'alojamiento', 'apartamento', 'estar', 'descansar', 'instalaciones', 'sofá', 'piscina', 'terraza', 'vistas'],
             }
 
             const msgLower = lastMessage.toLowerCase()
@@ -236,49 +244,42 @@ export async function POST(req: Request) {
                 msgLower.includes(appliance) ||
                 (appliance === 'tv' && /tele|disney|netflix|prime|youtube|canal|streaming|hdmi|serie|pelicula|película/i.test(msgLower)) ||
                 (appliance === 'aire' && /aire|ac\b|clima|calefacc/i.test(msgLower)) ||
-                (appliance === 'frigorifico' && /nevera|frigo|congelador/i.test(msgLower)) ||
-                (appliance === 'cocinar' && /cook|cocinar|hacer de comer|comida en casa/i.test(msgLower)) ||
-                (appliance === 'casa' && /stay|home|staying|inside|house|en casa|quedarse/i.test(msgLower) && !/hacer|hago|cocin|prepar|make/i.test(msgLower))
+                (appliance === 'frigorifico' && /nevera|frigo|congelador/i.test(msgLower))
             )
 
-            // Bug 2: RAG expansion para recetas
             if (intent.foodSubtype === 'recipe') {
                 const FOOD_TO_APPLIANCE: Record<string, string> = {
-                    'pizza': 'horno',
-                    'pasta': 'horno vitrocerámica cocina',
-                    'cafe': 'cafetera',
-                    'café': 'cafetera',
-                    'tostada': 'tostadora',
-                    'arroz': 'vitrocerámica microondas cocina',
-                    'huevo': 'vitrocerámica cocina sartén',
-                    'carne': 'horno cocina vitrocerámica',
-                    'pescado': 'horno cocina vitrocerámica',
+                    'pizza': 'horno', 'pasta': 'horno vitrocerámica cocina',
+                    'cafe': 'cafetera', 'café': 'cafetera', 'tostada': 'tostadora',
+                    'arroz': 'vitrocerámica microondas cocina', 'huevo': 'vitrocerámica cocina sartén',
+                    'carne': 'horno cocina vitrocerámica', 'pescado': 'horno cocina vitrocerámica',
                 }
-
                 const msg = lastMessage.toLowerCase()
                 const detectedFood = Object.keys(FOOD_TO_APPLIANCE).find(food => msg.includes(food))
                 const applianceExpansion = detectedFood ? FOOD_TO_APPLIANCE[detectedFood] : 'horno cocina vitrocerámica microondas'
-
                 ragQuery = `${ragQuery} ${applianceExpansion} instrucciones temperatura tiempo pasos`
                 console.log('[CHAT-DEBUG] Recipe expansion:', { detectedFood, applianceExpansion })
             } else {
                 const expansionTerms = detectedAppliance
                     ? applianceHints[detectedAppliance]
-                    : ['usar', 'instrucciones', 'pasos', 'cómo funciona']  // fallback genérico mínimo
-
+                    : ['usar', 'instrucciones', 'pasos', 'cómo funciona']
                 ragQuery = `${ragQuery} ${expansionTerms.join(' ')}`
             }
-            console.log('[CHAT-DEBUG] Appliance expansion:', { detectedAppliance, ragQuery: ragQuery.substring(0, 120) })
+            console.log('[CHAT-DEBUG] Appliance expansion:', { detectedAppliance: lastMessage.substring(0, 30), ragQuery: ragQuery.substring(0, 120) })
         }
 
         const questionEmbedding = await generateOpenAIEmbedding(ragQuery);
 
         const matchThreshold = isRecommendationQuery ? 0.30 :
-            isApplianceQuery ? 0.30 :
-                isApplianceUsageQuery ? 0.32 :
-                    detectedErrorCode ? 0.30 : 0.28;
+            isApplianceTaskQuery ? 0.28 :   // ← umbral más bajo para tareas (query es indirecta)
+                isApplianceQuery ? 0.30 :
+                    isApplianceUsageQuery ? 0.32 :
+                        detectedErrorCode ? 0.30 : 0.28;
 
-        const matchCount = detectedErrorCode ? 30 : isRecommendationQuery ? 15 : isApplianceUsageQuery ? 8 : 25;
+        const matchCount = detectedErrorCode ? 30 :
+            isRecommendationQuery ? 15 :
+                isApplianceTaskQuery ? 10 :     // ← más chunks para tareas
+                    isApplianceUsageQuery ? 8 : 25;
 
         const { data: relevantChunks, error: rpcError } = await supabase.rpc('match_all_context', {
             query_embedding: questionEmbedding,
@@ -314,8 +315,6 @@ export async function POST(req: Request) {
                 .in('category', ['tech', 'rules', 'access', 'contacts', 'notes'])
         ]);
 
-        // Recomendaciones directas de DB (solo si aplica)
-        // Detectamos si es una búsqueda de comida genérica (sin tipo de cocina)
         const isGenericFoodSearch = intent.intent === 'recommendation_food' && intent.isGenericFood;
 
         let foodSubcatFromIntent: string[] = [];
@@ -368,7 +367,6 @@ export async function POST(req: Request) {
         const brandRegex = new RegExp(`\\b(${commonBrands.join('|')})\\b`, 'gi');
         const getType = (r: any) => (r.type || r.category || 'general').toLowerCase();
 
-        // foodCatsInDB calculation moved up for logging
         const isGenericFood = intent.isGenericFood;
         const ALL_FOOD_TYPES = ['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'cafe', 'tapas'];
         const allFoodRecs = directRecommendations.filter(r => ALL_FOOD_TYPES.includes(getType(r)));
@@ -414,7 +412,6 @@ export async function POST(req: Request) {
 
             // C. Recomendaciones de DB
             ...(isRecommendationQuery && directRecommendations.length > 0 ? (() => {
-                // Generic food → solo mostrar categorías disponibles para el flujo concierge
                 if (isGenericFoodSearch && foodCatsInDB.length > 1) {
                     const catLabelNames: Record<string, string> = {
                         'restaurantes': 'Restaurantes', 'italiano': 'Italiana',
@@ -427,7 +424,6 @@ export async function POST(req: Request) {
                     return [`[CATEGORIAS_DISPONIBLES_COMIDA]: ${catSummary}`];
                 }
 
-                // Subcategoría específica → inyectar los locales directamente
                 const filteredRecs = detectedTypes.length > 0
                     ? directRecommendations.filter(r => detectedTypes.includes(getType(r)))
                     : directRecommendations;
@@ -494,9 +490,6 @@ export async function POST(req: Request) {
         // ═══════════════════════════════════════════════════════
         // 6. CONSTRUCCIÓN DEL PROMPT
         // ═══════════════════════════════════════════════════════
-        const now = new Date();
-        const currentTimeContext = `${now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} a las ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
-
         const languageHandlingBlock = `
 # IDIOMA:
 - El historial puede contener mensajes en varios idiomas. Entiéndelos todos.
@@ -509,14 +502,28 @@ Cuando menciones una dirección física concreta, escríbela así:
 [[MAP:Dirección completa, Ciudad:Nombre del lugar]]
 Solo usa este formato cuando tengas la dirección exacta en el CONTEXTO. No inventes direcciones.`;
 
+        // ── NUEVO noInventionAnchor: distingue tareas de información ──
+        const taskPracticalTip = (isApplianceTaskQuery && detectedTask)
+            ? TASK_TO_CONTEXT[detectedTask]?.practicalTip || null
+            : null
+
         const noInventionAnchor = `
-⛔ REGLA DE INFORMACIÓN FALTANTE:
-1. Si el huésped pregunta sobre COCINAR o QUEDARSE EN CASA y no tienes instrucciones paso a paso:
-   - REVISA el [LISTA DE ELECTRODOMÉSTICOS Y EQUIPAMIENTO DISPONIBLE] en el CONTEXTO.
-   - Si el equipamiento existe (ej: hay horno, hay cafetera), confirma proactivamente que dispone de él: "No tengo el manual paso a paso para eso, pero dispones de [aparato] en la cocina para usarlo libremente. Para dudas urgentes, contacta con ${supportContact}."
-   - Si no hay rastro del equipamiento, usa el fallback: "No tengo detalles específicos sobre el equipamiento de cocina, pero puedes usar las instalaciones. Contacta con ${supportContact} para cualquier duda."
-2. Para cualquier otra información que NO esté en el CONTEXTO (excepto flujos de recomendación), responde exactamente: "No tengo esa información guardada. Contacta con ${supportContact}."
-3. NUNCA inventes con conocimiento externo al CONTEXTO.`;
+⛔ REGLAS DE INFORMACIÓN:
+
+1. TAREAS EN EL APARTAMENTO (lavar ropa, cocinar, poner el aire, etc.):
+   PASO A: Busca en el CONTEXTO si hay un manual o instrucciones específicas para el aparato necesario.
+   - Si hay manual → úsalo como base principal de tu respuesta.
+   - Si no hay manual → comprueba si el aparato aparece en [LISTA DE ELECTRODOMÉSTICOS Y EQUIPAMIENTO DISPONIBLE].
+     · Si el aparato existe → confirma que está disponible y añade consejos prácticos generales de uso.
+     · Si el aparato NO existe → di que no tienes información sobre ese equipamiento y sugiere contactar con ${supportContact}.
+   PASO B: Puedes complementar con consejos prácticos generales de uso (temperatura, programas estándar, tiempos).
+   Estos consejos generales SÍ están permitidos como complemento. NO son "información inventada".
+   ⚠️ NUNCA confirmes que existe un aparato que no aparece en el CONTEXTO.
+
+2. INFORMACIÓN DEL APARTAMENTO (normas, acceso, WiFi, etc.):
+   Usa solo lo que está en el CONTEXTO. Si no está: "No tengo esa información. Contacta con ${supportContact}."
+
+3. NUNCA inventes características específicas del apartamento ni datos que no estén en el CONTEXTO.`
 
         let systemInstruction: string;
 
@@ -555,7 +562,6 @@ ${formattedContext}
 ${noInventionAnchor}`;
 
         } else {
-            // Guidance de recomendaciones — alimentado por el clasificador
             const catLabelNames: Record<string, string> = {
                 'restaurantes': 'Restaurantes generales', 'italiano': 'Italiana',
                 'mediterraneo': 'Mediterránea', 'hamburguesas': 'Hamburguesas',
@@ -571,19 +577,35 @@ ${noInventionAnchor}`;
 ${hasDirectRecs ? (
                     isGenericFoodSearch && foodCatsInDB.length > 1 ? `
 - El CONTEXTO tiene recomendaciones de estas CATEGORÍAS: ${availableCatNames}.
-- Como el huésped preguntó de forma genérica o solo por un momento del día (cena/comida), haz UNA sola pregunta de cualificación enumerando las categorías disponibles para que el huésped elija.
+- Como el huésped preguntó de forma genérica, haz UNA sola pregunta de cualificación enumerando las categorías disponibles.
 - NO listes nombres de locales todavía. Espera su respuesta.
-- EJEMPLO: "¡Claro! ¿Qué te apetece para cenar? Tengo recomendaciones de: **Italiana**, **Asiática**, **Tapas** y **Hamburguesas** 😊"` : `
+- EJEMPLO: "¡Claro! ¿Qué te apetece? Tengo recomendaciones de: **Italiana**, **Asiática**, **Tapas** y **Hamburguesas** 😊"` : `
 - El CONTEXTO ya incluye las recomendaciones del anfitrión.
 - Da 3-5 opciones COPIANDO literalmente los nombres que aparecen tras "**" en esas etiquetas.
 - Formato OBLIGATORIO: "**[Nombre]** ([distancia]) — [breve descripción]."
-- El nombre del local DEBE estar SIEMPRE entre doble asterisco para que aparezca en negrita.
-- EJEMPLO: "**Restaurante Pepito** (a 5 min) — Comida casera deliciosa."
 - ⛔ PROHIBIDO: Usar listas separadas por comas. Usa una lista con guiones (-).`
                 ) : `
-- Si no hay recomendaciones en el contexto, di amablemente que no tienes lista guardada y sugiere preguntar a ${supportContact}.`
-                }
-            - ⛔ Si el nombre no aparece LITERALMENTE en el CONTEXTO → no lo escribas.
+- Si no hay recomendaciones en el contexto, di amablemente que no tienes lista guardada y sugiere preguntar a ${supportContact}.`}
+- ⛔ Si el nombre no aparece LITERALMENTE en el CONTEXTO → no lo escribas.
+` : '';
+
+            // ── NUEVO: bloque específico para tareas ──
+            const taskGuidance = isApplianceTaskQuery ? `
+# TAREA SOLICITADA: ${detectedTask || 'uso de equipamiento'}
+El huésped quiere realizar una tarea. Sigue este orden estricto:
+
+PRIORIDAD 1 — Si el CONTEXTO contiene un manual o guía del aparato necesario:
+→ Usa EXCLUSIVAMENTE la información del manual. NO añadas consejos externos.
+→ Extrae del manual las instrucciones específicas para esta tarea.
+→ Ejemplo: si el manual menciona "Función Pizza", di exactamente que existe esa función y cómo usarla.
+→ ⛔ PROHIBIDO usar "si tiene esa función" o "comprueba si tiene" cuando el manual ya lo especifica.
+
+PRIORIDAD 2 — Si NO hay manual pero el aparato aparece en el inventario:
+→ Confirma que el aparato está disponible.
+${taskPracticalTip ? `→ Puedes añadir estos consejos prácticos generales: ${taskPracticalTip}` : ''}
+
+PRIORIDAD 3 — Si el aparato NO aparece en el CONTEXTO:
+→ "No tengo información sobre ese equipamiento. Contacta con ${supportContact}."
 ` : '';
 
             systemInstruction = `Eres el asistente personal del apartamento "${propertyInfo?.name || 'este apartamento'}".
@@ -594,7 +616,7 @@ ${mapFormatBlock}
 - Hablas como un amigo que conoce bien el apartamento.
 - Das respuestas prácticas y útiles, no técnicas.
 - Tono natural, como WhatsApp.
-- ⛔ PROHIBICIÓN CRÍTICA: NO incluyas bajo ningún concepto la fecha actual, el día de la semana, la hora ni el icono 📍 en tu respuesta. Termina sin despedidas temporales.
+- ⛔ NO incluyas fecha, día de la semana, hora ni icono 📍 en tu respuesta.
 
 # REGLAS DE INFORMACIÓN:
 1. Para preguntas del apartamento (normas, acceso, WiFi, electrodomésticos): usa solo el CONTEXTO.
@@ -602,14 +624,14 @@ ${mapFormatBlock}
 3. Para recomendaciones: usa los datos del CONTEXTO con la lista del anfitrión.
 4. WiFi: pon SIEMPRE red y contraseña entre backticks (\`). Ejemplo: \`MiRed_5G\` / \`12345678\`.
 5. Streaming (Netflix, Disney+, Prime Video, YouTube, HBO, etc.):
-   - JERARQUÍA DE BOTONES: Si el manual menciona un botón específico (ej: Netflix, YouTube), tu PRIMERA instrucción debe ser pulsar ese botón directamente.
-   - ASERTIVIDAD: Prohibido usar "si lo tiene" o "comprueba". Afirma directamente que el botón está ahí.
-   - MÉTODOS SECUNDARIOS: Menciona el menú 'Home' o navegaciones similares SOLO como alternativa secundaria (o si la app no tiene botón directo).
-6. ⛔ No incluyas etiquetas internas en tu respuesta ([GUÍA_TÉCNICA], [NOTAS DEL ANFITRIÓN], etc.).
-7. ⛔ No menciones el modelo específico del aparato. Usa solo el nombre común ("el microondas").
+   - Si el manual menciona un botón específico, tu PRIMERA instrucción debe ser pulsar ese botón.
+   - Prohibido usar "si lo tiene" o "comprueba". Afirma directamente.
+6. ⛔ No incluyas etiquetas internas en tu respuesta ([GUÍA_TÉCNICA], etc.).
+7. ⛔ No menciones el modelo específico del aparato. Usa solo el nombre común.
 8. ❌ NUNCA menciones "el manual" ni "la documentación".
-9. ⛔ BOLD EN RECOMENDACIONES: El nombre de los restaurantes/tiendas debe ir SIEMPRE en negrita (**Nombre**).
+9. ⛔ El nombre de restaurantes/tiendas debe ir SIEMPRE en negrita (**Nombre**).
 
+${taskGuidance}
 ${recommendationGuidance}
 
 # CONTEXTO:

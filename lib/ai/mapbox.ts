@@ -70,7 +70,7 @@ export async function findPOI(lat: number, lon: number, type: string, bbox?: num
 
         const response = await axios.get(url, { params });
 
-        console.log(`[MAPBOX] POI Search URL [${type}]: ${url}?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, v.toString()])).toString()}`);
+        console.log(`[MAPBOX] POI Search URL [${type}]: ${url}?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, (v as any).toString()])).toString()}`);
 
         const result = response.data.features?.find((f: any) => {
             const [rLon, rLat] = f.center;

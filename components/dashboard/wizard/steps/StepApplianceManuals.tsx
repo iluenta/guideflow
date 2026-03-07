@@ -17,7 +17,7 @@ import { deleteManual, saveManual } from '@/app/actions/properties'
 import { regenerateManualAction } from '@/app/actions/ai-ingestion'
 import { toast } from 'sonner'
 
-export function StepApplianceManuals() {
+export function StepApplianceManuals({ value }: { value?: string }) {
     const { property, setProperty } = useWizard()
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 

@@ -44,6 +44,7 @@ export type Property = {
     baths: number
     guests: number
     status: 'draft' | 'active' | 'archived'
+    description: string | null
     main_image_url: string | null
     theme_config: any
     latitude: number | null
