@@ -10,10 +10,14 @@ export function WizardNavigation() {
         activeTab,
         handleNext,
         handleBack,
+        handleTabChange,
         loading,
         aiLoading,
         property,
-        filteredSteps
+        filteredSteps,
+        isEditing,
+        saveStep,
+        data
     } = useWizard()
 
     const currentIndex = filteredSteps.indexOf(activeTab)
@@ -22,19 +26,29 @@ export function WizardNavigation() {
     const canContinue = property?.id || isFirstStep
     const isDisabled = loading || !!aiLoading || !canContinue
 
-    const mainLabel = isLastStep ? 'Finalizar configuración' : 'Guardar y continuar'
-    const mainIcon = isLastStep
+    const mainLabel = isEditing ? 'Guardar Sección' : (isLastStep ? 'Finalizar configuración' : 'Guardar y continuar')
+    const mainIcon = (isLastStep && !isEditing)
         ? <CheckCircle className="w-5 h-5 shrink-0" />
         : <ArrowRight className="w-5 h-5 shrink-0" />
 
     const mainBtnClass = cn(
-        "flex items-center justify-center gap-3 font-bold text-white",
-        "transition-all duration-200 active:scale-[0.98]",
+        "flex items-center justify-center gap-3 font-bold text-white transition-all duration-200 active:scale-[0.98] px-6",
         "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none",
-        isLastStep
+        isLastStep && !isEditing
             ? "bg-emerald-600 hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-200"
             : "bg-[#111827] hover:bg-[#1f2937] hover:shadow-xl hover:shadow-slate-300/50"
     )
+
+    const handleOnlyNext = () => {
+        const nextIdx = currentIndex + 1
+        if (nextIdx < filteredSteps.length) {
+            handleTabChange(filteredSteps[nextIdx])
+        }
+    }
+
+    const handleSaveOnly = async () => {
+        await saveStep(activeTab, data[activeTab], '')
+    }
 
     return (
         <div className="sticky bottom-0 left-0 right-0 z-10 mt-8">
@@ -72,21 +86,33 @@ export function WizardNavigation() {
                         />
                     </div>
 
-                    {/* Botón full-width */}
-                    <button
-                        onClick={handleNext}
-                        disabled={isDisabled}
-                        className={cn(mainBtnClass, "w-full rounded-2xl px-6 py-4 text-base shadow-lg")}
-                    >
-                        {loading || aiLoading ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>{aiLoading ? 'Procesando IA...' : 'Guardando...'}</span>
-                            </>
-                        ) : (
-                            <>{mainLabel}{mainIcon}</>
+                    {/* Botones Móvil */}
+                    <div className="flex flex-col gap-2">
+                        <button
+                            onClick={isEditing ? handleSaveOnly : handleNext}
+                            disabled={isDisabled}
+                            className={cn(mainBtnClass, "w-full rounded-2xl py-4 text-base shadow-lg")}
+                        >
+                            {loading || aiLoading ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <span>{aiLoading ? 'Procesando IA...' : 'Guardando...'}</span>
+                                </>
+                            ) : (
+                                <>{mainLabel}{mainIcon}</>
+                            )}
+                        </button>
+                        {isEditing && !isLastStep && (
+                            <button
+                                onClick={handleOnlyNext}
+                                disabled={!!loading}
+                                className="w-full flex items-center justify-center gap-2 font-bold text-slate-600 border border-slate-200 bg-white rounded-2xl py-4 text-base shadow-sm"
+                            >
+                                Siguiente paso
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
                         )}
-                    </button>
+                    </div>
                 </div>
 
                 {/* ── ESCRITORIO ─────────────────────────────────────────────── */}
@@ -125,23 +151,35 @@ export function WizardNavigation() {
                         ))}
                     </div>
 
-                    {/* Botón principal */}
-                    <button
-                        onClick={handleNext}
-                        disabled={isDisabled}
-                        className={cn(mainBtnClass, "rounded-2xl px-7 py-4 text-[15px] shadow-lg")}
-                    >
-                        {loading || aiLoading ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>{aiLoading ? 'Procesando IA...' : 'Guardando...'}</span>
-                            </>
-                        ) : (
-                            <>{mainLabel}{mainIcon}</>
+                    {/* Botones Escritorio */}
+                    <div className="flex items-center gap-3">
+                        {isEditing && !isLastStep && (
+                            <button
+                                onClick={handleOnlyNext}
+                                disabled={!!loading}
+                                className="flex items-center justify-center gap-2 font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 rounded-2xl px-6 py-4 text-[15px] shadow-sm transition-all"
+                            >
+                                Siguiente
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
                         )}
-                    </button>
+                        <button
+                            onClick={isEditing ? handleSaveOnly : handleNext}
+                            disabled={isDisabled}
+                            className={cn(mainBtnClass, "rounded-2xl py-4 text-[15px] shadow-lg min-w-[180px]")}
+                        >
+                            {loading || aiLoading ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <span>{aiLoading ? 'Procesando IA...' : 'Guardando...'}</span>
+                                </>
+                            ) : (
+                                <>{mainLabel}{mainIcon}</>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    );
+    )
 }

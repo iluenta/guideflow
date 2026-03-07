@@ -158,26 +158,45 @@ async function prefetchTranslations(
 ): Promise<Record<string, string>> {
     if (language === 'es' || !strings.length) return {};
 
-    try {
-        // CALL SERVICE DIRECTLY - NO HTTP FETCH OVERHEAD
-        const { translations: results } = await Translator.translateBatch(
-            strings,
-            language,
-            'es',
-            'ui',
-            propertyId
-        );
+    // 1. Deduplicate and filter (following user rule: length > 2)
+    const uniqueStrings = [...new Set(strings.filter(s => s && s.trim().length > 2))];
+    if (uniqueStrings.length === 0) return {};
 
-        // Convert array back to Record for the prop
+    // 2. Batching (following user rule: BATCH_SIZE = 80)
+    const BATCH_SIZE = 80;
+    const batches: string[][] = [];
+    for (let i = 0; i < uniqueStrings.length; i += BATCH_SIZE) {
+        batches.push(uniqueStrings.slice(i, i + BATCH_SIZE));
+    }
+
+    try {
+        console.log(`[PREFETCH] 🌐 Starting translation of ${uniqueStrings.length} strings in ${batches.length} batches to ${language}`);
+
+        const results = await Promise.all(batches.map(batch =>
+            Translator.translateBatch(
+                batch,
+                language,
+                'es',
+                'ui',
+                propertyId
+            )
+        ));
+
+        // 3. Merge all results back
         const mapped: Record<string, string> = {};
-        strings.forEach((s, i) => {
-            if (results && results[i]) mapped[s] = results[i];
+        batches.forEach((batch, batchIdx) => {
+            const batchResults = results[batchIdx].translations;
+            batch.forEach((s, i) => {
+                if (batchResults && batchResults[i]) {
+                    mapped[s] = batchResults[i];
+                }
+            });
         });
 
-        console.log(`[PREFETCH] ✅ Translated ${Object.keys(mapped).length}/${strings.length} strings to ${language}`);
+        console.log(`[PREFETCH] ✅ Successfully prefetched ${Object.keys(mapped).length} translations`);
         return mapped;
     } catch (err) {
-        console.error('[PREFETCH] Direct Service Call Failed:', err);
+        console.error('[PREFETCH] Multi-batch Translation failed:', err);
         return {};
     }
 }
@@ -309,24 +328,94 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     // Add more common labels to reduce client churn
     batchToTranslate.push('Check-in disponible', 'Dirección', 'Ver en mapa', '¿Problemas para entrar? Contacta con', 'Llamar');
 
-    // Parallelize all data fetching including critical translations
+    // 3. Parallelize all data fetching
     const [
         sections,
         manuals,
         recommendations,
         faqs,
         { data: context },
-        { data: branding },
-        initialTranslations
+        { data: branding }
     ] = await Promise.all([
         getGuideSections(property.id),
         getPropertyManuals(property.id),
         getPropertyRecommendations(property.id),
         getPropertyFaqs(property.id),
         supabase.from('property_context').select('*').eq('property_id', property.id),
-        supabase.from('property_branding').select('*').eq('property_id', property.id).single(),
-        prefetchTranslations(batchToTranslate, initialLanguage, property.id)
+        supabase.from('property_branding').select('*').eq('property_id', property.id).single()
     ])
+
+    // 4. Prepare translations (Priority-based)
+    let initialTranslations: Record<string, string> = {};
+    if (initialLanguage !== 'es') {
+        const batchToTranslate = [...CRITICAL_UI_STRINGS];
+
+        // Priority 1: UI + Property Info
+        if (property.name) batchToTranslate.push(property.name);
+        if (property.city) batchToTranslate.push(`Descubre ${property.city}`);
+
+        // Navigation labels
+        batchToTranslate.push(
+            'Check-in disponible', 'Dirección', 'Ver en mapa', '¿Problemas para entrar? Contacta con', 'Llamar',
+            'BIENVENIDO', 'TU ANFITRIÓN', 'Disfruta de tu estancia en nuestra casa', 'Please enjoy your stay',
+            'BUENOS DÍAS', 'BUENAS TARDES', 'BUENAS NOCHES', 'ATARDECER', 'Hola',
+            'RECOMENDACIÓN', 'Explora la zona', 'Descubre los mejores rincones cerca de ti.', 'Ver recomendaciones',
+            'LO ESENCIAL', 'EXPLORA', 'TU ALOJAMIENTO', 'Lo Indispensable', 'Sobre la Casa',
+            'Gastronomía', 'Restaurantes locales', 'Dónde Comer', 'Restaurantes y cafeterías locales',
+            'Qué Hacer', 'Actividades', 'Actividades y lugares de interés',
+            'Compras', 'Tiendas y mercados', 'Tiendas, mercados y más',
+            'Info', 'Info Casa', 'Normas', 'Manual', 'Guía de USO',
+            'Ver todas las sugerencias', 'Desarrollado por', 'NUEVO'
+        );
+
+        // Priority 1: Context (Welcome/Checkin), FAQs, Wifi & SOS
+        const welcomeData = context?.find((c: any) => c.category === 'welcome')?.content;
+        const checkinData = context?.find((c: any) => c.category === 'checkin')?.content;
+        const techData = context?.find((c: any) => c.category === 'tech')?.content;
+        const contactsData = context?.find((c: any) => c.category === 'contacts')?.content;
+        const accessData = context?.find((c: any) => c.category === 'access')?.content;
+
+        if (welcomeData?.text) batchToTranslate.push(welcomeData.text);
+        if (welcomeData?.message) batchToTranslate.push(welcomeData.message);
+        if (checkinData?.text) batchToTranslate.push(checkinData.text);
+        if (techData?.router_notes) batchToTranslate.push(techData.router_notes);
+        if (accessData?.full_address) batchToTranslate.push(accessData.full_address);
+
+        // SOS / Contacts
+        if (contactsData) {
+            if (contactsData.support_name) batchToTranslate.push(contactsData.support_name);
+            if (contactsData.custom_contacts) {
+                contactsData.custom_contacts.forEach((cc: any) => {
+                    if (cc.name) batchToTranslate.push(cc.name);
+                });
+            }
+            if (contactsData.emergency_contacts) {
+                contactsData.emergency_contacts.forEach((ec: any) => {
+                    if (ec.name) batchToTranslate.push(ec.name);
+                    if (ec.distance) batchToTranslate.push(ec.distance);
+                });
+            }
+        }
+
+        if (faqs && faqs.length > 0) {
+            faqs.forEach((f: any) => {
+                if (f.question) batchToTranslate.push(f.question);
+                if (f.answer) batchToTranslate.push(f.answer);
+            });
+        }
+
+        // Priority 2: Recommendations (Names & Descriptions)
+        if (activeToken && recommendations && recommendations.length > 0) {
+            recommendations.forEach((r: any) => {
+                if (r.name) batchToTranslate.push(r.name);
+                if (r.description) batchToTranslate.push(r.description);
+                // Also common sub-fields if they exist
+                if (r.personal_note) batchToTranslate.push(r.personal_note);
+            });
+        }
+
+        initialTranslations = await prefetchTranslations(batchToTranslate, initialLanguage, property.id);
+    }
 
     // ── Resolve the visual theme ──────────────────────────────────────────────
     const layoutThemeId: string =

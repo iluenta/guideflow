@@ -37,7 +37,9 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
         aiLoading,
         direction,
         mounted,
-        filteredSteps
+        filteredSteps,
+        isEditing,
+        resolvedPropertyId
     } = useWizard()
 
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
@@ -136,9 +138,10 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
                     onItemClick={handleTabChange}
                     isOpen={isSidebarOpen}
                     onClose={() => setIsSidebarOpen(false)}
-                    disabled={loading || !!aiLoading || property?.inventory_status === 'identifying' || property?.inventory_status === 'generating'}
+                    // Unblock sidebar navigation as soon as the property is created (resolvedPropertyId exists).
+                    // Only block if we are in the very first step before saving the property.
+                    disabled={loading || (!!aiLoading && !resolvedPropertyId)}
                 />
-
                 <main className="flex-1 px-4 lg:px-0 overflow-y-auto custom-scrollbar pb-24">
                     {mounted ? (
                         <AnimatePresence mode="wait" custom={direction}>
@@ -155,7 +158,7 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
                                     <SectionView
                                         title={stepMetadata[activeTab]?.title || activeTab}
                                         description={stepMetadata[activeTab]?.description || ''}
-                                        isEditMode={true} // In the wizard, it's mostly editing
+                                        isEditMode={true}
                                     >
                                         {React.Children.map(children, (child) => {
                                             if (!React.isValidElement(child)) return child

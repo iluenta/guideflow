@@ -238,14 +238,36 @@ export async function POST(req: Request) {
                 (appliance === 'aire' && /aire|ac\b|clima|calefacc/i.test(msgLower)) ||
                 (appliance === 'frigorifico' && /nevera|frigo|congelador/i.test(msgLower)) ||
                 (appliance === 'cocinar' && /cook|cocinar|hacer de comer|comida en casa/i.test(msgLower)) ||
-                (appliance === 'casa' && /stay|home|staying|inside|house|en casa|quedarse/i.test(msgLower))
+                (appliance === 'casa' && /stay|home|staying|inside|house|en casa|quedarse/i.test(msgLower) && !/hacer|hago|cocin|prepar|make/i.test(msgLower))
             )
 
-            const expansionTerms = detectedAppliance
-                ? applianceHints[detectedAppliance]
-                : ['usar', 'instrucciones', 'pasos', 'cómo funciona']  // fallback genérico mínimo
+            // Bug 2: RAG expansion para recetas
+            if (intent.foodSubtype === 'recipe') {
+                const FOOD_TO_APPLIANCE: Record<string, string> = {
+                    'pizza': 'horno',
+                    'pasta': 'horno vitrocerámica cocina',
+                    'cafe': 'cafetera',
+                    'café': 'cafetera',
+                    'tostada': 'tostadora',
+                    'arroz': 'vitrocerámica microondas cocina',
+                    'huevo': 'vitrocerámica cocina sartén',
+                    'carne': 'horno cocina vitrocerámica',
+                    'pescado': 'horno cocina vitrocerámica',
+                }
 
-            ragQuery = `${ragQuery} ${expansionTerms.join(' ')}`
+                const msg = lastMessage.toLowerCase()
+                const detectedFood = Object.keys(FOOD_TO_APPLIANCE).find(food => msg.includes(food))
+                const applianceExpansion = detectedFood ? FOOD_TO_APPLIANCE[detectedFood] : 'horno cocina vitrocerámica microondas'
+
+                ragQuery = `${ragQuery} ${applianceExpansion} instrucciones temperatura tiempo pasos`
+                console.log('[CHAT-DEBUG] Recipe expansion:', { detectedFood, applianceExpansion })
+            } else {
+                const expansionTerms = detectedAppliance
+                    ? applianceHints[detectedAppliance]
+                    : ['usar', 'instrucciones', 'pasos', 'cómo funciona']  // fallback genérico mínimo
+
+                ragQuery = `${ragQuery} ${expansionTerms.join(' ')}`
+            }
             console.log('[CHAT-DEBUG] Appliance expansion:', { detectedAppliance, ragQuery: ragQuery.substring(0, 120) })
         }
 
@@ -489,7 +511,10 @@ Solo usa este formato cuando tengas la dirección exacta en el CONTEXTO. No inve
 
         const noInventionAnchor = `
 ⛔ REGLA DE INFORMACIÓN FALTANTE:
-1. Si el huésped pregunta sobre COCINAR o QUEDARSE EN CASA y no tienes detalles específicos en el contexto: "No tengo detalles específicos guardados sobre eso, pero puedes usar la cocina y las instalaciones del alojamiento. Para dudas concretas sobre el equipamiento, contacta con ${supportContact}."
+1. Si el huésped pregunta sobre COCINAR o QUEDARSE EN CASA y no tienes instrucciones paso a paso:
+   - REVISA el [LISTA DE ELECTRODOMÉSTICOS Y EQUIPAMIENTO DISPONIBLE] en el CONTEXTO.
+   - Si el equipamiento existe (ej: hay horno, hay cafetera), confirma proactivamente que dispone de él: "No tengo el manual paso a paso para eso, pero dispones de [aparato] en la cocina para usarlo libremente. Para dudas urgentes, contacta con ${supportContact}."
+   - Si no hay rastro del equipamiento, usa el fallback: "No tengo detalles específicos sobre el equipamiento de cocina, pero puedes usar las instalaciones. Contacta con ${supportContact} para cualquier duda."
 2. Para cualquier otra información que NO esté en el CONTEXTO (excepto flujos de recomendación), responde exactamente: "No tengo esa información guardada. Contacta con ${supportContact}."
 3. NUNCA inventes con conocimiento externo al CONTEXTO.`;
 

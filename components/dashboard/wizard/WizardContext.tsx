@@ -35,6 +35,7 @@ interface WizardContextType {
     manualEditDetected: boolean
     direction: number
     mounted: boolean
+    isEditing: boolean
 
     // Refs
     lastGeocodedAddressRef: React.MutableRefObject<string>
@@ -65,6 +66,7 @@ interface WizardContextType {
     handleAIFill: (section: string, category?: string, overrideData?: { address?: string, coordinates?: GeocodingResult }) => Promise<void>
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
     handleStepImageUpload: (idx: number, e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
+    resolvedPropertyId: string | null
 }
 
 const WizardContext = createContext<WizardContextType | undefined>(undefined)
@@ -445,11 +447,11 @@ export function WizardProvider({
         }
     }, [searchParams, mounted, effectivePropertyId, activeTab])
 
-    // The real property ID to use everywhere: prioritise the just-created property?.id
-    // so actions work even when the URL still shows "new".
     const resolvedPropertyId: string | null = property?.id || effectivePropertyId
+    const isEditing = !isAltaMode && !!resolvedPropertyId
 
     const handleTabChange = (value: string) => {
+        // Only block if we are creating a brand new property AND trying to leave the first tab
         if (!resolvedPropertyId && value !== 'property') {
             toast({
                 title: '⚠️ Guarda el Paso 1 primero',
@@ -458,6 +460,8 @@ export function WizardProvider({
             })
             return
         }
+
+        // If it's an existing property, or we are in the first tab, allow navigation
         const index = filteredSteps.indexOf(value)
         const currentIndex = filteredSteps.indexOf(activeTab)
         setDirection(index > currentIndex ? 1 : -1)
@@ -565,9 +569,13 @@ export function WizardProvider({
                     return
                 }
 
-                const nextIdx = steps.indexOf(category) + 1
-                if (nextIdx < steps.length) {
-                    handleTabChange(steps[nextIdx])
+                // Only auto-navigate to next step if we are in "Alta" mode (initial setup)
+                // In edit mode (isEditing), we stay in the same tab unless forced.
+                if (isAltaMode || forcedNextTab) {
+                    const nextTab = forcedNextTab || steps[steps.indexOf(category) + 1]
+                    if (nextTab && steps.includes(nextTab)) {
+                        handleTabChange(nextTab)
+                    }
                 }
             }
         } catch (e: any) {
@@ -893,54 +901,52 @@ export function WizardProvider({
         }
     }
 
-    const value = {
-        // Use resolvedPropertyId so WizardNavigation's canContinue is true as soon
-        // as Step 1 is saved (property?.id set), even before URL changes.
-        propertyId: resolvedPropertyId,
-        tenantId: tenantId || null,
-        activeTab,
-        loading,
-        aiLoading,
-        property,
-        data,
-        completedSteps,
-        uploading,
-        geocoding,
-        geocodingResult,
-        validationResult,
-        aiProgress,
-        showRegenerateAlert,
-        manualEditDetected,
-        direction,
-        mounted,
-        lastGeocodedAddressRef,
-        lastAIPositionRef,
-        setData,
-        setProperty,
-        setLoading,
-        setAiLoading,
-        setUploading,
-        setGeocoding,
-        setGeocodingResult,
-        setValidationResult,
-        setAiProgress,
-        setShowRegenerateAlert,
-        setManualEditDetected,
-        setDirection,
-        setCompletedSteps,
-        filteredSteps,
-        handleTabChange,
-        handleNext,
-        handleBack,
-        saveStep,
-        handleGeocode,
-        handleAIFill,
-        handleImageUpload,
-        handleStepImageUpload
-    }
-
     return (
-        <WizardContext.Provider value={value}>
+        <WizardContext.Provider value={{
+            propertyId: effectivePropertyId,
+            tenantId: tenantId || null,
+            activeTab,
+            loading,
+            aiLoading,
+            property,
+            data,
+            completedSteps,
+            uploading,
+            geocoding,
+            geocodingResult,
+            validationResult,
+            aiProgress,
+            showRegenerateAlert,
+            manualEditDetected,
+            direction,
+            mounted,
+            isEditing,
+            resolvedPropertyId,
+            lastGeocodedAddressRef,
+            lastAIPositionRef,
+            setData,
+            setProperty,
+            setLoading,
+            setAiLoading,
+            setUploading,
+            setGeocoding,
+            setGeocodingResult,
+            setValidationResult,
+            setAiProgress,
+            setShowRegenerateAlert,
+            setManualEditDetected,
+            setDirection,
+            setCompletedSteps,
+            filteredSteps,
+            handleTabChange,
+            handleNext,
+            handleBack,
+            saveStep,
+            handleGeocode,
+            handleAIFill,
+            handleImageUpload,
+            handleStepImageUpload
+        }}>
             {children}
         </WizardContext.Provider>
     )

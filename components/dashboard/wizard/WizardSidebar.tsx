@@ -88,7 +88,7 @@ export function WizardSidebar({
                                         isActive
                                             ? "bg-[#316263]/5 text-[#316263] border border-[#316263]/10"
                                             : "text-slate-500 hover:bg-slate-50 border border-transparent",
-                                        disabled && "opacity-50 cursor-not-allowed grayscale"
+                                        disabled && "opacity-50 cursor-not-allowed grayscale pointer-events-auto"
                                     )}
                                 >
                                     <div className="flex items-center gap-4">

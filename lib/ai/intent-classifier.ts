@@ -28,6 +28,7 @@ export type FoodSubtype =
     | 'asiatico'
     | 'alta_cocina'
     | 'internacional'
+    | 'recipe' // Nueva subcategoría para preguntas de cómo cocinar en casa
     | 'general'
     | null
 
@@ -63,7 +64,7 @@ VALORES PERMITIDOS para "intent":
 - "recommendation_activity": qué hacer, ocio, turismo, museos, visitas, actividades, noche, copas
 - "recommendation_shopping": tiendas, compras, souvenirs, centro comercial, mercado, ropa, zapatos, moda, clothing store, mall, fashion, supermercado
 - "recommendation_other": otras recomendaciones que no encajan en las anteriores
-- "property_info": WiFi, contraseña, normas, check-in, check-out, acceso, llaves, parking, dirección, COCINAR, quedarse en casa, equipamiento del hogar, cocina, estar en el alojamiento.
+- "property_info": WiFi, contraseña, normas, check-in, check-out, acceso, llaves, parking, dirección, equipamiento del hogar, instalaciones, estar en el alojamiento.
 - "standard": cualquier otra pregunta que no encaje arriba
 
 VALORES PERMITIDOS para "foodSubtype" (solo si intent es "recommendation_food"):
@@ -78,8 +79,9 @@ VALORES PERMITIDOS para "foodSubtype" (solo si intent es "recommendation_food"):
 - "asiatico": asiático, japonés, chino, thai, sushi, ramen, wok
 - "alta_cocina": gourmet, fine dining, estrella michelin
 - "internacional": internacional, fusión, variado
+- "recipe": el huésped pregunta CÓMO PREPARAR o COCINAR algo en el alojamiento (ej: "cómo hago una pizza", "cómo se hace un café", "quiero cocinar pasta", "receta de algo")
 - "general": quiere comer pero no especifica tipo de cocina ni momento del día
-- null: si intent NO es "recommendation_food"
+- null: si intent NO es "recommendation_food" ni "appliance_usage" (para recetas)
 
 Para "isGenericFood": true si el huésped NO ha especificado un tipo de COCINA (ej: italiano, asiático, hamburguesería). 
 - Si solo dice "tengo hambre", "donde como", "donde ceno", "donde desayuno" -> isGenericFood: true.
@@ -95,10 +97,9 @@ EJEMPLOS:
 - "la lavadora pone E5" → intent: "error_code", detectedErrorCode: "E5"
 - "huele a quemado" → intent: "emergency"
 - "el microondas no enciende" → intent: "appliance_problem"
-- "cómo pongo el horno" → intent: "appliance_usage"
-- "cuál es la contraseña del wifi" → intent: "property_info"
-- "a qué hora tengo que salir" → intent: "property_info"
-- "qué hay para hacer por aquí" → intent: "recommendation_activity"
+- "cómo hago una pizza" → intent: "appliance_usage", foodSubtype: "recipe", isGenericFood: false
+- "quiero cocinar algo en casa" → intent: "appliance_usage", foodSubtype: "recipe", isGenericFood: true
+- "cómo se usa la cafetera" → intent: "appliance_usage", foodSubtype: "recipe" (si implica preparar algo)
 - "¿dónde puedo tomarme algo rico?" → intent: "recommendation_food", foodSubtype: "general", isGenericFood: true
 
 Responde SOLO con el JSON. Sin explicaciones, sin markdown, sin backticks.`
