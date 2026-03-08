@@ -312,7 +312,7 @@ export async function POST(req: Request) {
             supabase.from('properties').select('*').eq('id', propertyId).single(),
             supabase.from('property_branding').select('*').eq('property_id', propertyId).single(),
             supabase.from('property_context').select('category, content').eq('property_id', propertyId)
-                .in('category', ['tech', 'rules', 'access', 'contacts', 'notes'])
+                .in('category', ['tech', 'rules', 'access', 'contacts', 'notes', 'inventory'])
         ]);
 
         const isGenericFoodSearch = intent.intent === 'recommendation_food' && intent.isGenericFood;
@@ -409,6 +409,17 @@ export async function POST(req: Request) {
                 }
                 return `[${label}]: ${contentString.replace(brandRegex, '')}`;
             }),
+
+            // B2. Inventario (Equipamiento)
+            ...(criticalContext?.filter((c: any) => c.category === 'inventory').map((c: any) => {
+                const items = Array.isArray(c.content) ? c.content : (c.content?.selected_items || []);
+                const presentItems = items.filter((i: any) => i.isPresent).map((i: any) => {
+                    let text = `- ${i.name}`;
+                    if (i.customContext) text += ` (${i.customContext})`;
+                    return text;
+                }).join('\n');
+                return `[LISTA DE ELECTRODOMÉSTICOS Y EQUIPAMIENTO DISPONIBLE]:\n${presentItems}`;
+            }) || []),
 
             // C. Recomendaciones de DB
             ...(isRecommendationQuery && directRecommendations.length > 0 ? (() => {
@@ -513,15 +524,14 @@ Solo usa este formato cuando tengas la dirección exacta en el CONTEXTO. No inve
 1. TAREAS EN EL APARTAMENTO (lavar ropa, cocinar, poner el aire, etc.):
    PASO A: Busca en el CONTEXTO si hay un manual o instrucciones específicas para el aparato necesario.
    - Si hay manual → úsalo como base principal de tu respuesta.
-   - Si no hay manual → comprueba si el aparato aparece en [LISTA DE ELECTRODOMÉSTICOS Y EQUIPAMIENTO DISPONIBLE].
-     · Si el aparato existe → confirma que está disponible y añade consejos prácticos generales de uso.
-     · Si el aparato NO existe → di que no tienes información sobre ese equipamiento y sugiere contactar con ${supportContact}.
-   PASO B: Puedes complementar con consejos prácticos generales de uso (temperatura, programas estándar, tiempos).
-   Estos consejos generales SÍ están permitidos como complemento. NO son "información inventada".
-   ⚠️ NUNCA confirmes que existe un aparato que no aparece en el CONTEXTO.
+   - Si no hay manual → comprueba si el aparato aparece en la lista de equipamiento disponible.
+     · Si el aparato existe → confirma que está disponible y añade consejos prácticos generales de uso si los conoces.
+     · Si el aparato NO existe → dí que no tienes información confirmada sobre ese equipamiento específico para este alojamiento y sugiere contactar con ${supportContact}.
+   PASO B: Complementa con consejos prácticos generales de uso. Estos consejos SÍ están permitidos.
+   ⚠️ NUNCA menciones etiquetas técnicas internas como "[LISTA DE...]" ni confirmes la existencia de algo que no veas en tu información.
 
 2. INFORMACIÓN DEL APARTAMENTO (normas, acceso, WiFi, etc.):
-   Usa solo lo que está en el CONTEXTO. Si no está: "No tengo esa información. Contacta con ${supportContact}."
+   Usa solo lo que está en el CONTEXTO. Si no está: "No tengo esa información grabada. Lo mejor es que contactes con ${supportContact}."
 
 3. NUNCA inventes características específicas del apartamento ni datos que no estén en el CONTEXTO.`
 
