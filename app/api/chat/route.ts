@@ -415,7 +415,7 @@ export async function POST(req: Request) {
                 const items = Array.isArray(c.content) ? c.content : (c.content?.selected_items || []);
                 const presentItems = items.filter((i: any) => i.isPresent).map((i: any) => {
                     let text = `- ${i.name}`;
-                    if (i.customContext) text += ` (${i.customContext})`;
+                    if (i.customContext) text += `: ${i.customContext}`;
                     return text;
                 }).join('\n');
                 return `[INVENTARIO_Y_EQUIPAMIENTO]:\n${presentItems}`;
@@ -522,11 +522,11 @@ Solo usa este formato cuando tengas la dirección exacta en el CONTEXTO. No inve
 # REGLAS DE INFORMACIÓN (CRÍTICO):
 1. USA SOLO EL CONTEXTO: No inventes nada. Si algo no está, di que no tienes información y sugiere contactar con ${supportContact}.
 2. TAREAS Y EQUIPAMIENTO:
-   - Si el huésped quiere hacer algo (cocinar, lavar, etc.) o busca un objeto:
-     a) Busca el MANUAL del aparato → Es la verdad absoluta.
-     b) Si no hay manual, busca en [INVENTARIO_Y_EQUIPAMIENTO].
-     c) **PRIORIDAD MÁXIMA A LAS NOTAS**: Si un objeto tiene una nota entre paréntesis "(...) ", ÚSALA. Es la ubicación o instrucción exacta del anfitrión (ej: "Sartenes (en el horno)").
-     d) Si no hay manual ni nota, da consejos generales SÓLO si el objeto existe en el inventario.
+   - Si el huésped busca un objeto (ollas, sartenes, cafetera, etc.):
+     a) Busca el objeto en [INVENTARIO_Y_EQUIPAMIENTO].
+     b) **LEE LA NOTA COMPLETA**: Cada objeto puede tener una nota del anfitrión tras los dos puntos (:). **LÉELA ENTERA Y CON CUIDADO**. 
+     c) **DISTINGUE UBICACIONES**: Si la nota menciona varios lugares para diferentes objetos (ej: "las sartenes en X, las ollas en Y"), responde con esa distinción exacta.
+     d) **PRIORIDAD MÁXIMA**: La nota del anfitrión es la ÚNICA verdad. No supongas ubicaciones estándar si hay una nota.
 3. TONO: Natural, amistoso, tipo WhatsApp. No menciones etiquetas técnicas ni digas "según el manual".`;
 
         let systemInstruction: string;
