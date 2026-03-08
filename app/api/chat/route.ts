@@ -312,7 +312,7 @@ export async function POST(req: Request) {
             supabase.from('properties').select('*').eq('id', propertyId).single(),
             supabase.from('property_branding').select('*').eq('property_id', propertyId).single(),
             supabase.from('property_context').select('category, content').eq('property_id', propertyId)
-                .in('category', ['tech', 'rules', 'access', 'contacts', 'notes', 'inventory'])
+                .in('category', ['tech', 'rules', 'access', 'contacts', 'notes', 'inventory', 'welcome', 'checkin'])
         ]);
 
         const isGenericFoodSearch = intent.intent === 'recommendation_food' && intent.isGenericFood;
@@ -418,6 +418,7 @@ export async function POST(req: Request) {
                     if (i.customContext) text += ` (${i.customContext})`;
                     return text;
                 }).join('\n');
+                console.log('[CHAT-DEBUG] Formatted Inventory:', presentItems);
                 return `[LISTA DE ELECTRODOMÉSTICOS Y EQUIPAMIENTO DISPONIBLE]:\n${presentItems}`;
             }) || []),
 
@@ -525,8 +526,10 @@ Solo usa este formato cuando tengas la dirección exacta en el CONTEXTO. No inve
    PASO A: Busca en el CONTEXTO si hay un manual o instrucciones específicas para el aparato necesario.
    - Si hay manual → úsalo como base principal de tu respuesta.
    - Si no hay manual → comprueba si el aparato aparece en la lista de equipamiento disponible.
-     · Si el aparato existe → confirma que está disponible y añade consejos prácticos generales de uso si los conoces.
-     · Si el aparato NO existe → dí que no tienes información confirmada sobre ese equipamiento específico para este alojamiento y sugiere contactar con ${supportContact}.
+     · Si el aparato existe → confirma que está disponible. **REVISA SI TIENE UNA UBICACIÓN ENTRE PARÉNTESIS (Ej: "Sartenes (en el horno)")**.
+     · PRIORIDAD MÁXIMA: Si hay una nota entre paréntesis, úsala como ÚNICA ubicación válida. No supongas otra.
+     · Si no tiene nota → añade consejos prácticos generales de uso si los conoces.
+     · Si el aparato NO existe → dí que no tienes información confirmada sobre ese equipamiento específico y sugiere contactar con ${supportContact}.
    PASO B: Complementa con consejos prácticos generales de uso. Estos consejos SÍ están permitidos.
    ⚠️ NUNCA menciones etiquetas técnicas internas como "[LISTA DE...]" ni confirmes la existencia de algo que no veas en tu información.
 
