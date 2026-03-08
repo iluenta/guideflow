@@ -418,8 +418,7 @@ export async function POST(req: Request) {
                     if (i.customContext) text += ` (${i.customContext})`;
                     return text;
                 }).join('\n');
-                console.log('[CHAT-DEBUG] Formatted Inventory:', presentItems);
-                return `[LISTA DE ELECTRODOMÉSTICOS Y EQUIPAMIENTO DISPONIBLE]:\n${presentItems}`;
+                return `[INVENTARIO_Y_EQUIPAMIENTO]:\n${presentItems}`;
             }) || []),
 
             // C. Recomendaciones de DB
@@ -519,24 +518,16 @@ Solo usa este formato cuando tengas la dirección exacta en el CONTEXTO. No inve
             ? TASK_TO_CONTEXT[detectedTask]?.practicalTip || null
             : null
 
-        const noInventionAnchor = `
-⛔ REGLAS DE INFORMACIÓN:
-
-1. TAREAS EN EL APARTAMENTO (lavar ropa, cocinar, poner el aire, etc.):
-   PASO A: Busca en el CONTEXTO si hay un manual o instrucciones específicas para el aparato necesario.
-   - Si hay manual → úsalo como base principal de tu respuesta.
-   - Si no hay manual → comprueba si el aparato aparece en la lista de equipamiento disponible.
-     · Si el aparato existe → confirma que está disponible. **REVISA SI TIENE UNA UBICACIÓN ENTRE PARÉNTESIS (Ej: "Sartenes (en el horno)")**.
-     · PRIORIDAD MÁXIMA: Si hay una nota entre paréntesis, úsala como ÚNICA ubicación válida. No supongas otra.
-     · Si no tiene nota → añade consejos prácticos generales de uso si los conoces.
-     · Si el aparato NO existe → dí que no tienes información confirmada sobre ese equipamiento específico y sugiere contactar con ${supportContact}.
-   PASO B: Complementa con consejos prácticos generales de uso. Estos consejos SÍ están permitidos.
-   ⚠️ NUNCA menciones etiquetas técnicas internas como "[LISTA DE...]" ni confirmes la existencia de algo que no veas en tu información.
-
-2. INFORMACIÓN DEL APARTAMENTO (normas, acceso, WiFi, etc.):
-   Usa solo lo que está en el CONTEXTO. Si no está: "No tengo esa información grabada. Lo mejor es que contactes con ${supportContact}."
-
-3. NUNCA inventes características específicas del apartamento ni datos que no estén en el CONTEXTO.`
+        const coreRulesBlock = `
+# REGLAS DE INFORMACIÓN (CRÍTICO):
+1. USA SOLO EL CONTEXTO: No inventes nada. Si algo no está, di que no tienes información y sugiere contactar con ${supportContact}.
+2. TAREAS Y EQUIPAMIENTO:
+   - Si el huésped quiere hacer algo (cocinar, lavar, etc.) o busca un objeto:
+     a) Busca el MANUAL del aparato → Es la verdad absoluta.
+     b) Si no hay manual, busca en [INVENTARIO_Y_EQUIPAMIENTO].
+     c) **PRIORIDAD MÁXIMA A LAS NOTAS**: Si un objeto tiene una nota entre paréntesis "(...) ", ÚSALA. Es la ubicación o instrucción exacta del anfitrión (ej: "Sartenes (en el horno)").
+     d) Si no hay manual ni nota, da consejos generales SÓLO si el objeto existe en el inventario.
+3. TONO: Natural, amistoso, tipo WhatsApp. No menciones etiquetas técnicas ni digas "según el manual".`;
 
         let systemInstruction: string;
 
@@ -549,7 +540,7 @@ No intentes diagnosticar. Prioridad absoluta: seguridad del huésped.
 NUNCA menciones "el manual" ni "la documentación".
 Incluye siempre la dirección del apartamento: ${criticalContext?.find((c: any) => c.category === 'access')?.content?.address || propertyInfo?.address || 'la dirección del alojamiento'}
 
-${noInventionAnchor}`;
+${coreRulesBlock}`;
 
         } else if (detectedErrorCode) {
             systemInstruction = `Eres el asistente del apartamento "${propertyInfo?.name || 'este apartamento'}". El huésped tiene el código de error: ${detectedErrorCode}.
@@ -572,7 +563,7 @@ Explica la solución paso a paso, máximo 5 líneas, tono natural.
 # CONTEXTO:
 ${formattedContext}
 
-${noInventionAnchor}`;
+${coreRulesBlock}`;
 
         } else {
             const catLabelNames: Record<string, string> = {
@@ -604,53 +595,28 @@ ${hasDirectRecs ? (
 
             // ── NUEVO: bloque específico para tareas ──
             const taskGuidance = isApplianceTaskQuery ? `
-# TAREA SOLICITADA: ${detectedTask || 'uso de equipamiento'}
-El huésped quiere realizar una tarea. Sigue este orden estricto:
-
-PRIORIDAD 1 — Si el CONTEXTO contiene un manual o guía del aparato necesario:
-→ Usa EXCLUSIVAMENTE la información del manual. NO añadas consejos externos.
-→ Extrae del manual las instrucciones específicas para esta tarea.
-→ Ejemplo: si el manual menciona "Función Pizza", di exactamente que existe esa función y cómo usarla.
-→ ⛔ PROHIBIDO usar "si tiene esa función" o "comprueba si tiene" cuando el manual ya lo especifica.
-
-PRIORIDAD 2 — Si NO hay manual pero el aparato aparece en el inventario:
-→ Confirma que el aparato está disponible.
-${taskPracticalTip ? `→ Puedes añadir estos consejos prácticos generales: ${taskPracticalTip}` : ''}
-
-PRIORIDAD 3 — Si el aparato NO aparece en el CONTEXTO:
-→ "No tengo información sobre ese equipamiento. Contacta con ${supportContact}."
+# TAREA DETECTADA: ${detectedTask || 'uso de equipamiento'}
+1. Confirma si el equipamiento necesario está en el [INVENTARIO_Y_EQUIPAMIENTO] o tiene [GUÍA_TÉCNICA].
+2. Si tiene nota de ubicación en el inventario, menciónala inmediatamente.
+${taskPracticalTip ? `3. Consejos útiles: ${taskPracticalTip}` : ''}
 ` : '';
 
             systemInstruction = `Eres el asistente personal del apartamento "${propertyInfo?.name || 'este apartamento'}".
 ${languageHandlingBlock}
 ${mapFormatBlock}
+${coreRulesBlock}
 
-# TU FORMA DE SER:
-- Hablas como un amigo que conoce bien el apartamento.
-- Das respuestas prácticas y útiles, no técnicas.
-- Tono natural, como WhatsApp.
-- ⛔ NO incluyas fecha, día de la semana, hora ni icono 📍 en tu respuesta.
-
-# REGLAS DE INFORMACIÓN:
-1. Para preguntas del apartamento (normas, acceso, WiFi, electrodomésticos): usa solo el CONTEXTO.
-2. Para ubicación de objetos: prioriza [LISTA DE ELECTRODOMÉSTICOS Y EQUIPAMIENTO DISPONIBLE].
-3. Para recomendaciones: usa los datos del CONTEXTO con la lista del anfitrión.
-4. WiFi: pon SIEMPRE red y contraseña entre backticks (\`). Ejemplo: \`MiRed_5G\` / \`12345678\`.
-5. Streaming (Netflix, Disney+, Prime Video, YouTube, HBO, etc.):
-   - Si el manual menciona un botón específico, tu PRIMERA instrucción debe ser pulsar ese botón.
-   - Prohibido usar "si lo tiene" o "comprueba". Afirma directamente.
-6. ⛔ No incluyas etiquetas internas en tu respuesta ([GUÍA_TÉCNICA], etc.).
-7. ⛔ No menciones el modelo específico del aparato. Usa solo el nombre común.
-8. ❌ NUNCA menciones "el manual" ni "la documentación".
-9. ⛔ El nombre de restaurantes/tiendas debe ir SIEMPRE en negrita (**Nombre**).
-
+# REGLAS ESPECÍFICAS:
+1. WiFi: pon SIEMPRE red y contraseña entre backticks (\`). Ejemplo: \`MiRed_5G\` / \`12345678\`.
+2. Streaming: Si el manual dice un botón, dilo. No dudes.
+3. ⛔ No menciones etiquetas internas ([GUÍA_TÉCNICA], [INVENTARIO_Y_EQUIPAMIENTO], etc.).
+4. ⛔ No menciones "el manual" ni "la documentación".
+ 
 ${taskGuidance}
 ${recommendationGuidance}
-
+ 
 # CONTEXTO:
-${formattedContext}
-
-${noInventionAnchor}`;
+${formattedContext}`;
         }
 
         // ═══════════════════════════════════════════════════════
