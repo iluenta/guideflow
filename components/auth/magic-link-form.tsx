@@ -118,7 +118,7 @@ function MagicLinkFormContent({ mode, onSuccess, hideError = false }: MagicLinkF
   )
 }
 
-export function MagicLinkForm({ mode, onSuccess }: MagicLinkFormProps) {
+export function MagicLinkForm({ mode, onSuccess, hideError }: MagicLinkFormProps) {
   return (
     <Suspense fallback={
       <div className="space-y-4">
@@ -138,7 +138,7 @@ export function MagicLinkForm({ mode, onSuccess }: MagicLinkFormProps) {
         </Button>
       </div>
     }>
-      <MagicLinkFormContent mode={mode} onSuccess={onSuccess} />
+      <MagicLinkFormContent mode={mode} onSuccess={onSuccess} hideError={hideError} />
     </Suspense>
   )
 }
