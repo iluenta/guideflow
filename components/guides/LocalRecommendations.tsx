@@ -101,8 +101,10 @@ export function LocalRecommendations({
                 ...rec,
                 time: rec.time || rec.metadata?.time || '',
                 price_range: rec.price_range || rec.metadata?.price_range || '',
-                personal_note: rec.personal_note || rec.metadata?.personal_note || ''
+                personal_note: rec.personal_note || rec.metadata?.personal_note || '',
+                google_place_id: rec.google_place_id || rec.metadata?.google_place_id || ''
             })
+
         } else {
             setEditingRec({
                 name: '',

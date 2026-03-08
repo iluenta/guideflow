@@ -43,10 +43,12 @@ interface Recommendation {
     price_range?: string;
     personal_note?: string;
     map_url?: string;
+    google_place_id?: string;
     metadata?: {
         time?: string;
         price_range?: string;
         personal_note?: string;
+        google_place_id?: string;
     };
 }
 
@@ -348,14 +350,19 @@ export function RecommendationsView({
 
         const locationContext = city ? ` ${city}` : '';
         const query = encodeURIComponent(`${rec.name}${locationContext}`);
+        const placeId = rec.google_place_id || rec.metadata?.google_place_id;
 
         const isIOS = typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent);
         const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
 
-        if (isIOS) return `maps://?q=${query}`;
-        if (isAndroid) return `geo:0,0?q=${query}`;
+        if (isIOS) return `maps://?q=${query}${placeId ? `&placeid=${placeId}` : ''}`;
+        if (isAndroid) return `geo:0,0?q=${query}${placeId ? `(${query})` : ''}`;
 
-        return `https://www.google.com/maps/search/?api=1&query=${query}`;
+        let url = `https://www.google.com/maps/search/?api=1&query=${query}`;
+        if (placeId) {
+            url += `&query_place_id=${placeId}`;
+        }
+        return url;
     };
 
     const toggleExpand = (id: string) => {

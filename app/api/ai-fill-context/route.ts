@@ -175,7 +175,7 @@ export async function POST(req: Request) {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       const placesContext = placesResults.slice(0, 15).map(r =>
-        `- ${r.name} (${r.gfCategory}): ${r.vicinity || r.formatted_address}. Calificación: ${r.rating || 'N/A'}`
+        `- ${r.name} (${r.gfCategory}): ${r.vicinity || r.formatted_address}. Calificación: ${r.rating || 'N/A'}. ID: ${r.place_id}`
       ).join('\n');
 
       const isTodos = selectedCat === 'todos';
@@ -194,11 +194,12 @@ INSTRUCCIONES:
 1. Genera exactamente ${numRequested} recomendaciones${isTodos ? ` (distribuidas equilibradamente entre esta lista de categorías: ${categoryListSlugs})` : ''}.
 2. **NO DUPLIQUES** estos sitios que ya tengo en mi lista: ${existingNamesStr || 'ninguno'}.
 3. Devuelve un objeto JSON con un array llamado "recommendations".
-4. Cada objeto debe tener obligatoriamente: "name", "description" (máx 150 caracteres), "distance" (ej: "500m", "5 min en coche"), y "type".
+4. Cada objeto debe tener obligatoriamente: "name", "description" (máx 150 caracteres), "distance" (ej: "500m", "5 min en coche"), "type" y "google_place_id".
 5. **CRÍTICO**: El campo "type" DEBE ser exactamente uno de estos slugs (EN MINÚSCULAS): ${categoryListSlugs}.
-6. Si la categoría es gastronómica, intenta asignar el slug más específico (ej: "italiano" en lugar de "restaurantes" si es una pizzería).
-7. El tono debe ser hospitalario y personal.
-8. NO incluyas texto fuera del JSON.
+6. El campo "google_place_id" DEBE ser el ID correspondiente del Contexto de Google Places si el sitio existe allí. Si es un sitio inventado o no está en la lista de arriba, pon null.
+7. Si la categoría es gastronómica, intenta asignar el slug más específico (ej: "italiano" en lugar de "restaurantes" si es una pizzería).
+8. El tono debe ser hospitalario y personal.
+9. NO incluyas texto fuera del JSON.
 
 JSON:`;
 
@@ -210,6 +211,7 @@ JSON:`;
       const recommendations = Array.isArray(parsed.recommendations)
         ? parsed.recommendations
         : (Array.isArray(parsed) ? parsed : []);
+
 
       return new Response(JSON.stringify({ recommendations, debugLog }), {
         headers: { 'Content-Type': 'application/json' }

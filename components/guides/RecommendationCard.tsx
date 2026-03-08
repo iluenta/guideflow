@@ -16,10 +16,12 @@ export interface Recommendation {
     description?: string
     personal_note?: string
     category?: string
+    google_place_id?: string
     metadata?: {
         time?: string
         price_range?: string
         personal_note?: string
+        google_place_id?: string
     }
 }
 
