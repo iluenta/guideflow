@@ -24,6 +24,7 @@ import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { getGuideTheme } from '@/lib/guide-theme';
 import { cn } from '@/lib/utils';
 import supabaseLoader from '@/lib/image-loader';
+import { DynamicRecommendationWidget } from './DynamicRecommendationWidget';
 
 
 interface Fase11HomeProps {
@@ -92,28 +93,7 @@ export function Fase11Home({
 
     // Dynamic Translations
     const { content: localizedPropertyName } = useLocalizedContent(propertyName, currentLanguage, 'general', accessToken, propertyId);
-
-    // Logic for Tip of the Day
-    const { content: labelBuenosDias } = useLocalizedContent('BUENOS DÍAS', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelBuenasTardes } = useLocalizedContent('BUENAS TARDES', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelBuenasNoches } = useLocalizedContent('BUENAS NOCHES', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: greetingLabel } = useLocalizedContent('Hola', currentLanguage, 'ui_label', accessToken, propertyId);
-
-    const timeInfo = useMemo(() => {
-        const hour = new Date().getHours();
-        const timeStr = new Date().toLocaleTimeString(currentLanguage === 'es' ? 'es-ES' : 'en-US', { hour: '2-digit', minute: '2-digit' });
-
-        if (hour >= 5 && hour < 12) return { greeting: labelBuenosDias, time: timeStr, category: 'desayuno' };
-        if (hour >= 12 && hour < 20) return { greeting: labelBuenasTardes, time: timeStr, category: 'restaurantes' };
-        return { greeting: labelBuenasNoches, time: timeStr, category: 'restaurantes' };
-    }, [currentLanguage, labelBuenosDias, labelBuenasTardes, labelBuenasNoches]);
-
-    const tipRecommendation = useMemo(() => {
-        if (!recommendations || recommendations.length === 0) return null;
-        const filtered = recommendations.filter(r => r.type === timeInfo.category || r.category === timeInfo.category);
-        if (filtered.length > 0) return filtered[0];
-        return recommendations[0]; // Fallback
-    }, [recommendations, timeInfo.category]);
 
     const hasRecommendations = recommendations && recommendations.length > 0;
     const EAT_SET = new Set(['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'restaurant', 'restaurante', 'cafe', 'bar', 'food', 'comida']);
@@ -123,9 +103,6 @@ export function Fase11Home({
     const eatRecs = recommendations.filter(r => EAT_SET.has(getRType(r)));
     const doRecs = recommendations.filter(r => DO_SET.has(getRType(r)));
     const shopRecs = recommendations.filter(r => SHOP_SET.has(getRType(r)));
-
-    const { content: localizedTipName } = useLocalizedContent(tipRecommendation?.name || '', currentLanguage, 'recommendations', accessToken, propertyId);
-    const { content: localizedTipDesc } = useLocalizedContent(tipRecommendation?.personal_note || tipRecommendation?.description || '', currentLanguage, 'recommendations', accessToken, propertyId);
 
     const { content: labelTuGuia } = useLocalizedContent('Tu Guía', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelRecomendacion } = useLocalizedContent('RECOMENDACIÓN', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -204,69 +181,15 @@ export function Fase11Home({
             </div>
 
             <div className="px-5 pb-10 -mt-6 relative z-10">
-                {/* Time-based Suggestion */}
-                {hasRecommendations && (
-                    <motion.div variants={item} className="mb-8">
-                        <Card className={cn('overflow-hidden border-none shadow-[0_10px_30px_rgba(0,0,0,0.08)]', t.cardBg)}>
-                            <div className="p-5">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className={cn('flex items-center gap-2', t.chipIconColor)}>
-                                        <Clock size={14} strokeWidth={2.5} />
-                                        <span className="text-[10px] font-black tracking-widest uppercase">
-                                            {timeInfo.time} • {timeInfo.greeting}
-                                        </span>
-                                    </div>
-                                    <span className="px-2 py-0.5 bg-[#f59e0b] text-white text-[9px] font-black rounded-full uppercase tracking-wider">
-                                        {labelRecomendacion}
-                                    </span>
-                                </div>
-
-                                {tipRecommendation ? (
-                                    <>
-                                        <h3 className={cn(
-                                            "text-xl font-serif font-bold text-gray-900 mb-2 leading-tight",
-                                            !localizedTipName && "h-7 w-40 bg-gray-100 animate-pulse rounded-md"
-                                        )}>
-                                            {localizedTipName}
-                                        </h3>
-                                        <div className={cn(
-                                            "text-[13px] text-gray-500 mb-4 leading-relaxed line-clamp-2",
-                                            !localizedTipDesc && "space-y-2"
-                                        )}>
-                                            {localizedTipDesc ? (
-                                                localizedTipDesc
-                                            ) : (
-                                                <>
-                                                    <div className="h-3 w-full bg-gray-50 animate-pulse rounded-sm" />
-                                                    <div className="h-3 w-3/4 bg-gray-50 animate-pulse rounded-sm" />
-                                                </>
-                                            )}
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <h3 className={cn(
-                                            "text-xl font-serif font-bold text-gray-900 mb-2 leading-tight",
-                                            !localizedTipName && "h-7 w-40 bg-gray-100 animate-pulse rounded-md"
-                                        )}>
-                                            {labelExploraZona}
-                                        </h3>
-                                        <p className="text-[13px] text-gray-500 mb-4 leading-relaxed">
-                                            {labelDescubreRincones}
-                                        </p>
-                                    </>
-                                )}
-
-                                <button
-                                    onClick={() => onNavigate('eat')}
-                                    className="text-xs font-black text-primary flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-widest"
-                                >
-                                    {labelVerRecomendaciones} <ChevronRight size={14} strokeWidth={3} />
-                                </button>
-                            </div>
-                        </Card>
-                    </motion.div>
-                )}
+                {/* Dynamic Time-based Suggestion */}
+                <DynamicRecommendationWidget
+                    recommendations={recommendations}
+                    currentLanguage={currentLanguage}
+                    onNavigate={onNavigate}
+                    accessToken={accessToken}
+                    propertyId={propertyId}
+                    theme={t}
+                />
 
                 {/* Essentials Grid */}
                 <motion.div variants={item} className="mb-10">

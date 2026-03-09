@@ -44,7 +44,7 @@ export type Property = {
     baths: number
     guests: number
     status: 'draft' | 'active' | 'archived'
-    description: string | null
+    description?: string | null  // eliminado en migration 033; opcional para compatibilidad
     main_image_url: string | null
     theme_config: any
     latitude: number | null
@@ -263,10 +263,12 @@ export async function createProperty(formData: Partial<Property>) {
         }
     }
 
+    // description fue eliminado en migration 033; excluir del insert
+    const { description: _d, ...payload } = formData as Partial<Property> & { description?: string }
     const { data, error } = await supabase
         .from('properties')
         .insert({
-            ...formData,
+            ...payload,
             tenant_id: tenant_id
         })
         .select()
@@ -312,10 +314,12 @@ export async function updateProperty(id: string, formData: Partial<Property>) {
     const currentPropId = sanitizeUUID(id)
     if (!currentPropId) throw new Error('ID de propiedad inválido')
 
-    // In Next.js Server Actions, even with RLS, we should be explicit
+    // description fue eliminado en migration 033; excluir del update
+    const { description: _d, ...payload } = formData as Partial<Property> & { description?: string }
+
     const { data, error } = await supabase
         .from('properties')
-        .update(formData)
+        .update(payload)
         .eq('id', currentPropId)
         .select()
         .maybeSingle()

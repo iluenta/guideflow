@@ -20,7 +20,6 @@ import { EmergencyView } from '@/components/guide/EmergencyView';
 import { RecommendationsView } from '@/components/guide/RecommendationsView';
 import { HouseInfoView } from '@/components/guide/HouseInfoView';
 import { HamburgerMenu } from '@/components/guide/HamburgerMenu';
-import { AssistantHome } from '@/components/guide/AssistantHome';
 import { Fase11Welcome } from '@/components/guide/Fase11Welcome';
 import { Fase11Home } from '@/components/guide/Fase11Home';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -129,7 +128,8 @@ export function GuideViewContainer({
         if (pageId === 'welcome') setActiveTab('hub');
         else if (pageId === 'home' || pageId === 'assistant') setActiveTab('hub');
         else if (pageId === 'eat' || pageId === 'food') setActiveTab('eat');
-        else if (pageId === 'do' || pageId === 'things-do' || pageId === 'leisure' || pageId === 'compras' || pageId === 'shopping') setActiveTab('leisure');
+        else if (pageId === 'do' || pageId === 'things-do' || pageId === 'leisure') setActiveTab('leisure');
+        else if (pageId === 'shop' || pageId === 'shopping' || pageId === 'compras') setActiveTab('leisure');
         else if (pageId === 'manuals' || pageId === 'info' || pageId === 'house-info' || pageId === 'wifi' || pageId === 'rules') setActiveTab('info');
         else setActiveTab('guide');
 
@@ -360,6 +360,7 @@ export function GuideViewContainer({
                     />
                 );
             case 'shopping':
+            case 'shop':
             case 'compras':
                 return (
                     <RecommendationsView
@@ -438,17 +439,24 @@ export function GuideViewContainer({
             default:
                 // Fallback for any other state
                 return (
-                    <AssistantHome
+                    <Fase11Home
                         propertyName={property.name}
-                        onExplore={() => setCurrentPage('home')}
+                        heroImage={property.main_image_url || branding?.hero_image_url || ''}
+                        location={property.city || ''}
+                        onBack={() => setCurrentPage('welcome')}
+                        onNavigate={handleNavigate}
                         onChatQuery={handleChatWithQuery}
                         currentLanguage={language}
-                        manuals={manuals}
+                        onLanguageChange={setLanguage}
                         recommendations={recommendations}
-                        context={context}
                         guestName={guestName}
                         accessToken={accessToken}
                         propertyId={property.id}
+                        themeId={themeId}
+                        context={displayContext}
+                        sections={sections}
+                        manuals={displayManuals}
+                        disabledLanguage={!!tokenLanguage}
                     />
                 );
         }

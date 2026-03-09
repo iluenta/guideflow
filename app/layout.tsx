@@ -52,9 +52,10 @@ export const metadata: Metadata = {
 
 const SW_SCRIPT = `
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('/sw.js');
-    });
+    var isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isDev) {
+      window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js'); });
+    }
   }
 `;
 

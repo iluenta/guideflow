@@ -728,7 +728,8 @@ export function WizardProvider({
                 ? {
                     address: finalAddressToUse,
                     category,
-                    existingNames: data.dining.map((r: any) => r.name)
+                    existingNames: data.dining.map((r: any) => r.name),
+                    coordinates: activeGeocodingResult ?? undefined
                 }
                 : (isTransport || section === 'contacts' ? { address: finalAddressToUse, coordinates: activeGeocodingResult } : undefined)
         }

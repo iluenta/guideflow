@@ -33,7 +33,12 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Stale-While-Revalidate strategy
+    // Nunca cachear _next (chunks de Next.js) - evitar 404 y rutas duplicadas
+    if (event.request.url.includes('/_next/')) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+    // Stale-While-Revalidate strategy para el resto
     event.respondWith(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.match(event.request).then((response) => {

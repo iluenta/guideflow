@@ -21,13 +21,13 @@ export async function saveWizardStep(
     const currentTenantId = sanitizeUUID(tenantId)
 
     if (category === 'property') {
+        // description eliminado en migration 033; no incluir en properties
         const propValues = {
             name: stepData.name,
             slug: stepData.slug,
             guests: stepData.guests,
             beds: stepData.beds,
             baths: stepData.baths,
-            description: stepData.description,
             main_image_url: stepData.main_image_url,
             theme_config: { primary_color: stepData.primary_color },
             latitude: stepData.latitude,
@@ -120,8 +120,13 @@ export async function saveWizardStep(
                     map_url: rec.map_url || null,
                     metadata: {
                         time: rec.time,
+                        price_level: rec.price_level,
                         price_range: rec.price_range,
                         personal_note: rec.personal_note,
+                        best_time_slots: rec.best_time_slots || [],
+                        atmosphere: rec.atmosphere,
+                        tags: rec.tags || [],
+                        availability: rec.availability || { days: ["todos"], notes: "" },
                         google_place_id: rec.google_place_id || null
                     }
                 }))
