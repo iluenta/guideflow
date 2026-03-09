@@ -55,7 +55,28 @@ export function LocalRecommendations({
 }: LocalRecommendationsProps) {
     const [selectedCategory, setSelectedCategory] = useState('todos')
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [isEssentialModalOpen, setIsEssentialModalOpen] = useState(false)
     const [editingRec, setEditingRec] = useState<Partial<Recommendation> | null>(null)
+
+    const essentialCategories = [
+        { id: 'supermercados', label: 'Supermercados', icon: Store, color: 'bg-orange-100 text-orange-700', desc: 'Para la compra del primer día' },
+        { id: 'restaurantes', label: 'Restaurantes', icon: Utensils, color: 'bg-blue-100 text-blue-700', desc: 'Si no quieren cocinar al llegar' },
+        { id: 'desayuno', label: 'Desayunos', icon: Coffee, color: 'bg-yellow-100 text-yellow-700', desc: 'Cafeterías para la primera mañana' },
+        { id: 'tapas', label: 'Tapas & Bares', icon: Pizza, color: 'bg-sky-100 text-sky-700', desc: 'Para salir a tomar algo la primera noche' },
+        { id: 'cultura', label: 'Cultura', icon: Landmark, color: 'bg-amber-100 text-amber-700', desc: 'Qué ver cerca sin planificar mucho' },
+        { id: 'naturaleza', label: 'Naturaleza', icon: Trees, color: 'bg-emerald-100 text-emerald-700', desc: 'Parques y zonas verdes cercanas' },
+        { id: 'ocio', label: 'Ocio nocturno', icon: Music, color: 'bg-purple-100 text-purple-700', desc: 'Bares de copas y música' },
+    ]
+
+    const otherCategories = [
+        { label: 'Italiano', icon: Pizza },
+        { label: 'Asiático', icon: UtensilsCrossed },
+        { label: 'Alta Cocina', icon: Star },
+        { label: 'Internacional', icon: Globe },
+        { label: 'Relax & Spa', icon: Coffee },
+        { label: 'Compras', icon: ShoppingBag },
+        { label: 'Hamburguesas', icon: Beef },
+    ]
 
     const filteredRecommendations = useMemo(() => {
         if (selectedCategory === 'todos') return recommendations
@@ -121,39 +142,51 @@ export function LocalRecommendations({
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Instructions / Tips Section */}
-            <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 sm:p-5 flex gap-4 items-start">
-                <div className="bg-primary/10 p-2 rounded-xl shrink-0">
-                    <Lightbulb className="w-5 h-5 text-primary" />
-                </div>
-                <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-primary italic">Consejo para una guía 5 estrellas</h4>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                        La IA busca sitios de interés turístico real basándose en tu ubicación. Si buscas en una categoría específica (ej: <strong>Cultura</strong>), obtendrás resultados mucho más profundos que en la vista general. ¡Añade tu toque personal editando la nota de cada sitio!
-                    </p>
-                </div>
-            </div>
+            {/* Redesigned Header Panel */}
+            <div className="bg-[#f0f9f9] border border-[#d1e9e9] rounded-2xl p-6 relative overflow-hidden group shadow-sm">
+                <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between relative z-10">
+                    <div className="flex gap-5 items-start">
+                        <div className="bg-[#316263] p-3 rounded-2xl shrink-0 shadow-lg shadow-teal-900/20">
+                            <Lightbulb className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="space-y-2 max-w-2xl">
+                            <h4 className="text-lg font-bold text-slate-900">Genera la guía esencial del primer día</h4>
+                            <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                                La IA buscará en Google Places los <span className="text-[#316263] font-bold">7 tipos de sitios más útiles</span> para tus huéspedes al llegar: supermercados, restaurantes, desayunos, tapas, cultura, naturaleza y ocio nocturno.{' '}
+                                <button
+                                    onClick={() => setIsEssentialModalOpen(true)}
+                                    className="text-[#316263] font-bold hover:underline inline-flex items-center gap-1"
+                                >
+                                    Ver detalle →
+                                </button>
+                            </p>
+                            <p className="text-xs text-slate-400 font-medium italic">
+                                ¿Quieres italiano, asiático, alta cocina u otras categorías? Selecciónalas en la barra inferior y usa "Sugerir con IA" para cada una por separado.
+                            </p>
+                        </div>
+                    </div>
 
-            {/* AI Suggestion Button */}
-            <div className="flex justify-end items-center gap-4 text-left">
-                <Button
-                    onClick={() => onAISuggest(selectedCategory)}
-                    disabled={aiLoading}
-                    variant="outline"
-                    className="w-full sm:w-auto border-slate-200 text-slate-600 hover:bg-[#316263] hover:text-white rounded-xl h-10 text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm"
-                >
-                    {aiLoading ? (
-                        <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />
-                            <span>Generando...</span>
-                        </>
-                    ) : (
-                        <>
-                            <Sparkles className="w-3.5 h-3.5 mr-2" />
-                            <span>Sugerir con IA</span>
-                        </>
-                    )}
-                </Button>
+                    <Button
+                        onClick={() => onAISuggest('todos')}
+                        disabled={aiLoading}
+                        className="w-full md:w-auto bg-[#316263] hover:bg-[#254d4e] text-white rounded-xl h-14 px-8 font-bold transition-all shadow-lg shadow-teal-900/10 flex items-center justify-center gap-3 active:scale-95 shrink-0"
+                    >
+                        {aiLoading ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <span>Generando...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles className="w-5 h-5" />
+                                <span>Sugerir con IA</span>
+                            </>
+                        )}
+                    </Button>
+                </div>
+
+                {/* Subtle background decoration */}
+                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl" />
             </div>
 
             {/* Category Pills */}
@@ -322,6 +355,82 @@ export function LocalRecommendations({
                             {editingRec?.id ? 'Actualizar Sitio' : 'Guardar Sitio'}
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal de Guía Esencial */}
+            <Dialog open={isEssentialModalOpen} onOpenChange={setIsEssentialModalOpen}>
+                <DialogContent className="max-w-lg rounded-3xl bg-white p-0 overflow-hidden border-none shadow-2xl">
+                    <div className="p-8 space-y-8">
+                        <div className="flex gap-4 items-center">
+                            <div className="bg-[#316263] p-3 rounded-2xl shadow-lg shadow-teal-900/20">
+                                <Sparkles className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="space-y-1 text-left">
+                                <DialogTitle className="text-xl font-bold text-slate-900">Guía esencial del primer día</DialogTitle>
+                                <DialogDescription className="text-sm text-slate-500 font-medium">
+                                    La IA generará <span className="text-slate-900 font-bold">14 recomendaciones</span> en <span className="text-slate-900 font-bold">7 categorías imprescindibles</span> basándose en tu ubicación real.
+                                </DialogDescription>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Se generará automáticamente</p>
+                            <div className="space-y-2">
+                                {essentialCategories.map((cat) => (
+                                    <div key={cat.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100/50 group hover:border-[#316263]/20 hover:bg-white transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className={cn("p-2 rounded-xl scale-90 group-hover:scale-100 transition-transform", cat.color)}>
+                                                <cat.icon className="w-4 h-4" />
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-xs font-bold text-slate-800">{cat.label}</p>
+                                                <p className="text-[10px] text-slate-400 font-medium">{cat.desc}</p>
+                                            </div>
+                                        </div>
+                                        <Badge variant="outline" className="bg-white border-slate-200 text-teal-700 text-[10px] font-bold rounded-lg py-1 px-2">2 SITIOS</Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-[#f0f9f9] rounded-3xl border border-[#d1e9e9] space-y-4">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">¿Quieres más categorías?</p>
+                            <p className="text-[11px] text-slate-500 leading-relaxed font-medium text-left">
+                                Después de generar, selecciona cualquier categoría de la barra y pulsa <span className="text-[#316263] font-bold">"Sugerir con IA"</span> para obtener 6 sugerencias específicas con más detalle.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {otherCategories.map((cat, i) => (
+                                    <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-100 rounded-full text-[10px] font-bold text-slate-500 shadow-sm">
+                                        <cat.icon className="w-2.5 h-2.5" />
+                                        {cat.label}
+                                    </div>
+                                ))}
+                                <div className="px-3 py-1.5 bg-white border border-slate-100 rounded-full text-[10px] font-bold text-slate-400 shadow-sm">+ más...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-slate-50 flex gap-3 border-t border-slate-100">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setIsEssentialModalOpen(false)}
+                            className="flex-1 h-14 rounded-2xl font-bold text-slate-500 hover:text-slate-900"
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                setIsEssentialModalOpen(false)
+                                onAISuggest('todos')
+                            }}
+                            disabled={aiLoading}
+                            className="flex-1 bg-[#316263] hover:bg-[#254d4e] text-white h-14 rounded-2xl font-bold shadow-lg shadow-teal-900/20 gap-2"
+                        >
+                            <Sparkles className="w-5 h-5 text-white/50" />
+                            Generar guía esencial
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>
