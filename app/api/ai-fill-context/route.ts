@@ -30,7 +30,6 @@ async function detectZoneType(lat: number, lng: number, placesKey: string): Prom
     const res = await fetch(url);
     const data = await res.json();
     const count: number = data.results?.length ?? 0;
-    console.log(`[ZONE] Restaurants within 800m: ${count}`);
 
     if (count >= 15) return { type: 'metropolis', walkRadius: 1000, driveRadius: 5000, label: 'gran ciudad', preferCar: false };
     if (count >= 8) return { type: 'city', walkRadius: 1800, driveRadius: 8000, label: 'ciudad', preferCar: false };
@@ -143,7 +142,6 @@ async function searchWithFallback(params: {
         seenIds.add(r.place_id);
         const nameKey = (r.name || '').toLowerCase().trim();
         if (excludeSet.has(nameKey)) {
-          console.log(`[PLACES][${catLabel}] Skipped ${r.name}: Already in guide`);
           continue;
         }
         const placeLat = r.geometry?.location?.lat;
@@ -153,22 +151,18 @@ async function searchWithFallback(params: {
           : null;
 
         if (realDistanceMeters === null) {
-          console.log(`[PLACES][${catLabel}] Skipped ${r.name}: No coords`);
           continue;
         }
 
         const realDistance = formatDistance(realDistanceMeters, zone.preferCar);
-        console.log(`[PLACES][${catLabel}] Checked ${r.name}: Center(${lat}, ${lng}) Place(${placeLat}, ${placeLng}) Dist: ${Math.round(realDistanceMeters)}m`);
 
         const isEssential = ['desayuno', 'supermercados', 'restaurantes', 'tapas'].includes(catLabel);
         const catLimit = isEssential ? 1000 : 2500;
 
         if (realDistanceMeters > catLimit && !zone.preferCar) {
-          console.log(`[PLACES][${catLabel}] Filtered out ${r.name}: ${Math.round(realDistanceMeters)}m > ${catLimit}m limit`);
           continue;
         }
 
-        console.log(`[PLACES][${catLabel}] Kept ${r.name}: ${realDistance} (${Math.round(realDistanceMeters)}m haversine)`);
         collected.push({ ...r, gfCategory: catLabel, realDistanceMeters, realDistance, ...extra });
       }
     }
@@ -207,9 +201,6 @@ async function searchWithFallback(params: {
         `&radius=${zone.driveRadius}&language=es&key=${placesKey}`;
       const textData = await fetch(textUrl).then(r => r.json());
       addResults(textData.results || [], { searchKeyword: keyword, radiusType: 'textsearch' });
-      if (textData.results?.length) {
-        console.log(`[PLACES][${catLabel}] TextSearch fallback: ${textData.results.length} results`);
-      }
     }
   }
 
@@ -236,7 +227,6 @@ async function searchWithFallback(params: {
 export async function POST(req: Request) {
   try {
     const { propertyId, section, existingData } = await req.json();
-    console.log(`[AI-API] Property: ${propertyId}, Section: ${section}`);
 
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyId);
     if (!isUuid || propertyId === 'address-only') {
@@ -332,14 +322,12 @@ export async function POST(req: Request) {
           const addressChanged = existingData?.address && existingData.address !== fallbackAddress;
           if (!lat || !lng || addressChanged) {
             const addressToGeo = existingData?.address || fullAddress;
-            console.log(`[PLACES] Geocoding: "${addressToGeo}"`);
             const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json` +
               `?address=${encodeURIComponent(addressToGeo)}&key=${placesKey}`;
             const geoData = await fetch(geoUrl).then(r => r.json());
             if (geoData.status === 'OK') {
               lat = geoData.results[0].geometry.location.lat;
               lng = geoData.results[0].geometry.location.lng;
-              console.log(`[PLACES] Geocoded "${addressToGeo}": ${lat}, ${lng} (Confidence: ${geoData.results[0].geometry.location_type})`);
             } else {
               console.warn(`[PLACES] Geocoding failed for "${addressToGeo}": ${geoData.status}`);
             }
@@ -369,25 +357,21 @@ export async function POST(req: Request) {
                   excludeNames: existingData?.existingNames || []
                 });
                 groupedPlaces[cat] = results;
-                console.log(`[PLACES][${cat}] Found: ${results.length}`);
                 return results;
               });
               zone = await zonePromise;
-              const tZone = Date.now(); console.log(`[PLACES] Zone: ${zone.type} | Walk: ${zone.walkRadius}m | Drive: ${zone.driveRadius}m (+${tZone - t0}ms total)`);
               const allResults = await Promise.all(searchPromises);
               allPlacesResults = allResults.flat();
 
             } else {
               // Búsqueda categoría única — resolver zona real antes de buscar
               zone = await zonePromise;
-              console.log(`[PLACES] Zone: ${zone.type} | Walk: ${zone.walkRadius}m | Drive: ${zone.driveRadius}m`);
               const config = SINGLE_CAT_MAP[selectedCat] || SINGLE_CAT_MAP['restaurantes'];
 
               const existingCount = (existingData?.existingNames || []).length;
               const neededNew = 6;
               // Aumentar pool para rellenos específicos
               const neededCount = Math.max(40, neededNew + existingCount);
-              console.log(`[PLACES][${selectedCat}] Existing: ${existingCount}, fetching ${neededCount} candidates (Rank: Distance)`);
 
               const results = await searchWithFallback({
                 lat: lat ?? property.latitude ?? 0,
@@ -534,7 +518,6 @@ REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1
           model.generateContent(buildMiniPrompt(halfB)),
         ]);
         recommendations = [...parseRecs(resA), ...parseRecs(resB)];
-        console.log(`[GEMINI] Parallel calls done: +${Date.now() - tGeminiStart}ms`);
       } else {
         const result = await model.generateContent(prompt);
         const rawText = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
@@ -606,7 +589,6 @@ REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1
         ),
         quotaFulfillment,
       };
-      console.log('[QUALITY REPORT]', JSON.stringify(qualityReport, null, 2));
 
       return new Response(JSON.stringify({ recommendations, qualityReport }), {
         headers: { 'Content-Type': 'application/json' }

@@ -690,7 +690,6 @@ export function WizardProvider({
 
         // Ensure we have a valid property ID from any available source
         const currentPropId = effectivePropertyId || property?.id
-        console.log(`[AI-FILL] Initializing request. Section: ${section} | propertyId: ${currentPropId}`);
 
         if (!currentPropId && !overrideData?.address) {
             toast({
@@ -756,12 +755,6 @@ export function WizardProvider({
                 : (isTransport || section === 'contacts' ? { address: finalAddressToUse, coordinates: activeGeocodingResult } : undefined)
         }
 
-        console.log(`[AI-FILL] Initializing request...`, {
-            section,
-            propertyId: payload.propertyId,
-            hasCoords: !!payload.existingData?.coordinates
-        });
-
         if (section === 'faqs') {
             payload.existingData = {
                 checkin_time: data.checkin.checkin_time,
@@ -780,11 +773,6 @@ export function WizardProvider({
             try {
                 result = JSON.parse(text)
             } catch {
-                console.error('[AI-FILL] CRITICAL: Response is not JSON.', {
-                    status: res.status,
-                    statusText: res.statusText,
-                    text: text.substring(0, 500)
-                })
                 const cleaned = text.replace(/^```(?:json)?\s*([\s\S]*?)```$/, '$1').trim()
                 try {
                     result = JSON.parse(cleaned || '{}')
@@ -794,7 +782,6 @@ export function WizardProvider({
             }
 
             if (!res.ok) {
-                console.error(`[AI-FILL] Server error (${res.status}):`, result);
                 toast({
                     title: 'Error IA',
                     description: result?.error || `Error del servidor (${res.status})`,
