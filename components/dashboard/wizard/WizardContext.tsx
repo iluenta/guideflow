@@ -763,11 +763,14 @@ export function WizardProvider({
         }
 
         try {
+            const t0 = performance.now();
             const res = await fetch('/api/ai-fill-context', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
+            const t1 = performance.now();
+            console.log(`[PERF][WizardContext] /api/ai-fill-context fetch took ${((t1 - t0) / 1000).toFixed(2)}s`);
             const text = await res.text()
             let result: any
             try {

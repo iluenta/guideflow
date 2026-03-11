@@ -286,9 +286,12 @@ export async function POST(req: Request) {
         const sectionParam = ['plane', 'train', 'road'].includes(section)
           ? section as 'plane' | 'train' | 'road'
           : undefined;
+        const arrivalT0 = Date.now();
         const result = await generateArrivalInstructions(
           existingData?.address || fallbackAddress, sectionParam, buildManualGeo()
         );
+        const arrivalT1 = Date.now();
+        console.log(`[PERF][route.ts] Arrival section "${section}" total: ${((arrivalT1 - arrivalT0) / 1000).toFixed(2)}s`);
         return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
       } catch (err) {
         console.error('[AI-API] Arrival Error:', err);
