@@ -727,26 +727,21 @@ export function WizardProvider({
             existingData: section === 'dining' || section === 'recommendations'
                 ? (() => {
                     const isTodosMode = category === 'todos';
+                    const TODOS_CATS = new Set([
+                        'supermercados', 'restaurantes', 'desayuno', 'tapas',
+                        'cultura', 'naturaleza', 'ocio'
+                    ]);
 
-                    // Normaliza la categoría de un registro para comparar
-                    const getRecCat = (r: any) => (r.type || r.category || '').toLowerCase();
-
-                    // En modo todos: excluir solo los que coinciden con las cats del MVP
-                    // En modo categoría: excluir solo los de esa categoría concreta
                     const existingNames = isTodosMode
                         ? data.dining
-                            .filter((r: any) => {
-                                const cat = getRecCat(r);
-                                // Las 7 categorías que genera "todos"
-                                return ['supermercados', 'restaurantes', 'desayuno', 'tapas',
-                                    'cultura', 'naturaleza', 'ocio', 'ocio_nocturno'].includes(cat);
-                            })
+                            .filter((r: any) => TODOS_CATS.has((r.type || '').toLowerCase()))
                             .map((r: any) => r.name)
                         : data.dining
                             .filter((r: any) => {
-                                const cat = getRecCat(r);
-                                // ocio agrupa ocio y ocio_nocturno
-                                if (category === 'ocio') return cat === 'ocio' || cat === 'ocio_nocturno';
+                                const cat = (r.type || '').toLowerCase();
+                                if (category === 'ocio' || category === 'ocio_nocturno') {
+                                    return cat === 'ocio' || cat === 'ocio_nocturno';
+                                }
                                 return cat === category.toLowerCase();
                             })
                             .map((r: any) => r.name);
@@ -832,25 +827,26 @@ export function WizardProvider({
             } else if (section === 'dining') {
                 const rawRecs = Array.isArray(result.recommendations) ? result.recommendations : [];
 
-                // Normaliza la categoría de un registro
-                const getRecCat = (r: any) => (r.type || r.category || '').toLowerCase();
-
-                // Categorías generadas en modo "todos"
+                // El campo de categoría en los registros es siempre r.type
+                // IMPORTANTE: Gemini convierte ocio_nocturno → 'ocio' en el output
+                // Por tanto TODOS_CATS debe usar 'ocio', no 'ocio_nocturno'
                 const TODOS_CATS = new Set([
                     'supermercados', 'restaurantes', 'desayuno', 'tapas',
-                    'cultura', 'naturaleza', 'ocio', 'ocio_nocturno'
+                    'cultura', 'naturaleza', 'ocio'  // ← 'ocio' no 'ocio_nocturno'
                 ]);
 
                 setData((prev: any) => {
                     const kept = prev.dining.filter((r: any) => {
-                        const cat = getRecCat(r);
+                        const cat = (r.type || '').toLowerCase();
                         if (category === 'todos') {
                             // Reemplazar las 7 MVP, conservar todo lo demás (italiano, relax, etc.)
                             return !TODOS_CATS.has(cat);
                         }
-                        // Para CUALQUIER categoría individual: reemplazar solo las de ese tipo
-                        // ocio agrupa ocio y ocio_nocturno
-                        if (category === 'ocio') return cat !== 'ocio' && cat !== 'ocio_nocturno';
+                        // Para cualquier categoría individual: reemplazar solo las de ese tipo
+                        // 'ocio' agrupa tanto ocio como ocio_nocturno
+                        if (category === 'ocio' || category === 'ocio_nocturno') {
+                            return cat !== 'ocio' && cat !== 'ocio_nocturno';
+                        }
                         return cat !== category.toLowerCase();
                     });
                     return { ...prev, dining: [...kept, ...rawRecs] };
