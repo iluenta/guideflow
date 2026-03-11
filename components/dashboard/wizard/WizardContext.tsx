@@ -827,29 +827,28 @@ export function WizardProvider({
             } else if (section === 'dining') {
                 const rawRecs = Array.isArray(result.recommendations) ? result.recommendations : [];
 
-                // El campo de categoría en los registros es siempre r.type
-                // IMPORTANTE: Gemini convierte ocio_nocturno → 'ocio' en el output
-                // Por tanto TODOS_CATS debe usar 'ocio', no 'ocio_nocturno'
                 const TODOS_CATS = new Set([
                     'supermercados', 'restaurantes', 'desayuno', 'tapas',
-                    'cultura', 'naturaleza', 'ocio'  // ← 'ocio' no 'ocio_nocturno'
+                    'cultura', 'naturaleza', 'ocio'
                 ]);
 
                 setData((prev: any) => {
-                    const kept = prev.dining.filter((r: any) => {
-                        const cat = (r.type || '').toLowerCase();
-                        if (category === 'todos') {
-                            // Reemplazar las 7 MVP, conservar todo lo demás (italiano, relax, etc.)
-                            return !TODOS_CATS.has(cat);
-                        }
-                        // Para cualquier categoría individual: reemplazar solo las de ese tipo
-                        // 'ocio' agrupa tanto ocio como ocio_nocturno
-                        if (category === 'ocio' || category === 'ocio_nocturno') {
-                            return cat !== 'ocio' && cat !== 'ocio_nocturno';
-                        }
-                        return cat !== category.toLowerCase();
-                    });
-                    return { ...prev, dining: [...kept, ...rawRecs] };
+                    if (category === 'todos') {
+                        // Modo todos: REEMPLAZAR las 7 MVP, conservar el resto (italiano, relax, etc.)
+                        const kept = prev.dining.filter((r: any) => !TODOS_CATS.has((r.type || '').toLowerCase()));
+                        return { ...prev, dining: [...kept, ...rawRecs] };
+                    } else {
+                        // Modo categoría individual: AÑADIR nuevos, deduplicando por place_id o nombre
+                        const existingIds = new Set(prev.dining.map((r: any) => r.google_place_id).filter(Boolean));
+                        const existingNames = new Set(prev.dining.map((r: any) => (r.name || '').toLowerCase().trim()));
+                        const newRecs = rawRecs.filter((r: any) => {
+                            if (r.google_place_id && existingIds.has(r.google_place_id)) return false;
+                            const nameKey = (r.name || '').toLowerCase().trim();
+                            if (existingNames.has(nameKey)) return false;
+                            return true;
+                        });
+                        return { ...prev, dining: [...prev.dining, ...newRecs] };
+                    }
                 });
             } else if (section === 'faqs') {
                 setData((prev: any) => ({ ...prev, faqs: [...prev.faqs, ...(result.faqs || [])] }));
