@@ -75,10 +75,12 @@ export function GuideViewContainer({
         }
     }, [initialTranslations, initialLanguage, property.id]);
 
+
     const [currentPage, setCurrentPage] = useState<string | null>('welcome');
     const [activeTab, setActiveTab] = useState('hub');
     const [language, setLanguage] = useState<string>(initialLanguage);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [navigationPayload, setNavigationPayload] = useState<any>(null);
 
     // --- CACHE & OFFLINE LOGIC ---
     const cacheKey = `guide_data_${property.id}`;
@@ -121,8 +123,9 @@ export function GuideViewContainer({
         }
     }, [language, tokenLanguage]);
 
-    const handleNavigate = (pageId: string) => {
+    const handleNavigate = (pageId: string, payload?: any) => {
         setCurrentPage(pageId);
+        setNavigationPayload(payload || null);
 
         // Map pageIds to tabs
         if (pageId === 'welcome') setActiveTab('hub');
@@ -136,9 +139,11 @@ export function GuideViewContainer({
         window.scrollTo(0, 0);
     };
 
+
     const handleBack = () => {
         setCurrentPage('home');
-        setActiveTab('guide');
+        setActiveTab('hub');
+        setNavigationPayload(null);
     };
 
     const handleTabChange = (tabId: string) => {
@@ -342,6 +347,7 @@ export function GuideViewContainer({
                         accessToken={accessToken}
                         propertyId={property.id}
                         disabledLanguage={!!tokenLanguage}
+                        initialRecId={navigationPayload?.recId}
                     />
                 );
             case 'do':
@@ -357,6 +363,7 @@ export function GuideViewContainer({
                         accessToken={accessToken}
                         propertyId={property.id}
                         disabledLanguage={!!tokenLanguage}
+                        initialRecId={navigationPayload?.recId}
                     />
                 );
             case 'shopping':
@@ -373,6 +380,7 @@ export function GuideViewContainer({
                         accessToken={accessToken}
                         propertyId={property.id}
                         disabledLanguage={!!tokenLanguage}
+                        initialRecId={navigationPayload?.recId}
                     />
                 );
             case 'explore':

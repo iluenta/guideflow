@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
     ChevronLeft,
     UtensilsCrossed,
@@ -62,6 +62,8 @@ interface RecommendationsViewProps {
     accessToken?: string;
     propertyId?: string;
     disabledLanguage?: boolean;
+    handleNavigate?: (path: string) => void;
+    initialRecId?: string;
 }
 
 function RecommendationCard({
@@ -71,7 +73,7 @@ function RecommendationCard({
     currentLanguage,
     accessToken,
     getMapsUrl,
-    propertyId // FASE 17
+    propertyId
 }: {
     rec: Recommendation,
     isExpanded: boolean,
@@ -79,12 +81,11 @@ function RecommendationCard({
     currentLanguage: string,
     accessToken?: string,
     getMapsUrl: (rec: Recommendation) => string,
-    propertyId?: string // FASE 17
+    propertyId?: string
 }) {
     const { content: localizedName } = useLocalizedContent(rec.name, currentLanguage, 'recommendation_name', accessToken, propertyId);
     const { content: localizedDescription } = useLocalizedContent(rec.description || '', currentLanguage, 'recommendation_description', accessToken, propertyId);
 
-    // Check for nested metadata or direct props
     const rawPrice = rec.price_range || rec.metadata?.price_range || '';
     const rawTime = rec.time || rec.metadata?.time || '';
     const rawNote = rec.personal_note || rec.metadata?.personal_note || '';
@@ -93,7 +94,6 @@ function RecommendationCard({
     const { content: localizedTime } = useLocalizedContent(rawTime, currentLanguage, 'recommendation_time', accessToken, propertyId);
     const { content: localizedNote } = useLocalizedContent(rawNote, currentLanguage, 'recommendation_note', accessToken, propertyId);
 
-    // Static labels
     const { content: labelPrice } = useLocalizedContent('Precio:', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelTime } = useLocalizedContent('Tiempo:', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelHostTip } = useLocalizedContent('Consejo del anfitrión', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -197,7 +197,6 @@ function RecommendationCard({
                         href={getMapsUrl(rec)}
                         onClick={(e) => {
                             e.stopPropagation();
-                            // If it's a web link, target _blank. If it's geo:/maps: don't.
                             if (getMapsUrl(rec).startsWith('http')) {
                                 window.open(getMapsUrl(rec), '_blank', 'noopener,noreferrer');
                                 e.preventDefault();
@@ -236,8 +235,11 @@ const groupConfigs = {
         title: 'Dónde Comer',
         heroTitle: 'Sabores Locales',
         heroDesc: 'Mis recomendaciones personales para disfrutar de la mejor gastronomía de la zona.',
-        // All eat subcategories are valid in this group
-        categories: ['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno'],
+        categories: [
+            'restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico',
+            'alta_cocina', 'internacional', 'desayuno', 'restaurante', 'cafe',
+            'food', 'comida', 'gastronomia', 'gastronomía', 'tapas'
+        ],
         pills: [
             { id: 'todos', label: 'Todo', type: 'todos' },
             { id: 'restaurantes', label: 'Restaurantes', type: 'restaurantes' },
@@ -254,7 +256,12 @@ const groupConfigs = {
         title: 'Qué Hacer',
         heroTitle: 'Descubre el entorno',
         heroDesc: 'Experiencias únicas y rincones especiales seleccionados para ti.',
-        categories: ['naturaleza', 'cultura', 'ocio', 'relax'],
+        categories: [
+            'naturaleza', 'cultura', 'ocio', 'relax', 'activity', 'actividad',
+            'actividades', 'park', 'parque', 'museum', 'museo', 'landmark',
+            'experiencias', 'experience', 'spa', 'ocio_nocturno', 'nightclub',
+            'night_club', 'bar_copas', 'discoteca', 'pub'
+        ],
         pills: [
             { id: 'todos', label: 'Todo', type: 'todos' },
             { id: 'naturaleza', label: 'Naturaleza', type: 'naturaleza' },
@@ -267,7 +274,7 @@ const groupConfigs = {
         title: 'Compras',
         heroTitle: 'De Compras',
         heroDesc: 'Mercados tradicionales, tiendas de artesanía y todo lo necesario para tu estancia.',
-        categories: ['compras', 'supermercados'],
+        categories: ['compras', 'supermercados', 'shopping', 'market', 'mercado', 'tiendas', 'tienda', 'supermarket'],
         pills: [
             { id: 'todos', label: 'Todo', type: 'todos' },
             { id: 'compras', label: 'Tiendas', type: 'compras' },
@@ -284,11 +291,14 @@ export function RecommendationsView({
     city,
     accessToken,
     propertyId,
-    disabledLanguage = false
+    disabledLanguage = false,
+    handleNavigate, // FASE 17
+    initialRecId // FASE 17
 }: RecommendationsViewProps) {
     const [selectedCategory, setSelectedCategory] = useState('todos');
-    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [expandedId, setExpandedId] = useState<string | null>(initialRecId || null);
     const config = groupConfigs[group];
+    const recommendationRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     // Localize UI Labels
     const { content: localizedGroupTitle } = useLocalizedContent(config.title, currentLanguage, 'ui_label', accessToken, propertyId);
@@ -338,8 +348,17 @@ export function RecommendationsView({
             return config.categories.includes(cat);
         });
 
-        if (selectedCategory !== 'todos') {
-            items = items.filter(r => (r.type || r.category || '').toLowerCase() === selectedCategory);
+        if (selectedCategory && selectedCategory !== 'todos') {
+            items = items.filter(r => {
+                const type = (r.type || r.category || '').toLowerCase();
+                if (type === selectedCategory) return true;
+
+                // Nightlife mapping for Ocio filter
+                const OCIO_SUBTYPES = ['ocio_nocturno', 'nightclub', 'night_club', 'bar_copas', 'discoteca', 'pub'];
+                if (selectedCategory === 'ocio' && OCIO_SUBTYPES.includes(type)) return true;
+
+                return false;
+            });
         }
         return items;
     }, [recommendations, group, selectedCategory]);
@@ -365,8 +384,56 @@ export function RecommendationsView({
         return url;
     };
 
+    useEffect(() => {
+        if (initialRecId) {
+            const targetRec = recommendations.find(r => r.id === initialRecId);
+            if (targetRec) {
+                const cat = (targetRec.type || targetRec.category || '').toLowerCase();
+                let pillToSelect = 'todos';
+
+                const exactPill = config.pills.find(p => p.id === cat);
+                if (exactPill) {
+                    pillToSelect = cat;
+                } else {
+                    const OCIO_SUBTYPES = ['ocio_nocturno', 'nightclub', 'night_club', 'bar_copas', 'discoteca', 'pub'];
+                    if (group === 'do' && (cat === 'ocio' || OCIO_SUBTYPES.includes(cat))) {
+                        pillToSelect = 'ocio';
+                    }
+                }
+
+                setSelectedCategory(pillToSelect);
+                setExpandedId(initialRecId);
+
+                // 3. Scroll to it with a slight delay for hydration/rendering
+                const scrollTimer = setTimeout(() => {
+                    const element = recommendationRefs.current[initialRecId];
+                    if (element) {
+                        element.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                        });
+                    }
+                }, 600); // Increased delay for stability
+
+                return () => clearTimeout(scrollTimer);
+            }
+        }
+    }, [initialRecId, recommendations, config.pills, group]);
+
     const toggleExpand = (id: string) => {
-        setExpandedId(prev => prev === id ? null : id);
+        setExpandedId(prev => {
+            const newExpandedId = prev === id ? null : id;
+            if (newExpandedId) {
+                // Scroll to the expanded card
+                setTimeout(() => {
+                    recommendationRefs.current[newExpandedId]?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start',
+                    });
+                }, 100); // Small delay to allow expansion animation
+            }
+            return newExpandedId;
+        });
     };
 
     return (
@@ -426,16 +493,17 @@ export function RecommendationsView({
                 <div className="px-6 space-y-4">
                     {filteredRecommendations.length > 0 ? (
                         filteredRecommendations.map((rec) => (
-                            <RecommendationCard
-                                key={rec.id}
-                                rec={rec}
-                                isExpanded={expandedId === rec.id}
-                                toggleExpand={toggleExpand}
-                                currentLanguage={currentLanguage}
-                                accessToken={accessToken}
-                                propertyId={propertyId}
-                                getMapsUrl={getMapsUrl}
-                            />
+                            <div key={rec.id} ref={el => { recommendationRefs.current[rec.id] = el; }}>
+                                <RecommendationCard
+                                    rec={rec}
+                                    isExpanded={expandedId === rec.id}
+                                    toggleExpand={toggleExpand}
+                                    currentLanguage={currentLanguage}
+                                    accessToken={accessToken}
+                                    propertyId={propertyId}
+                                    getMapsUrl={getMapsUrl}
+                                />
+                            </div>
                         ))
                     ) : (
                         <div className="py-20 text-center bg-white/30 rounded-3xl border border-dashed border-navy/10">

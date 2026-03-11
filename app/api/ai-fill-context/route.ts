@@ -13,13 +13,16 @@ const getGenAI = () => {
 // BUG FIX: Google Places API no permite rankby=prominence con radius.
 // Usamos radius sin rankby para el check de densidad.
 // ═══════════════════════════════════════════════════════════════════════════
-async function detectZoneType(lat: number, lng: number, placesKey: string): Promise<{
-  type: 'metropolis' | 'city' | 'town' | 'rural';
+type ZoneType = 'metropolis' | 'city' | 'town' | 'rural';
+interface ZoneInfo {
+  type: ZoneType;
   walkRadius: number;
   driveRadius: number;
   label: string;
   preferCar: boolean;
-}> {
+}
+
+async function detectZoneType(lat: number, lng: number, placesKey: string): Promise<ZoneInfo> {
   try {
     // Sin rankby para poder usar radius
     const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
@@ -29,10 +32,10 @@ async function detectZoneType(lat: number, lng: number, placesKey: string): Prom
     const count: number = data.results?.length ?? 0;
     console.log(`[ZONE] Restaurants within 800m: ${count}`);
 
-    if (count >= 15) return { type: 'metropolis', walkRadius: 1500, driveRadius: 6000, label: 'gran ciudad', preferCar: false };
-    if (count >= 8) return { type: 'city', walkRadius: 2500, driveRadius: 10000, label: 'ciudad', preferCar: false };
-    if (count >= 3) return { type: 'town', walkRadius: 5000, driveRadius: 20000, label: 'pueblo', preferCar: true };
-    return { type: 'rural', walkRadius: 8000, driveRadius: 40000, label: 'zona rural', preferCar: true };
+    if (count >= 15) return { type: 'metropolis', walkRadius: 1000, driveRadius: 5000, label: 'gran ciudad', preferCar: false };
+    if (count >= 8) return { type: 'city', walkRadius: 1800, driveRadius: 8000, label: 'ciudad', preferCar: false };
+    if (count >= 3) return { type: 'town', walkRadius: 4000, driveRadius: 15000, label: 'pueblo', preferCar: true };
+    return { type: 'rural', walkRadius: 6000, driveRadius: 30000, label: 'zona rural', preferCar: true };
   } catch (e) {
     console.warn('[ZONE] Detection failed, defaulting to city:', e);
     return { type: 'city', walkRadius: 2000, driveRadius: 8000, label: 'ciudad', preferCar: false };
@@ -53,32 +56,32 @@ async function detectZoneType(lat: number, lng: number, placesKey: string): Prom
 // 7. Cultura         → que ver cerca sin planificar mucho
 // Total: 7 categorias × 2 = 14 recomendaciones, 7 llamadas a Places
 const TODOS_QUOTA: Record<string, { quota: number; placeType: string; keywords: string[] }> = {
-  supermercados: { quota: 2, placeType: 'supermarket', keywords: ['supermercado mercadona carrefour'] },
-  restaurantes: { quota: 2, placeType: 'restaurant', keywords: ['restaurante popular cocina local'] },
-  desayuno: { quota: 2, placeType: 'cafe', keywords: ['cafetería desayuno brunch'] },
-  tapas: { quota: 2, placeType: 'bar', keywords: ['bar tapas pinchos vinos'] },
-  cultura: { quota: 2, placeType: 'tourist_attraction', keywords: ['monumento museo qué ver turismo'] },
-  naturaleza: { quota: 2, placeType: 'park', keywords: ['parque jardín zona verde paseo'] },
-  ocio_nocturno: { quota: 2, placeType: 'night_club', keywords: ['bar copas música ocio nocturno'] },
+  supermercados: { quota: 2, placeType: 'supermarket', keywords: ['supermercado', 'mercadona', 'carrefour'] },
+  restaurantes: { quota: 2, placeType: 'restaurant', keywords: ['restaurante popular', 'cocina local'] },
+  desayuno: { quota: 2, placeType: 'cafe', keywords: ['cafetería', 'desayuno', 'brunch'] },
+  tapas: { quota: 2, placeType: 'bar', keywords: ['bar tapas', 'pinchos', 'vinos'] },
+  cultura: { quota: 2, placeType: 'tourist_attraction', keywords: ['monumento', 'museo', 'qué ver'] },
+  naturaleza: { quota: 2, placeType: 'park', keywords: ['parque', 'jardín', 'zona verde'] },
+  ocio_nocturno: { quota: 2, placeType: 'night_club', keywords: ['bar copas', 'música', 'ocio nocturno'] },
 };
 
 const SINGLE_CAT_MAP: Record<string, { placeType: string; keywords: string[] }> = {
-  restaurantes: { placeType: 'restaurant', keywords: ['restaurante cocina local'] },
-  italiano: { placeType: 'restaurant', keywords: ['restaurante italiano pizzería'] },
-  mediterraneo: { placeType: 'restaurant', keywords: ['restaurante mediterráneo mariscos'] },
-  hamburguesas: { placeType: 'restaurant', keywords: ['hamburguesas burger gourmet'] },
-  asiatico: { placeType: 'restaurant', keywords: ['restaurante asiático sushi japonés'] },
-  alta_cocina: { placeType: 'restaurant', keywords: ['restaurante gourmet fine dining'] },
-  internacional: { placeType: 'restaurant', keywords: ['restaurante mexicano indio árabe'] },
-  desayuno: { placeType: 'cafe', keywords: ['cafetería desayuno brunch'] },
-  cafe: { placeType: 'cafe', keywords: ['café espresso specialty'] },
-  tapas: { placeType: 'bar', keywords: ['bar tapas pinchos vinos'] },
-  compras: { placeType: 'shopping_mall', keywords: ['centro comercial tiendas moda'] },
-  supermercados: { placeType: 'supermarket', keywords: ['supermercado mercadona carrefour'] },
-  cultura: { placeType: 'museum', keywords: ['museo arte monumento histórico'] },
-  naturaleza: { placeType: 'park', keywords: ['parque jardín naturaleza'] },
-  ocio: { placeType: 'tourist_attraction', keywords: ['ocio entretenimiento actividades'] },
-  relax: { placeType: 'spa', keywords: ['spa wellness masajes yoga'] },
+  restaurantes: { placeType: 'restaurant', keywords: ['restaurante', 'cocina local', 'gastronomía'] },
+  italiano: { placeType: 'restaurant', keywords: ['restaurante italiano', 'pizzería'] },
+  mediterraneo: { placeType: 'restaurant', keywords: ['restaurante mediterráneo', 'mariscos'] },
+  hamburguesas: { placeType: 'restaurant', keywords: ['hamburguesas', 'burger gourmet'] },
+  asiatico: { placeType: 'restaurant', keywords: ['restaurante asiático', 'sushi', 'japonés'] },
+  alta_cocina: { placeType: 'restaurant', keywords: ['restaurante gourmet', 'fine dining'] },
+  internacional: { placeType: 'restaurant', keywords: ['restaurante mexicano', 'indio', 'árabe'] },
+  desayuno: { placeType: 'cafe', keywords: ['cafetería', 'desayuno', 'brunch', 'specialty coffee'] },
+  cafe: { placeType: 'cafe', keywords: ['café espresso', 'specialty', 'cafetería'] },
+  tapas: { placeType: 'bar', keywords: ['bar tapas', 'pinchos', 'vinos'] },
+  compras: { placeType: 'shopping_mall', keywords: ['centro comercial', 'tiendas moda', 'boutique'] },
+  supermercados: { placeType: 'supermarket', keywords: ['supermercado', 'mercadona', 'carrefour', 'lidl'] },
+  cultura: { placeType: 'museum', keywords: ['museo arte', 'monumento histórico', 'qué ver'] },
+  naturaleza: { placeType: 'park', keywords: ['parque', 'jardín', 'naturaleza'] },
+  ocio: { placeType: 'tourist_attraction', keywords: ['ocio', 'entretenimiento', 'actividades'] },
+  relax: { placeType: 'spa', keywords: ['spa', 'wellness', 'masajes', 'yoga'] },
 };
 
 const ALL_SLUGS = 'restaurantes, italiano, mediterraneo, hamburguesas, asiatico, alta_cocina, internacional, desayuno, cafe, tapas, compras, supermercados, cultura, naturaleza, ocio, relax';
@@ -89,19 +92,25 @@ const ALL_SLUGS = 'restaurantes, italiano, mediterraneo, hamburguesas, asiatico,
 // Usamos radius + type + keyword (sin rankby). Esto es lo correcto.
 // ═══════════════════════════════════════════════════════════════════════════
 async function searchWithFallback(params: {
+  placesKey: string;
   lat: number;
   lng: number;
-  zone: { walkRadius: number; driveRadius: number; preferCar: boolean };
+  zone: ZoneInfo;
   placeType: string;
   keywords: string[];
   catLabel: string;
   neededCount: number;
-  placesKey: string;
   cityName: string;
+  excludeNames?: string[];
+  rankMode?: 'prominence' | 'distance';
 }): Promise<any[]> {
-  const { lat, lng, zone, placeType, keywords, catLabel, neededCount, placesKey, cityName } = params;
+  const {
+    lat, lng, zone, placeType, keywords, catLabel, neededCount,
+    placesKey, cityName, excludeNames = [], rankMode = 'prominence'
+  } = params;
   const collected: any[] = [];
   const seenIds = new Set<string>();
+  const excludeSet = new Set(excludeNames.map(n => n.toLowerCase().trim()));
 
   // Distancia real en metros entre dos coordenadas
   const haversineMeters = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -112,14 +121,19 @@ async function searchWithFallback(params: {
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
 
-  // Convierte metros a texto legible y real
+  // Convierte metros a texto legible
+  // NOTA: haversine da distancia en línea recta. Aplicamos factor 1.35 para
+  // aproximar la distancia real caminando por calles (validado vs Google Maps en Madrid).
   const formatDistance = (meters: number, preferCar: boolean): string => {
-    const walkMin = Math.round(meters / 80);
+    const walkingMeters = meters * 1.35; // corrección línea recta → calles
+    const walkMin = Math.round(walkingMeters / 80); // 80m/min = 4.8 km/h
     const carMin = Math.max(1, Math.round(meters / 500));
-    if (meters <= 300) return `${Math.round(meters)}m andando`;
-    if (meters <= 2000) return `${walkMin} min andando`;
+
+    // Usar formato largo para evitar que la IA invente abreviaturas como "M"
+    if (meters <= 200) return `${Math.round(meters)} metros andando`;
+    if (walkingMeters <= 2200) return `${walkMin} min andando`;
     if (preferCar) return `${carMin} min en coche`;
-    if (meters <= 3500) return `${walkMin} min andando`;
+    if (walkingMeters <= 4000) return `${walkMin} min andando`;
     return `${carMin} min en coche`;
   };
 
@@ -127,14 +141,34 @@ async function searchWithFallback(params: {
     for (const r of results) {
       if (!seenIds.has(r.place_id)) {
         seenIds.add(r.place_id);
+        const nameKey = (r.name || '').toLowerCase().trim();
+        if (excludeSet.has(nameKey)) {
+          console.log(`[PLACES][${catLabel}] Skipped ${r.name}: Already in guide`);
+          continue;
+        }
         const placeLat = r.geometry?.location?.lat;
         const placeLng = r.geometry?.location?.lng;
         const realDistanceMeters = (placeLat != null && placeLng != null)
-          ? haversineMeters(lat, lng, placeLat, placeLng)
+          ? haversineMeters(lat, lng, Number(placeLat), Number(placeLng))
           : null;
-        const realDistance = realDistanceMeters != null
-          ? formatDistance(realDistanceMeters, zone.preferCar)
-          : null;
+
+        if (realDistanceMeters === null) {
+          console.log(`[PLACES][${catLabel}] Skipped ${r.name}: No coords`);
+          continue;
+        }
+
+        const realDistance = formatDistance(realDistanceMeters, zone.preferCar);
+        console.log(`[PLACES][${catLabel}] Checked ${r.name}: Center(${lat}, ${lng}) Place(${placeLat}, ${placeLng}) Dist: ${Math.round(realDistanceMeters)}m`);
+
+        const isEssential = ['desayuno', 'supermercados', 'restaurantes', 'tapas'].includes(catLabel);
+        const catLimit = isEssential ? 1000 : 2500;
+
+        if (realDistanceMeters > catLimit && !zone.preferCar) {
+          console.log(`[PLACES][${catLabel}] Filtered out ${r.name}: ${Math.round(realDistanceMeters)}m > ${catLimit}m limit`);
+          continue;
+        }
+
+        console.log(`[PLACES][${catLabel}] Kept ${r.name}: ${realDistance} (${Math.round(realDistanceMeters)}m haversine)`);
         collected.push({ ...r, gfCategory: catLabel, realDistanceMeters, realDistance, ...extra });
       }
     }
@@ -145,11 +179,13 @@ async function searchWithFallback(params: {
     if (collected.length >= neededCount * 2) break;
 
     // Nearby - radio andando
+    const isDistanceRank = rankMode === 'distance';
     const walkUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
-      `?location=${lat},${lng}&radius=${zone.walkRadius}` +
+      `?location=${lat},${lng}` +
+      (isDistanceRank ? `&rankby=distance` : `&radius=${zone.walkRadius}`) +
       `&type=${placeType}&keyword=${encodeURIComponent(keyword)}&language=es&key=${placesKey}`;
     const walkData = await fetch(walkUrl).then(r => r.json());
-    addResults(walkData.results || [], { searchKeyword: keyword, radiusType: 'walk' });
+    addResults(walkData.results || [], { searchKeyword: keyword, radiusType: isDistanceRank ? 'distance-rank' : 'walk' });
 
     // Si ya tenemos suficiente con el radio walk, no hacemos mas llamadas
     if (collected.length >= neededCount) break;
@@ -177,14 +213,18 @@ async function searchWithFallback(params: {
     }
   }
 
-  // Priorizar los mas cercanos (dentro del radio walk) y luego por rating
+  // Priorizar los mas cercanos y filtrar por un radio útil
+  // En ciudad, limitamos a lo que sea razonable caminando (máx 30 min = ~2km haversine)
+  const distanceLimit = zone.preferCar ? zone.driveRadius : Math.min(zone.walkRadius, 2000);
+
   return collected
+    .filter(r => r.realDistanceMeters != null && r.realDistanceMeters <= distanceLimit)
     .filter(r => !r.rating || r.rating >= 3.0)
     .sort((a, b) => {
-      const aIsWalk = (a.realDistanceMeters ?? 99999) <= zone.walkRadius;
-      const bIsWalk = (b.realDistanceMeters ?? 99999) <= zone.walkRadius;
-      if (aIsWalk && !bIsWalk) return -1;
-      if (!aIsWalk && bIsWalk) return 1;
+      // Primero los más cercanos, luego por rating
+      const dA = a.realDistanceMeters ?? 99999;
+      const dB = b.realDistanceMeters ?? 99999;
+      if (Math.abs(dA - dB) > 200) return dA - dB;
       return (b.rating ?? 0) - (a.rating ?? 0);
     })
     .slice(0, neededCount * 2);
@@ -272,7 +312,7 @@ export async function POST(req: Request) {
     // 2. DINING / RECOMMENDATIONS
     // ════════════════════════════════════════════════════════════════════════
     if (section === 'dining' || section === 'recommendations') {
-      const placesKey = process.env.GOOGLE_PLACES_API_KEY;
+      const placesKey = process.env.GOOGLE_PLACES_API_KEY || '';
       const selectedCat: string = existingData?.category || 'restaurantes';
       const isTodos = selectedCat === 'todos';
 
@@ -283,7 +323,7 @@ export async function POST(req: Request) {
       // Agrupación de resultados por categoría
       const groupedPlaces: Record<string, any[]> = {};
       let allPlacesResults: any[] = [];
-      let zone = { type: 'city', walkRadius: 2000, driveRadius: 8000, label: 'ciudad', preferCar: false };
+      let zone: ZoneInfo = { type: 'city', walkRadius: 2000, driveRadius: 8000, label: 'ciudad', preferCar: false };
 
       if (placesKey) {
         try {
@@ -299,10 +339,12 @@ export async function POST(req: Request) {
             if (geoData.status === 'OK') {
               lat = geoData.results[0].geometry.location.lat;
               lng = geoData.results[0].geometry.location.lng;
-              console.log(`[PLACES] Geocoded: ${lat}, ${lng} (+${Date.now() - t0}ms)`);
+              console.log(`[PLACES] Geocoded "${addressToGeo}": ${lat}, ${lng} (Confidence: ${geoData.results[0].geometry.location_type})`);
             } else {
-              console.warn(`[PLACES] Geocoding failed: ${geoData.status}`);
+              console.warn(`[PLACES] Geocoding failed for "${addressToGeo}": ${geoData.status}`);
             }
+          } else {
+            console.log(`[PLACES] Using coordinates from DB/State: ${lat}, ${lng}`);
           }
 
           if (lat && lng) {
@@ -323,7 +365,8 @@ export async function POST(req: Request) {
                   catLabel: cat,
                   neededCount: config.quota,
                   placesKey,
-                  cityName: property.city
+                  cityName: property.city || '',
+                  excludeNames: existingData?.existingNames || []
                 });
                 groupedPlaces[cat] = results;
                 console.log(`[PLACES][${cat}] Found: ${results.length}`);
@@ -335,19 +378,34 @@ export async function POST(req: Request) {
               allPlacesResults = allResults.flat();
 
             } else {
-              // Búsqueda categoría única
+              // Búsqueda categoría única — resolver zona real antes de buscar
+              zone = await zonePromise;
+              console.log(`[PLACES] Zone: ${zone.type} | Walk: ${zone.walkRadius}m | Drive: ${zone.driveRadius}m`);
               const config = SINGLE_CAT_MAP[selectedCat] || SINGLE_CAT_MAP['restaurantes'];
+
+              const existingCount = (existingData?.existingNames || []).length;
+              const neededNew = 6;
+              // Aumentar pool para rellenos específicos
+              const neededCount = Math.max(40, neededNew + existingCount);
+              console.log(`[PLACES][${selectedCat}] Existing: ${existingCount}, fetching ${neededCount} candidates (Rank: Distance)`);
+
               const results = await searchWithFallback({
-                lat, lng, zone,
+                lat: lat ?? property.latitude ?? 0,
+                lng: lng ?? property.longitude ?? 0,
+                zone,
                 placeType: config.placeType,
                 keywords: config.keywords,
                 catLabel: selectedCat,
-                neededCount: 6,
+                neededCount,
                 placesKey,
-                cityName: property.city
+                cityName: property.city || '',
+                excludeNames: existingData?.existingNames || [],
+                rankMode: 'distance'
               });
               groupedPlaces[selectedCat] = results;
-              allPlacesResults = results;
+              // Determinismo por distancia: la IA verá los más cercanos arriba
+              groupedPlaces[selectedCat].sort((a: any, b: any) => (a.realDistanceMeters || 9999) - (b.realDistanceMeters || 9999));
+              allPlacesResults = groupedPlaces[selectedCat];
             }
 
             const tPlaces = Date.now(); console.log(`[PLACES] Total collected: ${allPlacesResults.length} (+${tPlaces - t0}ms total)`);
@@ -406,7 +464,7 @@ TOTAL: ${numRequested} recomendaciones.
 - farmacia → slug exacto "farmacia".
 - DISTANCIAS: copia el campo Distancia del contexto exactamente.
 - Prioriza siempre los sitios MÁS CERCANOS a la propiedad.
-` : `Genera exactamente 6 recomendaciones de tipo "${selectedCat}".`;
+` : `Genera exactamente 4-6 recomendaciones NUEVAS de tipo "${selectedCat}" que sean relevantes y estén en el contexto. NO incluyas ninguno de estos que ya existen: ${existingNamesStr || 'ninguno'}. Si hay suficientes sitios nuevos en el contexto, intenta darlos todos hasta un máximo de 6.`;
 
       const prompt = `Anfitrión experto en ${property.city}. Guía de "${property.name}".
 
@@ -415,11 +473,14 @@ ${placesContext || `Sin datos. Usa conocimiento de ${property.city}.`}
 
 ${todosBlock}
 
-REGLAS: Usa lugares del contexto. No dupliques: ${existingNamesStr || 'ninguno'}. Distancia: copia EXACTAMENTE el campo "Distancia" del contexto.
+REGLAS CRÍTICAS: 
+1. Usa ÚNICAMENTE lugares del contexto Google Places. 
+2. PROHIBIDO recomendar sitios que no estén en el listado verificado de arriba.
+3. DISTANCIA: Copia el texto EXACTO del campo "Distancia". NO inventes tiempos, NO uses "M". 
+4. "METROS" significa que el sitio está a menos de 2 minutos andando. "MIN" son minutos.
+5. Prioriza sitios a menos de 10 minutos si están disponibles. Los primeros de la lista son los más cercanos.
 
-JSON con array "recommendations", cada elemento:
-{"name":"nombre exacto","description":"max 150 chars hospitalario","distance":"copia del contexto","type":"slug de: ${ALL_SLUGS}","google_place_id":"ID o null","price_level":null|"gratis"|"economico"|"moderado"|"alto"|"exclusivo","price_range":"10-20EUR o null","best_time_slots":["manana"|"mediodia"|"tarde"|"noche"],"atmosphere":"tranquilo|animado|romantico|familiar|cultural|deportivo","tags":["tag1","tag2"],"availability":{"days":["todos"],"notes":"horario real o Consultar horario"}}
-SOLO JSON:`;
+REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1ana","mediodia","tarde"]\n- restaurantes/hamburguesas/italiano/asiatico/alta_cocina/internacional: ["mediodia","tarde","noche"]\n- desayuno/cafe: solo ["ma\u00f1ana","mediodia"]\n- tapas/bar: ["tarde","noche"]\n- cultura/naturaleza/relax: ["ma\u00f1ana","mediodia","tarde"]\n- ocio_nocturno: solo ["noche","madrugada"]\nCRITICO: jamas pongas "madrugada" a restaurantes, supermercados, cafeterias, cultura o naturaleza.\n\nJSON con array "recommendations", cada elemento:\n{"name":"nombre exacto","description":"max 150 chars hospitalario","distance":"copia del contexto","type":"slug de: ${ALL_SLUGS}","google_place_id":"ID o null","price_level":null|"gratis"|"economico"|"moderado"|"alto"|"exclusivo","price_range":"10-20EUR o null","best_time_slots":["ma\u00f1ana"|"mediodia"|"tarde"|"noche"|"madrugada"],"atmosphere":"tranquilo|animado|romantico|familiar|cultural|deportivo","tags":["tag1","tag2"],"availability":{"days":["todos"],"notes":"horario real o Consultar horario"}}\nSOLO JSON:`;
 
       // ── Llamada a Gemini ───────────────────────────────────────────────
       // En modo todos: dividir en 2 llamadas paralelas (8 cats cada una) para reducir latencia
@@ -452,8 +513,8 @@ SOLO JSON:`;
           `LUGARES:\n${ctx}`,
           `CUOTAS (exactamente 2 por cat):\n${quota}`,
           `NO DUPLIQUES: ${existingNamesStr || 'ninguno'}`,
-          `DISTANCIA: copia el campo realDistance del contexto exactamente.`,
-          `JSON con array "recommendations": {"name":"...","description":"max 150 chars","distance":"del contexto","type":"slug de:${ALL_SLUGS}","google_place_id":"ID o null","price_level":null,"price_range":"EUR o null","best_time_slots":["manana","tarde","noche"],"atmosphere":"tranquilo|animado|romantico|familiar|cultural|deportivo","tags":["t1","t2"],"availability":{"days":["todos"],"notes":"Consultar horario"}}`,
+          `DISTANCIA: Copia el campo realDistance del contexto EXACTAMENTE. PROHIBIDO usar "M" o inventar tiempos.`,
+          `JSON con array "recommendations": {"name":"...","description":"max 150 chars","distance":"del contexto","type":"slug de:${ALL_SLUGS}","google_place_id":"ID o null","price_level":null,"price_range":"EUR o null","best_time_slots":["mañana"|"mediodia"|"tarde"|"noche"|"madrugada"] (sigue reglas por tipo),"atmosphere":"tranquilo|animado|romantico|familiar|cultural|deportivo","tags":["t1","t2"],"availability":{"days":["todos"],"notes":"Consultar horario"}}`,
           `SOLO JSON:`
         ].join('\n');
       };
@@ -481,6 +542,9 @@ SOLO JSON:`;
         recommendations = Array.isArray(parsed.recommendations)
           ? parsed.recommendations
           : Array.isArray(parsed) ? parsed : [];
+
+        // Forzar tipo en modo refill para evitar que el frontend los filtre
+        recommendations = recommendations.map(r => ({ ...r, type: selectedCat }));
       }
 
       // ── Verificación: real vs inventado ────────────────────────────────
@@ -496,6 +560,23 @@ SOLO JSON:`;
           _verified: verified,
           _source: verified ? 'google_places' : 'ai_generated',
         };
+      });
+
+      // Deduplicar: preferido por google_place_id, secundario por nombre
+      const seenIds = new Set();
+      const seenNames = new Set();
+      recommendations = recommendations.filter(rec => {
+        const nameKey = (rec.name || '').toLowerCase().trim();
+        if (rec.google_place_id) {
+          if (seenIds.has(rec.google_place_id)) return false;
+          seenIds.add(rec.google_place_id);
+          // También registrar el nombre para evitar colisiones id/name
+          seenNames.add(nameKey);
+          return true;
+        }
+        if (seenNames.has(nameKey)) return false;
+        seenNames.add(nameKey);
+        return true;
       });
 
       // ── Quality Report ─────────────────────────────────────────────────

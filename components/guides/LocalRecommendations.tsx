@@ -167,7 +167,7 @@ export function LocalRecommendations({
                     </div>
 
                     <Button
-                        onClick={() => onAISuggest('todos')}
+                        onClick={() => onAISuggest(selectedCategory)}
                         disabled={aiLoading}
                         className="w-full md:w-auto bg-[#316263] hover:bg-[#254d4e] text-white rounded-xl h-14 px-8 font-bold transition-all shadow-lg shadow-teal-900/10 flex items-center justify-center gap-3 active:scale-95 shrink-0"
                     >

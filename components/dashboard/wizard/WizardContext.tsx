@@ -725,12 +725,39 @@ export function WizardProvider({
             propertyId: currentPropId,
             section,
             existingData: section === 'dining' || section === 'recommendations'
-                ? {
-                    address: finalAddressToUse,
-                    category,
-                    existingNames: data.dining.map((r: any) => r.name),
-                    coordinates: activeGeocodingResult ?? undefined
-                }
+                ? (() => {
+                    const isTodosMode = category === 'todos';
+
+                    // Normaliza la categoría de un registro para comparar
+                    const getRecCat = (r: any) => (r.type || r.category || '').toLowerCase();
+
+                    // En modo todos: excluir solo los que coinciden con las cats del MVP
+                    // En modo categoría: excluir solo los de esa categoría concreta
+                    const existingNames = isTodosMode
+                        ? data.dining
+                            .filter((r: any) => {
+                                const cat = getRecCat(r);
+                                // Las 7 categorías que genera "todos"
+                                return ['supermercados', 'restaurantes', 'desayuno', 'tapas',
+                                    'cultura', 'naturaleza', 'ocio', 'ocio_nocturno'].includes(cat);
+                            })
+                            .map((r: any) => r.name)
+                        : data.dining
+                            .filter((r: any) => {
+                                const cat = getRecCat(r);
+                                // ocio agrupa ocio y ocio_nocturno
+                                if (category === 'ocio') return cat === 'ocio' || cat === 'ocio_nocturno';
+                                return cat === category.toLowerCase();
+                            })
+                            .map((r: any) => r.name);
+
+                    return {
+                        address: finalAddressToUse,
+                        category,
+                        existingNames,
+                        coordinates: activeGeocodingResult ?? undefined
+                    };
+                })()
                 : (isTransport || section === 'contacts' ? { address: finalAddressToUse, coordinates: activeGeocodingResult } : undefined)
         }
 
@@ -804,7 +831,30 @@ export function WizardProvider({
                 });
             } else if (section === 'dining') {
                 const rawRecs = Array.isArray(result.recommendations) ? result.recommendations : [];
-                setData((prev: any) => ({ ...prev, dining: [...prev.dining, ...rawRecs] }));
+
+                // Normaliza la categoría de un registro
+                const getRecCat = (r: any) => (r.type || r.category || '').toLowerCase();
+
+                // Categorías generadas en modo "todos"
+                const TODOS_CATS = new Set([
+                    'supermercados', 'restaurantes', 'desayuno', 'tapas',
+                    'cultura', 'naturaleza', 'ocio', 'ocio_nocturno'
+                ]);
+
+                setData((prev: any) => {
+                    const kept = prev.dining.filter((r: any) => {
+                        const cat = getRecCat(r);
+                        if (category === 'todos') {
+                            // Reemplazar las 7 MVP, conservar todo lo demás (italiano, relax, etc.)
+                            return !TODOS_CATS.has(cat);
+                        }
+                        // Para CUALQUIER categoría individual: reemplazar solo las de ese tipo
+                        // ocio agrupa ocio y ocio_nocturno
+                        if (category === 'ocio') return cat !== 'ocio' && cat !== 'ocio_nocturno';
+                        return cat !== category.toLowerCase();
+                    });
+                    return { ...prev, dining: [...kept, ...rawRecs] };
+                });
             } else if (section === 'faqs') {
                 setData((prev: any) => ({ ...prev, faqs: [...prev.faqs, ...(result.faqs || [])] }));
             } else if (section === 'tech') {

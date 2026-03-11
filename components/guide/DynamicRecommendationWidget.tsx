@@ -8,12 +8,15 @@ import { cn } from '@/lib/utils';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 
 interface DynamicRecommendationWidgetProps {
-    recommendations: any[];
+    recommendations: any[]; // Define a more specific type if known
     currentLanguage: string;
-    onNavigate: (screen: string) => void;
-    accessToken?: string;
-    propertyId?: string;
-    theme: any;
+    onNavigate: (type: string, payload: { recId: string }) => void;
+    accessToken: string;
+    propertyId: string;
+    theme: {
+        cardBg: string;
+        chipIconColor: string;
+    };
 }
 
 function getCurrentTimeSlot(): string {
@@ -64,14 +67,11 @@ export function DynamicRecommendationWidget({
     const activeRec = useMemo(() => {
         if (!recommendations || recommendations.length === 0) return null;
 
-        // Filtra por franja horaria y disponibilidad por día
         const relevant = recommendations.filter(r => {
             const m = r.metadata || {};
-            // 1. Franja horaria
             const slots = m.best_time_slots || r.best_time_slots || [];
             const matchesTime = Array.isArray(slots) && slots.includes(slot);
 
-            // 2. Día de la semana
             const availability = m.availability || r.availability || { days: ["todos"] };
             const days = availability.days || ["todos"];
             const matchesDay =
@@ -82,10 +82,7 @@ export function DynamicRecommendationWidget({
             return matchesTime && matchesDay;
         });
 
-        // Si no hay nada para esta hora, coge cualquiera
         const pool = relevant.length > 0 ? relevant : recommendations;
-
-        // Rota según el día para que no salga siempre el mismo
         const dayOfYear = Math.floor(Date.now() / 86400000);
         return pool[dayOfYear % pool.length];
     }, [recommendations, slot, today]);
@@ -99,23 +96,49 @@ export function DynamicRecommendationWidget({
     const tags = activeRec.metadata?.tags || activeRec.tags || [];
     const availabilityNotes = activeRec.metadata?.availability?.notes || activeRec.availability?.notes;
 
-    // Smart Routing Logic
-    const EAT_SET = new Set(['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'restaurant', 'restaurante', 'cafe', 'bar', 'food', 'comida', 'gastronomia', 'gastronomía']);
-    const DO_SET = new Set(['naturaleza', 'cultura', 'ocio', 'relax', 'activity', 'actividad', 'actividades', 'park', 'parque', 'museum', 'museo', 'landmark', 'experiencias', 'experience', 'qué hacer', 'que hacer']);
-    const SHOP_SET = new Set(['compras', 'shopping', 'market', 'mercado', 'tiendas', 'tienda']);
+    // ── Smart Routing Logic ───────────────────────────────────────────────────
+    // eat → todo lo que se come, bebe o sale de noche (incluyendo ocio nocturno)
+    // do  → actividades diurnas: naturaleza, cultura, relax, ocio diurno
+    // shop → compras y supermercados
+    const EAT_SET = new Set([
+        // Comida
+        'restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico',
+        'alta_cocina', 'internacional', 'desayuno', 'restaurante', 'cafe',
+        'bar', 'food', 'comida', 'gastronomia', 'gastronomía',
+        // Tapas
+        'tapas',
+    ]);
+
+    const DO_SET = new Set([
+        // Solo actividades diurnas
+        'naturaleza', 'cultura', 'relax',
+        'activity', 'actividad', 'actividades',
+        'park', 'parque', 'museum', 'museo', 'landmark',
+        'experiencias', 'experience', 'qué hacer', 'que hacer', 'spa',
+        // Ocio y vida nocturna
+        'ocio', 'ocio_nocturno', 'nightclub', 'night_club',
+        'bar_copas', 'discoteca', 'pub',
+    ]);
 
     const handleNavigate = () => {
         const type = (activeRec.type || activeRec.category || '').toLowerCase();
-        if (EAT_SET.has(type)) {
-            onNavigate('eat');
+        const payload = { recId: activeRec.id };
+
+        if (SHOP_SET.has(type)) {
+            onNavigate('shop', payload);
         } else if (DO_SET.has(type)) {
-            onNavigate('do');
-        } else if (SHOP_SET.has(type)) {
-            onNavigate('shop');
+            onNavigate('do', payload);
         } else {
-            onNavigate('eat'); // Fallback safe
+            // eat como fallback seguro — cubre restaurantes, bares, ocio nocturno
+            onNavigate('eat', payload);
         }
     };
+
+    const SHOP_SET = new Set([
+        'compras', 'supermercados', 'shopping', 'market',
+        'mercado', 'tiendas', 'tienda', 'supermarket',
+    ]);
+
 
     return (
         <motion.div
