@@ -41,10 +41,15 @@ export default function StepAccess({ value }: { value?: string }) {
                                 className="h-12 flex-1 pr-10 shadow-sm border-slate-200 focus:border-primary focus:ring-primary/10 transition-all rounded-xl"
                                 value={data.access?.full_address || ''}
                                 onChange={e => {
+                                    const newAddr = e.target.value
                                     setData((prev: any) => ({
                                         ...prev,
-                                        access: { ...prev.access, full_address: e.target.value }
-                                    }));
+                                        access: { ...prev.access, full_address: newAddr }
+                                    }))
+                                    // Si cambia la dirección, ocultamos la alerta de regenerar 
+                                    // para evitar que pulse "Regenerar" con coordenadas viejas
+                                    if (showRegenerateAlert) setShowRegenerateAlert(false)
+                                    if (geocodingResult) setGeocodingResult(null)
                                 }}
                                 onBlur={async () => {
                                     const result = await handleGeocode()

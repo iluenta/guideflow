@@ -4,7 +4,8 @@ import React, { useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { TabsContent } from '@/components/ui/tabs'
-import { Upload, X, Loader2, Home, Hash, CheckCircle2, AlertCircle, Globe } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Upload, X, Loader2, Home, Hash, CheckCircle2, AlertCircle, Globe, Car } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWizard } from '../WizardContext'
 
@@ -219,6 +220,35 @@ export default function StepProperty({ value }: { value?: string }) {
                             />
                         </div>
                     ))}
+                </div>
+
+                {/* ── Parking ───────────────────────────────────── */}
+                <div className="pt-4 border-t border-slate-50 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <Car className="h-4 w-4 text-[#316263]" />
+                                ¿Tiene plaza de Parking?
+                            </Label>
+                            <p className="text-[11px] text-slate-400">Indica si incluyes una plaza privada con el alojamiento.</p>
+                        </div>
+                        <Switch
+                            checked={data.property?.has_parking || false}
+                            onCheckedChange={val => setData({ ...data, property: { ...data.property, has_parking: val } })}
+                        />
+                    </div>
+
+                    {data.property?.has_parking && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Número de Plaza o Ubicación</Label>
+                            <Input
+                                placeholder="Ej: Plaza 42 (Planta -1)"
+                                className="h-11 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-[#316263]/20"
+                                value={data.property?.parking_number || ''}
+                                onChange={e => setData({ ...data, property: { ...data.property, parking_number: e.target.value } })}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </TabsContent>

@@ -288,7 +288,10 @@ export async function POST(req: Request) {
           : undefined;
         const arrivalT0 = Date.now();
         const result = await generateArrivalInstructions(
-          existingData?.address || fallbackAddress, sectionParam, buildManualGeo()
+          existingData?.address || fallbackAddress,
+          sectionParam,
+          buildManualGeo(),
+          existingData?.propertyParking
         );
         const arrivalT1 = Date.now();
         console.log(`[PERF][route.ts] Arrival section "${section}" total: ${((arrivalT1 - arrivalT0) / 1000).toFixed(2)}s`);

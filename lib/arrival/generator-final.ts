@@ -1,76 +1,314 @@
 import { geocodeAddress, GeocodingResult } from '../geocoding';
-import { discoverNearbyAirports } from '../discovery/airports';
-import { discoverNearbyAirportsFallback } from '../discovery/airports-fallback';
-import { discoverMainTrainStations, discoverNearbyMetroStations } from '../discovery/stations';
-import { findNearbyParking } from '../maps/overpass';
-import { searchHighwayInformation } from '../discovery/transit-search';
 import { geminiREST } from '../ai/gemini-rest';
 import { createClient } from '../supabase/server';
 
 /**
- * Main orchestrator for generating arrival instructions (Fase 13)
+ * Arrival instructions generator — v4 (fully dynamic, no static lists)
  *
- * OPTIMIZATIONS APPLIED:
- * 1. discoverMainTrainStations moved into Promise.allSettled → runs in parallel
- *    with airports/metro/parking instead of sequentially after them.
- *    Saves ~8-10s when Overpass is slow or rate-limited.
- *
- * 2. useGrounding: true removed from generateArrivalJSON.
- *    All context (airports, stations, parking, highways) is already provided
- *    via external APIs — grounding adds ~10s of redundant web-search latency.
- *
- * 3. findNearbyParking timeout reduced: overpass is unreliable for rural areas.
- *    A short timeout + immediate fallback avoids paying the full 5s penalty.
- *
- * Result: ~32s → ~6-8s
+ * ARCHITECTURE:
+ * - Airports:  Google Places nearbysearch type=airport (~300ms) — no static list
+ * - Stations:  Google Places nearbysearch type=train_station (~300ms)
+ * - Parking:   Google Places nearbysearch type=parking (~300ms)
+ * - All in parallel + 1 Gemini call with the context
+ * - Total: ~4-6s
  */
+
+// ─── Google Places helpers ────────────────────────────────────────────────────
+
+// Keywords that identify a real commercial airport
+const AIRPORT_KEYWORDS = [
+    'aeropuerto', 'airport', 'aéroport', 'flughafen', 'internacional', 'international'
+];
+// Keywords that disqualify a result
+const AIRPORT_BLACKLIST = [
+    'aeroclub', 'aeromodelismo', 'helipuerto', 'helipad', 'heliport',
+    'transfer', 'taxi', 'shuttle', 'traslado', 'vliegveld',
+    // Private airfields, training centers, military
+    'cuatro vientos', 'escuela', 'cae ', 'aeródromo', 'aerodromo',
+    'base aérea', 'base aerea', 'military', 'privado', 'ultraligero',
+    'paracaidismo', 'skydive', 'gliding', 'vuelo', 'flying club'
+];
+// Regex to detect IATA code in name e.g. "Aeropuerto de Almería (LEI)"
+const IATA_REGEX = /\b([A-Z]{3})\b/;
+
+function isCommercialAirport(name: string): boolean {
+    const lower = name.toLowerCase();
+    if (AIRPORT_BLACKLIST.some(kw => lower.includes(kw))) return false;
+    if (AIRPORT_KEYWORDS.some(kw => lower.includes(kw))) return true;
+    if (IATA_REGEX.test(name)) return true;
+    return false;
+}
+
+async function findNearestAirports(lat: number, lng: number, placesKey: string) {
+    try {
+        // Use radius (200km) instead of rankby=distance so we can filter properly
+        const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
+            `?location=${lat},${lng}&radius=200000&type=airport&language=es&key=${placesKey}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const commercial = (data.results || [])
+            .filter((p: any) => isCommercialAirport(p.name))
+            .map((p: any) => {
+                const aLat = p.geometry.location.lat;
+                const aLng = p.geometry.location.lng;
+                return {
+                    name: p.name,
+                    code: extractIATA(p.name) || '',
+                    city: p.vicinity || '',
+                    distance_km: Math.round(haversineKm(lat, lng, aLat, aLng)),
+                    place_id: p.place_id
+                };
+            })
+            .sort((a: any, b: any) => a.distance_km - b.distance_km)
+            .slice(0, 3);
+
+        if (commercial.length > 0) {
+            console.log(`[PLACES] Found ${commercial.length} commercial airports: ${commercial.map((a: any) => `${a.name} (${a.distance_km}km)`).join(', ')}`);
+            return commercial;
+        }
+
+        // Fallback: ask Gemini — it knows commercial airports near any location
+        console.log('[PLACES] No commercial airports found via Places — using Gemini fallback');
+        return await findAirportsViaGemini(lat, lng);
+
+    } catch (e: any) {
+        console.warn('[PLACES] Airport search failed:', e.message);
+        return await findAirportsViaGemini(lat, lng);
+    }
+}
+
+async function findAirportsViaGemini(lat: number, lng: number) {
+    try {
+        const { data } = await geminiREST('gemini-2.0-flash',
+            `Cuáles son los aeropuertos comerciales (con vuelos regulares nacionales o internacionales) más cercanos a las coordenadas ${lat}, ${lng} en España?
+Devuelve SOLO JSON con los 3 más cercanos:
+{
+  "airports": [
+    { "name": "Nombre oficial del aeropuerto", "code": "IATA", "city": "Ciudad", "distance_km": 90 }
+  ]
+}`,
+            { responseMimeType: 'application/json', temperature: 0 }
+        );
+        const airports = data?.airports || [];
+        console.log(`[GEMINI] Found ${airports.length} airports: ${airports.map((a: any) => `${a.code} (${a.distance_km}km)`).join(', ')}`);
+        return airports;
+    } catch (e: any) {
+        console.warn('[GEMINI] Airport fallback failed:', e.message);
+        return [];
+    }
+}
+
+// Extract IATA code from airport name e.g. "Aeropuerto de Almería (LEI)" → "LEI"
+function extractIATA(name: string): string {
+    const match = name.match(/\(([A-Z]{3})\)/);
+    return match ? match[1] : '';
+}
+
+// Haversine distance in km
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function findNearestTrainStation(lat: number, lng: number, placesKey: string) {
+    try {
+        // Always fetch both in parallel — bus stations are as important as train stations
+        const [trainRes, busRes] = await Promise.all([
+            fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&type=train_station&language=es&key=${placesKey}`),
+            fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&type=bus_station&language=es&key=${placesKey}`)
+        ]);
+        const [trainData, busData] = await Promise.all([trainRes.json(), busRes.json()]);
+
+        const trainStations = (trainData.results || []).slice(0, 3).map((p: any) => ({
+            name: p.name,
+            address: p.vicinity,
+            type: 'train' as const,
+            place_id: p.place_id
+        }));
+
+        const busStations = (busData.results || []).slice(0, 3).map((p: any) => ({
+            name: p.name,
+            address: p.vicinity,
+            type: 'bus' as const,
+            place_id: p.place_id
+        }));
+
+        console.log(`[PLACES] Train stations: ${trainStations.length}, Bus stations: ${busStations.length}`);
+        return { trainStations, busStations };
+    } catch (e: any) {
+        console.warn('[PLACES] Train/bus station search failed:', e.message);
+        return { trainStations: [], busStations: [] };
+    }
+}
+
+async function findNearbyParking(lat: number, lng: number, placesKey: string) {
+    try {
+        const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
+            `?location=${lat},${lng}&rankby=distance&type=parking&language=es&key=${placesKey}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const PARKING_BLACKLIST = [
+            'estación', 'station', 'tren', 'ave', 'renfe', 'aeropuerto', 'airport',
+            'hotel', 'unnamed', 'sin nombre', 'restaurante', 'supermercado'
+        ];
+        const PARKING_KEYWORDS = [
+            'parking', 'aparcamiento', 'garaje', 'garage', 'park'
+        ];
+
+        const filtered = (data.results || [])
+            .filter((p: any) => {
+                const lower = (p.name || '').toLowerCase();
+                if (PARKING_BLACKLIST.some(kw => lower.includes(kw))) return false;
+                if (!p.name || p.name.length < 4) return false;
+                return true;
+            })
+            .map((p: any) => {
+                const pLat = p.geometry?.location?.lat;
+                const pLng = p.geometry?.location?.lng;
+                const distance_m = (pLat && pLng)
+                    ? Math.round(haversineKm(lat, lng, pLat, pLng) * 1000)
+                    : null;
+                const walk_min = distance_m ? Math.round(distance_m / 80) : null; // ~80m/min walking pace
+                return {
+                    name: p.name,
+                    address: p.vicinity,
+                    place_id: p.place_id,
+                    rating: p.rating || null,
+                    distance_m,
+                    walk_min
+                };
+            })
+            // Sort by distance ascending (already rankby=distance, but explicit)
+            .sort((a: any, b: any) => (a.distance_m ?? 9999) - (b.distance_m ?? 9999))
+            // Only keep parkings within 800m — beyond that it's not useful to name them
+            .filter((p: any) => p.distance_m === null || p.distance_m <= 800)
+            // Prioritize ones with "parking/aparcamiento" in name
+            .sort((a: any, b: any) => {
+                const aIsParking = PARKING_KEYWORDS.some(kw => (a.name || '').toLowerCase().includes(kw));
+                const bIsParking = PARKING_KEYWORDS.some(kw => (b.name || '').toLowerCase().includes(kw));
+                if (aIsParking && !bIsParking) return -1;
+                if (!aIsParking && bIsParking) return 1;
+                return (a.distance_m ?? 9999) - (b.distance_m ?? 9999);
+            })
+            .slice(0, 4);
+
+        console.log(`[PLACES] Parking: ${filtered.length} results within 800m`);
+        return filtered;
+    } catch (e: any) {
+        console.warn('[PLACES] Parking search failed:', e.message);
+        return [];
+    }
+}
+
+// ─── Parking context builder ──────────────────────────────────────────────────
+
+function buildParkingContext(
+    propertyParking: { has_parking: boolean; parking_number?: string } | undefined,
+    nearbySpots: any[]
+): string {
+    const lines: string[] = [];
+
+    // Segment parkings by walkability
+    const close = nearbySpots.filter(p => p.distance_m !== null && p.distance_m <= 400);   // <5 min
+    const medium = nearbySpots.filter(p => p.distance_m !== null && p.distance_m > 400 && p.distance_m <= 800); // 5-10 min
+    const hasAny = nearbySpots.length > 0;
+
+    if (propertyParking?.has_parking) {
+        const spot = propertyParking.parking_number?.trim();
+        lines.push(`✅ LA PROPIEDAD TIENE PLAZA DE PARKING PROPIA${spot ? ` — ${spot}` : ''}.`);
+        lines.push('   1. Menciona primero la plaza propia de forma clara y destacada.');
+        lines.push('   2. Indica si la zona permite aparcar libremente en la calle (zona blanca/libre) o si es zona regulada (SER/ORA/zona azul/verde).');
+        lines.push('   3. Recomienda los parkings cercanos SOLO para huéspedes con más de un vehículo.');
+    } else {
+        lines.push('❌ La propiedad NO tiene plaza de parking propia.');
+        lines.push('   Informa sobre zona regulada o libre en el barrio. Los parkings cercanos son la opción principal.');
+    }
+
+    lines.push('');
+
+    if (close.length > 0) {
+        lines.push('Parkings a menos de 5 min andando (recomendar por nombre):');
+        close.forEach(p => lines.push(`- ${p.name} (${p.address}) — ${p.walk_min} min andando`));
+    }
+
+    if (medium.length > 0) {
+        lines.push('Parkings a 5-10 min andando (mencionar con la distancia):');
+        medium.forEach(p => lines.push(`- ${p.name} (${p.address}) — ${p.walk_min} min andando`));
+    }
+
+    if (!hasAny) {
+        lines.push('No se encontraron parkings públicos a menos de 800m — describe si la zona es de estacionamiento libre o regulado y sugiere usar Google Maps para encontrar parking.');
+    } else if (close.length === 0 && medium.length === 0) {
+        // All were filtered out — shouldn't happen but safety net
+        lines.push('No hay parkings públicos verificados en un radio caminable. Indica que pueden buscar en Google Maps.');
+    }
+
+    return lines.join('\n');
+}
+
+// ─── Main orchestrator ────────────────────────────────────────────────────────
+
 export async function generateArrivalInstructions(
     address: string,
     section?: 'plane' | 'train' | 'road',
-    manualGeo?: GeocodingResult
+    manualGeo?: GeocodingResult,
+    propertyParking?: { has_parking: boolean; parking_number?: string }
 ) {
     console.log('[ARRIVAL] Starting generation for:', address, section ? `(Section: ${section})` : '');
 
-    // 1. Geocode — fast, uses Mapbox, supports manual override
     const geoT0 = Date.now();
     const geo = manualGeo || await geocodeAddress(address);
     console.log(`[PERF][generator] Geocoding: ${Date.now() - geoT0}ms`);
 
-    if (!geo) {
-        console.error('[ARRIVAL] Geocoding failed for:', address);
-        throw new Error('No se pudo geocodificar la dirección');
-    }
+    if (!geo) throw new Error('No se pudo geocodificar la dirección');
 
-    const coordinates: [number, number] = [geo.lng, geo.lat];
+    const { lat, lng } = geo;
     const city = geo.city || '';
     const countryCode = geo.countryCode || 'ES';
-    console.log(`[ARRIVAL] Logic start: Coords=${coordinates} City=${city} Country=${countryCode}`);
+    console.log(`[ARRIVAL] Coords=${lat},${lng} City=${city} Country=${countryCode}`);
 
-    // ─── FAST PATH: Section-specific request ─────────────────────────────────
+    const placesKey = process.env.GOOGLE_PLACES_API_KEY || '';
+
+    // ─── FAST PATH: section-specific ─────────────────────────────────────────
     if (section) {
-        console.log(`[ARRIVAL] Fast path: single Gemini call for section="${section}"`);
+        console.log(`[ARRIVAL] Fast path for section="${section}"`);
 
-        const cacheT0 = Date.now();
-        const nearbyAirports = await discoverNearbyAirportsFallback(coordinates, 150);
-        const mainAirport = nearbyAirports[0];
+        // Cache check
+        const airports = await findNearestAirports(lat, lng, placesKey);
+        const mainAirport = airports[0];
         const cached = await getCachedTransport(city, countryCode, mainAirport?.code);
-        console.log(`[PERF][generator] Fast path cache check: ${Date.now() - cacheT0}ms`);
 
         if (cached) {
-            const hasRelevantCache =
+            const hit =
                 (section === 'plane' && cached.transport_info) ||
                 (section === 'road' && cached.highway_info) ||
                 (section === 'train' && cached.transport_info);
-
-            if (hasRelevantCache) {
+            if (hit) {
                 console.log('[CACHE HIT] Using cached transport info');
                 return buildResponseFromCache(cached, section);
             }
         }
 
+        // Fetch only the data needed for this section in parallel
+        const t0 = Date.now();
+        const [trainResult, parkingSpots] = await Promise.all([
+            section === 'train' ? findNearestTrainStation(lat, lng, placesKey) : Promise.resolve({ trainStations: [], busStations: [] }),
+            section === 'road' ? findNearbyParking(lat, lng, placesKey) : Promise.resolve([]),
+        ]);
+        const { trainStations, busStations } = trainResult as { trainStations: any[], busStations: any[] };
+        console.log(`[PERF][generator] Fast path Places lookup: ${Date.now() - t0}ms`);
+
         const geminiT0 = Date.now();
-        const result = await generateSectionFast(address, city, mainAirport, section);
-        console.log(`[PERF][generator] Fast path Gemini call: ${Date.now() - geminiT0}ms`);
+        const result = await generateSectionFast({
+            address, city, mainAirport, airports, section, trainStations, busStations, parkingSpots, propertyParking
+        });
+        console.log(`[PERF][generator] Fast path Gemini: ${Date.now() - geminiT0}ms`);
 
         if (mainAirport) {
             saveToCache(city, countryCode, mainAirport.code,
@@ -83,151 +321,152 @@ export async function generateArrivalInstructions(
     }
 
     // ─── FULL PATH ────────────────────────────────────────────────────────────
-    console.log('[ARRIVAL] Full path: discovering all nodes in parallel...');
+    console.log('[ARRIVAL] Full path: parallel discovery...');
 
-    // FIX 1: discoverMainTrainStations now runs IN PARALLEL with the others.
-    // Previously it ran sequentially after the allSettled block, adding 8-10s.
     const discT0 = Date.now();
-    const [airports, metro, parking, trainStations] = await Promise.allSettled([
-        discoverNearbyAirports(coordinates, 150).catch(() =>
-            discoverNearbyAirportsFallback(coordinates, 150)
-        ),
-        discoverNearbyMetroStations(coordinates, 1000).catch(() => []),
-        // FIX 3: Wrap parking in a race against a short timeout.
-        // Overpass is unreliable for rural areas — don't pay the full 5s penalty.
-        Promise.race([
-            findNearbyParking(geo.lat, geo.lng, 500, address),
-            new Promise<{ has_regulated_parking: boolean; parking_zones: any[] }>(resolve =>
-                setTimeout(() => resolve({ has_regulated_parking: false, parking_zones: [] }), 3000)
-            )
-        ]).catch(() => ({ has_regulated_parking: false, parking_zones: [] as any[] })),
-        // FIX 1: Train stations in parallel
-        discoverMainTrainStations(city, coordinates).catch(() => []),
+    const [airportsResult, trainResult, parkingResult] = await Promise.all([
+        findNearestAirports(lat, lng, placesKey),
+        findNearestTrainStation(lat, lng, placesKey),
+        findNearbyParking(lat, lng, placesKey),
     ]);
-    console.log(`[PERF][generator] All node discovery (parallel): ${Date.now() - discT0}ms`);
+    const { trainStations, busStations } = trainResult;
+    console.log(`[PERF][generator] All discovery (parallel): ${Date.now() - discT0}ms`);
 
-    const nearbyAirports = airports.status === 'fulfilled' ? airports.value : [];
-    const nearbyMetro = metro.status === 'fulfilled' ? metro.value : [];
-    const parkingInfo = parking.status === 'fulfilled'
-        ? parking.value as { has_regulated_parking: boolean; parking_zones: any[] }
-        : { has_regulated_parking: false, parking_zones: [] };
-    const mainStations = trainStations.status === 'fulfilled' ? trainStations.value : [];
-    const mainAirport = nearbyAirports[0];
+    const mainAirport = airportsResult[0] || null;
 
-    // Cache check + highway info
-    console.log('[ARRIVAL] Checking cache and highway info...');
+    // Cache check for highway info
     const cached = await getCachedTransport(city, countryCode, mainAirport?.code);
+    const airportsWithTransit = cached?.transport_info || airportsResult.slice(0, 3);
 
-    const airportsWithTransit = cached?.transport_info
-        ? (console.log('[CACHE HIT] Using cached airport transport info'), cached.transport_info)
-        : nearbyAirports.slice(0, 3);
-
-    let highwayInfo = null;
-    if (cached?.highway_info) {
-        console.log('[CACHE HIT] Using cached highway info');
-        highwayInfo = cached.highway_info;
-    } else {
-        highwayInfo = await searchHighwayInformation(city, 'España');
-        if (mainAirport) {
-            await saveToCache(city, countryCode, mainAirport.code, null, highwayInfo);
-        }
-    }
-
-    console.log('[ARRIVAL] Generating final structured JSON...');
+    console.log('[ARRIVAL] Generating final JSON...');
     const finalT0 = Date.now();
     const finalResult = await generateArrivalJSON({
         address: geo.formattedAddress,
         city,
         airports: airportsWithTransit,
-        mainStations,
-        nearbyMetro,
-        parkingInfo,
-        highwayInfo: highwayInfo || { main_highways: [], notes: '' },
-        section: undefined
+        trainStations,
+        busStations,
+        parkingSpots: parkingResult,
+        propertyParking,
     });
     console.log(`[PERF][generator] Final JSON generation: ${Date.now() - finalT0}ms`);
-    console.log(`[ARRIVAL] Full path generated: ${JSON.stringify(finalResult).substring(0, 100)}...`);
+    console.log(`[ARRIVAL] Done: ${JSON.stringify(finalResult).substring(0, 100)}...`);
 
     return finalResult;
 }
 
 // ─── Fast path: single Gemini call for one section ────────────────────────────
-async function generateSectionFast(
-    address: string,
-    city: string,
-    mainAirport: any,
-    section: 'plane' | 'train' | 'road'
-): Promise<any> {
+async function generateSectionFast(ctx: {
+    address: string;
+    city: string;
+    mainAirport: any;
+    airports: any[];
+    section: 'plane' | 'train' | 'road';
+    trainStations: any[];
+    busStations: any[];
+    parkingSpots: any[];
+    propertyParking?: { has_parking: boolean; parking_number?: string };
+}): Promise<any> {
+    const { address, city, mainAirport, airports, section, trainStations, busStations, parkingSpots, propertyParking } = ctx;
+
+    // Build parking context string for the prompt
+    const parkingContext = buildParkingContext(propertyParking, parkingSpots);
+
     const sectionPrompts: Record<string, string> = {
         plane: `Eres un experto en transporte de ${city}, España.
 DESTINO: ${address}
-AEROPUERTO MÁS CERCANO: ${mainAirport ? `${mainAirport.name} (${mainAirport.code}), a ${mainAirport.distance_km} km` : `aeropuerto principal de ${city}`}
+AEROPUERTOS CERCANOS:
+${airports.length
+                ? airports.map((a: any) => `- ${a.name} (${a.code}) a ${a.distance_km} km`).join('\n')
+                : mainAirport
+                    ? `- ${mainAirport.name} (${mainAirport.code}) a ${mainAirport.distance_km} km`
+                    : `- Aeropuerto principal de ${city}`}
 
-Genera instrucciones REALES y DETALLADAS de cómo llegar desde el aeropuerto al destino.
-Incluye: metro/tren, autobús exprés, taxi/VTC con precios reales en €, duración.
-Usa emojis temáticos (✈️, 🚇, 🚌, 🚕, 💰, ⏱️) y estructura con OPCIÓN A, OPCIÓN B, OPCIÓN C.
+Para el aeropuerto MÁS CERCANO, genera instrucciones detalladas con OPCIÓN A, B y C (transporte público, taxi/VTC, alquiler de coche) con precios reales en € y tiempos.
+Para el resto de aeropuertos de la lista, menciona brevemente distancia y opciones principales.
+Usa emojis (✈️, 🚇, 🚌, 🚕, 💰, ⏱️).
 
 RESPONDE SOLO CON ESTE JSON:
 {
   "access_info": {
     "from_airport": {
-      "instructions": "Instrucciones detalladas con emojis y opciones A/B/C",
-      "duration": "Tiempo estimado más frecuente",
-      "price_range": "Rango de precio €"
+      "instructions": "Instrucciones detalladas cubriendo todos los aeropuertos",
+      "duration": "Tiempo estimado aeropuerto principal",
+      "price_range": "Rango € aeropuerto principal"
     },
-    "by_road": null,
-    "from_train": null,
-    "nearby_transport": [],
-    "parking": null
+    "by_road": null, "from_train": null, "nearby_transport": [], "parking": null
   }
 }`,
 
-        train: `Eres un experto en transporte de ${city}, España.
-DESTINO: ${address}
+        train: `Eres un experto en transporte público de larga distancia en España.
+DESTINO: ${address} (${city})
 
-Genera instrucciones REALES de cómo llegar desde las principales estaciones de tren/AVE a este destino.
-Incluye: metro desde la estación, taxi, autobús. Usa emojis (🚄, 🚇, 🚕, ⏱️, 💰).
+ESTACIONES DE TREN CERCANAS (Google Places):
+${trainStations.length
+                ? trainStations.map(s => `- ${s.name} (${s.address})`).join('\n')
+                : `- Sin estaciones de tren identificadas cerca de ${city}`}
 
-RESPONDE SOLO CON ESTE JSON:
+ESTACIONES DE AUTOBÚS CERCANAS (Google Places):
+${busStations.length
+                ? busStations.map(s => `- ${s.name} (${s.address})`).join('\n')
+                : `- Sin estaciones de autobús identificadas cerca de ${city}`}
+
+REGLA CRÍTICA: debes rellenar los TRES campos del JSON obligatoriamente. No dejes ninguno vacío.
+
+Campo 1 — "train_ld": Bloque 🚄 TREN LARGA DISTANCIA
+- Estaciones hub con AVE/Larga Distancia más cercanas (no cercanías locales).
+- Ciudades con conexión directa y tiempo aproximado.
+- Si no hay AVE, indícalo honestamente y sugiere la mejor alternativa ferroviaria.
+
+Campo 2 — "bus_interurban": Bloque 🚌 AUTOBÚS INTERURBANO  
+- Estación de autobuses hub más cercana.
+- Compañías que operan (ALSA, Avanza, FlixBus, etc.) y principales ciudades de origen.
+- NO inventes horarios ni precios exactos — remite a alsa.es o flixbus.es para consultar.
+
+Campo 3 — "last_mile": Bloque 🚕 ÚLTIMO TRAMO desde estación/terminal hasta la propiedad
+- Opciones reales: taxi/VTC, metro/bus urbano, alquiler de coche. Precios orientativos en € y tiempos.
+
+RESPONDE SOLO CON ESTE JSON (los tres campos son OBLIGATORIOS):
 {
   "access_info": {
     "from_train": {
-      "instructions": "Instrucciones detalladas con emojis desde estación principal",
-      "duration": "Tiempo estimado",
-      "price_range": "Precio/Tipo"
+      "train_ld": "🚄 Bloque tren larga distancia con hubs y conexiones",
+      "bus_interurban": "🚌 Bloque autobús interurbano con estación hub, compañías y ciudades de origen",
+      "last_mile": "🚕 Bloque último tramo con opciones, precios y tiempos",
+      "duration": "Tiempo total desde hub más cercana hasta propiedad",
+      "price_range": "Rango orientativo transporte + último tramo"
     },
-    "from_airport": null,
-    "by_road": null,
-    "nearby_transport": [],
-    "parking": null
+    "from_airport": null, "by_road": null, "nearby_transport": [], "parking": null
   }
 }`,
 
-        road: `Eres un experto en acceso por carretera a ${city}, España.
+        road: `Eres un experto en acceso por carretera y aparcamiento en ${city}, España.
 DESTINO: ${address}
 
+INFORMACIÓN DE PARKING:
+${parkingContext}
+
 Genera información REAL sobre:
-- Principales autopistas/autovías de acceso a ${city}
-- Si hay peajes en la zona
-- Zona de Bajas Emisiones (ZBE) o restricciones de tráfico
-- Consejo de aparcamiento cerca del destino
-Usa emojis (📍, 🚗, 🅿️, ⚠️).
+- Cómo llegar en coche (autopistas/autovías principales de acceso a ${city})
+- Si hay peajes en la ruta
+- Si hay Zona de Bajas Emisiones (ZBE) u otras restricciones de tráfico
+- Aparcamiento: usa la información de parking de arriba como base. Si la propiedad tiene plaza propia, menciónala primero y de forma destacada. Si no tiene, informa sobre zona regulada (SER/ORA/zona azul/libre) y parkings cercanos de la lista.
+Usa emojis (📍, 🚗, 🅿️, ⚠️, 💰).
 
 RESPONDE SOLO CON ESTE JSON:
 {
   "access_info": {
     "by_road": {
-      "title": "📍 UBICACIÓN Y ACCESO EN COCHE",
-      "instructions": "Instrucciones con autopistas, ZBE y parking"
+      "title": "📍 LLEGADA EN COCHE",
+      "instructions": "Instrucciones con autopistas, ZBE y acceso a la propiedad"
     },
     "parking": {
-      "info": "Info sobre zona regulada SER/ORA o parking libre cercano",
-      "price": "Precio estimado o Gratis",
-      "distance": "Distancia aproximada al destino"
+      "info": "Descripción del parking — primero el propio si existe, luego zona y alternativas cercanas",
+      "price": "Precio estimado o 'Incluido' si es plaza propia",
+      "distance": "'En la propiedad' si tiene plaza propia, o distancia aproximada si es externo",
+      "nearby_options": ["Parking 1", "Parking 2"]
     },
-    "from_airport": null,
-    "from_train": null,
-    "nearby_transport": []
+    "from_airport": null, "from_train": null, "nearby_transport": []
   }
 }`
     };
@@ -236,16 +475,114 @@ RESPONDE SOLO CON ESTE JSON:
         const { data } = await geminiREST('gemini-2.0-flash', sectionPrompts[section], {
             responseMimeType: 'application/json',
             temperature: 0.2
-            // No useGrounding — faster without web search
         });
-        console.log(`[ARRIVAL] Fast section "${section}" generated successfully`);
+        console.log(`[ARRIVAL] Fast section "${section}" generated`);
         return data || { access_info: null };
     } catch (error: any) {
-        console.error('[ARRIVAL] Fast section generation failed:', error.message);
+        console.error('[ARRIVAL] Fast section failed:', error.message);
         return { access_info: null };
     }
 }
 
+// ─── Full path: unified Gemini call ──────────────────────────────────────────
+async function generateArrivalJSON(ctx: {
+    address: string;
+    city: string;
+    airports: any[];
+    trainStations: any[];
+    busStations: any[];
+    parkingSpots: any[];
+    propertyParking?: { has_parking: boolean; parking_number?: string };
+}) {
+    const { address, city, airports, trainStations, busStations, parkingSpots, propertyParking } = ctx;
+    const parkingContext = buildParkingContext(propertyParking, parkingSpots);
+
+    const prompt = `Actúa como un Recepcionista TOP de Apartamentos de Lujo en ${city}.
+Genera la "Guía de Acceso" para huéspedes que llegan a esta propiedad.
+
+📍 DESTINO: ${address}
+
+---
+DATOS VERIFICADOS (Google Places + base de conocimiento):
+
+✈️ AEROPUERTOS CERCANOS:
+${airports.length
+            ? airports.map((a: any) => `- ${a.name} (${a.code}) a ${a.distance_km} km`).join('\n')
+            : `- Aeropuerto principal de ${city}`}
+
+🚄 ESTACIONES DE TREN CERCANAS:
+${trainStations.length
+            ? trainStations.map((s: any) => `- ${s.name} (${s.address})`).join('\n')
+            : `- Sin estaciones de tren identificadas cerca de ${city}`}
+
+🚌 ESTACIONES DE AUTOBÚS CERCANAS:
+${busStations.length
+            ? busStations.map((s: any) => `- ${s.name} (${s.address})`).join('\n')
+            : `- Sin estaciones de autobús identificadas cerca de ${city}`}
+
+🅿️ PARKING:
+${parkingContext}
+
+---
+INSTRUCCIONES:
+1. AVIÓN — aeropuerto principal (el más cercano):
+   - Da instrucciones detalladas con Opción A, B y C (transporte público, taxi/VTC, alquiler de coche), precios en € y tiempos reales.
+   - En "main_airport_name" pon el nombre oficial del aeropuerto principal.
+   - En "other_airports" incluye los demás aeropuertos de la lista, cada uno con nombre, código IATA, distancia en km y 1 frase de opciones principales.
+2. TRANSPORTE PÚBLICO DE LARGA DISTANCIA — tres bloques dentro de from_train:
+   - 🚄 TREN: Estaciones hub con AVE/Larga Distancia más cercanas. Conexiones desde Madrid, Barcelona y otras ciudades principales. Si no hay AVE, indícalo honestamente.
+   - 🚌 AUTOBÚS INTERURBANO: Estación de autobuses hub más cercana. Compañías que operan (ALSA, Avanza, etc.) y ciudades con conexión. NO inventes horarios ni precios exactos — remite a alsa.es o web de la compañía.
+   - 🚕 ÚLTIMO TRAMO: Desde las estaciones locales de arriba hasta la propiedad. Taxi, bus urbano, alquiler de coche con precios orientativos y tiempos.
+3. COCHE: Autopistas de acceso a ${city}, peajes, ZBE si aplica.
+   - PARKING: Si la propiedad tiene plaza propia, menciónala primero y de forma destacada. Si no, informa sobre zona regulada y parkings cercanos.
+
+Usa emojis temáticos. Sé específico con nombres reales de calles, líneas, precios.
+
+JSON OBLIGATORIO (sin texto adicional):
+{
+  "access_info": {
+    "from_airport": {
+      "main_airport_name": "Nombre oficial del aeropuerto principal",
+      "instructions": "Instrucciones detalladas solo del aeropuerto principal con Opción A/B/C",
+      "duration": "...",
+      "price_range": "...",
+      "other_airports": [
+        { "name": "Nombre", "code": "IATA", "distance_km": 125, "options": "Alquiler de coche o taxi directo" }
+      ]
+    },
+    "from_train": {
+      "train_ld": "🚄 Tren larga distancia: hubs AVE/LD más cercanos, ciudades con conexión directa y tiempos",
+      "bus_interurban": "🚌 Autobús interurbano: estación hub más cercana, compañías (ALSA/Avanza/FlixBus) y ciudades de origen. Remitir a alsa.es para horarios",
+      "last_mile": "🚕 Último tramo desde estación/terminal hasta propiedad: taxi, metro/bus urbano, alquiler de coche con precios y tiempos",
+      "duration": "Tiempo total desde hub más cercana hasta propiedad",
+      "price_range": "Rango orientativo transporte + último tramo"
+    },
+    "by_road": {
+      "title": "📍 LLEGADA EN COCHE",
+      "instructions": "..."
+    },
+    "parking": {
+      "info": "Parking propio si existe (con número/ubicación), luego zona y alternativas",
+      "price": "'Incluido' si es plaza propia, o precio estimado si es externo",
+      "distance": "'En la propiedad' si tiene plaza propia, o distancia si es externo",
+      "nearby_options": ["..."]
+    },
+    "nearby_transport": [
+      { "type": "Bus/Tren/Metro", "name": "...", "distance": "X min andando" }
+    ]
+  }
+}`;
+
+    const { data } = await geminiREST('gemini-2.0-flash', prompt, {
+        responseMimeType: 'application/json',
+        temperature: 0.1
+        // No useGrounding — context already injected above
+    });
+
+    return data || { access_info: null };
+}
+
+// ─── Cache helpers ────────────────────────────────────────────────────────────
 function buildResponseFromCache(cached: any, section: string): any {
     if (section === 'plane' && cached.transport_info) {
         return {
@@ -275,7 +612,6 @@ function buildResponseFromCache(cached: any, section: string): any {
     return { access_info: null };
 }
 
-// ─── Cache helpers ────────────────────────────────────────────────────────────
 async function getCachedTransport(city: string, countryCode: string, airportCode?: string) {
     try {
         const supabase = await createClient();
@@ -310,59 +646,4 @@ async function saveToCache(city: string, countryCode: string, airportCode: strin
     } catch (err: any) {
         console.warn('[CACHE] Save error:', err.message);
     }
-}
-
-// ─── Full path: multi-source JSON generation ──────────────────────────────────
-async function generateArrivalJSON(context: any) {
-    const prompt = `Actúa como un Recepcionista TOP de Apartamentos de Lujo. Genera la "Guía de Acceso Maestra" en formato JSON.
-    
-📍 **UBICACIÓN DESTINO:** ${context.address}
-
----
-### DATOS FÍSICOS VERIFICADOS (usa ÚNICAMENTE esta información, no busques en internet):
-
-**AEROPUERTOS:**
-${context.airports.map((a: any) => `- ${a.name} (${a.code}) a ${a.distance_km} km. Logística: ${JSON.stringify(a.transport)}`).join('\n') || 'No disponible'}
-
-**ESTACIONES DE TREN:**
-${context.mainStations.map((s: any) => `- ${s.name} (${s.distance_km} km)`).join('\n') || 'No disponible'}
-
-**METRO/BUS CERCANO:**
-${context.nearbyMetro.map((m: any) => `- ${m.name} (${m.distance_m}m) - Líneas: ${m.lines?.join(', ') || 'N/A'}`).join('\n') || 'No disponible'}
-
-**CARRETERAS:**
-- Autopistas: ${context.highwayInfo?.main_highways?.join(', ') || 'N/A'}
-- Peajes: ${context.highwayInfo?.tolls ? 'Sí' : 'No'}
-- Zonas Bajas Emisiones: ${context.highwayInfo?.congestion_zones ? 'Sí' : 'No'}
-
-**PARKING:**
-- Regulado: ${context.parkingInfo.has_regulated_parking ? 'Sí' : 'No'}
-- Cercanos: ${context.parkingInfo.parking_zones.slice(0, 2).map((p: any) => p.name).join(', ') || 'N/A'}
-
----
-🎨 **FORMATO:** Usa emojis (✈️, 🚇, 🚌, 🚕, 📍, 💰, ⏱️). Estructura rutas como "OPCIÓN A / B / C".
-
-🎯 **JSON OBLIGATORIO:**
-{
-  "access_info": {
-    "by_road": { "title": "📍 UBICACIÓN Y ACCESO", "instructions": "..." },
-    "from_airport": { "instructions": "...", "duration": "...", "price_range": "..." },
-    "from_train": { "instructions": "...", "duration": "...", "price_range": "..." },
-    "nearby_transport": [{ "type": "Bus/Metro/Tren", "name": "...", "distance": "X min andando" }],
-    "parking": { "info": "...", "price": "...", "distance": "..." }
-  }
-}
-
-RESPONDE ÚNICAMENTE CON EL JSON VÁLIDO.`;
-
-    // FIX 2: useGrounding removed — context already contains all discovered data.
-    // Grounding added ~10s of web-search latency with no quality improvement
-    // since airports/stations/parking/highways are already injected above.
-    const { data } = await geminiREST('gemini-2.0-flash', prompt, {
-        responseMimeType: 'application/json',
-        temperature: 0.1
-        // useGrounding: true  ← REMOVED
-    });
-
-    return data || { access_info: null };
 }

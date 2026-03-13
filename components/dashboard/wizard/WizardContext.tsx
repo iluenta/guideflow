@@ -94,7 +94,7 @@ export function WizardProvider({
     const [aiLoading, setAiLoading] = useState<string | null>(null)
     const [property, setProperty] = useState<any>(null)
     const [data, setData] = useState<any>({
-        property: { name: '', slug: '', guests: 2, beds: 1, baths: 1, description: '', primary_color: '#316263', main_image_url: '' },
+        property: { name: '', slug: '', guests: 2, beds: 1, baths: 1, has_parking: false, parking_number: '', description: '', primary_color: '#316263', main_image_url: '' },
         welcome: { title: 'Welcome', host_name: '', message: 'Please enjoy your stay' },
         access: { full_address: '', checkin_type: 'lockbox' },
         checkin: { checkin_time: '15:00 - 22:00', emergency_phone: '', steps: [] },
@@ -327,6 +327,8 @@ export function WizardProvider({
                         guests: propDetails.guests,
                         beds: propDetails.beds,
                         baths: propDetails.baths,
+                        has_parking: propDetails.has_parking,
+                        parking_number: propDetails.parking_number,
                         description: propDetails.description,
                         primary_color: propDetails.theme_config?.primary_color || '#316263',
                         main_image_url: propDetails.main_image_url,
@@ -752,7 +754,17 @@ export function WizardProvider({
                         coordinates: activeGeocodingResult ?? undefined
                     };
                 })()
-                : (isTransport || section === 'contacts' ? { address: finalAddressToUse, coordinates: activeGeocodingResult } : undefined)
+                : (isTransport || section === 'contacts'
+                    ? {
+                        address: finalAddressToUse,
+                        coordinates: activeGeocodingResult,
+                        // Parking de la propiedad — viene de data.property (Step 1)
+                        propertyParking: isTransport ? {
+                            has_parking: data.property.has_parking ?? false,
+                            parking_number: data.property.parking_number ?? ''
+                        } : undefined
+                    }
+                    : undefined)
         }
 
         if (section === 'faqs') {
@@ -761,6 +773,8 @@ export function WizardProvider({
                 quiet_hours: data.rules.quiet_hours
             }
         }
+
+        console.log(`[DEBUG][handleAIFill] Sending payload for ${section}:`, JSON.stringify(payload, null, 2));
 
         try {
             const t0 = performance.now();
@@ -802,8 +816,12 @@ export function WizardProvider({
 
                     Object.entries(incoming).forEach(([key, val]) => {
                         if (val && typeof val === 'object') {
-                            // Solo sobreescribimos si hay contenido real (instrucciones o info)
-                            const hasContent = (val as any).instructions?.length > 10 || (val as any).info?.length > 10;
+                            // Support both legacy (instructions/info) and new (train_ld/bus_interurban/last_mile) formats
+                            const hasContent =
+                                (val as any).instructions?.length > 10 ||
+                                (val as any).info?.length > 10 ||
+                                (val as any).train_ld?.length > 10 ||   // ← nuevo formato tren
+                                (val as any).bus_interurban?.length > 10;
                             if (hasContent) {
                                 mergedAccess[key] = val;
                             }
@@ -812,6 +830,10 @@ export function WizardProvider({
                         }
                     });
 
+                    console.log('[DEBUG transport full]', JSON.stringify(result.access_info, null, 2))
+                    console.log('[DEBUG access keys]', Object.keys(mergedAccess))
+                    console.log('[DEBUG from_airport]', JSON.stringify((mergedAccess as any).from_airport, null, 2))
+                    console.log('[DEBUG from_train]', JSON.stringify((mergedAccess as any).from_train, null, 2))
                     return { ...prev, access: mergedAccess };
                 });
             } else if (section === 'dining') {

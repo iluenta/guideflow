@@ -111,13 +111,13 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
             `Nota personal del anfitrión: ${r.personal_note || r.metadata?.personal_note || ''}`
         ).join('\n\n---\n\n')
         metadata = { category: 'ocio', type: 'recommendations' }
-    } else if (category === 'property') {
         contentToEmbed = `[INFORMACIÓN GENERAL DEL ALOJAMIENTO]:\n` +
             `Nombre: ${data.name}\n` +
             `Descripción: ${data.description || ''}\n` +
             `Capacidad: ${data.guests || ''} personas\n` +
             `Dormitorios: ${data.beds || ''}\n` +
             `Baños: ${data.baths || ''}\n` +
+            `Parking: ${data.has_parking ? `Sí, disponible. Número de plaza: ${data.parking_number || 'No especificado'}` : 'No disponible'}\n` +
             `Ubicación: ${data.location || ''}`
         metadata = { category: 'propiedad', type: 'info' }
     } else if (category === 'welcome') {

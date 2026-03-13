@@ -28,6 +28,8 @@ export async function saveWizardStep(
             guests: stepData.guests,
             beds: stepData.beds,
             baths: stepData.baths,
+            has_parking: stepData.has_parking,
+            parking_number: stepData.parking_number,
             main_image_url: stepData.main_image_url,
             theme_config: { primary_color: stepData.primary_color },
             latitude: stepData.latitude,

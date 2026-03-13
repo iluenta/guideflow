@@ -9,10 +9,30 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
+interface OtherAirport {
+    name: string
+    code: string
+    distance_km: number
+    options: string
+}
+
 interface TransportData {
-    from_airport?: { instructions: string; duration: string; price_range: string }
-    from_train?: { instructions: string; duration: string; price_range: string }
-    parking?: { info: string; price: string; distance: string }
+    from_airport?: {
+        instructions: string
+        duration: string
+        price_range: string
+        main_airport_name?: string
+        other_airports?: OtherAirport[]
+    }
+    from_train?: {
+        instructions?: string  // legacy fallback
+        train_ld?: string
+        bus_interurban?: string
+        last_mile?: string
+        duration: string
+        price_range: string
+    }
+    parking?: { info: string; price: string; distance: string; nearby_options?: string[] }
     nearby_transport?: Array<{ type: string; name: string; distance: string }>
 }
 
@@ -24,7 +44,6 @@ interface TransportInfoProps {
     progress?: number
 }
 
-// ── Hay contenido real generado ───────────────────────────────────────────────
 function hasContent(data: TransportData): boolean {
     return !!(
         data.from_airport?.instructions ||
@@ -44,7 +63,6 @@ export default function TransportInfo({
     const [tempValue, setTempValue] = useState<string>('')
     const [regeneratingSection, setRegeneratingSection] = useState<string | null>(null)
 
-    // ── Generando ─────────────────────────────────────────────────────────────
     if (isGenerating && !regeneratingSection) {
         return (
             <div className="mb-6 bg-primary/5 border border-primary/10 rounded-2xl p-6 animate-pulse">
@@ -68,7 +86,6 @@ export default function TransportInfo({
         )
     }
 
-    // ── NUEVO: Sin dirección todavía — estado vacío explicativo ───────────────
     if (!hasContent(data) && !isGenerating) {
         return (
             <div className="mt-6 border-t border-slate-100 pt-6">
@@ -106,6 +123,8 @@ export default function TransportInfo({
         }
     }
 
+    const otherAirports = data.from_airport?.other_airports || []
+
     return (
         <div className="space-y-4 pt-4 border-t border-slate-100 mt-6 animate-in fade-in duration-500">
             <div className="flex items-center justify-between mb-4">
@@ -118,9 +137,13 @@ export default function TransportInfo({
             </div>
 
             <div className="grid grid-cols-1 gap-4">
+
+                {/* ── Desde el Aeropuerto ── */}
                 <TransportSection
                     icon={<Plane className="w-4 h-4" />}
-                    title="Desde el Aeropuerto"
+                    title={data.from_airport?.main_airport_name
+                        ? `Desde el Aeropuerto · ${data.from_airport.main_airport_name}`
+                        : 'Desde el Aeropuerto'}
                     content={data.from_airport?.instructions || ''}
                     isEditing={editingSection === 'from_airport'}
                     onEdit={() => handleEditStart('from_airport', data.from_airport?.instructions || '')}
@@ -131,23 +154,84 @@ export default function TransportInfo({
                     tempValue={tempValue}
                     setTempValue={setTempValue}
                     metadata={`${data.from_airport?.duration || '-'} • ${data.from_airport?.price_range || '-'}`}
+                    footer={
+                        otherAirports.length > 0 ? (
+                            <div className="mt-3 pt-3 border-t border-slate-100">
+                                <p className="text-[10px] uppercase tracking-wide text-slate-400 font-semibold mb-2">
+                                    ✈️ Otros aeropuertos cercanos
+                                </p>
+                                <div className="flex flex-col gap-2">
+                                    {otherAirports.map((ap, i) => (
+                                        <div
+                                            key={i}
+                                            className="flex items-start gap-3 bg-slate-100/70 rounded-lg px-3 py-2"
+                                        >
+                                            <div className="flex-shrink-0 mt-0.5">
+                                                <span className="inline-flex items-center justify-center rounded-md bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 min-w-[36px] text-center">
+                                                    {ap.code || '?'}
+                                                </span>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-[11px] font-semibold text-slate-700 leading-tight truncate">
+                                                    {ap.name}
+                                                    <span className="ml-1.5 text-[10px] font-normal text-slate-400">
+                                                        · {ap.distance_km} km
+                                                    </span>
+                                                </p>
+                                                <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
+                                                    {ap.options}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null
+                    }
                 />
 
-                <TransportSection
-                    icon={<Train className="w-4 h-4" />}
-                    title="Desde la Estación de Tren"
-                    content={data.from_train?.instructions || ''}
-                    isEditing={editingSection === 'from_train'}
-                    onEdit={() => handleEditStart('from_train', data.from_train?.instructions || '')}
-                    onSave={() => handleSave('from_train')}
-                    onCancel={() => setEditingSection(null)}
-                    onRegenerate={() => handleRegenerate('train')}
-                    isRegenerating={regeneratingSection === 'train'}
-                    tempValue={tempValue}
-                    setTempValue={setTempValue}
-                    metadata={`${data.from_train?.duration || '-'} • ${data.from_train?.price_range || '-'}`}
-                />
+                {/* ── Transporte Público de Larga Distancia ── */}
+                {(() => {
+                    const ft = data.from_train
+                    // Compose content: new 3-field format or legacy instructions fallback
+                    const trainContent = ft?.train_ld || ft?.instructions || ''
+                    const editContent = [ft?.train_ld, ft?.bus_interurban, ft?.last_mile]
+                        .filter(Boolean).join('\n\n') || ft?.instructions || ''
+                    return (
+                        <TransportSection
+                            icon={<Train className="w-4 h-4" />}
+                            title="Transporte Público de Larga Distancia"
+                            content={trainContent}
+                            isEditing={editingSection === 'from_train'}
+                            onEdit={() => handleEditStart('from_train', editContent)}
+                            onSave={() => handleSave('from_train')}
+                            onCancel={() => setEditingSection(null)}
+                            onRegenerate={() => handleRegenerate('train')}
+                            isRegenerating={regeneratingSection === 'train'}
+                            tempValue={tempValue}
+                            setTempValue={setTempValue}
+                            metadata={`${ft?.duration || '-'} • ${ft?.price_range || '-'}`}
+                            footer={
+                                (ft?.bus_interurban || ft?.last_mile) ? (
+                                    <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
+                                        {ft?.bus_interurban && (
+                                            <div className="text-[13px] text-slate-600 leading-relaxed prose prose-slate prose-sm max-w-none">
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{ft.bus_interurban}</ReactMarkdown>
+                                            </div>
+                                        )}
+                                        {ft?.last_mile && (
+                                            <div className="text-[13px] text-slate-600 leading-relaxed prose prose-slate prose-sm max-w-none">
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{ft.last_mile}</ReactMarkdown>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : null
+                            }
+                        />
+                    )
+                })()}
 
+                {/* ── Aparcamiento / Coche ── */}
                 <TransportSection
                     icon={<Car className="w-4 h-4" />}
                     title="Aparcamiento / Coche"
@@ -161,8 +245,28 @@ export default function TransportInfo({
                     tempValue={tempValue}
                     setTempValue={setTempValue}
                     metadata={`${data.parking?.distance || '-'} • ${data.parking?.price || '-'}`}
+                    footer={
+                        data.parking?.nearby_options?.length ? (
+                            <div className="mt-3 pt-3 border-t border-slate-100">
+                                <p className="text-[10px] uppercase tracking-wide text-slate-400 font-semibold mb-2">
+                                    🅿️ Parkings cercanos
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {data.parking.nearby_options.map((p, i) => (
+                                        <span
+                                            key={i}
+                                            className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-600"
+                                        >
+                                            {p}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null
+                    }
                 />
 
+                {/* ── Transporte Cercano ── */}
                 {Array.isArray(data.nearby_transport) && (
                     <div className="bg-white/50 border border-slate-100 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-3">
@@ -241,7 +345,6 @@ export default function TransportInfo({
                 )}
             </div>
 
-            {/* MODIFICADO: aviso solo cuando hay contenido generado */}
             <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-4 flex items-start gap-3">
                 <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                 <p className="text-[11px] text-amber-800 leading-relaxed">
@@ -266,10 +369,12 @@ interface SectionProps {
     tempValue: string
     setTempValue: (v: string) => void
     metadata?: string
+    footer?: React.ReactNode
 }
 
 function TransportSection({
-    icon, title, content, isEditing, onEdit, onSave, onCancel, onRegenerate, isRegenerating, tempValue, setTempValue, metadata
+    icon, title, content, isEditing, onEdit, onSave, onCancel,
+    onRegenerate, isRegenerating, tempValue, setTempValue, metadata, footer
 }: SectionProps) {
     if (!content && !isEditing && !isRegenerating && !onRegenerate) return null
 
@@ -277,13 +382,13 @@ function TransportSection({
         <Card className="border-none shadow-sm bg-slate-50/50 hover:bg-slate-50 transition-colors rounded-xl overflow-hidden group">
             <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-primary font-bold">
-                        {isRegenerating ? <Sparkles className="w-4 h-4 animate-pulse" /> : icon}
-                        <span className="text-xs uppercase tracking-tight">{title}</span>
-                        {isRegenerating && <span className="text-[9px] font-normal lowercase animate-pulse ml-1">Regenerando...</span>}
+                    <div className="flex items-center gap-2 text-primary font-bold min-w-0">
+                        {isRegenerating ? <Sparkles className="w-4 h-4 animate-pulse flex-shrink-0" /> : <span className="flex-shrink-0">{icon}</span>}
+                        <span className="text-xs uppercase tracking-tight truncate">{title}</span>
+                        {isRegenerating && <span className="text-[9px] font-normal lowercase animate-pulse ml-1 flex-shrink-0">Regenerando...</span>}
                     </div>
                     {!isEditing && !isRegenerating && (
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                             {onRegenerate && (
                                 <Button
                                     variant="ghost"
@@ -301,7 +406,7 @@ function TransportSection({
                         </div>
                     )}
                     {isEditing && (
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-shrink-0">
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-green-600" onClick={onSave}>
                                 <Check className="w-3.5 h-3.5" />
                             </Button>
@@ -336,6 +441,7 @@ function TransportSection({
                                 {metadata}
                             </div>
                         )}
+                        {footer}
                     </div>
                 )}
             </CardContent>
