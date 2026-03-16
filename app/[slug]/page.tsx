@@ -16,7 +16,7 @@ function detectLanguageFromHeader(acceptLanguage: string): string {
         .split(',')
         .map(l => l.split(';')[0].trim().toLowerCase().slice(0, 2))
 
-    return langs.find(l => SUPPORTED.includes(l)) || 'en'
+    return langs.find(l => SUPPORTED.includes(l)) || 'es'
 }
 
 // FOTC Fix: Critical UI strings to translate on the server
@@ -316,7 +316,8 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     const cookieLang = cookiesList.get('preferred_lang')?.value
     const serverDetectedLanguage = detectLanguageFromHeader(acceptLanguage)
 
-    const initialLanguage = tokenLanguage || cookieLang || serverDetectedLanguage
+    // If it's not a shared guide (no token), we prioritize Spanish/Header over the cookie
+    const initialLanguage = tokenLanguage || (activeToken ? (cookieLang || serverDetectedLanguage) : (serverDetectedLanguage || cookieLang))
 
     console.log(`[PAGE] 🌐 Language Detection | Token: ${tokenLanguage || '-'} | Cookie: ${cookieLang || '-'} | Header: ${serverDetectedLanguage} => FINAL: ${initialLanguage}`);
 
