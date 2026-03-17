@@ -11,8 +11,8 @@ interface DynamicRecommendationWidgetProps {
     recommendations: any[]; // Define a more specific type if known
     currentLanguage: string;
     onNavigate: (type: string, payload: { recId: string }) => void;
-    accessToken: string;
-    propertyId: string;
+    accessToken?: string;
+    propertyId?: string;
     theme: {
         cardBg: string;
         chipIconColor: string;
