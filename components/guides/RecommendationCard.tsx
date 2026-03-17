@@ -73,6 +73,7 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
 
     const price = recommendation.price_range || recommendation.metadata?.price_range
     const timeStr = recommendation.time || recommendation.metadata?.time
+    const openingHours = (recommendation as any).metadata?.opening_hours || (recommendation as any).opening_hours
     const note = recommendation.personal_note || recommendation.metadata?.personal_note
 
     return (
@@ -111,13 +112,19 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
             </CardHeader>
             <CardContent className="p-5 pt-2">
                 <div className="flex flex-wrap gap-2 text-[10px] text-slate-500 mb-3 font-bold uppercase tracking-tight">
-                    {recommendation.distance && (
+                    {recommendation.distance && !recommendation.distance.toLowerCase().includes('distance') && (
                         <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
                             <MapPin className="w-3 h-3" />
                             {recommendation.distance}
                         </div>
                     )}
-                    {timeStr && (
+                    {openingHours && (
+                        <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                            <Clock className="w-3 h-3" />
+                            <span>{openingHours.open} – {openingHours.close}</span>
+                        </div>
+                    )}
+                    {timeStr && !openingHours && (
                         <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
                             <Clock className="w-3 h-3" />
                             {timeStr}

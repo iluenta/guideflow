@@ -7,16 +7,12 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    // El loader ahora devuelve /_next/image?url=... en lugar de la URL
-    // directa de Supabase, así Vercel puede cachear en CDN edge.
-    loaderFile: './lib/image-loader.ts',
+    // SIN loaderFile: Vercel gestiona optimización y caché directamente.
+    // Con loaderFile activo Vercel delega la URL al loader y no cachea
+    // el resultado en su CDN edge — cada visita va a Supabase Stockholm.
+    // Sin loaderFile: primera visita optimiza y cachea, resto ~100ms desde CDN.
 
-    // Cuánto tiempo cachea Vercel las imágenes optimizadas en su CDN.
-    // 7 días: las imágenes hero no cambian frecuentemente.
-    minimumCacheTTL: 604800,
-
-    // Formatos modernos — Vercel servirá AVIF a navegadores compatibles,
-    // WebP al resto. Ahorro adicional de ~30% sobre JPEG.
+    minimumCacheTTL: 604800, // 7 días — imágenes hero cambian poco
     formats: ['image/avif', 'image/webp'],
 
     remotePatterns: [

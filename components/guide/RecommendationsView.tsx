@@ -89,10 +89,16 @@ function RecommendationCard({
     const rawPrice = rec.price_range || rec.metadata?.price_range || '';
     const rawTime = rec.time || rec.metadata?.time || '';
     const rawNote = rec.personal_note || rec.metadata?.personal_note || '';
+    const openingHours = (rec as any).metadata?.opening_hours || (rec as any).opening_hours;
 
     const { content: localizedPrice } = useLocalizedContent(rawPrice, currentLanguage, 'recommendation_price', accessToken, propertyId);
-    const { content: localizedTime } = useLocalizedContent(rawTime, currentLanguage, 'recommendation_time', accessToken, propertyId);
+    const { content: localizedTimeOriginal } = useLocalizedContent(rawTime, currentLanguage, 'recommendation_time', accessToken, propertyId);
     const { content: localizedNote } = useLocalizedContent(rawNote, currentLanguage, 'recommendation_note', accessToken, propertyId);
+
+    // Hide "Consultar horario" if we have structured hours
+    const localizedTime = (openingHours && localizedTimeOriginal?.toLowerCase().includes('horario')) ? null : localizedTimeOriginal;
+    const openingHoursStr = openingHours?.open && openingHours?.close ? `${openingHours.open} – ${openingHours.close}` : null;
+    const distanceText = rec.distance && !rec.distance.toLowerCase().includes('distance') ? rec.distance : null;
 
     const { content: labelPrice } = useLocalizedContent('Precio:', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelTime } = useLocalizedContent('Tiempo:', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -154,6 +160,12 @@ function RecommendationCard({
                                         <span className="text-primary">{localizedPrice}</span>
                                     </div>
                                 )}
+                                {openingHoursStr && (
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate/80 bg-slate/5 px-2.5 py-1 rounded-lg">
+                                        <Clock className="w-3.5 h-3.5 text-navy/30" />
+                                        <span>{openingHoursStr}</span>
+                                    </div>
+                                )}
                                 {localizedTime && (
                                     <div className="flex items-center gap-1.5 text-xs font-bold text-slate/80 bg-slate/5 px-2.5 py-1 rounded-lg">
                                         <Clock className="w-3.5 h-3.5 text-navy/30" />
@@ -177,16 +189,16 @@ function RecommendationCard({
                     )}
 
                     <div className="flex items-center gap-5 mt-4">
-                        {rec.distance && (
+                        {distanceText && (
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
                                 <MapPin className="w-3.5 h-3.5 opacity-50" />
-                                {rec.distance}
+                                {distanceText}
                             </div>
                         )}
-                        {localizedTime && (
+                        {(openingHoursStr || localizedTime) && (
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
                                 <Clock className="w-3.5 h-3.5 opacity-50" />
-                                {localizedTime}
+                                {openingHoursStr || localizedTime}
                             </div>
                         )}
                     </div>
@@ -371,12 +383,7 @@ export function RecommendationsView({
         const query = encodeURIComponent(`${rec.name}${locationContext}`);
         const placeId = rec.google_place_id || rec.metadata?.google_place_id;
 
-        const isIOS = typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent);
-        const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
-
-        if (isIOS) return `maps://?q=${query}${placeId ? `&placeid=${placeId}` : ''}`;
-        if (isAndroid) return `geo:0,0?q=${query}${placeId ? `(${query})` : ''}`;
-
+        // Universal Google Maps Search URL - Works on all platforms (Mobile App & Desktop)
         let url = `https://www.google.com/maps/search/?api=1&query=${query}`;
         if (placeId) {
             url += `&query_place_id=${placeId}`;

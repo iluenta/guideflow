@@ -305,7 +305,7 @@ export function LocalRecommendations({
                                     <Input
                                         id="distance"
                                         placeholder="Ej: 500m"
-                                        value={editingRec?.distance || ''}
+                                        value={(editingRec?.distance && !editingRec.distance.toLowerCase().includes('distance')) ? editingRec.distance : ''}
                                         onChange={e => setEditingRec({ ...editingRec, distance: e.target.value })}
                                         className="h-12 rounded-xl bg-slate-50/50 border-slate-100 pl-12 pr-4 font-medium focus:ring-2 focus:ring-[#316263]/20"
                                     />

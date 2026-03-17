@@ -388,13 +388,10 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                                         </span>
                                                                     );
                                                                 }
-                                                                // maps: — new tappable map button (Apple Maps on iOS, Google Maps elsewhere)
+                                                                // maps: — new tappable map button (Universal Google Maps)
                                                                 if (href?.startsWith('maps:')) {
                                                                     const encodedAddress = href.slice('maps:'.length);
-                                                                    const isIOS = typeof window !== 'undefined' && /iPhone|iPad|iPod/.test(window.navigator.userAgent);
-                                                                    const mapsUrl = isIOS
-                                                                        ? `maps://?q=${encodedAddress}`
-                                                                        : `https://maps.google.com/?q=${encodedAddress}`;
+                                                                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
                                                                     return (
                                                                         <a
                                                                             href={mapsUrl}

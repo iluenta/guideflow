@@ -8,57 +8,54 @@ import { Menu } from 'lucide-react';
 import supabaseLoader from '@/lib/image-loader';
 
 // ─── Carga estática: SOLO lo visible en el primer render ──────────────────────
-// Welcome y Home son las pantallas iniciales — no pueden ser lazy.
 import { Fase11Welcome } from '@/components/guide/Fase11Welcome';
 import { Fase11Home } from '@/components/guide/Fase11Home';
 import { BottomNav } from '@/components/guide/BottomNav';
 import { HamburgerMenu } from '@/components/guide/HamburgerMenu';
 import { AnimatePresence, motion } from 'framer-motion';
 
-// ─── Carga lazy: un chunk por vista, se descarga solo al navegar ──────────────
-// Resultado esperado: page.js baja de ~1.9 MB a < 500 KB.
+// ─── Carga lazy: ssr:false evita que Next incluya estos chunks en el bundle SSR
+// Sin ssr:false los módulos se analizan en el servidor aunque no se rendericen,
+// lo que los mantiene en el bundle principal. Con ssr:false se separan en chunks
+// independientes que solo se descargan al navegar a esa vista.
 
 const WifiView = dynamic(
     () => import('@/components/guide/WifiView').then(m => ({ default: m.WifiView })),
-    { loading: () => <ViewSkeleton /> }
+    { loading: () => <ViewSkeleton />, ssr: false }
 );
 const RulesView = dynamic(
     () => import('@/components/guide/RulesView').then(m => ({ default: m.RulesView })),
-    { loading: () => <ViewSkeleton /> }
+    { loading: () => <ViewSkeleton />, ssr: false }
 );
 const ManualsView = dynamic(
     () => import('@/components/guide/ManualsView').then(m => ({ default: m.ManualsView })),
-    { loading: () => <ViewSkeleton /> }
+    { loading: () => <ViewSkeleton />, ssr: false }
 );
 const CheckInView = dynamic(
     () => import('@/components/guide/CheckInView').then(m => ({ default: m.CheckInView })),
-    { loading: () => <ViewSkeleton /> }
+    { loading: () => <ViewSkeleton />, ssr: false }
 );
 const EmergencyView = dynamic(
     () => import('@/components/guide/EmergencyView').then(m => ({ default: m.EmergencyView })),
-    { loading: () => <ViewSkeleton /> }
+    { loading: () => <ViewSkeleton />, ssr: false }
 );
 const RecommendationsView = dynamic(
     () => import('@/components/guide/RecommendationsView').then(m => ({ default: m.RecommendationsView })),
-    { loading: () => <ViewSkeleton /> }
+    { loading: () => <ViewSkeleton />, ssr: false }
 );
 const HouseInfoView = dynamic(
     () => import('@/components/guide/HouseInfoView').then(m => ({ default: m.HouseInfoView })),
-    { loading: () => <ViewSkeleton /> }
+    { loading: () => <ViewSkeleton />, ssr: false }
 );
 const MenuGrid = dynamic(
     () => import('@/components/guide/MenuGrid').then(m => ({ default: m.MenuGrid })),
-    { loading: () => <ViewSkeleton /> }
+    { loading: () => <ViewSkeleton />, ssr: false }
 );
-
-// GuestChat: lazy + ssr:false. react-markdown + remark-gfm (~180 KB) no se
-// descargan hasta que el usuario pulsa el botón del chat por primera vez.
 const GuestChat = dynamic(
     () => import('@/components/guide/GuestChat').then(m => ({ default: m.GuestChat })),
     { ssr: false }
 );
 
-// ─── Skeleton compartido para estados de carga ────────────────────────────────
 function ViewSkeleton() {
     return (
         <div className="min-h-screen bg-background animate-pulse">
@@ -73,7 +70,6 @@ function ViewSkeleton() {
     );
 }
 
-// ─── Props ────────────────────────────────────────────────────────────────────
 interface GuideViewContainerProps {
     property: any;
     branding?: any;
@@ -125,12 +121,8 @@ export function GuideViewContainer({
     const [language, setLanguage] = useState<string>(initialLanguage);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [navigationPayload, setNavigationPayload] = useState<any>(null);
-
-    // GuestChat se monta solo cuando el usuario lo abre por primera vez.
-    // El botón flotante se renderiza aquí de forma ultra-ligera hasta ese momento.
     const [chatMounted, setChatMounted] = useState(false);
 
-    // ── Cache offline ─────────────────────────────────────────────────────────
     const cacheKey = `guide_data_${property.id}`;
     const [localData, setLocalData] = useState<any>(null);
 
@@ -151,7 +143,6 @@ export function GuideViewContainer({
     const displayContext = context || localData?.context || [];
     const displayManuals = manuals || localData?.manuals || [];
     const displayRecommendations = recommendations || localData?.recommendations || [];
-    const displayFaqs = faqs || localData?.faqs || [];
 
     const welcomeData = displayContext?.find((c: any) => c.category === 'welcome')?.content;
     const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', language, 'ui_label', accessToken, property.id);
@@ -162,7 +153,6 @@ export function GuideViewContainer({
         }
     }, [language, tokenLanguage]);
 
-    // ── Navegación ────────────────────────────────────────────────────────────
     const handleNavigate = (pageId: string, payload?: any) => {
         setCurrentPage(pageId);
         setNavigationPayload(payload || null);
@@ -201,7 +191,6 @@ export function GuideViewContainer({
         ));
     };
 
-    // ── Render de vistas ──────────────────────────────────────────────────────
     const renderCurrentView = () => {
         if (currentPage === 'welcome') {
             return (
@@ -357,7 +346,6 @@ export function GuideViewContainer({
                 context={displayContext}
                 sections={sections}
             />
-
             <main className="overflow-x-hidden pb-24">
                 <AnimatePresence mode="wait">
                     <motion.div
@@ -371,7 +359,6 @@ export function GuideViewContainer({
                     </motion.div>
                 </AnimatePresence>
             </main>
-
             <BottomNav
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
@@ -383,13 +370,6 @@ export function GuideViewContainer({
                 context={displayContext}
                 sections={sections}
             />
-
-            {/*
-             * ACCIÓN 3 — Chat diferido:
-             * Si el usuario no ha abierto el chat todavía, se muestra un botón
-             * flotante mínimo (<1 KB). Al pulsarlo, se monta GuestChat (lazy),
-             * que es cuando se descarga react-markdown + remark-gfm (~180 KB).
-             */}
             {chatMounted ? (
                 <GuestChat
                     propertyId={property.id}
@@ -404,7 +384,6 @@ export function GuideViewContainer({
                     aria-label="Abrir asistente de ayuda"
                 >
                     <div className="relative">
-                        {/* Icono de bot inline — no importa lucide hasta que se monte el chat */}
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="3" y="11" width="18" height="10" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4" /><line x1="8" y1="16" x2="8" y2="16" /><line x1="16" y1="16" x2="16" y2="16" />
                         </svg>
