@@ -91,7 +91,7 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
                             <Icon className="w-4 h-4" />
                         </div>
                         <div className="space-y-0 text-left">
-                            <CardTitle className="text-sm font-bold leading-tight line-clamp-1 text-slate-900">{recommendation.name}</CardTitle>
+                            <CardTitle className="text-sm font-bold leading-tight line-clamp-2 text-slate-900">{recommendation.name}</CardTitle>
                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{category}</p>
                         </div>
                     </div>

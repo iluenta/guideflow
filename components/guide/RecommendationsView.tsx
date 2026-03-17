@@ -124,8 +124,9 @@ function RecommendationCard({
                 <div className="flex-1 min-w-0 pt-0.5">
                     <div className="flex items-center justify-between gap-2 mb-1">
                         <h3 className={cn(
-                            "font-serif text-lg text-navy font-bold leading-tight truncate",
-                            !localizedName && "h-6 w-3/4 bg-slate/10 animate-pulse rounded-md"
+                            "font-serif text-lg text-navy font-bold leading-tight",
+                            !localizedName && "h-6 w-3/4 bg-slate/10 animate-pulse rounded-md",
+                            !isExpanded && "line-clamp-2"
                         )}>
                             {localizedName}
                         </h3>
@@ -138,7 +139,7 @@ function RecommendationCard({
 
                     <div className={cn(
                         "text-[13px] text-slate leading-relaxed transition-all duration-300",
-                        !isExpanded && "line-clamp-2",
+                        !isExpanded && "line-clamp-3",
                         !localizedDescription && "space-y-2"
                     )}>
                         {localizedDescription ? (
