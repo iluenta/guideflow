@@ -1,57 +1,91 @@
-const CACHE_NAME = 'guideflow-cache-v1';
-const OFFLINE_URL = '/offline.html';
+// CACHE_NAME incluye la fecha de build para invalidar automáticamente
+// en cada deploy de Vercel. El valor se inyecta en build time desde next.config.js
+// a través de una variable de entorno NEXT_PUBLIC_BUILD_ID.
+const BUILD_ID = self.__BUILD_ID || Date.now();
+const CACHE_NAME = `guideflow-cache-${BUILD_ID}`;
 
-const ASSETS_TO_CACHE = [
-    '/',
+const STATIC_ASSETS = [
     '/favicon.ico',
     '/icon.svg',
-    '/manifest.json'
+    '/manifest.json',
 ];
 
+// ─── Install: cachear solo assets verdaderamente estáticos ────────────────────
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE);
+            return cache.addAll(STATIC_ASSETS);
         })
     );
+    // Activa inmediatamente sin esperar a que cierren las pestañas abiertas
     self.skipWaiting();
 });
 
+// ─── Activate: eliminar TODOS los caches anteriores ──────────────────────────
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        return caches.delete(cacheName);
-                    }
-                })
+                cacheNames
+                    .filter((name) => name !== CACHE_NAME)
+                    .map((name) => {
+                        console.log('[SW] Deleting old cache:', name);
+                        return caches.delete(name);
+                    })
             );
+        }).then(() => {
+            // Toma control de todas las pestañas abiertas inmediatamente
+            return self.clients.claim();
         })
     );
-    self.skipWaiting();
 });
 
+// ─── Fetch: estrategia diferenciada por tipo de recurso ──────────────────────
 self.addEventListener('fetch', (event) => {
-    // Nunca cachear _next (chunks de Next.js) - evitar 404 y rutas duplicadas
-    if (event.request.url.includes('/_next/')) {
+    const url = event.request.url;
+
+    // 1. Chunks de Next.js — NUNCA cachear, siempre red
+    if (url.includes('/_next/')) {
         event.respondWith(fetch(event.request));
         return;
     }
-    // Stale-While-Revalidate strategy para el resto
+
+    // 2. API routes y traducciones — siempre red, sin caché
+    if (url.includes('/api/') || url.includes('supabase.co')) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
+    // 3. Documento HTML (la guía, el dashboard) — Network First
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    if (response && response.status === 200) {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+                    }
+                    return response;
+                })
+                .catch(() => {
+                    return caches.match(event.request);
+                })
+        );
+        return;
+    }
+
+    // 4. Assets estáticos — Stale While Revalidate
     event.respondWith(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.match(event.request).then((response) => {
-                const fetchPromise = fetch(event.request).then((networkResponse) => {
-                    if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
-                        cache.put(event.request, networkResponse.clone());
+            return cache.match(event.request).then((cached) => {
+                const networkFetch = fetch(event.request).then((response) => {
+                    if (response && response.status === 200 && event.request.method === 'GET') {
+                        cache.put(event.request, response.clone());
                     }
-                    return networkResponse;
-                }).catch(() => {
-                    // Si falla el fetch y no hay en caché, devolvemos nada o página offline
                     return response;
-                });
-                return response || fetchPromise;
+                }).catch(() => cached);
+
+                return cached || networkFetch;
             });
         })
     );

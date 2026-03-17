@@ -52,9 +52,16 @@ export const metadata: Metadata = {
 
 const SW_SCRIPT = `
   if ('serviceWorker' in navigator) {
-    var isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (!isDev) {
-      window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js'); });
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js').then(function(reg) {
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+      // Inyectar el BUILD_ID para que el SW lo use
+      self.__BUILD_ID = "${process.env.NEXT_PUBLIC_BUILD_ID || ''}";
     }
   }
 `;
