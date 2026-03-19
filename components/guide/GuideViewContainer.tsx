@@ -8,10 +8,9 @@ import { Menu } from 'lucide-react';
 import supabaseLoader from '@/lib/image-loader';
 
 // ─── Carga estática: SOLO lo visible en el primer render ──────────────────────
-import { Fase11Welcome } from '@/components/guide/Fase11Welcome';
-import { Fase11Home } from '@/components/guide/Fase11Home';
+import { GuideHome } from '@/components/guide/GuideHome';
+import { ModernWelcome } from '@/components/guide/ModernWelcome';
 import { BottomNav } from '@/components/guide/BottomNav';
-import { HamburgerMenu } from '@/components/guide/HamburgerMenu';
 import { AnimatePresence, motion } from 'framer-motion';
 
 // ─── Carga lazy: ssr:false evita que Next incluya estos chunks en el bundle SSR
@@ -119,7 +118,6 @@ export function GuideViewContainer({
     const [currentPage, setCurrentPage] = useState<string | null>('welcome');
     const [activeTab, setActiveTab] = useState('hub');
     const [language, setLanguage] = useState<string>(initialLanguage);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [navigationPayload, setNavigationPayload] = useState<any>(null);
     const [chatMounted, setChatMounted] = useState(false);
 
@@ -194,29 +192,37 @@ export function GuideViewContainer({
     const renderCurrentView = () => {
         if (currentPage === 'welcome') {
             return (
-                <Fase11Welcome
+                <ModernWelcome
                     propertyName={property.name}
                     heroImage={property.main_image_url || branding?.hero_image_url || ''}
                     location={property.city || ''}
+                    onBack={() => {}} // No back from welcome
                     onOpenGuide={() => { setCurrentPage('home'); setActiveTab('guide'); }}
                     onNavigate={handleNavigate}
                     onChatQuery={handleChatWithQuery}
                     currentLanguage={language}
                     onLanguageChange={setLanguage}
+                    recommendations={recommendations}
                     guestName={guestName}
                     accessToken={accessToken}
                     propertyId={property.id}
                     themeId={themeId}
                     context={displayContext}
-                    recommendations={displayRecommendations}
+                    sections={sections}
+                    manuals={displayManuals}
                     disabledLanguage={!!tokenLanguage}
+                    latitude={property.latitude}
+                    longitude={property.longitude}
+                    showBack={false}
+                    hasParking={property.has_parking}
+                    parkingNumber={property.parking_number}
                 />
             );
         }
 
         if (!currentPage || currentPage === 'home' || currentPage === 'assistant') {
             return (
-                <Fase11Home
+                <GuideHome
                     propertyName={property.name}
                     heroImage={property.main_image_url || branding?.hero_image_url || ''}
                     location={property.city || ''}
@@ -285,9 +291,6 @@ export function GuideViewContainer({
                 return (
                     <div className="min-h-screen">
                         <header className="sticky top-0 z-50 w-full bg-surface/95 backdrop-blur-md border-b border-border/10 px-4 h-16 flex items-center justify-between">
-                            <button onClick={() => setIsMenuOpen(true)} className="p-2 -ml-2 text-navy/70 hover:bg-navy/5 rounded-full transition-colors active:scale-90">
-                                <Menu className="w-6 h-6" />
-                            </button>
                             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 max-w-[60%]">
                                 {branding?.custom_logo_url?.trim() ? (
                                     <div className="h-10 relative w-[120px]">
@@ -308,7 +311,7 @@ export function GuideViewContainer({
                 );
             default:
                 return (
-                    <Fase11Home
+                    <GuideHome
                         propertyName={property.name}
                         heroImage={property.main_image_url || branding?.hero_image_url || ''}
                         location={property.city || ''}
@@ -333,19 +336,6 @@ export function GuideViewContainer({
 
     return (
         <div className="w-full max-w-md mx-auto min-h-screen bg-background shadow-2xl relative">
-            <HamburgerMenu
-                isOpen={isMenuOpen}
-                onClose={() => setIsMenuOpen(false)}
-                onNavigate={handleNavigate}
-                currentLanguage={language}
-                propertyName={property.name}
-                propertyId={property.id}
-                accessToken={accessToken}
-                manuals={displayManuals}
-                recommendations={displayRecommendations}
-                context={displayContext}
-                sections={sections}
-            />
             <main className="overflow-x-hidden pb-24">
                 <AnimatePresence mode="wait">
                     <motion.div
@@ -369,6 +359,7 @@ export function GuideViewContainer({
                 recommendations={displayRecommendations}
                 context={displayContext}
                 sections={sections}
+                themeId={themeId}
             />
             {chatMounted ? (
                 <GuestChat

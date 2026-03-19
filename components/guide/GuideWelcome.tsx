@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import supabaseLoader from '@/lib/image-loader';
 
 
-interface Fase11WelcomeProps {
+interface GuideWelcomeProps {
     propertyName: string;
     heroImage: string;
     location: string;
@@ -60,7 +60,7 @@ const item: Variants = {
     }
 };
 
-export function Fase11Welcome({
+export function GuideWelcome({
     propertyName,
     heroImage,
     location,
@@ -76,7 +76,7 @@ export function Fase11Welcome({
     context = [],
     recommendations = [],
     disabledLanguage = false,
-}: Fase11WelcomeProps) {
+}: GuideWelcomeProps) {
     const t = getGuideTheme(themeId)
     const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
     const accessData = context?.find(c => c.category === 'access')?.content || {};
@@ -97,7 +97,7 @@ export function Fase11Welcome({
     const { content: welcomeHomeLabel } = useLocalizedContent('Bienvenido a casa', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: greetingLabel } = useLocalizedContent('Hola', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: conciergePlaceholder } = useLocalizedContent('¿En qué puedo ayudarte hoy?', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: conciergeLabel } = useLocalizedContent('Tu concierge digital en', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: conciergeLabel } = useLocalizedContent('Tu asistente digital en', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: commonQuestionsLabel } = useLocalizedContent('Preguntas Frecuentes', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: yourStayLabel } = useLocalizedContent('Tu Estancia', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: houseGuideLabel } = useLocalizedContent('Guía de la Casa', currentLanguage, 'ui_label', accessToken, propertyId);

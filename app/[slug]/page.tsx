@@ -27,37 +27,42 @@ const CRITICAL_UI_STRINGS = [
     'Hola',
     'Bienvenido a',
     'Bienvenido a casa',
-    'Tu concierge digital en',
+    'Tu asistente digital en',
     '¿En qué puedo ayudarte hoy?',
     'Desarrollado por',
 
     // Pantalla Home — etiquetas comunes a todos los temas
     'Lo Indispensable',
-    'LO INDISPENSABLE',
     'Conoce tu refugio',
     'Tu Estancia',
     'Guía de la Casa',
-    'THE ESSENTIAL INTEL',
-    'HOUSE RULES',
+    'The essential intel',
+    'House rules',
 
     // Etiquetas tema Urban
-    'URBAN GUIDE',
-    'EXPLORA',
-    'DISCOVER THE BEAT',
-    'ACCESO',
-    'INTERNET',
-    'EMERGENCIA (SOS)',
-    'VIBE',
-    'GASTRONOMÍA',
-    'QUÉ HACER',
-    'COMPRAS',
-    'TU CONCIERGE DIGITAL EN',
+    'Urban Guide',
+    'Explora',
+    'Discover the beat',
+    'Acceso',
+    'Internet',
+    'Emergencia (SOS)',
+    'Vibe',
+    'Gastronomía',
+    'Qué hacer',
+    'Compras',
+    'Tu asistente digital en',
 
     // BottomNav (siempre visible)
     'Inicio',
     'Comer',
     'Ocio',
     'Info',
+
+    // ModernHome extra
+    'Parking',
+    'Check-out',
+    'Cómo llegar',
+    '¿Dónde puedo aparcar?',
     'Chat',
 
     // Widget de recomendación destacada (Home)
@@ -120,12 +125,12 @@ async function prefetchTranslations(
 
 interface GuidePageProps {
     params: Promise<{ slug: string }>
-    searchParams: Promise<{ token?: string }>
+    searchParams: Promise<{ token?: string, lang?: string }>
 }
 
 export default async function GuidePage({ params, searchParams }: GuidePageProps) {
     const { slug } = await params
-    const { token } = await searchParams
+    const { token, lang } = await searchParams
     const supabase = await createClient()
 
     const property = await getPropertyBySlug(slug)
@@ -156,30 +161,24 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
         if (profile?.tenant_id === property.tenant_id) isOwner = true
     }
 
-    if (!isOwner) {
-        if (!activeToken) redirect('/access-denied?reason=token_required')
-
+    if (activeToken) {
         const tokenPattern = /^[a-z0-9]{10,48}$/i
-        if (!tokenPattern.test(activeToken)) {
-            (await cookies()).delete(`gf_token_${slug}`)
-            redirect('/access-denied?reason=invalid')
-        }
-
-        const { valid, access, reason, availableFrom } = await validateAccessToken(supabase, activeToken, property.id)
-        if (!valid) {
-            (await cookies()).delete(`gf_token_${slug}`)
-            if (reason === 'too_early') redirect(`/access-denied?reason=too_early&date=${availableFrom?.toISOString()}`)
-            redirect(`/access-denied?reason=${reason || 'invalid'}`)
-        }
-
-        if (access) {
-            guestName = access.guest_name
-            tokenLanguage = access.language
-            const { data: existingSession } = await supabase.from('guest_sessions').select('id').eq('token_id', access.id).maybeSingle()
-            if (!existingSession) {
-                await supabase.from('guest_sessions').insert({ token_id: access.id, expires_at: access.valid_until })
+        if (tokenPattern.test(activeToken)) {
+            const { valid, access } = await validateAccessToken(supabase, activeToken, property.id)
+            if (valid && access) {
+                guestName = access.guest_name
+                tokenLanguage = access.language
+            } else if (!isOwner) {
+                // Si no es el dueño y el token no es válido, fuera
+                (await cookies()).delete(`gf_token_${slug}`)
+                redirect('/access-denied?reason=invalid')
             }
         }
+    }
+
+    if (!isOwner && !guestName) {
+        // Doble check: si no es dueño y no hemos conseguido un acceso válido
+        redirect('/access-denied?reason=token_required')
     }
 
     const headersList = await headers()
@@ -187,7 +186,7 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     const acceptLanguage = headersList.get('accept-language') || ''
     const cookieLang = cookiesList.get('preferred_lang')?.value
     const serverDetectedLanguage = detectLanguageFromHeader(acceptLanguage)
-    const initialLanguage: string = tokenLanguage || (activeToken ? (cookieLang || serverDetectedLanguage) : (serverDetectedLanguage || cookieLang)) || 'es'
+    const initialLanguage: string = tokenLanguage || lang || (activeToken ? (cookieLang || serverDetectedLanguage) : (serverDetectedLanguage || cookieLang)) || 'es'
 
     console.log(`[PAGE] 🌐 Language: ${initialLanguage} (token:${tokenLanguage || '-'} cookie:${cookieLang || '-'} header:${serverDetectedLanguage})`);
 
@@ -273,7 +272,7 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
                 manuals={manuals}
                 recommendations={recommendations}
                 faqs={faqs}
-                context={context || []}
+                context={context || []}/*  */
                 guestName={guestName}
                 accessToken={activeToken}
                 tokenLanguage={tokenLanguage}

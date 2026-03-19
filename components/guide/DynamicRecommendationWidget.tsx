@@ -16,6 +16,13 @@ interface DynamicRecommendationWidgetProps {
     theme: {
         cardBg: string;
         chipIconColor: string;
+        actionBtn?: string;
+        guideCardTitle?: string;
+        guideCardSubtitle?: string;
+        guideCardTag?: string;
+        sectionLabel?: string;
+        searchBorder?: string;
+        chipLayout?: string;
     };
 }
 
@@ -267,11 +274,17 @@ export function DynamicRecommendationWidget({
                     <div className="flex items-center justify-between mb-4">
                         <div className={cn('flex items-center gap-2', theme.chipIconColor)}>
                             <Clock size={14} strokeWidth={2.5} />
-                            <span className="text-[10px] font-black tracking-widest uppercase">
+                            <span className="text-[10px] font-black tracking-widest uppercase" suppressHydrationWarning>
                                 {timeStr} • {localizedGreeting} {emoji}
                             </span>
                         </div>
-                        <span className="px-2 py-0.5 bg-[#f59e0b] text-amber-900 text-[9px] font-black rounded-full uppercase tracking-wider">
+                        <span className={cn(
+                            "px-2 py-0.5 text-[9px] font-black rounded-full uppercase tracking-wider",
+                            // Use theme actionBtn colors for the RECOMENDACIÓN badge, or amber fallback
+                            theme.chipLayout === 'stacked'
+                                ? 'bg-[#0EA5E9] text-white'
+                                : 'bg-[#f59e0b] text-amber-900'
+                        )}>
                             {labelRecomendacion}
                         </span>
                     </div>
@@ -290,13 +303,15 @@ export function DynamicRecommendationWidget({
                     {/* Contenido */}
                     <div className="space-y-2 mb-4">
                         <h3 className={cn(
-                            'text-xl font-serif font-bold text-gray-900 leading-tight',
+                            'text-xl font-bold leading-tight',
+                            theme.guideCardTitle || 'text-gray-900 font-serif',
                             !localizedName && 'h-7 w-40 bg-gray-100 animate-pulse rounded-md'
                         )}>
                             {localizedName}
                         </h3>
                         <div className={cn(
-                            'text-[13px] text-gray-500 leading-relaxed line-clamp-2',
+                            'text-[13px] leading-relaxed line-clamp-2',
+                            theme.guideCardSubtitle || 'text-gray-500',
                             !localizedDesc && 'h-10 w-full bg-gray-50 animate-pulse rounded-sm'
                         )}>
                             {localizedDesc}
@@ -337,7 +352,12 @@ export function DynamicRecommendationWidget({
                     {/* CTA */}
                     <button
                         onClick={handleNavigate}
-                        className="text-xs font-black text-primary flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-widest"
+                        className={cn(
+                            // Coastal/stacked: solid color pill button like the reference
+                            theme.chipLayout === 'stacked'
+                                ? cn('w-full py-3 rounded-full text-sm font-extrabold tracking-widest uppercase flex items-center justify-center gap-2', theme.actionBtn || 'bg-[#0EA5E9] text-white')
+                                : cn('text-xs font-black flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-widest', theme.chipIconColor || 'text-primary')
+                        )}
                     >
                         {labelVerMas} <ChevronRight size={14} strokeWidth={3} />
                     </button>

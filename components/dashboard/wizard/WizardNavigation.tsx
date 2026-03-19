@@ -47,7 +47,9 @@ export function WizardNavigation() {
     }
 
     const handleSaveOnly = async () => {
-        await saveStep(activeTab, data[activeTab], '')
+        const stepData = activeTab === 'appearance' ? data.branding : data[activeTab]
+        const categoryToSave = activeTab === 'appearance' ? 'branding' : activeTab
+        await saveStep(categoryToSave, stepData, '')
     }
 
     return (

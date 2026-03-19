@@ -27,7 +27,7 @@ import supabaseLoader from '@/lib/image-loader';
 import { DynamicRecommendationWidget } from './DynamicRecommendationWidget';
 
 
-interface Fase11HomeProps {
+interface GuideHomeProps {
     propertyName: string;
     heroImage: string;
     location: string;
@@ -62,7 +62,7 @@ const item = {
     show: { opacity: 1, y: 0 }
 };
 
-export function Fase11Home({
+export function GuideHome({
     propertyName,
     heroImage,
     location,
@@ -80,7 +80,7 @@ export function Fase11Home({
     sections = [],
     manuals = [],
     disabledLanguage = false,
-}: Fase11HomeProps) {
+}: GuideHomeProps) {
     const t = getGuideTheme(themeId)
 
     const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;

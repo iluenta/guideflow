@@ -4,12 +4,14 @@ import React from 'react';
 import { Home, UtensilsCrossed, Theater, Info, MessageSquare } from 'lucide-react';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { cn } from '@/lib/utils';
+import { getGuideTheme } from '@/lib/guide-theme';
 
 interface BottomNavProps {
     activeTab?: string;
     onTabChange?: (tab: string) => void;
     currentLanguage?: string;
     accessToken?: string;
+    themeId?: string;
 }
 
 export function BottomNav({
@@ -21,8 +23,11 @@ export function BottomNav({
     manuals = [],
     recommendations = [],
     context = [],
-    sections = []
+    sections = [],
+    themeId = 'modern_v2'
 }: BottomNavProps & { propertyId?: string, manuals?: any[], recommendations?: any[], context?: any[], sections?: any[] }) {
+
+    const t = getGuideTheme(themeId);
 
     const { content: labelHome } = useLocalizedContent('Inicio', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelEat } = useLocalizedContent('Comer', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -56,7 +61,7 @@ export function BottomNav({
     };
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-stone-100 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.08)] pb-safe z-40">
+        <nav className={cn("fixed bottom-0 left-0 right-0 backdrop-blur-md border-t shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.08)] pb-safe z-40 transition-colors bg-opacity-95", t.pageBg, t.searchBorder)}>
             <div className="max-w-md mx-auto flex items-center justify-around px-1 h-16">
                 {tabs.map((tab) => {
                     const isActive = tab.id === activeTab;
@@ -71,20 +76,21 @@ export function BottomNav({
                             }}
                             className={cn(
                                 "relative flex flex-col items-center justify-center gap-1.5 flex-1 h-full transition-all duration-200",
-                                isActive ? "text-navy" : "text-stone-400"
+                                isActive ? t.chipIconColor : t.sectionLabel
                             )}
                         >
                             {/* Active Tab Top Bar */}
                             {isActive && (
-                                <span className="absolute top-0 left-[20%] right-[20%] h-[3px] bg-navy rounded-b-[3px] animate-in fade-in slide-in-from-top-1 duration-300" />
+                                <span 
+                                    className="absolute top-0 left-[20%] right-[20%] h-[3px] rounded-b-[3px] animate-in fade-in slide-in-from-top-1 duration-300" 
+                                    style={{ backgroundColor: 'currentColor' }}
+                                />
                             )}
 
                             <div className="relative flex items-center justify-center h-6 w-6">
                                 <Icon
-                                    className={cn(
-                                        "w-6 h-6 transition-all duration-300",
-                                        isActive ? "fill-navy" : ""
-                                    )}
+                                    className="w-6 h-6 transition-all duration-300"
+                                    style={{ color: 'currentColor' }}
                                     strokeWidth={isActive ? 2.5 : 2}
                                 />
                             </div>

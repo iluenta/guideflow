@@ -145,14 +145,15 @@ export async function saveWizardStep(
         // Ambos deben guardar en property_branding, no en property_context.
         if (!currentPropId) throw new Error('ID de propiedad requerido para Branding')
 
-        const sanitizedThemeId = stepData.theme_id && stepData.theme_id.trim() !== '' ? stepData.theme_id : null
-        const sanitizedLayoutThemeId = stepData.layout_theme_id && stepData.layout_theme_id.trim() !== '' ? stepData.layout_theme_id : 'modern'
+        const brandingData = stepData || {}
+        const sanitizedThemeId = brandingData.theme_id && brandingData.theme_id.trim() !== '' ? brandingData.theme_id : null
+        const sanitizedLayoutThemeId = brandingData.layout_theme_id && brandingData.layout_theme_id.trim() !== '' ? brandingData.layout_theme_id : 'modern'
 
         // NOTE: layout_theme_id is stored inside computed_theme JSONB until
         // migration 031_add_layout_theme_id.sql is applied to the DB.
         // Once the column exists, add layout_theme_id back to the upsert below.
-        const computedThemeWithId = stepData.computed_theme
-            ? { ...stepData.computed_theme, _layout_theme_id: sanitizedLayoutThemeId }
+        const computedThemeWithId = brandingData.computed_theme
+            ? { ...brandingData.computed_theme, _layout_theme_id: sanitizedLayoutThemeId }
             : { _layout_theme_id: sanitizedLayoutThemeId }
 
         const { error } = await supabase
@@ -162,8 +163,8 @@ export async function saveWizardStep(
                 tenant_id: currentTenantId,
                 theme_id: sanitizedThemeId,
                 layout_theme_id: sanitizedLayoutThemeId, // migration 031 confirmed applied
-                custom_primary_color: stepData.custom_primary_color,
-                custom_logo_url: stepData.custom_logo_url,
+                custom_primary_color: brandingData.custom_primary_color || null,
+                custom_logo_url: brandingData.custom_logo_url || null,
                 computed_theme: computedThemeWithId,
                 updated_at: new Date().toISOString()
             }, { onConflict: 'property_id' })

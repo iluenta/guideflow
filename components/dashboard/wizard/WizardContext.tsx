@@ -112,7 +112,33 @@ export function WizardProvider({
         tech: { wifi_ssid: '', wifi_password: '', router_notes: '' },
         inventory: { selected_items: [] },
         dining: [],
-        faqs: [],
+        faqs: [
+            { 
+                question: '¿Qué hago si pierdo las llaves de la casa?', 
+                answer: 'Mantén la calma y revisa tus pertenencias. Si realmente no las encuentras, contacta el anfitrión o la persona de soporte lo antes posible: muchos alojamientos tienen llaves de repuesto o cerraduras programables para este caso.\n\nPasos:\n1) Busca en ropa, mochila u otros lugares (bolsillo, toallas, bolsas) por si están extraviadas.\n2) Si no aparecen, llama al anfitrión, persona de soporte o portero para obtener copia de llave o nuevo código.\n3) Como último recurso, considera llamar un cerrajero local (solicita autorización previa).',
+                category: 'urgente'
+            },
+            { 
+                question: '¿Se ha ido la luz en el apartamento, qué hago?', 
+                answer: 'Primero revisa el cuadro eléctrico (suele estar en la entrada): si algún interruptor está bajado, súbelo.\n\nSi el interruptor principal vuelve a caer, desconecta algunos electrodomésticos y vuélvelo a intentar. Si todos los interruptores están arriba pero no hay luz, podría ser un corte general de la zona.\n\nSi tras varios minutos sigue igual, contacta con nosotros o con la compañía eléctrica local.',
+                category: 'urgente'
+            },
+            { 
+                question: '¿Dónde tiro la basura y reciclaje?', 
+                answer: 'En España, existen contenedores específicos en la calle. Por favor, separa los residuos y no los dejes dentro al salir.\n\nPasos:\n1) Identifica los contenedores cercanos (Orgánico, Envases, Papel/Cartón).\n2) Deposita la basura preferiblemente antes de las 22:00h.\n3) Usa las bolsas estándar que te hemos proporcionado.',
+                category: 'normas'
+            },
+            { 
+                question: '¿Cómo es el procedimiento para hacer el check-out?', 
+                answer: 'El proceso general consiste en:\n1) Recoger tu equipaje y verificar pertenencias.\n2) Dejar las sábanas/toallas sucias amontonadas en un rincón.\n3) Sacar la basura.\n4) Dejar las llaves en el lugar acordado (caja de llaves o interior).\n5) Avisarnos con un mensaje final de salida.',
+                category: 'salida'
+            },
+            { 
+                question: '¿Cómo informo cualquier daño?', 
+                answer: 'Si detectas un daño o avería, comunícalo lo antes posible para que podamos repararlo pronto. Es recomendable enviar una foto o mensaje para que ambos estemos de acuerdo en el estado inicial y final.',
+                category: 'soporte'
+            }
+        ],
         branding: {
             theme_id: PRESET_THEMES[0].id,
             custom_primary_color: '',

@@ -37,6 +37,8 @@
   /* Fonts */
   --font-sans: 'Inter', 'Geist', 'Geist Fallback', system-ui, sans-serif;
   --font-serif: 'Playfair Display', serif;
+  --font-cormorant: var(--font-cormorant), serif;
+  --font-jost: var(--font-jost), sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
 
   /* Radii */

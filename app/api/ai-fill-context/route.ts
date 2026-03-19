@@ -721,9 +721,24 @@ Devuelve JSON con: "wifi_name", "wifi_password", "parking_info", "trash_info".
 JSON:`;
       } else {
         const { checkin_time, quiet_hours } = existingData || {};
-        prompt = `Eres el anfitrión de "${property.name}" en ${property.city}.
-Check-in: ${checkin_time || 'A convenir'}. Horas de silencio: ${quiet_hours || '22:00–08:00'}.
-Genera 5 FAQs comunes. JSON con array "faqs": [{question, answer, category, priority(1-5)}].
+        prompt = `Eres el anfitrión experto de "${property.name}" en ${property.city}. 
+Tu objetivo es generar 5 FAQs (Dudas Frecuentes) que den una respuesta profesional, hospitalaria y tranquilizadora al huésped.
+
+TEMAS OBLIGATORIOS (usa estos como base para tus respuestas):
+1. PÉRDIDA DE LLAVES: Enfatiza mantener la calma. Recomendar buscar en bolsillos/bolsas. Contactar al anfitrión como paso final. Mencionar que hay repuestos o códigos si aplica.
+2. CORTE DE LUZ: Primero revisar el cuadro eléctrico (suele estar en la entrada). Si salta de nuevo, desconectar electrodomésticos. Si es general de la zona, esperar y contactar soporte.
+3. BASURA Y RECICLAJE: En España, los contenedores suelen estar en la calle. Indicar que hay que separar residuos y no dejarlos dentro al salir. 
+4. CHECK-OUT: Proceso de salida: recoger equipaje, sábanas sucias en un rincón, tirar basura, dejar llaves en el lugar acordado y avisar al anfitrión.
+5. DAÑOS: Avisar inmediatamente para reparar. Mencionar que fotos/mensajes ayudan a estar de acuerdo.
+
+REGLAS DE FORMATO:
+- Genera EXACTAMENTE 5 FAQs en español.
+- En la respuesta (answer), usa un tono servicial pero directo. 
+- Si hay varios pasos, usa formato "1) ..., 2) ..." o similar.
+
+Devuelve EXCLUSIVAMENTE un JSON con: {"faqs": [{question, answer, category, priority(1-5)}]}.
+Check-in de referencia: ${checkin_time || 'A convenir'}. 
+Horas de silencio: ${quiet_hours || '22:00–08:00'}.
 JSON:`;
       }
 

@@ -55,6 +55,8 @@ export type Property = {
     postal_code: string | null
     neighborhood: string | null
     timezone: string | null
+    has_parking: boolean
+    parking_number: string
     created_at: string
     updated_at: string
 }

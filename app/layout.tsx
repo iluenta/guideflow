@@ -1,6 +1,6 @@
 import React from "react"
 import type { Metadata } from 'next'
-import { Inter, Playfair_Display, Oswald, Nunito } from 'next/font/google'
+import { Inter, Playfair_Display, Oswald, Nunito, Cormorant_Garamond, Jost } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import './globals.css'
@@ -24,6 +24,19 @@ const oswald = Oswald({
 const nunito = Nunito({
   subsets: ["latin"],
   variable: '--font-nunito',
+  display: 'swap',
+});
+
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  variable: '--font-cormorant',
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+});
+
+const jost = Jost({
+  subsets: ["latin"],
+  variable: '--font-jost',
   display: 'swap',
 });
 
@@ -75,7 +88,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${playfair.variable} ${oswald.variable} ${nunito.variable} font-sans antialiased bg-beige text-navy`}>
+      <body className={`${inter.variable} ${playfair.variable} ${oswald.variable} ${nunito.variable} ${cormorant.variable} ${jost.variable} font-sans antialiased bg-beige text-navy`}>
         {children}
         <Analytics />
         <SpeedInsights />

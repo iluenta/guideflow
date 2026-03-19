@@ -77,16 +77,18 @@ function StepItem({
                         {localizedDescription}
                     </p>
 
-                    <div className="mb-4 rounded-2xl overflow-hidden border border-primary/5 shadow-inner bg-primary/[0.02] relative min-h-[200px]">
-                        <Image
-                            src={step.image_url || ''}
-                            alt={step.title}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 400px"
-                            className="object-cover transition-transform duration-700 hover:scale-105"
-                            loading="lazy"
-                        />
-                    </div>
+                    {step.image_url && (
+                        <div className="mb-4 rounded-2xl overflow-hidden border border-primary/5 shadow-inner bg-primary/[0.02] relative min-h-[200px]">
+                            <Image
+                                src={step.image_url}
+                                alt={step.title}
+                                fill
+                                sizes="(max-width: 768px) 100vw, 400px"
+                                className="object-cover transition-transform duration-700 hover:scale-105"
+                                loading="lazy"
+                            />
+                        </div>
+                    )}
 
                     {isCode(step.description) && (
                         <button

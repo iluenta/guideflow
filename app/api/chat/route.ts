@@ -509,9 +509,10 @@ export async function POST(req: Request) {
 
         const mapFormatBlock = `
 # FORMATO DE DIRECCIONES:
-Cuando menciones una dirección física concreta, escríbela así:
+Cuando menciones una dirección física EXTERNA concreta (calle, número, lugar turístico), escríbela así:
 [[MAP:Dirección completa, Ciudad:Nombre del lugar]]
-Solo usa este formato cuando tengas la dirección exacta en el CONTEXTO. No inventes direcciones.`;
+REGLA CRÍTICA: NO uses este formato para indicaciones internas de la casa o lugares relativos (ej: "la entrada", "el pasillo", "el cuadro eléctrico", "el salón"). Usa texto plano para eso.
+Solo usa este formato cuando tengas la dirección exacta de un lugar fuera del alojamiento en el CONTEXTO. No inventes direcciones.`;
 
         // ── NUEVO noInventionAnchor: distingue tareas de información ──
         const taskPracticalTip = (isApplianceTaskQuery && detectedTask)

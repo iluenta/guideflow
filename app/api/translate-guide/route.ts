@@ -21,7 +21,15 @@ export async function POST(req: Request) {
     let propertyId: string | undefined;
 
     try {
-        const body = await req.json();
+        let body;
+        try {
+            body = await req.json();
+            if (!body) throw new Error("Empty body");
+        } catch (e) {
+            console.warn('[API_TRANSLATE] ⚠️ Empty or invalid JSON body');
+            return NextResponse.json({ error: 'Cuerpo de solicitud inválido o vacío' }, { status: 400 });
+        }
+        
         const ip = req.headers.get('x-forwarded-for') || 'unknown';
         console.log(`[API_TRANSLATE] 📥 Request for "${body.targetLanguage || '?'}" | Batch: ${!!body.batch} | HasToken: ${!!body.accessToken}`);
 

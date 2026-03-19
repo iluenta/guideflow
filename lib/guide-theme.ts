@@ -60,103 +60,160 @@ export interface GuideThemeClasses {
 // ── Type alias for backward compat with color-harmonizer.ts ──
 export type ThemeColors = GuideThemeClasses
 
-// ── Modern Minimal ───────────────────────────────────────────
+// ── Modern Minimal ─────────────────────────────────────────────────
+// Inter · Blanco y gris · Bordes suaves · CTA negro
 const modern: GuideThemeClasses = {
-    pageBg: 'bg-white',
-    heroOverlay: 'bg-gradient-to-t from-black/70 via-black/20 to-transparent',
-    heroSubLabel: 'text-white/90',
-    heroGreeting: 'text-white font-bold font-serif',
-    heroPropertyName: 'text-white/90 font-light italic font-serif',
-    cardBg: 'bg-white',
-    sectionLabel: 'text-gray-400',
-    actionBtn: 'bg-[#18181b] text-white',
-    searchBg: 'bg-white',
-    searchText: 'text-gray-400',
-    searchBorder: 'border-gray-100',
-    chipBg: 'bg-gray-50/50 border border-gray-100/50 hover:bg-gray-100',
-    chipIconBg: 'bg-white shadow-sm',
-    chipIconColor: 'text-[#18181b]',
-    chipLabel: 'text-gray-700',
-    chipLayout: 'inline',
-    perChipColors: [],
-    guideCardTag: 'text-amber-500',
-    guideCardTitle: 'text-gray-900 font-serif',
-    guideCardSubtitle: 'text-gray-500',
-    guideCardBg: 'bg-white border border-[#18181b]/5',
-    guideCardChevron: 'bg-[#18181b]/5 text-[#18181b] group-hover:bg-[#18181b] group-hover:text-white',
-    conciergeText: 'text-gray-400',
+    pageBg:           'bg-gray-50',
+    heroOverlay:      'bg-gradient-to-t from-black/80 via-black/20 to-transparent',
+    heroSubLabel:     'text-white/80 font-bold tracking-[0.2em] uppercase',
+    heroGreeting:     'text-white font-bold',
+    heroPropertyName: 'text-white/90 font-light',
+    cardBg:           'bg-white border border-gray-100 shadow-sm',
+    sectionLabel:     'text-gray-400 font-bold uppercase tracking-widest',
+    actionBtn:        'bg-gray-900 text-white rounded-xl',
+    searchBg:         'bg-white',
+    searchText:       'text-gray-500 font-bold tracking-widest uppercase',
+    searchBorder:     'border-gray-200',
+    chipBg:           'bg-white border border-gray-100 shadow-sm hover:bg-gray-50',
+    chipIconBg:       'bg-gray-100',
+    chipIconColor:    'text-gray-600',
+    chipLabel:        'text-gray-900 font-bold',
+    chipLayout:       'inline',
+    perChipColors:    [],
+    guideCardTag:     'text-gray-400 font-bold uppercase tracking-widest',
+    guideCardTitle:   'text-gray-900 font-bold',
+    guideCardSubtitle:'text-gray-500',
+    guideCardBg:      'bg-white border border-gray-100 shadow-sm',
+    guideCardChevron: 'bg-gray-100 text-gray-700 group-hover:bg-gray-900 group-hover:text-white',
+    conciergeText:    'text-gray-700 font-bold tracking-widest',
 }
 
-// ── Urban Dark ───────────────────────────────────────────────
+// ── Urban Dark ─────────────────────────────────────────────────
+// Montserrat/Oswald · Negro · Cyan eléctrico · Cuadrado y duro
 const urban: GuideThemeClasses = {
-    pageBg: 'bg-[#09090b]',
-    heroOverlay: 'bg-gradient-to-t from-[#09090b] via-black/40 to-transparent',
-    heroSubLabel: 'text-[#00d4ff] font-black uppercase tracking-widest',
-    heroGreeting: 'text-white font-black uppercase tracking-tight',
-    heroPropertyName: 'text-white/70 uppercase tracking-widest font-medium',
-    cardBg: 'bg-[#18181b]',
-    sectionLabel: 'text-zinc-500',
-    actionBtn: 'bg-[#00d4ff] text-black font-black',
-    searchBg: 'bg-[#18181b]',
-    searchText: 'text-zinc-400',
-    searchBorder: 'border-zinc-700',
-    chipBg: 'bg-[#18181b] border border-zinc-700/50 hover:border-[#00d4ff]/40',
-    chipIconBg: 'bg-zinc-800',
-    chipIconColor: 'text-[#00d4ff]',
-    chipLabel: 'text-zinc-200',
-    chipLayout: 'inline',
-    perChipColors: [],
-    guideCardTag: 'text-[#00d4ff] font-black uppercase tracking-widest',
-    guideCardTitle: 'text-white font-black uppercase tracking-tight',
-    guideCardSubtitle: 'text-zinc-400',
-    guideCardBg: 'bg-[#18181b] border border-zinc-700',
-    guideCardChevron: 'bg-[#00d4ff]/10 text-[#00d4ff] group-hover:bg-[#00d4ff] group-hover:text-black',
-    conciergeText: 'text-zinc-500',
+    pageBg:           'bg-[#0F0F0F]',
+    heroOverlay:      'bg-gradient-to-t from-black via-black/40 to-transparent',
+    heroSubLabel:     'text-[#00E5FF] font-bold tracking-[0.3em] uppercase',
+    heroGreeting:     'text-white font-bold uppercase',
+    heroPropertyName: 'text-white/70 uppercase tracking-widest',
+    cardBg:           'bg-[#1C1C1C] border border-[#333]',
+    sectionLabel:     'text-[#555] font-bold tracking-[0.2em] uppercase',
+    actionBtn:        'bg-[#00E5FF] text-black font-bold tracking-[0.2em] uppercase',
+    searchBg:         'bg-[#1C1C1C]',
+    searchText:       'text-[#00E5FF] font-bold tracking-[0.2em] uppercase',
+    searchBorder:     'border-[#333]',
+    chipBg:           'bg-[#1C1C1C] border border-[#333] hover:border-[#00E5FF]/30',
+    chipIconBg:       'bg-[#0F0F0F] border border-[#333]',
+    chipIconColor:    'text-[#00E5FF]',
+    chipLabel:        'text-white font-bold uppercase tracking-widest',
+    chipLayout:       'inline',
+    perChipColors:    [],
+    guideCardTag:     'text-[#555] font-bold tracking-[0.2em] uppercase',
+    guideCardTitle:   'text-white font-bold uppercase tracking-widest',
+    guideCardSubtitle:'text-[#888]',
+    guideCardBg:      'bg-[#1C1C1C] border border-[#333]',
+    guideCardChevron: 'bg-[#0F0F0F] border border-[#555] text-[#555] group-hover:text-[#00E5FF]',
+    conciergeText:    'text-[#00E5FF] font-bold tracking-[0.2em] uppercase',
 }
 
-// ── Coastal Breeze ───────────────────────────────────────────
+// ── Coastal Breeze ─────────────────────────────────────────────────
+// Nunito · #F0F9FF azul cielo · íconos circulares de colores · Redondeado
 const coastal: GuideThemeClasses = {
-    pageBg: 'bg-sky-50',
-    // Sky-blue tinted gradient so hero blends into the sky-50 page background
-    heroOverlay: 'bg-gradient-to-t from-sky-700/60 via-sky-400/10 to-transparent',
-    heroSubLabel: 'text-sky-200 font-semibold tracking-widest uppercase',
-    heroGreeting: 'text-white font-bold',
-    heroPropertyName: 'text-sky-100 font-light',
-    cardBg: 'bg-white rounded-3xl',
-    sectionLabel: 'text-sky-500 font-extrabold',
-    actionBtn: 'bg-sky-500 text-white rounded-full',
-    searchBg: 'bg-white',
-    searchText: 'text-gray-400',
-    searchBorder: 'border-sky-100',
-    // Inline fallback (not rendered in stacked layout)
-    chipBg: 'bg-white border border-sky-100 hover:bg-sky-50 rounded-2xl',
-    chipIconBg: 'bg-sky-100 rounded-full',
-    chipIconColor: 'text-sky-600',
-    chipLabel: 'text-gray-700',
-    chipLayout: 'stacked',
-    // Stacked chip circle colors (wifi, access/checkin, parking, eat)
-    perChipColors: [
-        'bg-blue-400',    // WiFi
-        'bg-orange-400',  // Acceso / Check-in
-        'bg-orange-400',  // Parking
-        'bg-emerald-500', // Comer
+    pageBg:           'bg-[#F0F9FF]',
+    heroOverlay:      'bg-gradient-to-t from-[#036199]/85 via-[#0EA5E9]/20 to-transparent',
+    heroSubLabel:     'text-white/80 font-extrabold tracking-widest uppercase',
+    heroGreeting:     'text-white font-extrabold',
+    heroPropertyName: 'text-white/90 font-semibold',
+    cardBg:           'bg-white border border-[#E0F2FE] rounded-3xl shadow-sm',
+    sectionLabel:     'text-[#94A3B8] font-extrabold uppercase tracking-widest',
+    actionBtn:        'bg-[#0EA5E9] text-white font-extrabold rounded-full',
+    searchBg:         'bg-white',
+    searchText:       'text-[#0EA5E9] font-extrabold tracking-widest uppercase',
+    searchBorder:     'border-[#E0F2FE]',
+    chipBg:           'bg-white border border-[#E0F2FE] rounded-2xl',
+    // Coastal uses stacked circular icons — chipIconBg is used as the circle color
+    chipIconBg:       'bg-[#0EA5E9]',
+    chipIconColor:    'text-white',
+    chipLabel:        'text-[#1E3A5F] font-extrabold',
+    chipLayout:       'stacked',
+    perChipColors:    [
+        'bg-[#0EA5E9]',   // WiFi  - sky blue
+        'bg-[#06B6D4]',   // Acceso - cyan
+        'bg-[#F97316]',   // Parking - orange
+        'bg-[#10B981]',   // Comer - emerald
     ],
-    guideCardTag: 'text-white/80 font-semibold tracking-widest',
-    guideCardTitle: 'text-white font-bold',
-    guideCardSubtitle: 'text-white/70',
-    guideCardBg: 'bg-sky-500 border-0',
-    guideCardChevron: 'bg-white/20 text-white group-hover:bg-white group-hover:text-sky-500 rounded-full',
-    conciergeText: 'text-sky-600 font-semibold',
+    guideCardTag:     'text-[#94A3B8] font-extrabold uppercase tracking-widest',
+    guideCardTitle:   'text-[#1E3A5F] font-extrabold',
+    guideCardSubtitle:'text-[#64748B] font-semibold',
+    guideCardBg:      'bg-white border border-[#E0F2FE] rounded-3xl shadow-sm',
+    guideCardChevron: 'bg-[#F0F9FF] text-[#BAE6FD] group-hover:bg-[#0EA5E9] group-hover:text-white rounded-full',
+    conciergeText:    'text-[#0EA5E9] font-extrabold tracking-widest uppercase',
+}
+
+// ── Warm Boutique ─────────────────────────────────────────────────
+// Lato + Playfair · Crema #FDF6EE · Marrón #8B5E3C · Dorado #C4956A
+const warm: GuideThemeClasses = {
+    pageBg:           'bg-[#FDF6EE]',
+    heroOverlay:      'bg-gradient-to-t from-[#5A2D0A]/90 via-[#8C501E]/30 to-transparent',
+    heroSubLabel:     'text-[#F5C89A] font-bold tracking-[0.2em] uppercase',
+    heroGreeting:     'text-white font-bold italic',
+    heroPropertyName: 'text-white/90 italic',
+    cardBg:           'bg-white border border-[#E8D5BE] shadow-sm',
+    sectionLabel:     'text-[#9C7B5E] font-bold uppercase tracking-widest italic',
+    actionBtn:        'bg-[#8B5E3C] text-[#FDF6EE] rounded-xl',
+    searchBg:         'bg-[#FEF3E2]',
+    searchText:       'text-[#8B5E3C] font-bold tracking-widest uppercase',
+    searchBorder:     'border-[#E8D5BE]',
+    chipBg:           'bg-[#FEF3E2] border border-[#E8D5BE] hover:bg-[#FEE6C8]',
+    chipIconBg:       'bg-[#FEF3E2]',
+    chipIconColor:    'text-[#8B5E3C]',
+    chipLabel:        'text-[#3D2B1F] font-bold',
+    chipLayout:       'inline',
+    perChipColors:    [],
+    guideCardTag:     'text-[#9C7B5E] font-bold uppercase tracking-widest italic',
+    guideCardTitle:   'text-[#3D2B1F] font-bold italic',
+    guideCardSubtitle:'text-[#7A5C45]',
+    guideCardBg:      'bg-white border border-[#E8D5BE] shadow-sm',
+    guideCardChevron: 'bg-[#FEF3E2] text-[#C4956A] group-hover:bg-[#8B5E3C] group-hover:text-white',
+    conciergeText:    'text-[#8B5E3C] font-bold tracking-widest uppercase',
+}
+
+// ── Luxury Estate ─────────────────────────────────────────────────
+// Cormorant + Jost · Marfil #F9F7F4 · Navy #1B2A4A · Oro #C9A84C
+const luxury: GuideThemeClasses = {
+    pageBg:           'bg-[#F9F7F4]',
+    heroOverlay:      'bg-gradient-to-t from-[#1B2A4A]/95 via-[#1B2A4A]/40 to-transparent',
+    heroSubLabel:     'text-[#C9A84C] font-medium tracking-[0.35em] uppercase',
+    heroGreeting:     'text-white font-light',
+    heroPropertyName: 'text-white/80 italic font-light',
+    cardBg:           'bg-white border border-[#D4C5A9]',
+    sectionLabel:     'text-[#8A8070] font-medium tracking-[0.25em] uppercase',
+    actionBtn:        'bg-[#1B2A4A] text-[#C9A84C] font-medium tracking-[0.25em] uppercase',
+    searchBg:         'bg-white',
+    searchText:       'text-[#8A8070] font-medium tracking-[0.25em] uppercase',
+    searchBorder:     'border-[#D4C5A9]',
+    chipBg:           'bg-white border border-[#D4C5A9] hover:border-[#C9A84C]/50',
+    chipIconBg:       'bg-[#F9F7F4] border border-[#D4C5A9]',
+    chipIconColor:    'text-[#C9A84C]',
+    chipLabel:        'text-[#1B2A4A] font-medium tracking-widest uppercase',
+    chipLayout:       'inline',
+    perChipColors:    [],
+    guideCardTag:     'text-[#8A8070] font-medium tracking-[0.25em] uppercase',
+    guideCardTitle:   'text-[#1B2A4A] font-medium tracking-widest uppercase',
+    guideCardSubtitle:'text-[#8A8070] font-light',
+    guideCardBg:      'bg-white border border-[#D4C5A9]',
+    guideCardChevron: 'bg-[#F9F7F4] border border-[#D4C5A9] text-[#C9A84C] group-hover:bg-[#1B2A4A] group-hover:text-[#C9A84C]',
+    conciergeText:    'text-[#8A8070] font-medium tracking-[0.25em] uppercase',
 }
 
 // ── Registry ─────────────────────────────────────────────────
 const themeMap: Record<string, GuideThemeClasses> = {
     modern,
+    modern_v2: modern, // alias used in some component defaults
     urban,
     coastal,
-    warm: modern,   // fallback until implemented
-    luxury: modern, // fallback until implemented
-    airbnb: modern, // fallback until implemented
+    warm,
+    luxury,
 }
 
 export function getGuideTheme(themeId?: string): GuideThemeClasses {
