@@ -72,11 +72,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Failed to create access token' }, { status: 500 });
         }
 
-        // Return the token and the access URL
-        const slugOrId = property.slug || property.id;
+        // Return the token and the activation URL
         return NextResponse.json({
             token: accessToken,
-            url: `/${slugOrId}?token=${accessToken}`
+            url: `/g/${accessToken}`
         });
 
     } catch (error: any) {

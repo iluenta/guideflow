@@ -150,6 +150,20 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     let tokenLanguage = ''
     let activeToken = token
 
+    // Backward compatibility: If token is in URL, store it in cookie and REDIRECT to hide it
+    if (token) {
+        const cookieStore = await cookies()
+        cookieStore.set(`gf_token_${slug}`, token, {
+            path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+        })
+        // Redirect to the same slug to hide the token from the address bar
+        const redirectUrl = lang ? `/${slug}?lang=${lang}` : `/${slug}`
+        return redirect(redirectUrl)
+    }
+
     if (!activeToken) {
         activeToken = (await cookies()).get(`gf_token_${slug}`)?.value
     }
