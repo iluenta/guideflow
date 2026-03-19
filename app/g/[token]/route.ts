@@ -47,5 +47,12 @@ export async function GET(
     console.log(`[GUEST_ACTIVATION] Access granted for ${access.guest_name} at /${property.slug}`);
 
     // 4. Redirect to the slug page (no token in URL!)
-    return redirect(`/${property.slug}`);
+    // We use a response object to set security headers like Referrer-Policy
+    const redirectUrl = new URL(`/${property.slug}`, request.url);
+    const response = NextResponse.redirect(redirectUrl);
+    
+    // Security: Stop the leak of the /g/[token] URL in the Referer header
+    response.headers.set('Referrer-Policy', 'no-referrer');
+    
+    return response;
 }
