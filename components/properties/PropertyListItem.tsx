@@ -51,15 +51,15 @@ export function PropertyListItem({ property, onStatusChange }: PropertyListItemP
         <div className="group bg-white rounded-xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all duration-200 flex items-center p-3 gap-4">
             
             {/* ── Thumbnail ───────────────────────────────────── */}
-            <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-lg overflow-hidden bg-slate-100">
+            <div className="relative h-16 w-16 sm:h-20 sm:w-24 shrink-0 rounded-xl overflow-hidden bg-slate-100 shadow-sm">
                 {property.main_image_url ? (
                     <Image
                         src={property.main_image_url}
                         alt={property.name}
                         fill
-                        sizes="80px"
+                        sizes="100px"
                         quality={60}
-                        className="object-cover"
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-300">
@@ -69,43 +69,51 @@ export function PropertyListItem({ property, onStatusChange }: PropertyListItemP
             </div>
 
             {/* ── Info Principal ────────────────────────────────── */}
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="font-bold text-slate-900 truncate text-base group-hover:text-[#316263] transition-colors">
+            <div className="flex-1 min-w-0 py-1">
+                <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-bold text-slate-900 truncate text-base sm:text-lg group-hover:text-[#316263] transition-colors">
                         {property.name}
                     </h3>
-                    <div className="hidden sm:block">
+                    <div className="hidden md:block">
                         <StatusBadge status={currentStatus} />
                     </div>
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-y-1 gap-x-4 text-xs text-slate-500">
                     <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
+                        <StatusBadge status={currentStatus} className="md:hidden scale-90 -ml-1" />
+                        <MapPin className="h-3 w-3 text-slate-400" />
                         <span className="truncate">{property.city || 'Sin ciudad'}</span>
                     </div>
                     
-                    {/* Stats visibles solo en Desktop para mantenerlo compacto */}
-                    <div className="hidden md:flex items-center gap-3 border-l border-slate-100 pl-3">
+                    {/* Stats visibles en sm+ */}
+                    <div className="hidden sm:flex items-center gap-3 text-slate-400">
                         <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            <span>{property.guests}</span>
+                            <Users className="h-3.5 w-3.5" />
+                            <span className="font-medium text-slate-600">{property.guests}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-slate-300">|</div>
                         <div className="flex items-center gap-1">
-                            <Bed className="h-3 w-3" />
-                            <span>{property.beds}</span>
+                            <Bed className="h-3.5 w-3.5" />
+                            <span className="font-medium text-slate-600">{property.beds}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Bath className="h-3.5 w-3.5" />
+                            <span className="font-medium text-slate-600">{property.baths}</span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 md:border-l md:border-slate-100 md:pl-3">
-                        <div className="h-1.5 w-12 bg-slate-100 rounded-full overflow-hidden">
+                    {/* Progress Bar */}
+                    <div className="flex items-center gap-2 mt-0.5 sm:mt-0">
+                        <div className="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden shrink-0">
                             <div 
                                 className={cn("h-full rounded-full bg-[#316263]", completion === 100 && "bg-emerald-500")}
                                 style={{ width: `${completion}%` }}
                             />
                         </div>
-                        <span className={cn("font-medium", completion === 100 ? "text-emerald-600" : "text-[#316263]")}>
+                        <span className={cn(
+                            "font-bold text-[10px] tracking-tight uppercase", 
+                            completion === 100 ? "text-emerald-700" : "text-[#316263]"
+                        )}>
                             {completion}%
                         </span>
                     </div>
@@ -113,19 +121,15 @@ export function PropertyListItem({ property, onStatusChange }: PropertyListItemP
             </div>
 
             {/* ── Acciones ─────────────────────────────────────── */}
-            <div className="flex items-center gap-2">
-                <div className="sm:hidden">
-                    <StatusBadge status={currentStatus} />
-                </div>
-                
+            <div className="flex items-center gap-3 sm:gap-4 pl-2 border-l border-slate-50 sm:border-none">
                 <Button 
                     variant="outline"
                     size="icon" 
-                    className="h-9 w-9 rounded-lg border-slate-200 text-slate-600 hover:bg-[#316263]/5 hover:text-[#316263] hover:border-[#316263]/20"
+                    className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl border-slate-200 text-slate-600 hover:bg-[#316263] hover:text-white hover:border-[#316263] transition-all"
                     asChild
                 >
                     <Link href={`/dashboard/properties/${property.id}/setup`}>
-                        <Edit2 className="h-4 w-4" />
+                        <Edit2 className="h-4.5 w-4.5" />
                     </Link>
                 </Button>
 
@@ -134,13 +138,13 @@ export function PropertyListItem({ property, onStatusChange }: PropertyListItemP
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-9 w-9 rounded-lg text-slate-400 hover:text-slate-900"
+                            className="h-9 w-9 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-50"
                             disabled={isUpdating}
                         >
-                            {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-5 w-5" />}
+                            {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-6 w-6" />}
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52 rounded-xl p-1 shadow-lg border-slate-100">
+                    <DropdownMenuContent align="end" className="w-52 rounded-xl p-1 shadow-lg border-slate-100 bg-white">
                         {currentStatus === 'active' && (
                             <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
                                 <Link href={`/${property.slug || property.id}`} target="_blank" className="flex items-center">

@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-export function StatusBadge({ status }: { status?: string }) {
+export function StatusBadge({ status, className }: { status?: string, className?: string }) {
     if (!status) return null
     const map = {
         active: { label: 'Activa', cls: 'bg-emerald-100 text-emerald-700 border-none' },
@@ -10,7 +10,7 @@ export function StatusBadge({ status }: { status?: string }) {
     const s = map[status as keyof typeof map]
     if (!s) return null
     return (
-        <span className={cn('inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold shadow-sm', s.cls)}>
+        <span className={cn('inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold shadow-sm', s.cls, className)}>
             {s.label}
         </span>
     )
