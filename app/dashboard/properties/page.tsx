@@ -34,6 +34,10 @@ export default function PropertiesPage() {
     }
   }
 
+  const handleStatusUpdateLocal = (id: string, newStatus: 'active' | 'draft' | 'archived') => {
+    setProperties(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p))
+  }
+
   const filtered = properties.filter(p => {
     const matchSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -41,9 +45,9 @@ export default function PropertiesPage() {
 
     const matchFilter =
       activeFilter === 'Todas' ? true :
-        activeFilter === 'Activas' ? (p as any).status === 'active' :
-          activeFilter === 'Borradores' ? (p as any).status === 'draft' :
-            activeFilter === 'Archivadas' ? (p as any).status === 'archived' :
+        activeFilter === 'Activas' ? p.status === 'active' :
+          activeFilter === 'Borradores' ? p.status === 'draft' :
+            activeFilter === 'Archivadas' ? p.status === 'archived' :
               true
 
     return matchSearch && matchFilter
@@ -148,7 +152,11 @@ export default function PropertiesPage() {
             : "grid-cols-1"
         )}>
           {filtered.map(property => (
-            <PropertyCard key={property.id} property={property} />
+            <PropertyCard 
+              key={property.id} 
+              property={property} 
+              onStatusChange={handleStatusUpdateLocal}
+            />
           ))}
 
           {/* Card añadir nueva propiedad */}

@@ -22,6 +22,7 @@ interface PropertyCardProps {
         status?: 'active' | 'draft' | 'archived'
         guide_completion?: number
     }
+    onStatusChange?: (id: string, newStatus: 'active' | 'draft' | 'archived') => void
 }
 
 function StatusBadge({ status }: { status?: string }) {
@@ -40,7 +41,7 @@ function StatusBadge({ status }: { status?: string }) {
     )
 }
 
-export function PropertyCard({ property }: PropertyCardProps) {
+export function PropertyCard({ property, onStatusChange }: PropertyCardProps) {
     const router = useRouter()
     const [isUpdating, setIsUpdating] = useState(false)
     const [currentStatus, setCurrentStatus] = useState(property.status || 'draft')
@@ -53,6 +54,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
             setIsUpdating(true)
             await updatePropertyStatus(property.id, newStatus)
             setCurrentStatus(newStatus)
+            onStatusChange?.(property.id, newStatus)
             router.refresh()
         } catch (error) {
             console.error(error)
