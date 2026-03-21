@@ -7,6 +7,7 @@ import { GuideViewContainer } from '@/components/guide/GuideViewContainer'
 import { getLayoutTheme } from '@/lib/themes'
 import { headers, cookies } from 'next/headers'
 import { Translator } from '@/lib/gemini-i18n'
+import { playfair, oswald, nunito, cormorant, jost } from '@/lib/fonts'
 
 function detectLanguageFromHeader(acceptLanguage: string): string {
     const SUPPORTED = ['es', 'en', 'fr', 'de', 'it', 'pt', 'ca', 'gl', 'eu']
@@ -257,7 +258,7 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     return (
         <div
             data-theme={layoutThemeId}
-            className="min-h-screen selection:bg-teal/10"
+            className={`min-h-screen selection:bg-teal/10 ${playfair.variable} ${oswald.variable} ${nunito.variable} ${cormorant.variable} ${jost.variable}`}
             style={{
                 '--color-primary': palette.primary,
                 '--color-primary-foreground': palette.surface,

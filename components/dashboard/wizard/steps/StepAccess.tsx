@@ -8,9 +8,21 @@ import { Label } from '@/components/ui/label'
 import { TabsContent } from '@/components/ui/tabs'
 import { MapPin, Loader2, Check, Info, Sparkles, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import MapPreview from '../../MapPreview'
+import dynamic from 'next/dynamic'
 import TransportInfo from '../../TransportInfo'
 import { useWizard } from '../WizardContext'
+
+const MapPreview = dynamic(() => import('../../MapPreview'), {
+    ssr: false,
+    loading: () => (
+        <div className="w-full h-48 bg-slate-100 animate-pulse rounded-xl flex items-center justify-center border-2 border-dashed border-slate-200">
+            <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-6 h-6 text-slate-300 animate-spin" />
+                <span className="text-[10px] text-slate-400 font-medium">Cargando mapa interactivo...</span>
+            </div>
+        </div>
+    )
+})
 
 export default function StepAccess({ value }: { value?: string }) {
     const {

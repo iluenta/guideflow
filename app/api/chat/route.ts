@@ -7,7 +7,7 @@ import { TranslationService } from '@/lib/translation-service';
 import { NotificationService } from '@/lib/notifications';
 import { classifyIntent, intentToStrategy, isRecommendation, isAppliance, TASK_TO_CONTEXT } from '@/lib/ai/intent-classifier';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
     let supabase;

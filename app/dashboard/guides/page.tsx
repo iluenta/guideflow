@@ -1,6 +1,20 @@
-import { getGuideSections, getProperties, getPropertyManuals } from '@/app/actions/properties'
-import { GuideManager } from '@/components/guides/GuideManager'
+import { getGuideSections, getProperties, getPropertyManuals, type Property, type GuideSection } from '@/app/actions/properties'
+import dynamic from 'next/dynamic'
 import { Card, CardContent } from '@/components/ui/card'
+
+const GuideManager = dynamic(() => import('@/components/guides/GuideManager').then(m => m.GuideManager), {
+  loading: () => (
+    <div className="w-full mt-8 p-8 bg-white border border-slate-100 rounded-xl animate-pulse space-y-4">
+      <div className="h-8 w-64 bg-slate-100 rounded-lg" />
+      <div className="h-4 w-96 bg-slate-50 rounded-lg" />
+      <div className="grid grid-cols-3 gap-4 mt-8">
+        <div className="h-32 bg-slate-50 rounded-2xl" />
+        <div className="h-32 bg-slate-50 rounded-2xl" />
+        <div className="h-32 bg-slate-50 rounded-2xl" />
+      </div>
+    </div>
+  )
+})
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,7 +36,7 @@ export default async function GuidesPage({
 
   // Find the currently selected property
   const selectedProperty = selectedId
-    ? properties.find(p => p.id === selectedId)
+    ? properties.find((p: Property) => p.id === selectedId)
     : null
 
   const initialSections = selectedProperty
@@ -55,7 +69,7 @@ export default async function GuidesPage({
 
       {/* Selection Grid */}
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {properties.map((property) => {
+        {properties.map((property: Property) => {
           const isActive = selectedProperty?.id === property.id
           return (
             <Card

@@ -1,44 +1,10 @@
 import React from "react"
 import type { Metadata } from 'next'
-import { Inter, Playfair_Display, Oswald, Nunito, Cormorant_Garamond, Jost } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import './globals.css'
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: '--font-inter'
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: '--font-playfair'
-});
-
-const oswald = Oswald({
-  subsets: ["latin"],
-  variable: '--font-oswald',
-  display: 'swap',
-});
-
-const nunito = Nunito({
-  subsets: ["latin"],
-  variable: '--font-nunito',
-  display: 'swap',
-});
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  variable: '--font-cormorant',
-  weight: ['300', '400', '500', '600', '700'],
-  display: 'swap',
-});
-
-const jost = Jost({
-  subsets: ["latin"],
-  variable: '--font-jost',
-  display: 'swap',
-});
+import { inter } from '@/lib/fonts'
+import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
   title: 'GuideFlow - Gestiona tu Alojamiento Turistico',
@@ -79,8 +45,6 @@ const SW_SCRIPT = `
   }
 `;
 
-import { Toaster } from "@/components/ui/sonner"
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -88,7 +52,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${playfair.variable} ${oswald.variable} ${nunito.variable} ${cormorant.variable} ${jost.variable} font-sans antialiased bg-beige text-navy`}>
+      <body className={`${inter.variable} font-sans antialiased bg-beige text-navy`}>
         {children}
         <Analytics />
         <SpeedInsights />

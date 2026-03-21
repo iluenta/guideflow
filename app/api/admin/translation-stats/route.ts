@@ -1,7 +1,7 @@
 import { createEdgeAdminClient } from '@/lib/supabase/edge';
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 /**
  * Phase 15: Admin endpoint for translation cache statistics
