@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { getProperties, Property } from '@/app/actions/properties'
 import { PropertyCard } from '@/components/properties/PropertyCard'
+import { PropertyListItem } from '@/components/properties/PropertyListItem'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, LayoutGrid, List, Building2 } from 'lucide-react'
+import { Plus, Search, LayoutGrid, List, Building2, PlusCircle } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
@@ -135,13 +136,27 @@ export default function PropertiesPage() {
 
       {/* Grid / Lista */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="space-y-3">
-              <Skeleton className="aspect-video w-full rounded-2xl" />
-              <Skeleton className="h-5 w-2/3" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
+        <div className={cn(
+          "grid gap-6",
+          viewMode === 'grid' ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
+        )}>
+          {[1, 2, 3, 4].map(i => (
+            viewMode === 'grid' ? (
+              <div key={i} className="space-y-3">
+                <Skeleton className="aspect-video w-full rounded-2xl" />
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ) : (
+              <div key={i} className="flex items-center p-4 gap-4 bg-white rounded-xl border border-slate-100">
+                <Skeleton className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-5 w-1/3" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+                <Skeleton className="h-9 w-9 rounded-lg" />
+              </div>
+            )
           ))}
         </div>
       ) : filtered.length > 0 ? (
@@ -152,24 +167,46 @@ export default function PropertiesPage() {
             : "grid-cols-1"
         )}>
           {filtered.map((property, index) => (
-            <PropertyCard 
-              key={property.id} 
-              property={property} 
-              onStatusChange={handleStatusUpdateLocal}
-              priority={index < 3}
-            />
+            viewMode === 'grid' ? (
+              <PropertyCard 
+                key={property.id} 
+                property={property} 
+                onStatusChange={handleStatusUpdateLocal}
+                priority={index < 3}
+              />
+            ) : (
+              <PropertyListItem
+                key={property.id}
+                property={property}
+                onStatusChange={handleStatusUpdateLocal}
+              />
+            )
           ))}
 
           {/* Card añadir nueva propiedad */}
           <Link
             href="/dashboard/properties/new"
-            className="group border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center min-h-[280px] hover:border-[#316263]/40 hover:bg-[#316263]/5 transition-all"
+            className={cn(
+              "group border-2 border-dashed border-slate-200 hover:border-[#316263]/40 hover:bg-[#316263]/5 transition-all flex items-center justify-center",
+              viewMode === 'grid' 
+                ? "flex-col rounded-2xl min-h-[280px]" 
+                : "flex-row rounded-xl p-4 gap-4 h-24"
+            )}
           >
-            <div className="h-14 w-14 rounded-full bg-slate-100 group-hover:bg-[#316263]/10 flex items-center justify-center mb-3 transition-colors">
-              <Plus className="h-7 w-7 text-slate-400 group-hover:text-[#316263]" />
+            <div className={cn(
+              "rounded-full bg-slate-100 group-hover:bg-[#316263]/10 flex items-center justify-center transition-colors",
+              viewMode === 'grid' ? "h-14 w-14 mb-3" : "h-12 w-12"
+            )}>
+              {viewMode === 'grid' ? (
+                <Plus className="h-7 w-7 text-slate-400 group-hover:text-[#316263]" />
+              ) : (
+                <PlusCircle className="h-6 w-6 text-slate-400 group-hover:text-[#316263]" />
+              )}
             </div>
-            <h3 className="text-base font-bold text-slate-700 group-hover:text-[#316263]">Añadir Propiedad</h3>
-            <p className="text-sm text-slate-400 mt-1">Configura un nuevo alojamiento</p>
+            <div className={cn(viewMode === 'list' && "flex-1")}>
+              <h3 className="text-base font-bold text-slate-700 group-hover:text-[#316263]">Añadir Propiedad</h3>
+              <p className="text-sm text-slate-400 mt-1">Configura un nuevo alojamiento</p>
+            </div>
           </Link>
         </div>
       ) : (

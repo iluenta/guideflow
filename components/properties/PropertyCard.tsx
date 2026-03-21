@@ -16,6 +16,7 @@ import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { GuestAccessDialog } from './GuestAccessDialog'
+import { StatusBadge } from './StatusBadge'
 
 interface PropertyCardProps {
     property: Property & {
@@ -26,21 +27,6 @@ interface PropertyCardProps {
     priority?: boolean
 }
 
-function StatusBadge({ status }: { status?: string }) {
-    if (!status) return null
-    const map = {
-        active: { label: 'Activa', cls: 'bg-emerald-100 text-emerald-700 border-none' },
-        draft: { label: 'Borrador', cls: 'bg-amber-100 text-amber-800 border-none' },
-        archived: { label: 'Archivada', cls: 'bg-slate-100 text-slate-600 border-none' },
-    }
-    const s = map[status as keyof typeof map]
-    if (!s) return null
-    return (
-        <span className={cn('inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold shadow-sm', s.cls)}>
-            {s.label}
-        </span>
-    )
-}
 
 export function PropertyCard({ property, onStatusChange, priority = false }: PropertyCardProps) {
     const router = useRouter()
