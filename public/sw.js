@@ -56,6 +56,25 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // ✅ NUEVO: Imágenes de Next.js Image Optimization — Cache-First
+    // Vercel ya optimiza y sirve desde CDN; el SW solo cachea localmente.
+    // Las imágenes de propiedades no cambian, no necesitamos revalidar.
+    if (url.includes('/_next/image') || url.match(/\.(avif|webp|jpg|jpeg|png)(\?|$)/)) {
+        event.respondWith(
+            caches.open(CACHE_NAME).then(async (cache) => {
+                const cached = await cache.match(event.request);
+                if (cached) return cached; // ✅ Hit: devuelve y NO lanza red
+                
+                const response = await fetch(event.request);
+                if (response && response.status === 200) {
+                    cache.put(event.request, response.clone());
+                }
+                return response;
+            })
+        );
+        return;
+    }
+
     // 3. Documento HTML (la guía, el dashboard) — Network First
     if (event.request.mode === 'navigate') {
         event.respondWith(
@@ -74,7 +93,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 4. Assets estáticos — Stale While Revalidate
+    // 4. Assets estáticos — Stale While Revalidate (solo favicon, manifest, etc.)
     event.respondWith(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.match(event.request).then((cached) => {

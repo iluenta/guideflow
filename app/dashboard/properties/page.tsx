@@ -151,11 +151,12 @@ export default function PropertiesPage() {
             ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
             : "grid-cols-1"
         )}>
-          {filtered.map(property => (
+          {filtered.map((property, index) => (
             <PropertyCard 
               key={property.id} 
               property={property} 
               onStatusChange={handleStatusUpdateLocal}
+              priority={index < 3}
             />
           ))}
 

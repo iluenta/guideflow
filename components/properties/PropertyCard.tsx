@@ -23,6 +23,7 @@ interface PropertyCardProps {
         guide_completion?: number
     }
     onStatusChange?: (id: string, newStatus: 'active' | 'draft' | 'archived') => void
+    priority?: boolean
 }
 
 function StatusBadge({ status }: { status?: string }) {
@@ -41,7 +42,7 @@ function StatusBadge({ status }: { status?: string }) {
     )
 }
 
-export function PropertyCard({ property, onStatusChange }: PropertyCardProps) {
+export function PropertyCard({ property, onStatusChange, priority = false }: PropertyCardProps) {
     const router = useRouter()
     const [isUpdating, setIsUpdating] = useState(false)
     const [currentStatus, setCurrentStatus] = useState(property.status || 'draft')
@@ -73,6 +74,8 @@ export function PropertyCard({ property, onStatusChange }: PropertyCardProps) {
                         src={property.main_image_url}
                         alt={property.name}
                         fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        priority={priority}
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                 ) : (
