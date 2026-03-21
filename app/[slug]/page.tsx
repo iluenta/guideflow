@@ -7,7 +7,7 @@ import { GuideViewContainer } from '@/components/guide/GuideViewContainer'
 import { getLayoutTheme } from '@/lib/themes'
 import { headers, cookies } from 'next/headers'
 import { Translator } from '@/lib/gemini-i18n'
-import { playfair, oswald, nunito, cormorant, jost } from '@/lib/fonts'
+import { playfair, oswald, nunito, cormorant, jost } from '@/lib/fonts-themes'
 
 function detectLanguageFromHeader(acceptLanguage: string): string {
     const SUPPORTED = ['es', 'en', 'fr', 'de', 'it', 'pt', 'ca', 'gl', 'eu']

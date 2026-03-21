@@ -35,8 +35,8 @@
   --color-cream: #FFFDF9;
 
   /* Fonts */
-  --font-sans: 'Inter', 'Geist', 'Geist Fallback', system-ui, sans-serif;
-  --font-serif: 'Playfair Display', serif;
+  --font-sans: var(--font-inter), 'Geist', 'Geist Fallback', system-ui, sans-serif;
+  --font-serif: var(--font-playfair), serif;
   --font-cormorant: var(--font-cormorant), serif;
   --font-jost: var(--font-jost), sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
