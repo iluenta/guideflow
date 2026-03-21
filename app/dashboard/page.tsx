@@ -82,8 +82,8 @@ const recentActivity = [
   },
   {
     id: 2,
-    type: "guide",
-    message: "Consulta IA: WiFi password - Casa Rural",
+    type: "booking",
+    message: "Nueva reserva confirmada - Casa Rural",
     time: "Hace 5h",
   },
   {
@@ -207,12 +207,6 @@ export default function DashboardPage() {
                       )}
                     </div>
                     <div className="flex gap-2">
-                      <Link href="/guide/demo">
-                        <Button variant="outline" size="sm" className="gap-1 bg-transparent">
-                          <ExternalLink className="h-3 w-3" />
-                          Guia
-                        </Button>
-                      </Link>
                       <Link href="/dashboard/calendar">
                         <Button variant="outline" size="sm">
                           <Calendar className="h-4 w-4" />
@@ -270,7 +264,7 @@ export default function DashboardPage() {
           <CardTitle className="text-lg">Acciones rapidas</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Link href="/dashboard/properties">
               <Button
                 variant="outline"
@@ -287,24 +281,6 @@ export default function DashboardPage() {
               >
                 <Calendar className="h-6 w-6 text-primary" />
                 <span>Ver calendario</span>
-              </Button>
-            </Link>
-            <Link href="/dashboard/guides">
-              <Button
-                variant="outline"
-                className="h-auto w-full flex-col gap-2 py-6 bg-transparent"
-              >
-                <Users className="h-6 w-6 text-primary" />
-                <span>Editar guias</span>
-              </Button>
-            </Link>
-            <Link href="/guide/demo">
-              <Button
-                variant="outline"
-                className="h-auto w-full flex-col gap-2 py-6 bg-transparent"
-              >
-                <ExternalLink className="h-6 w-6 text-primary" />
-                <span>Vista huesped</span>
               </Button>
             </Link>
           </div>

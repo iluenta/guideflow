@@ -160,7 +160,6 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
 
     return (
         <div className="relative space-y-6 pb-4">
-/* El encabezado se ha eliminado porque ya lo proporciona SectionView */
 
             {/* Property ID Validation Warning */}
             {!isValidPropertyId && (
@@ -185,17 +184,6 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                 </Card>
             )}
 
-            {/* Debug Info - Remove in production */}
-            {process.env.NODE_ENV === 'development' && (
-                <Card className="border-blue-200 bg-blue-50 rounded-2xl overflow-hidden">
-                    <CardContent className="p-3">
-                        <div className="text-xs space-y-1">
-                            <div><strong>PropertyID:</strong> {propertyId || 'NULL'}</div>
-                            <div><strong>IsValid:</strong> {isValidPropertyId ? 'YES' : 'NO'}</div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
 
             {/* Photo Tips - Always Visible & Compact */}
             <Card className="border-primary/10 bg-primary/5 rounded-2xl overflow-hidden shadow-none border">

@@ -257,11 +257,6 @@ export default function LandingPage() {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/guide/demo">
-                <Button size="lg" variant="outline" className="gap-2 bg-transparent">
-                  Ver demo de guia
-                </Button>
-              </Link>
             </div>
 
             <p className="mt-4 text-sm text-muted-foreground">
