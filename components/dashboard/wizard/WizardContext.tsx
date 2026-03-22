@@ -95,7 +95,7 @@ export function WizardProvider({
     const [property, setProperty] = useState<any>(null)
     const [data, setData] = useState<any>({
         property: { name: '', slug: '', guests: 2, beds: 1, baths: 1, has_parking: false, parking_number: '', description: '', primary_color: '#316263', main_image_url: '' },
-        welcome: { title: 'Welcome', host_name: '', message: 'Please enjoy your stay' },
+        welcome: { title: '', host_name: '', message: '' },
         access: { full_address: '', checkin_type: 'lockbox' },
         checkin: { checkin_time: '15:00 - 22:00', emergency_phone: '', steps: [] },
         contacts: {
@@ -507,6 +507,13 @@ export function WizardProvider({
             // even before the URL changes, so it works correctly when the URL still shows "new".
             const currentPropId = property?.id || effectivePropertyId
 
+            // Defensive check for categories that don't need generic saving
+            if ((category === 'visual-scanner' || category === 'appliance-manuals') && !stepData) {
+                console.log(`[WIZARD-CONTEXT] Skipping generic save for ${category}`);
+                setLoading(false);
+                return;
+            }
+
             let dataToSave = stepData;
             if (category === 'tech') {
                 const { tv_instructions, ...sanitizedTech } = stepData;
@@ -521,8 +528,8 @@ export function WizardProvider({
             const result = await saveWizardStep(
                 category,
                 dataToSave,
-                currentPropId,
-                tenantId
+                currentPropId!,
+                tenantId!
             )
 
             if (result.success) {

@@ -90,6 +90,52 @@ const ALL_SLUGS = 'restaurantes, italiano, mediterraneo, hamburguesas, asiatico,
 // BUG FIX: radius y rankby=prominence son mutuamente excluyentes en Places API.
 // Usamos radius + type + keyword (sin rankby). Esto es lo correcto.
 // ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// QUALITY FILTERS
+// ═══════════════════════════════════════════════════════════════════════════
+function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
+  // 1. Fotos obligatorias (señal de lugar documentado)
+  if (!place.photos || place.photos.length === 0) return false;
+
+  // 2. Umbrales adaptativos por zona y categoría
+  const isNatureOrCulture = ['cultura', 'naturaleza'].includes(catLabel.toLowerCase());
+  const isRural = zone.type === 'town' || zone.type === 'rural';
+
+  let minReviews = 20;
+  let minRating = 3.8;
+
+  if (isNatureOrCulture) {
+    minReviews = 5; // Miradores/parajes naturales suelen tener menos volumen
+  } else if (isRural) {
+    minReviews = 8;
+    minRating = 3.5;
+  }
+
+  if ((place.user_ratings_total || 0) < minReviews) return false;
+  if ((place.rating || 0) < minRating) return false;
+
+  // 3. Blacklist de tipos genéricos o no experienciales
+  const blacklist = [
+    'lodging',           // excluido intencionalmente — no es una experiencia para el huésped
+    'point_of_interest', // genérico
+    'establishment',     // genérico
+    'transit_station',   // transporte
+    'bus_station',       // transporte
+    'subway_station',    // transporte
+    'parking',           // transporte
+    'car_parking',       // transporte
+    'atm',               // financiero
+    'bank'               // financiero
+  ];
+
+  // Si solo tiene tipos de la blacklist, descartar
+  const types = place.types || [];
+  const hasRealType = types.some((t: string) => !blacklist.includes(t));
+  if (!hasRealType) return false;
+
+  return true;
+}
+
 async function searchWithFallback(params: {
   placesKey: string;
   lat: number;
@@ -163,6 +209,11 @@ async function searchWithFallback(params: {
           continue;
         }
 
+        // Filtro de calidad adaptativo
+        if (!isQualityPlace(r, zone, catLabel)) {
+          continue;
+        }
+
         collected.push({ ...r, gfCategory: catLabel, realDistanceMeters, realDistance, ...extra });
       }
     }
@@ -210,7 +261,6 @@ async function searchWithFallback(params: {
 
   return collected
     .filter(r => r.realDistanceMeters != null && r.realDistanceMeters <= distanceLimit)
-    .filter(r => !r.rating || r.rating >= 3.0)
     .sort((a, b) => {
       // Primero los más cercanos, luego por rating
       const dA = a.realDistanceMeters ?? 99999;
@@ -357,7 +407,7 @@ export async function POST(req: Request) {
                   placeType: config.placeType,
                   keywords: config.keywords,
                   catLabel: cat,
-                  neededCount: config.quota,
+                  neededCount: Math.max(8, config.quota * 3), // Oversampling para asegurar candidatos tras filtrado
                   placesKey,
                   cityName: property.city || '',
                   excludeNames: existingData?.existingNames || []
@@ -480,36 +530,6 @@ REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1
 
       let recommendations: any[] = [];
 
-      // 2 llamadas paralelas a Gemini — más rápido que 1 sola con todo
-      const allCats = Object.keys(TODOS_QUOTA);
-      const halfA = allCats.slice(0, Math.ceil(allCats.length / 2)); // ~4 cats
-      const halfB = allCats.slice(Math.ceil(allCats.length / 2));    // ~3 cats
-
-      const buildMiniPrompt = (cats: string[]) => {
-        const ctx = cats.map(cat => {
-          const places = groupedPlaces[cat] ?? [];
-          if (!places.length) return `[${cat.toUpperCase()}]: Sin datos. Usa conocimiento de ${property.city}.`;
-          const lines = places.slice(0, 4).map((r: any) =>
-            `- ${r.name} | Rating: ${r.rating ?? 'N/A'} | DIST: ${r.realDistance ?? 'desconocida'} | ID:${r.place_id}`
-          ).join('\n');
-          return `[${cat.toUpperCase()}]:\n${lines}`;
-        }).join('\n\n');
-
-        const quota = cats.map(cat =>
-          `- 2x ${cat}${cat === 'ocio_nocturno' ? ' (slug: ocio)' : ''}`
-        ).join('\n');
-
-        return [
-          `Anfitrión experto ${property.city}. Guía "${property.name}".`,
-          `LUGARES (formato: Nombre | Rating | DIST | ID):\n${ctx}`,
-          `CUOTAS (exactamente 2 por cat):\n${quota}`,
-          `NO DUPLIQUES: ${existingNamesStr || 'ninguno'}`,
-          `DISTANCIA: El campo DIST ya tiene el valor final (ej: "5 min andando"). Cópialo EXACTAMENTE en "distance". PROHIBIDO escribir "REALDISTANCE", números solos o null.`,
-          `JSON con array "recommendations": {"name":"...","description":"max 150 chars","distance":"valor de DIST o null","type":"slug de:${ALL_SLUGS}","google_place_id":"ID o null","price_level":null,"price_range":"EUR o null","best_time_slots":["mañana"|"mediodia"|"tarde"|"noche"|"madrugada"] (sigue reglas por tipo),"atmosphere":"tranquilo|animado|romantico|familiar|cultural|deportivo","tags":["t1","t2"],"availability":{"days":["todos"],"notes":"Consultar horario"}}`,
-          `SOLO JSON:`
-        ].join('\n');
-      };
-
       const parseRecs = (res: any): any[] => {
         try {
           const text = res.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
@@ -518,21 +538,31 @@ REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1
         } catch { return []; }
       };
 
-      const tGeminiStart = Date.now();
+      const generateWithRetry = async (p: string) => {
+        let lastErr: any;
+        for (let i = 0; i < 3; i++) {
+          try {
+            return await model.generateContent(p);
+          } catch (err: any) {
+            lastErr = err;
+            if (err.status === 429 || err.message?.includes('429')) {
+              console.warn(`[GEMINI] 429 detected, retry ${i+1}/3...`);
+              await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+              continue;
+            }
+            throw err;
+          }
+        }
+        throw lastErr;
+      };
+
       if (isTodos) {
-        const [resA, resB] = await Promise.all([
-          model.generateContent(buildMiniPrompt(halfA)),
-          model.generateContent(buildMiniPrompt(halfB)),
-        ]);
-        recommendations = [...parseRecs(resA), ...parseRecs(resB)];
+        // Usar prompt completo (definido en linea 459) que ya gestiona todas las categorías
+        const result = await generateWithRetry(prompt);
+        recommendations = parseRecs(result);
       } else {
-        const result = await model.generateContent(prompt);
-        const rawText = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-        console.log('[AI-FILL] 🤖 Gemini Raw Output:', rawText.slice(0, 300));
-        const parsed = JSON.parse(rawText);
-        recommendations = Array.isArray(parsed.recommendations)
-          ? parsed.recommendations
-          : Array.isArray(parsed) ? parsed : [];
+        const result = await generateWithRetry(prompt);
+        recommendations = parseRecs(result);
 
         // Forzar tipo en modo refill para evitar que el frontend los filtre
         recommendations = recommendations.map(r => ({ ...r, type: selectedCat }));

@@ -11,6 +11,7 @@ import { getBrandingUploadUrl } from '@/app/actions/properties'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { compressImage, createFileList } from '@/lib/compress-image'
 
 export default function StepAppearance({ value }: { value?: string }) {
     const {
@@ -42,10 +43,19 @@ export default function StepAppearance({ value }: { value?: string }) {
         input.type = 'file'
         input.accept = 'image/*'
         input.onchange = async (e: any) => {
-            const file = e.target.files?.[0]
-            if (!file) return
+            const raw = e.target.files?.[0]
+            if (!raw) return
             try {
                 setUploading(true)
+
+                // ✅ Comprimir logo (máx 800px, quality 0.90, preservar PNG)
+                const file = await compressImage(
+                    raw,
+                    800,
+                    0.90,
+                    raw.type === 'image/png' ? 'image/png' : 'image/jpeg'
+                )
+
                 const { uploadUrl, publicUrl } = await getBrandingUploadUrl(file.name, file.type)
                 const response = await fetch(uploadUrl, {
                     method: 'PUT',
@@ -169,7 +179,7 @@ export default function StepAppearance({ value }: { value?: string }) {
                                                 e.stopPropagation()
                                                 setData((prev: any) => ({ ...prev, branding: { ...prev.branding, custom_logo_url: '' } }))
                                             }}
-                                            className="absolute -top-3 -right-3 h-8 w-8 bg-white shadow-sm shadow-slate-200/40 rounded-xl text-red-500 flex items-center justify-center hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                            className="absolute -top-3 -right-3 h-8 w-8 bg-white shadow-sm shadow-slate-200/40 rounded-xl text-red-500 flex items-center justify-center hover:bg-red-50 transition-all lg:opacity-0 lg:group-hover:opacity-100"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>

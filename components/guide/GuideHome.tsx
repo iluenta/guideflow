@@ -88,7 +88,9 @@ export function GuideHome({
 
     // Evaluate if there are actual rules text inside the section
     const rulesSection = sections?.find(s => s.type === 'rules');
-    const hasRules = !!(rulesSection?.content && rulesSection.content.length > 5);
+    const rulesContext = context?.find(c => c.category === 'rules')?.content;
+    const hasRulesContext = !!(rulesContext?.rules_items?.length > 0 || rulesContext?.quiet_hours || rulesContext?.checkout_time);
+    const hasRules = !!(rulesSection?.content && rulesSection.content.length > 5) || hasRulesContext;
     const hasManuals = manuals && manuals.length > 0;
 
     // Dynamic Translations

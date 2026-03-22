@@ -11,10 +11,11 @@ import {
     ShoppingBag, Landmark, Trees, Music, Coffee, Star,
     Search, ChevronLeft, ChevronRight, Check, Loader2,
     Info, Lightbulb, Pizza, Fish, Beef, Globe, UtensilsCrossed,
-    Store
+    Store, Sunrise, Sun, Sunset, Moon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { RecommendationCard, Recommendation } from './RecommendationCard'
+import { TimeSlotSelector, ExperienceSubcategorySelector } from './TimeSlotSelector'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 
@@ -98,7 +99,14 @@ export function LocalRecommendations({
         const recToSave = {
             ...editingRec,
             // Prioritize existing category, then selected category (if not 'todos'), then fallback to 'restaurantes'
-            category: editingRec.category || (selectedCategory !== 'todos' ? selectedCategory : 'restaurantes')
+            category: editingRec.category || (selectedCategory !== 'todos' ? selectedCategory : 'restaurantes'),
+            metadata: {
+                ...(editingRec.metadata || {}),
+                best_time_slots: editingRec.metadata?.best_time_slots || [],
+                // Sync top-level tags and time back to metadata
+                tags: editingRec.tags || [],
+                time: editingRec.time || '',
+            }
         } as Recommendation
 
         const existingIdx = recommendations.findIndex(r => r.id === recToSave.id && r.id !== undefined)
@@ -123,7 +131,12 @@ export function LocalRecommendations({
                 time: rec.time || rec.metadata?.time || '',
                 price_range: rec.price_range || rec.metadata?.price_range || '',
                 personal_note: rec.personal_note || rec.metadata?.personal_note || '',
-                google_place_id: rec.google_place_id || rec.metadata?.google_place_id || ''
+                google_place_id: rec.google_place_id || rec.metadata?.google_place_id || '',
+                tags: rec.tags || rec.metadata?.tags || [],
+                metadata: {
+                    ...(rec.metadata || {}),
+                    best_time_slots: rec.metadata?.best_time_slots || [],
+                }
             })
 
         } else {
@@ -134,7 +147,11 @@ export function LocalRecommendations({
                 time: '',
                 price_range: '',
                 description: '',
-                personal_note: ''
+                personal_note: '',
+                tags: [],
+                metadata: {
+                    best_time_slots: []
+                }
             })
         }
         setIsDialogOpen(true)
@@ -252,7 +269,7 @@ export function LocalRecommendations({
 
             {/* Dialog for Manual Add/Edit */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-md rounded-2xl bg-white p-6 md:p-8">
+                <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 md:p-10 border-none shadow-2xl custom-scrollbar">
                     <DialogHeader className="text-left">
                         <DialogTitle className="text-xl font-bold text-slate-900">{editingRec?.id ? 'Editar Sitio' : 'Nueva Recomendación'}</DialogTitle>
                         <DialogDescription className="text-xs font-medium text-slate-500">
@@ -312,12 +329,12 @@ export function LocalRecommendations({
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="time" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Tiempo</Label>
+                                <Label htmlFor="time" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Horario</Label>
                                 <div className="relative">
                                     <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                                     <Input
                                         id="time"
-                                        placeholder="Ej: 10 min"
+                                        placeholder="Ej: 09:00 - 20:00"
                                         value={editingRec?.time || ''}
                                         onChange={e => setEditingRec({ ...editingRec, time: e.target.value })}
                                         className="h-12 rounded-xl bg-slate-50/50 border-slate-100 pl-12 pr-4 font-medium focus:ring-2 focus:ring-[#316263]/20"
@@ -325,6 +342,72 @@ export function LocalRecommendations({
                                 </div>
                             </div>
                         </div>
+
+                        {editingRec?.opening_hours && (
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Horarios (Google)</Label>
+                                <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 text-[11px] font-medium text-slate-600">
+                                    {editingRec.opening_hours.always_open 
+                                        ? 'Abierto 24 horas' 
+                                        : `${editingRec.opening_hours.open || '--:--'} – ${editingRec.opening_hours.close || '--:--'}`}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-2">
+                            <Label htmlFor="tags" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Etiquetas (separadas por comas)</Label>
+                            <Input
+                                id="tags"
+                                placeholder="Ej: Vistas, Romántico, Barato"
+                                value={(editingRec?.tags || []).join(', ')}
+                                onChange={e => {
+                                    const newTags = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
+                                    setEditingRec({ ...editingRec, tags: newTags });
+                                }}
+                                className="h-12 rounded-xl bg-slate-50/50 border-slate-100 px-4 font-medium text-xs focus:ring-2 focus:ring-[#316263]/20"
+                            />
+                            {(editingRec?.tags && editingRec.tags.length > 0) && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {editingRec.tags.map((tag: string, i: number) => (
+                                        <Badge key={i} variant="outline" className="bg-slate-50 border-slate-100 text-slate-500 text-[9px] font-bold py-1 px-2 rounded-lg">
+                                            #{tag.toUpperCase()}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <ExperienceSubcategorySelector
+                            currentCategory={editingRec?.category || 'restaurantes'}
+                            value={editingRec?.category || ''}
+                            onChange={(subcat, autoSlots) => {
+                                const currentSlots = editingRec?.metadata?.best_time_slots || []
+                                // Si autoSlots tiene contenido, lo añadimos (sin duplicar)
+                                const newSlots = autoSlots.length > 0 
+                                    ? Array.from(new Set([...currentSlots, ...autoSlots]))
+                                    : currentSlots
+
+                                setEditingRec({ 
+                                    ...editingRec, 
+                                    category: subcat,
+                                    metadata: {
+                                        ...(editingRec?.metadata || {}),
+                                        best_time_slots: newSlots
+                                    }
+                                })
+                            }}
+                        />
+
+                        <TimeSlotSelector
+                            value={editingRec?.metadata?.best_time_slots || []}
+                            onChange={(slots) => setEditingRec({
+                                ...editingRec,
+                                metadata: {
+                                    ...(editingRec?.metadata || {}),
+                                    best_time_slots: slots,
+                                }
+                            })}
+                        />
 
                         <div className="space-y-2">
                             <Label htmlFor="desc" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Descripción</Label>

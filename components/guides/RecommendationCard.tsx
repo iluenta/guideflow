@@ -13,15 +13,34 @@ export interface Recommendation {
     distance?: string
     time?: string
     price_range?: string
-    description?: string
     personal_note?: string
     category?: string
+    tags?: string[]
+    description?: string
     google_place_id?: string
+    opening_hours?: {
+        open: string | null
+        close: string | null
+        always_open?: boolean
+        weekday_text?: string[]
+    }
     metadata?: {
         time?: string
         price_range?: string
         personal_note?: string
         google_place_id?: string
+        tags?: string[]
+        best_time_slots?: string[]
+        availability?: {
+            days: string[]
+            notes?: string
+        }
+        opening_hours?: {
+            open: string | null
+            close: string | null
+            always_open?: boolean
+            weekday_text?: string[]
+        }
     }
 }
 
@@ -121,7 +140,14 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
                     {openingHours && (
                         <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
                             <Clock className="w-3 h-3" />
-                            <span>{openingHours.open} – {openingHours.close}</span>
+                            <span>
+                                {openingHours.always_open 
+                                    ? '24 HORAS' 
+                                    : (openingHours.open && openingHours.close) 
+                                        ? `${openingHours.open} – ${openingHours.close}`
+                                        : 'ABIERTO'
+                                }
+                            </span>
                         </div>
                     )}
                     {timeStr && !openingHours && (
@@ -144,9 +170,19 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
                 )}
 
                 {note && (
-                    <p className="text-[#316263] text-[11px] italic font-bold text-left">
+                    <p className="text-[#316263] text-[11px] italic font-bold text-left mb-3">
                         "{note}"
                     </p>
+                )}
+
+                {(recommendation.metadata?.tags || recommendation.tags) && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                        {(recommendation.metadata?.tags || recommendation.tags)?.map((tag, i) => (
+                            <span key={i} className="text-[9px] font-bold text-primary/40 uppercase tracking-tight bg-primary/5 px-1.5 py-0.5 rounded-md">
+                                #{tag}
+                            </span>
+                        ))}
+                    </div>
                 )}
             </CardContent>
 

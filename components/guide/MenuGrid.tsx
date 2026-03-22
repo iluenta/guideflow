@@ -141,7 +141,8 @@ export function MenuGrid({
 
     // Visibility Logic
     const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
-    const hasRules = !!context?.find(c => c.category === 'rules')?.content ||
+    const rulesContext = context?.find(c => c.category === 'rules')?.content;
+    const hasRules = !!(rulesContext?.rules_items?.length > 0 || rulesContext?.quiet_hours || rulesContext?.checkout_time) ||
         !!context?.find(c => c.category === 'checkin')?.content ||
         !!sections?.find(s => s.title?.toLowerCase().includes('normas') || s.title?.toLowerCase().includes('reglas'));
     const hasManuals = manuals.length > 0;

@@ -7,18 +7,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { TabsContent } from '@/components/ui/tabs'
-import { Clock, Info, MapPin, Upload, Trash2, Plus, Key, Lock, DoorOpen, Phone, Wifi, Loader2, CheckCircle2 } from 'lucide-react'
+import { Clock, Info, MapPin, Upload, Trash2, Plus, Loader2, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWizard } from '../WizardContext'
-
-const ICON_OPTIONS = [
-    { value: 'Key', label: 'Llave', icon: Key },
-    { value: 'Lock', label: 'Código', icon: Lock },
-    { value: 'DoorOpen', label: 'Puerta', icon: DoorOpen },
-    { value: 'Phone', label: 'Teléfono', icon: Phone },
-    { value: 'Info', label: 'Info', icon: Info },
-    { value: 'Wifi', label: 'WiFi', icon: Wifi },
-]
+import { compressImage, createFileList } from '@/lib/compress-image'
 
 export default function StepCheckin({ value }: { value?: string }) {
     const { data, setData, handleStepImageUpload } = useWizard()
@@ -48,8 +40,13 @@ export default function StepCheckin({ value }: { value?: string }) {
     }
 
     const handleUpload = async (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
+        const raw = e.target.files?.[0]
+        if (!raw) return
+
+        // ✅ Comprimir si es una imagen > 300KB (más agresivo para pasos: 1280px, 0.78)
+        const file = raw.size > 300_000 && raw.type.startsWith('image/')
+            ? await compressImage(raw, 1280, 0.78)
+            : raw
 
         // 1. Preview instantáneo — el usuario ve la imagen de inmediato
         const localPreview = URL.createObjectURL(file)
@@ -61,8 +58,16 @@ export default function StepCheckin({ value }: { value?: string }) {
         setUploadingIdx(idx)
 
         try {
-            // 2. Subida real — cuando termina reemplaza la URL temporal por la de Supabase
-            await handleStepImageUpload(idx, e)
+            // 2. Subida real — Crear un evento sintético con el archivo comprimido
+            const compressedInput = {
+                ...e,
+                target: {
+                    ...e.target,
+                    files: createFileList(file)
+                }
+            }
+            await handleStepImageUpload(idx, compressedInput as any)
+
             setData((prev: any) => {
                 const updated = [...prev.checkin.steps]
                 if (updated[idx]) updated[idx] = { ...updated[idx], _uploading: false }
@@ -132,134 +137,117 @@ export default function StepCheckin({ value }: { value?: string }) {
                         </div>
 
                         {/* Pasos dinámicos */}
-                        {data.checkin.steps.map((step: any, idx: number) => {
-                            const isUploading = step._uploading === true
-                            const justUploaded = justUploadedIdx === idx && !isUploading
+                        <div className="space-y-3">
+                            {data.checkin.steps.map((step: any, idx: number) => {
+                                const isUploading = step._uploading === true
+                                const justUploaded = justUploadedIdx === idx && !isUploading
 
-                            return (
-                                <div key={idx} className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                                return (
+                                    <div key={idx} className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
 
-                                    {/* Cabecera: número + título */}
-                                    <div className="flex items-center gap-3 px-4 pt-4 pb-2">
-                                        <div className="h-7 w-7 rounded-lg bg-[#316263] text-white flex items-center justify-center font-bold text-xs shrink-0">
-                                            {idx + 2}
-                                        </div>
-                                        <Input
-                                            placeholder="Título del paso…"
-                                            className="font-bold border-none bg-transparent focus-visible:ring-0 h-9 flex-1 p-0 text-sm placeholder:text-slate-300"
-                                            value={step.title}
-                                            onChange={e => updateStep(idx, 'title', e.target.value)}
-                                        />
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-7 w-7 text-slate-200 hover:text-red-400 shrink-0"
-                                            onClick={() => removeStep(idx)}
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </Button>
-                                    </div>
-
-                                    {/* Chips de tipo */}
-                                    <div className="px-4 pb-3 flex gap-1.5 flex-wrap">
-                                        {ICON_OPTIONS.map(opt => {
-                                            const Icon = opt.icon
-                                            const isActive = (step.icon || 'Key') === opt.value
-                                            return (
-                                                <button
-                                                    key={opt.value}
-                                                    onClick={() => updateStep(idx, 'icon', opt.value)}
-                                                    className={cn(
-                                                        "flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all",
-                                                        isActive
-                                                            ? "bg-[#316263]/10 text-[#316263] ring-1 ring-[#316263]/20"
-                                                            : "bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
-                                                    )}
-                                                >
-                                                    <Icon className="w-3 h-3" />
-                                                    {opt.label}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-
-                                    {/* Descripción */}
-                                    <div className="px-4 pb-3">
-                                        <Textarea
-                                            placeholder="Descripción o instrucciones para el huésped…"
-                                            className="border-none bg-slate-50/60 focus-visible:ring-0 min-h-[80px] text-xs font-medium rounded-xl p-3 resize-none"
-                                            value={step.description}
-                                            onChange={e => updateStep(idx, 'description', e.target.value)}
-                                        />
-                                    </div>
-
-                                    {/* Zona de imagen */}
-                                    <div className="px-4 pb-4">
-                                        {step.image_url ? (
-                                            // Imagen: preview local inmediato + overlay de subida encima
-                                            <div className="relative w-full aspect-video rounded-xl overflow-hidden group/img">
-                                                <img
-                                                    src={step.image_url}
-                                                    alt="Vista previa"
-                                                    className={cn(
-                                                        "w-full h-full object-cover transition-all duration-500",
-                                                        isUploading && "blur-sm scale-105"
-                                                    )}
-                                                />
-                                                {/* Overlay subiendo */}
-                                                {isUploading && (
-                                                    <div className="absolute inset-0 bg-black/25 flex flex-col items-center justify-center gap-2">
-                                                        <Loader2 className="w-6 h-6 text-white animate-spin" />
-                                                        <span className="text-white text-xs font-semibold bg-black/30 px-3 py-1 rounded-full">
-                                                            Guardando…
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {/* Tick éxito */}
-                                                {justUploaded && (
-                                                    <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
-                                                        <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-                                                    </div>
-                                                )}
-                                                {/* Eliminar */}
-                                                {!isUploading && !justUploaded && (
-                                                    <button
-                                                        className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
-                                                        onClick={() => updateStep(idx, 'image_url', '')}
-                                                    >
-                                                        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-2 rounded-xl">
-                                                            <Trash2 className="w-4 h-4 text-white" />
-                                                            <span className="text-white text-xs font-semibold">Eliminar foto</span>
-                                                        </div>
-                                                    </button>
-                                                )}
+                                        {/* Cabecera: número + título */}
+                                        <div className="flex items-center gap-3 px-4 pt-4 pb-2 group">
+                                            <div className="h-7 w-7 rounded-lg bg-[#316263] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                                                {idx + 2}
                                             </div>
-                                        ) : (
-                                            // Drop zone vacía
-                                            <div
-                                                onClick={() => document.getElementById(`step-image-${idx}`)?.click()}
-                                                className="w-full rounded-xl border-2 border-dashed border-slate-200 hover:border-[#316263]/30 hover:bg-slate-50 flex flex-col items-center justify-center gap-2 py-6 cursor-pointer transition-all"
+                                            <Input
+                                                placeholder="Título del paso (ej: Recogida de llaves)…"
+                                                className="font-bold border-none bg-transparent focus-visible:ring-0 h-9 flex-1 p-0 text-sm placeholder:text-slate-300"
+                                                value={step.title}
+                                                onChange={e => updateStep(idx, 'title', e.target.value)}
+                                            />
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-9 w-9 text-slate-300 hover:text-red-500 hover:bg-red-50 shrink-0 transition-all lg:opacity-0 lg:group-hover:opacity-100"
+                                                onClick={() => removeStep(idx)}
                                             >
-                                                <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                                                    <Upload className="w-4 h-4 text-slate-400" />
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+
+                                        {step.title && (
+                                            <div className="animate-in fade-in slide-in-from-top-1 duration-300">
+                                                {/* Descripción */}
+                                                <div className="px-4 pb-3">
+                                                    <Textarea
+                                                        placeholder="Descripción o instrucciones para el huésped…"
+                                                        className="border-none bg-slate-50/60 focus-visible:ring-0 min-h-[80px] text-xs font-medium rounded-xl p-3 resize-none"
+                                                        value={step.description}
+                                                        onChange={e => updateStep(idx, 'description', e.target.value)}
+                                                    />
                                                 </div>
-                                                <div className="text-center">
-                                                    <p className="text-xs font-semibold text-slate-600">Añadir foto</p>
-                                                    <p className="text-[10px] text-slate-400 mt-0.5">Portal, cajetón de llaves o puerta</p>
+
+                                                {/* Zona de imagen */}
+                                                <div className="px-4 pb-4">
+                                                    {step.image_url ? (
+                                                        // Imagen: preview local inmediato + overlay de subida encima
+                                                        <div className="relative w-full aspect-video rounded-xl overflow-hidden group/img">
+                                                            <img
+                                                                src={step.image_url}
+                                                                alt="Vista previa"
+                                                                className={cn(
+                                                                    "w-full h-full object-cover transition-all duration-500",
+                                                                    isUploading && "blur-sm scale-105"
+                                                                )}
+                                                            />
+                                                            {/* Overlay subiendo */}
+                                                            {isUploading && (
+                                                                <div className="absolute inset-0 bg-black/25 flex flex-col items-center justify-center gap-2">
+                                                                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                                                    <span className="text-white text-xs font-semibold bg-black/30 px-3 py-1 rounded-full">
+                                                                        Guardando…
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {/* Tick éxito */}
+                                                            {justUploaded && (
+                                                                <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
+                                                                    <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                                                                </div>
+                                                            )}
+                                                            {/* Eliminar */}
+                                                            {!isUploading && !justUploaded && (
+                                                                <button
+                                                                    className="absolute inset-0 bg-black/40 flex items-center justify-center lg:opacity-0 lg:group-hover/img:opacity-100 transition-opacity"
+                                                                    onClick={() => updateStep(idx, 'image_url', '')}
+                                                                >
+                                                                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-2 rounded-xl">
+                                                                        <Trash2 className="w-4 h-4 text-white" />
+                                                                        <span className="text-white text-xs font-semibold">Eliminar foto</span>
+                                                                    </div>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        // Drop zone vacía
+                                                        <div
+                                                            onClick={() => document.getElementById(`step-image-${idx}`)?.click()}
+                                                            className="w-full rounded-xl border-2 border-dashed border-slate-200 hover:border-[#316263]/30 hover:bg-slate-50 flex flex-col items-center justify-center gap-2 py-6 cursor-pointer transition-all"
+                                                        >
+                                                            <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                                                                <Upload className="w-4 h-4 text-slate-400" />
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <p className="text-xs font-semibold text-slate-600">Añadir foto</p>
+                                                                <p className="text-[10px] text-slate-400 mt-0.5">Portal, cajetón de llaves o puerta</p>
+                                                            </div>
+                                                            <input
+                                                                id={`step-image-${idx}`}
+                                                                type="file"
+                                                                className="hidden"
+                                                                accept="image/*"
+                                                                onChange={e => handleUpload(idx, e)}
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <input
-                                                    id={`step-image-${idx}`}
-                                                    type="file"
-                                                    className="hidden"
-                                                    accept="image/*"
-                                                    onChange={e => handleUpload(idx, e)}
-                                                />
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            )
-                        })}
+                                )
+                            })}
+                        </div>
 
                         <Button
                             variant="outline"

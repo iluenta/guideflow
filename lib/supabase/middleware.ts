@@ -48,7 +48,16 @@ export async function updateSession(request: NextRequest) {
     )
 
     // Al refrescar el usuario, Supabase maneja los tokens de sesión automáticamente
-    const { data: { user } } = await supabase.auth.getUser()
+    let user = null
+    try {
+        const { data, error } = await supabase.auth.getUser()
+        if (!error && data) {
+            user = data.user
+        }
+    } catch (e) {
+        // En caso de error (e.g. Refresh Token Not Found), user queda null
+        // y el middleware redirigirá si es una ruta protegida.
+    }
 
     // 2. Proteger el dashboard: si intentas entrar a /dashboard sin usuario, redirigir a login
     if (!user && pathname.startsWith('/dashboard')) {

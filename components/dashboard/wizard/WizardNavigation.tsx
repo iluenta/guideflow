@@ -49,6 +49,17 @@ export function WizardNavigation() {
     const handleSaveOnly = async () => {
         const stepData = activeTab === 'appearance' ? data.branding : data[activeTab]
         const categoryToSave = activeTab === 'appearance' ? 'branding' : activeTab
+
+        // Si es escáner o listado de manuales, no hay nada que guardar manualmente aquí.
+        // Solo pasamos al siguiente si no estamos al final.
+        if (categoryToSave === 'visual-scanner' || categoryToSave === 'appliance-manuals') {
+            const currentIndex = filteredSteps.indexOf(activeTab)
+            if (currentIndex < filteredSteps.length - 1) {
+                handleTabChange(filteredSteps[currentIndex + 1])
+            }
+            return
+        }
+
         await saveStep(categoryToSave, stepData, '')
     }
 

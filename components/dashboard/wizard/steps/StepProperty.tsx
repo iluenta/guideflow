@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { Upload, X, Loader2, Home, Hash, CheckCircle2, AlertCircle, Globe, Car } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWizard } from '../WizardContext'
+import { compressImage, createFileList } from '@/lib/compress-image'
 
 export default function StepProperty({ value }: { value?: string }) {
     const { data, setData, handleImageUpload } = useWizard()
@@ -20,8 +21,14 @@ export default function StepProperty({ value }: { value?: string }) {
     const slugInvalid = slugTouched && slugEmpty
 
     const handleLocalImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
+        const raw = e.target.files?.[0]
+        if (!raw) return
+
+        // ✅ Comprimir si es una imagen > 300KB (Hero image: 1920px, 0.82)
+        const file = raw.size > 300_000 && raw.type.startsWith('image/')
+            ? await compressImage(raw, 1920, 0.82)
+            : raw
+
         const localPreview = URL.createObjectURL(file)
         setData((prev: any) => ({
             ...prev,
@@ -30,7 +37,15 @@ export default function StepProperty({ value }: { value?: string }) {
         setLocalUploading(true)
         setJustUploaded(false)
         try {
-            await handleImageUpload(e)
+            // Crear evento sintético con el archivo comprimido
+            const compressedInput = {
+                ...e,
+                target: {
+                    ...e.target,
+                    files: createFileList(file)
+                }
+            }
+            await handleImageUpload(compressedInput as any)
             setJustUploaded(true)
             setTimeout(() => setJustUploaded(false), 2500)
         } catch {
@@ -87,7 +102,7 @@ export default function StepProperty({ value }: { value?: string }) {
                                 )}
                                 {!localUploading && !justUploaded && (
                                     <>
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+                                        <div className="absolute inset-0 bg-black/40 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
                                             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-white/20">
                                                 <Upload className="w-4 h-4 text-white" />
                                                 <span className="text-white text-sm font-semibold">Cambiar foto</span>
@@ -96,7 +111,7 @@ export default function StepProperty({ value }: { value?: string }) {
                                         <button
                                             type="button"
                                             onClick={e => { e.stopPropagation(); setData({ ...data, property: { ...data.property, main_image_url: '' } }) }}
-                                            className="absolute top-3 right-3 h-8 w-8 rounded-lg bg-white/90 backdrop-blur-md text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center hover:bg-red-50 z-20"
+                                            className="absolute top-3 right-3 h-8 w-8 rounded-lg bg-white/90 backdrop-blur-md text-red-500 shadow-sm lg:opacity-0 lg:group-hover:opacity-100 transition-all flex items-center justify-center hover:bg-red-50 z-20"
                                         >
                                             <X className="h-4 w-4" />
                                         </button>

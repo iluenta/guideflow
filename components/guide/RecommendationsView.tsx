@@ -27,7 +27,11 @@ import {
     Beef,
     Globe,
     Utensils,
-    Store
+    Store,
+    Sunrise,
+    Sunset,
+    Telescope,
+    Compass
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
@@ -44,11 +48,30 @@ interface Recommendation {
     personal_note?: string;
     map_url?: string;
     google_place_id?: string;
+    tags?: string[];
+    opening_hours?: {
+        open: string | null;
+        close: string | null;
+        always_open?: boolean;
+        weekday_text?: string[];
+    };
     metadata?: {
         time?: string;
         price_range?: string;
         personal_note?: string;
         google_place_id?: string;
+        tags?: string[];
+        best_time_slots?: string[];
+        availability?: {
+            days: string[];
+            notes?: string;
+        };
+        opening_hours?: {
+            open: string | null;
+            close: string | null;
+            always_open?: boolean;
+            weekday_text?: string[];
+        };
     };
 }
 
@@ -96,8 +119,22 @@ function RecommendationCard({
     const { content: localizedNote } = useLocalizedContent(rawNote, currentLanguage, 'recommendation_note', accessToken, propertyId);
 
     // Hide "Consultar horario" if we have structured hours
-    const localizedTime = (openingHours && localizedTimeOriginal?.toLowerCase().includes('horario')) ? null : localizedTimeOriginal;
-    const openingHoursStr = openingHours?.open && openingHours?.close ? `${openingHours.open} – ${openingHours.close}` : null;
+    const tags = rec.metadata?.tags || rec.tags || [];
+    const openingHoursStr = openingHours?.always_open 
+        ? '24 HORAS' 
+        : (openingHours?.open && openingHours?.close) 
+            ? `${openingHours.open} – ${openingHours.close}` 
+            : null;
+    
+    // Priority: Manual time (if not generic) > Google hours > Generic manual time
+    const isGenericTime = !localizedTimeOriginal || localizedTimeOriginal.toLowerCase().includes('horario');
+    const hasManualTime = localizedTimeOriginal && !isGenericTime;
+    
+    // finalTime is used for display
+    const finalTime = hasManualTime ? localizedTimeOriginal : (openingHoursStr || localizedTimeOriginal);
+    const showOpeningHours = openingHoursStr && !hasManualTime;
+    const showManualTime = hasManualTime || (!openingHoursStr && localizedTimeOriginal);
+
     const distanceText = rec.distance && !rec.distance.toLowerCase().includes('distance') ? rec.distance : null;
 
     const { content: labelPrice } = useLocalizedContent('Precio:', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -161,19 +198,6 @@ function RecommendationCard({
                                         <span className="text-primary">{localizedPrice}</span>
                                     </div>
                                 )}
-                                {openingHoursStr && (
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate/80 bg-slate/5 px-2.5 py-1 rounded-lg">
-                                        <Clock className="w-3.5 h-3.5 text-navy/30" />
-                                        <span>{openingHoursStr}</span>
-                                    </div>
-                                )}
-                                {localizedTime && (
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate/80 bg-slate/5 px-2.5 py-1 rounded-lg">
-                                        <Clock className="w-3.5 h-3.5 text-navy/30" />
-                                        <span className="text-navy/40">{labelTime}</span>
-                                        <span>{localizedTime}</span>
-                                    </div>
-                                )}
                             </div>
 
                             {localizedNote && (
@@ -189,19 +213,30 @@ function RecommendationCard({
                         </div>
                     )}
 
-                    <div className="flex items-center gap-5 mt-4">
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4">
                         {distanceText && (
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
                                 <MapPin className="w-3.5 h-3.5 opacity-50" />
                                 {distanceText}
                             </div>
                         )}
-                        {(openingHoursStr || localizedTime) && (
+                        {showOpeningHours && (
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
                                 <Clock className="w-3.5 h-3.5 opacity-50" />
-                                {openingHoursStr || localizedTime}
+                                {openingHoursStr}
                             </div>
                         )}
+                        {showManualTime && (
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
+                                <Clock className="w-3.5 h-3.5 opacity-50" />
+                                {localizedTimeOriginal}
+                            </div>
+                        )}
+                        {tags.slice(0, 2).map(tag => (
+                            <div key={tag} className="text-[10px] font-bold text-primary/40 uppercase tracking-wider">
+                                #{tag}
+                            </div>
+                        ))}
                     </div>
                 </div>
 
@@ -273,14 +308,15 @@ const groupConfigs = {
             'naturaleza', 'cultura', 'ocio', 'relax', 'activity', 'actividad',
             'actividades', 'park', 'parque', 'museum', 'museo', 'landmark',
             'experiencias', 'experience', 'spa', 'ocio_nocturno', 'nightclub',
-            'night_club', 'bar_copas', 'discoteca', 'pub'
+            'night_club', 'bar_copas', 'discoteca', 'pub',
+            'ruta', 'trail'
         ],
         pills: [
             { id: 'todos', label: 'Todo', type: 'todos' },
             { id: 'naturaleza', label: 'Naturaleza', type: 'naturaleza' },
             { id: 'cultura', label: 'Cultura', type: 'cultura' },
             { id: 'relax', label: 'Relax', type: 'relax' },
-            { id: 'ocio', label: 'Ocio', type: 'ocio' }
+            { id: 'ocio', label: 'Ocio', type: 'ocio' },
         ]
     },
     shopping: {
@@ -335,6 +371,8 @@ export function RecommendationsView({
     const { content: labelAsiatico } = useLocalizedContent('Asiático', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelAltaCocina } = useLocalizedContent('Alta Cocina', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelInternacional } = useLocalizedContent('Internacional', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelAmanecer } = useLocalizedContent('Amanecer', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelAtardecer } = useLocalizedContent('Atardecer', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelFooter } = useLocalizedContent('Recomendaciones seleccionadas por el anfitrión', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const pillLabels: Record<string, string | undefined> = {
@@ -352,7 +390,9 @@ export function RecommendationsView({
         hamburguesas: labelHamburguesas,
         asiatico: labelAsiatico,
         alta_cocina: labelAltaCocina,
-        internacional: labelInternacional
+        internacional: labelInternacional,
+        amanecer: labelAmanecer,
+        atardecer: labelAtardecer
     };
 
     const filteredRecommendations = useMemo(() => {

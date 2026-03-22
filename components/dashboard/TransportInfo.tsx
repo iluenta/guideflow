@@ -388,7 +388,7 @@ function TransportSection({
                         {isRegenerating && <span className="text-[9px] font-normal lowercase animate-pulse ml-1 flex-shrink-0">Regenerando...</span>}
                     </div>
                     {!isEditing && !isRegenerating && (
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <div className="flex gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex-shrink-0">
                             {onRegenerate && (
                                 <Button
                                     variant="ghost"

@@ -129,6 +129,7 @@ export async function saveWizardStep(
                         atmosphere: rec.atmosphere,
                         tags: rec.tags || [],
                         availability: rec.availability || { days: ["todos"], notes: "" },
+                        opening_hours: rec.metadata?.opening_hours || rec.opening_hours || null,
                         google_place_id: rec.google_place_id || null
                     }
                 }))
@@ -174,6 +175,12 @@ export async function saveWizardStep(
 
     } else {
         if (!currentPropId) throw new Error(`ID de propiedad requerido para ${category}`)
+
+        // Guard against null/undefined content for categories that save to property_context
+        if (stepData === null || stepData === undefined) {
+            console.warn(`[WIZARD-SAVE] Skipping save for category ${category}: No data provided.`);
+            return { success: true };
+        }
 
         const { error } = await supabase
             .from('property_context')

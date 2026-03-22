@@ -35,8 +35,11 @@ export function BottomNav({
     const { content: labelInfo } = useLocalizedContent('Info', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelChat } = useLocalizedContent('Chat', currentLanguage, 'ui_label', accessToken, propertyId);
 
-    // Visibility Logic
     const hasManuals = manuals.length > 0;
+    const rulesContext = context?.find(c => c.category === 'rules')?.content;
+    const hasRules = !!(rulesContext?.rules_items?.length > 0 || rulesContext?.quiet_hours || rulesContext?.checkout_time) ||
+        !!sections?.find(s => s.type === 'rules' || s.title?.toLowerCase().includes('normas'));
+    const hasInfo = hasManuals || hasRules;
     const hasEat = recommendations.filter(r => r.type === 'restaurant' || r.type === 'cafe' || r.type === 'bar').length > 0;
     const hasLeisure = recommendations.filter(r => r.type === 'activity' || r.type === 'park' || r.type === 'museum' || r.type === 'landmark').length > 0;
 
@@ -44,10 +47,9 @@ export function BottomNav({
         { id: 'hub', icon: Home, label: labelHome, show: true },
         { id: 'eat', icon: UtensilsCrossed, label: labelEat, show: hasEat },
         { id: 'leisure', icon: Theater, label: labelLeisure, show: hasLeisure },
-        { id: 'info', icon: Info, label: labelInfo, show: hasManuals },
+        { id: 'info', icon: Info, label: labelInfo, show: hasInfo },
         { id: 'chat', icon: MessageSquare, label: labelChat, show: true }
     ].filter(tab => tab.show);
-
     const handleTabClick = (tabId: string) => {
         if (onTabChange) {
             onTabChange(tabId);
