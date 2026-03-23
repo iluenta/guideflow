@@ -21,41 +21,25 @@ export function useUserProfile() {
   useEffect(() => {
     let isMounted = true
     
-    // FETCH GUARD: Prevent multiple redundant calls on rapid remounts
-    const lastFetch = window.sessionStorage.getItem('last_profile_fetch')
-    const now = Date.now()
-    if (lastFetch && now - parseInt(lastFetch) < 2000) {
-      console.log('[DEBUG-USER] Skipping fetch, too soon (throttle)')
-      return
-    }
-
     async function loadProfile() {
-      if (loading === false && profile) return // Don't reload if already have profile
-      window.sessionStorage.setItem('last_profile_fetch', Date.now().toString())
+      if (loading === false && profile) return
+      
       try {
-        // Get profile from server API route (uses cookies HTTP-only)
         const response = await fetch('/api/auth/profile', {
-          credentials: 'include', // Important: include cookies
+          credentials: 'include',
         })
 
         if (!isMounted) return
 
         if (!response.ok) {
           if (response.status === 401 || response.status === 404) {
-            // User not authenticated or profile not found
-            if (isMounted) {
-              setProfile(null)
-              setError(null)
-              setLoading(false)
-            }
+            setProfile(null)
+            setError(null)
             return
           }
           
           const { error: errorMessage } = await response.json()
-          if (isMounted) {
-            setError(new Error(errorMessage || 'Failed to load profile'))
-            setLoading(false)
-          }
+          setError(new Error(errorMessage || 'Failed to load profile'))
           return
         }
 
@@ -64,40 +48,32 @@ export function useUserProfile() {
         if (!isMounted) return
 
         if (profileError) {
-          if (isMounted) {
-            setError(new Error(profileError))
-            setLoading(false)
-          }
+          setError(new Error(profileError))
           return
         }
 
-        if (isMounted) {
-          setProfile(profileData)
-          setError(null)
-          setLoading(false)
-        }
+        setProfile(profileData)
+        setError(null)
       } catch (err) {
         if (!isMounted) return
         
-        // Ignore AbortError - it's expected when component unmounts or request is cancelled
         if (err instanceof Error) {
           if (err.name === 'AbortError' || err.message?.includes('aborted')) {
             return
           }
         }
         
-        // Check if it's an AbortError by checking the error message/name
         const errorMessage = err instanceof Error ? err.message : String(err)
         if (errorMessage.includes('abort') || errorMessage.includes('AbortError')) {
           return
         }
         
-        // Error inesperado - no exponer detalles sensibles
         if (process.env.NODE_ENV === 'development') {
-          console.error('Unexpected error loading profile')
+          console.error('Unexpected error loading profile:', err)
         }
+        setError(new Error('Error al cargar perfil'))
+      } finally {
         if (isMounted) {
-          setError(new Error('Error al cargar perfil'))
           setLoading(false)
         }
       }
