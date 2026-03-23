@@ -122,6 +122,9 @@ export function GuideHome({
     const { content: labelInfo } = useLocalizedContent('Info', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelNormas } = useLocalizedContent('Normas', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelManual } = useLocalizedContent('Manual', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelCheckin } = useLocalizedContent('Check In', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelWifi } = useLocalizedContent('WiFi', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelSOS } = useLocalizedContent('SOS', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const locationName = location.split(',')[0].trim();
@@ -207,7 +210,7 @@ export function GuideHome({
                             >
                                 <Key size={24} className="mb-2 opacity-90" />
                                 <span className="text-[9px] font-black tracking-widest uppercase">
-                                    Check In
+                                    {labelCheckin}
                                 </span>
                             </button>
                         )}
@@ -218,7 +221,7 @@ export function GuideHome({
                             >
                                 <Wifi size={24} className="mb-2" />
                                 <span className={cn('text-[9px] font-black tracking-widest uppercase', t.chipLabel)}>
-                                    WiFi
+                                    {labelWifi}
                                 </span>
                             </button>
                         )}
@@ -228,7 +231,7 @@ export function GuideHome({
                         >
                             <AlertTriangle size={24} className="mb-2" />
                             <span className="text-[9px] font-black tracking-widest uppercase">
-                                SOS
+                                {labelSOS}
                             </span>
                         </button>
                     </div>

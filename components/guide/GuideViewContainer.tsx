@@ -144,6 +144,8 @@ export function GuideViewContainer({
 
     const welcomeData = displayContext?.find((c: any) => c.category === 'welcome')?.content;
     const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', language, 'ui_label', accessToken, property.id);
+    const { content: labelAsistencia } = useLocalizedContent('Asistencia', language, 'ui_label', accessToken, property.id);
+    const { content: labelHostNameFallback } = useLocalizedContent('tu anfitrión', language, 'ui_label', accessToken, property.id);
 
     useEffect(() => {
         if (!tokenLanguage && language) {
@@ -264,17 +266,17 @@ export function GuideViewContainer({
                 const contactsData = context?.find((c: any) => c.category === 'contacts')?.content || {};
                 let prefName = '', prefPhone = '';
                 if (contactsData.preferred_contact_id === 'support') {
-                    prefName = contactsData.support_name || 'Asistencia';
+                    prefName = contactsData.support_name || labelAsistencia;
                     prefPhone = contactsData.support_phone || contactsData.support_mobile || '';
                 } else if (contactsData.custom_contacts) {
                     const cc = contactsData.custom_contacts.find((c: any) => c.id === contactsData.preferred_contact_id);
                     if (cc) { prefName = cc.name; prefPhone = cc.phone; }
                 }
-                return <CheckInView onBack={handleBack} checkinData={checkinData} address={accessData?.full_address || property.full_address || ''} hostName={welcomeData?.host_name || (language === 'es' ? 'tu anfitrión' : 'your host')} currentLanguage={language} preferredContactName={prefName} preferredContactPhone={prefPhone} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
+                return <CheckInView onBack={handleBack} checkinData={checkinData} address={accessData?.full_address || property.full_address || ''} hostName={welcomeData?.host_name || labelHostNameFallback} currentLanguage={language} preferredContactName={prefName} preferredContactPhone={prefPhone} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
             }
             case 'emergency': {
                 const contactsData = context?.find((c: any) => c.category === 'contacts')?.content || {};
-                return <EmergencyView onBack={handleBack} contactsData={contactsData} hostName={welcomeData?.host_name || (language === 'es' ? 'tu anfitrión' : 'your host')} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
+                return <EmergencyView onBack={handleBack} contactsData={contactsData} hostName={welcomeData?.host_name || labelHostNameFallback} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
             }
             case 'house-info':
                 return <HouseInfoView onBack={handleBack} property={property} welcomeData={welcomeData} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;

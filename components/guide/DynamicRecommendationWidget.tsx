@@ -228,6 +228,7 @@ export function DynamicRecommendationWidget({
     const { content: labelVerMas } = useLocalizedContent('VER RECOMENDACIONES', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: localizedGreeting } = useLocalizedContent(label, currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelMasTarde } = useLocalizedContent('Disponible más tarde', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelAbreALas } = useLocalizedContent('Abre a las', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const { activeRec, isClosed } = useMemo(() => {
         if (!recommendations?.length) return { activeRec: null, isClosed: false };
@@ -299,7 +300,7 @@ export function DynamicRecommendationWidget({
                         <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-3">
                             <Clock size={12} className="text-amber-500 shrink-0" />
                             <span className="text-[11px] font-bold text-amber-700">
-                                {labelMasTarde}{openingHours.open ? ` · Abre a las ${openingHours.open}` : ''}
+                                {labelMasTarde}{openingHours.open ? ` · ${labelAbreALas} ${openingHours.open}` : ''}
                             </span>
                         </div>
                     )}

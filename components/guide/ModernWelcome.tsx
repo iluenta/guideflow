@@ -148,6 +148,7 @@ export function ModernWelcome({
     const { content: labelGuiaCasa }           = useLocalizedContent('Guía de la Casa',           currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelPoweredBy }          = useLocalizedContent('Desarrollado por',          currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelDondePuedoAparcar }  = useLocalizedContent('¿Dónde puedo aparcar?',    currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelPlaza }              = useLocalizedContent('Plaza',                   currentLanguage, 'ui_label', accessToken, propertyId);
 
     // ── Handlers ─────────────────────────────────────────────────────────────
     const handleParkingClick = () => {
@@ -320,7 +321,7 @@ export function ModernWelcome({
                                 </div>
                                 <span className={cn("text-[10px] font-extrabold", t.chipLabel)}>{labelParking}</span>
                                 {parkingNumber && (
-                                    <span className={cn("text-[8px] font-semibold opacity-70", t.chipLabel)}>Plaza {parkingNumber}</span>
+                                    <span className={cn("text-[8px] font-semibold opacity-70", t.chipLabel)}>{labelPlaza} {parkingNumber}</span>
                                 )}
                             </button>
                         )}
@@ -354,7 +355,7 @@ export function ModernWelcome({
                                 <span className={cn("text-2xl font-black leading-none", t.chipIconColor)}>P</span>
                                 <span className={cn("text-[10px] font-bold uppercase tracking-widest mt-0.5", t.chipLabel)}>{labelParking}</span>
                                 {parkingNumber && (
-                                    <span className={cn("text-[9px] font-medium opacity-70", t.chipLabel)}>Plaza {parkingNumber}</span>
+                                    <span className={cn("text-[9px] font-medium opacity-70", t.chipLabel)}>{labelPlaza} {parkingNumber}</span>
                                 )}
                             </button>
                         )}

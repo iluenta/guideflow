@@ -29,13 +29,14 @@ export function WifiView({
     propertyId,
     disabledLanguage = false
 }: WifiViewProps) {
+    const { content: localizedCargando } = useLocalizedContent("Cargando...", currentLanguage || 'es', 'ui_label', accessToken, propertyId);
     const [copied, setCopied] = useState<'network' | 'password' | null>(null);
     const { content: localizedNotes, isTranslating: notesLoading } = useLocalizedContent(notes || '', currentLanguage || 'es', 'wifi_notes', accessToken, propertyId);
     const { content: localizedNetLabel } = useLocalizedContent("NOMBRE DE LA RED", currentLanguage || 'es', 'ui_label', accessToken, propertyId);
     const { content: localizedPassLabel } = useLocalizedContent("CONTRASEÑA", currentLanguage || 'es', 'ui_label', accessToken, propertyId);
 
     const copyToClipboard = (text: string, type: 'network' | 'password') => {
-        if (!text || text === "..." || text === "Cargando...") return;
+        if (!text || text === "..." || text === (localizedCargando || "Cargando...")) return;
         navigator.clipboard.writeText(text);
         setCopied(type);
         setTimeout(() => setCopied(null), 2000);
@@ -67,7 +68,7 @@ export function WifiView({
                         <p className="text-[10px] uppercase font-black tracking-[0.2em] text-primary/30 mb-3">{localizedNetLabel}</p>
                         <div className="flex items-center justify-between gap-4">
                             <p className="font-serif text-xl text-slate-800 font-bold truncate leading-tight tracking-tight">
-                                {networkName}
+                                {networkName === "Cargando..." ? localizedCargando : networkName}
                             </p>
                             <button
                                 onClick={() => copyToClipboard(networkName || '', 'network')}

@@ -121,7 +121,7 @@ function RecommendationCard({
     // Hide "Consultar horario" if we have structured hours
     const tags = rec.metadata?.tags || rec.tags || [];
     const openingHoursStr = openingHours?.always_open 
-        ? '24 HORAS' 
+        ? (label24h || '24 HORAS') 
         : (openingHours?.open && openingHours?.close) 
             ? `${openingHours.open} – ${openingHours.close}` 
             : null;
@@ -140,6 +140,7 @@ function RecommendationCard({
     const { content: labelPrice } = useLocalizedContent('Precio:', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelTime } = useLocalizedContent('Tiempo:', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelHostTip } = useLocalizedContent('Consejo del anfitrión', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: label24h } = useLocalizedContent('24 HORAS', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const catLabel = (rec.type || 'ocio').toLowerCase();
     const catStyle = categoryConfigs[catLabel] || categoryConfigs.todos;

@@ -145,6 +145,7 @@ export function CheckInView({
     const { content: callLabel } = useLocalizedContent('Llamar', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: copiedLabel } = useLocalizedContent('Copiado', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: codeCopiedLabel } = useLocalizedContent('Código copiado al portapapeles', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelWhatsApp } = useLocalizedContent('WhatsApp', currentLanguage, 'ui_label', accessToken, propertyId);
 
     // Use preferred contact if available, fallback to hostName/emergency_phone
     const displayContactName = preferredContactName || hostName;
@@ -283,7 +284,7 @@ export function CheckInView({
                                 className="flex items-center justify-center gap-2 bg-white border border-primary/10 text-primary h-11 rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition-all"
                             >
                                 <MessageSquare className="w-4 h-4" />
-                                WhatsApp
+                                {labelWhatsApp || 'WhatsApp'}
                             </button>
                             <button
                                 onClick={handleCall}

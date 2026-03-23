@@ -161,6 +161,7 @@ export function EmergencyView({
     const { content: labelGuestSupport } = useLocalizedContent('Atención al huésped', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelLocalServices } = useLocalizedContent('Servicios Locales', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelOtherContacts } = useLocalizedContent('Otros Contactos', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelAsistencia } = useLocalizedContent('Asistencia', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const getIcon = (type: string) => {
         switch (type) {
@@ -232,7 +233,7 @@ export function EmergencyView({
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-slate-800 font-serif text-lg font-bold leading-tight">
-                                        {contactsData.support_name || 'Bianca'}
+                                        {contactsData.support_name || labelAsistencia}
                                     </span>
                                     <span className="text-[11px] text-primary/50 font-medium uppercase tracking-wider mt-0.5">
                                         {labelGuestSupport}
