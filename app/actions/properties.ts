@@ -14,7 +14,7 @@ function generateSlug(name: string): string {
         .replace(/^-+|-+$/g, '');
 }
 
-async function getTenantId(supabase: any, user: any) {
+export async function getTenantId(supabase: any, user: any) {
     // 1. Try metadata first (fastest)
     const metadataId = user.app_metadata?.tenant_id || user.user_metadata?.tenant_id
     if (metadataId) return metadataId
@@ -32,6 +32,27 @@ async function getTenantId(supabase: any, user: any) {
     }
 
     return data.tenant_id
+}
+
+/**
+ * SANITIZATION HELPERS: Prevent internal data exposure (tenant_id, etc) to public guests.
+ */
+function sanitizeProperty(property: any): Partial<Property> {
+    if (!property) return property;
+    const { tenant_id: _t, created_at: _c, updated_at: _u, ...safe } = property;
+    return safe;
+}
+
+function sanitizeGuideSection(section: any): Partial<GuideSection> {
+    if (!section) return section;
+    const { tenant_id: _t, ...safe } = section;
+    return safe;
+}
+
+function sanitizeRecommendation(rec: any) {
+    if (!rec) return rec;
+    const { tenant_id: _t, ...safe } = rec;
+    return safe;
 }
 
 export type Property = {
@@ -115,7 +136,11 @@ export async function getProperty(id: string) {
         return null
     }
 
-    return data as Property
+    // SANITIZATION: Check if request is authenticated as host
+    const { data: { user } } = await supabase.auth.getUser()
+    const isHost = !!user && (user.app_metadata?.tenant_id === data.tenant_id || user.user_metadata?.tenant_id === data.tenant_id)
+
+    return isHost ? data : sanitizeProperty(data)
 }
 
 export async function getPropertyBySlug(slug: string) {
@@ -128,7 +153,7 @@ export async function getPropertyBySlug(slug: string) {
         .eq('slug', slug)
         .maybeSingle()
 
-    if (bySlug) return bySlug as Property
+    if (bySlug) return sanitizeProperty(bySlug)
 
     // 2. Fallback to ID (for backwards compatibility or when slug isn't yet set)
     const currentPropId = sanitizeUUID(slug)
@@ -146,7 +171,7 @@ export async function getPropertyBySlug(slug: string) {
         return null
     }
 
-    return byId as Property
+    return sanitizeProperty(byId)
 }
 
 export async function createProperty(formData: Partial<Property>) {
@@ -548,7 +573,7 @@ export async function getGuideSections(propertyId: string) {
         return []
     }
 
-    return data as GuideSection[]
+    return (data || []).map(sanitizeGuideSection)
 }
 
 export async function getPropertyRecommendations(propertyId: string) {
@@ -568,7 +593,7 @@ export async function getPropertyRecommendations(propertyId: string) {
         return []
     }
 
-    return data
+    return (data || []).map(sanitizeRecommendation)
 }
 
 export async function getPropertyFaqs(propertyId: string) {
@@ -588,7 +613,10 @@ export async function getPropertyFaqs(propertyId: string) {
         return []
     }
 
-    return data
+    return (data || []).map(rec => {
+        const { tenant_id: _t, ...safe } = rec;
+        return safe;
+    })
 }
 
 export async function saveGuideSection(propertyId: string, section: Partial<GuideSection>) {

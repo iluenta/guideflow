@@ -3,9 +3,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import axios from 'axios'
-import { geminiREST, analyzeImageWithGemini, geminiVision } from '@/lib/ai/clients/gemini-rest'
+import { geminiREST, analyzeImageWithGemini, geminiVision, isValidExternalUrl } from '@/lib/ai/clients/gemini-rest'
 import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/clients/openai'
-import { syncPropertyApplianceList } from './properties'
+import { syncPropertyApplianceList, getTenantId } from './properties'
 import { syncWizardDataToRAG, syncManualToRAG } from './rag-sync'
 import { searchBrave, formatBraveResults } from '@/lib/ai/clients/brave'
 import { sanitizeUUID } from '@/lib/utils'
@@ -22,7 +22,11 @@ export async function generateManualFromImage(propertyId: string, imageUrl: stri
 
     const currentPropId = sanitizeUUID(propertyId)
     if (!currentPropId) throw new Error('ID de propiedad requerido para generar manuales')
-    const tenant_id = user.user_metadata.tenant_id || null
+    const tenant_id = await getTenantId(supabase, user)
+
+    if (!isValidExternalUrl(imageUrl)) {
+        throw new Error('URL de imagen no permitida por seguridad (SSRF PROTECTION)')
+    }
 
     const prompt = "Analiza esta imagen de un electrodoméstico y genera un manual de uso simplificado en español. Devuelve SOLO el texto del manual en Markdown."
 
@@ -54,7 +58,7 @@ export async function processBatchScans(propertyId: string, imageUrls: string[],
 
     const currentPropId = sanitizeUUID(propertyId)
     if (!currentPropId) throw new Error('ID de propiedad requerido para escaneo por lotes')
-    const tenant_id = user.user_metadata.tenant_id || null
+    const tenant_id = await getTenantId(supabase, user)
 
     try {
         logT(`[BATCH] Starting TWO-PHASE analysis for ${imageUrls.length} images (Replace: ${replaceExisting})...`)
@@ -80,6 +84,7 @@ export async function processBatchScans(propertyId: string, imageUrls: string[],
         async function identifyOneImage(url: string, index: number): Promise<IdentificationResult> {
             const startTime = new Date().toISOString()
             try {
+                if (!isValidExternalUrl(url)) throw new Error('URL bloqueada (SSRF)')
                 logT(`[PHASE1] [${index + 1}/${imageUrls.length}] Identifying: ${url.split('/').pop()?.substring(0, 40)}...`)
 
                 const analysisPrompt = `Actúa como un experto en electrodomésticos y equipamiento de hogar con gran agudeza visual.
@@ -338,7 +343,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
 
     const currentPropId = sanitizeUUID(propertyId)
     if (!currentPropId) throw new Error('ID de propiedad requerido para procesar inventario')
-    const tenant_id = user.user_metadata.tenant_id || null
+    const tenant_id = await getTenantId(supabase, user)
 
     try {
         console.log(`[INVENTORY] Starting background processing for ${items.length} items...`)
@@ -451,6 +456,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
 
 async function extractPDFManual(pdfUrl: string): Promise<string> {
     try {
+        if (!isValidExternalUrl(pdfUrl)) throw new Error('URL de PDF bloqueada (SSRF)')
         console.log(`[PDF EXTRACT] Fetching: ${pdfUrl}`)
         const response = await axios.get(`https://r.jina.ai/${encodeURIComponent(pdfUrl)}`, {
             timeout: 30000,
@@ -542,6 +548,7 @@ async function scrapeManualContent(urls: string[]): Promise<string> {
     let aggregatedContent = ''
     for (const url of urls.slice(0, 3)) {
         try {
+            if (!isValidExternalUrl(url)) throw new Error('URL bloqueada (SSRF)')
             console.log(`[WEB SCRAPE] Fetching: ${url}`)
             const response = await axios.get(`https://r.jina.ai/${encodeURIComponent(url)}`, {
                 timeout: 20000,
@@ -764,6 +771,7 @@ ${visualAnalysis.controls?.digital_display ? `Muestra el tiempo de cocción prog
 
 async function fetchImageAsBase64(imageUrl: string): Promise<{ data: string, mimeType: string } | null> {
     try {
+        if (!isValidExternalUrl(imageUrl)) throw new Error('URL bloqueada (SSRF)')
         const response = await fetch(imageUrl)
         if (!response.ok) return null
         const buffer = await response.arrayBuffer()

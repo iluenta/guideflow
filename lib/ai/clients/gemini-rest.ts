@@ -227,9 +227,49 @@ export async function geminiVision(
 }
 
 /**
+ * SSRF Protection: Validates if a URL is safe to fetch from the server.
+ * Blocks private IP ranges, loopback, and non-http protocols.
+ */
+export function isValidExternalUrl(url: string): boolean {
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+
+        const hostname = parsed.hostname.toLowerCase();
+
+        // 1. Block known loopback and internal hostnames
+        if (['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(hostname)) return false;
+
+        // 2. Block Metadata IP (SSRF primary target for AWS/GCP/Azure)
+        if (hostname === '169.254.169.254') return false;
+
+        // 3. Block Private IP Ranges (RFC 1918)
+        // 10.0.0.0 - 10.255.255.255
+        if (/^10\./.test(hostname)) return false;
+        // 172.16.0.0 - 172.31.255.255
+        if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)) return false;
+        // 192.168.0.0 - 192.168.255.255
+        if (/^192\.168\./.test(hostname)) return false;
+
+        // 4. Block other suspicious patterns (simple regex for basic security)
+        // This covers basic SSRF attempts via IP encoding or hidden characters
+        if (/[^a-z0-9\-\.\:]/.test(hostname)) return false;
+
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Internal helper to fetch image as base64
  */
 async function fetchImageAsBase64(imageUrl: string): Promise<{ mimeType: string, data: string }> {
+    if (!isValidExternalUrl(imageUrl)) {
+        console.error(`[SSRF-BLOCK] Blocked potentially unsafe URL: ${imageUrl}`);
+        throw new Error('URL de imagen no válida o bloqueada por seguridad.');
+    }
+
     const response = await fetch(imageUrl);
     if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
 
