@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/openai'
+import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/clients/openai'
 import { sanitizeUUID } from '@/lib/utils'
 
 /**

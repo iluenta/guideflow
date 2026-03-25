@@ -1,4 +1,4 @@
-import { geminiREST } from '../ai/gemini-rest';
+import { geminiREST } from '../ai/clients/gemini-rest';
 
 /**
  * Intelligent web search for transit options using Gemini

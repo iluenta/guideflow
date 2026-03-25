@@ -1,4 +1,4 @@
-import { generateOpenAIEmbedding } from './openai';
+import { generateOpenAIEmbedding } from '../clients/openai';
 
 /**
  * Generates an embedding for the given text using text-embedding-3-small (Delegates to new openai utility)

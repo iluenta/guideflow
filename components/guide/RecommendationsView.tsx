@@ -118,6 +118,11 @@ function RecommendationCard({
     const { content: localizedTimeOriginal } = useLocalizedContent(rawTime, currentLanguage, 'recommendation_time', accessToken, propertyId);
     const { content: localizedNote } = useLocalizedContent(rawNote, currentLanguage, 'recommendation_note', accessToken, propertyId);
 
+    const { content: labelPrice } = useLocalizedContent('Precio:', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelTime } = useLocalizedContent('Tiempo:', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelHostTip } = useLocalizedContent('Consejo del anfitrión', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: label24h } = useLocalizedContent('24 HORAS', currentLanguage, 'ui_label', accessToken, propertyId);
+
     // Hide "Consultar horario" if we have structured hours
     const tags = rec.metadata?.tags || rec.tags || [];
     const openingHoursStr = openingHours?.always_open 
@@ -132,15 +137,10 @@ function RecommendationCard({
     
     // finalTime is used for display
     const finalTime = hasManualTime ? localizedTimeOriginal : (openingHoursStr || localizedTimeOriginal);
-    const showOpeningHours = openingHoursStr && !hasManualTime;
-    const showManualTime = hasManualTime || (!openingHoursStr && localizedTimeOriginal);
+    const showOpeningHours = !!openingHoursStr && !hasManualTime;
+    const showManualTime = hasManualTime || (!openingHoursStr && !!localizedTimeOriginal);
 
     const distanceText = rec.distance && !rec.distance.toLowerCase().includes('distance') ? rec.distance : null;
-
-    const { content: labelPrice } = useLocalizedContent('Precio:', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelTime } = useLocalizedContent('Tiempo:', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelHostTip } = useLocalizedContent('Consejo del anfitrión', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: label24h } = useLocalizedContent('24 HORAS', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const catLabel = (rec.type || 'ocio').toLowerCase();
     const catStyle = categoryConfigs[catLabel] || categoryConfigs.todos;

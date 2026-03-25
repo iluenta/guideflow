@@ -7,7 +7,7 @@ import { TabsContent } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
 import { Upload, X, Loader2, Home, Hash, CheckCircle2, AlertCircle, Globe, Car } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useWizard } from '../WizardContext'
+import { useWizard } from '../../WizardContext'
 import { compressImage, createFileList } from '@/lib/compress-image'
 
 export default function StepProperty({ value }: { value?: string }) {

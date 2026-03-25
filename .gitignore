@@ -48,3 +48,19 @@ Thumbs.db
 scripts/dev-admin-login.js
 scripts/create-dev-admin.js
 env.local
+
+# Archivos temporales de análisis y depuración
+all_files_absolute.txt
+all_files_utf8.txt
+context_dump.json
+dev_login_debug.txt
+output_link.txt
+PropertySetupWizard_main.txt
+build_output.txt
+models.txt
+manuals_compare.json
+manuals_final_compare.json
+all_files.csv
+scraped_debug.html
+tsc-output.log
+test-results.json

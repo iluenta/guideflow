@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { TabsContent } from '@/components/ui/tabs'
 import { Sparkles, Loader2 } from 'lucide-react'
-import { useWizard } from '../WizardContext'
+import { useWizard } from '../../WizardContext'
 
 export default function StepTech({ value }: { value?: string }) {
     const {

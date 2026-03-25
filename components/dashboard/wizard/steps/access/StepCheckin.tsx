@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { TabsContent } from '@/components/ui/tabs'
 import { Clock, Info, MapPin, Upload, Trash2, Plus, Loader2, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useWizard } from '../WizardContext'
+import { useWizard } from '../../WizardContext'
 import { compressImage, createFileList } from '@/lib/compress-image'
 
 export default function StepCheckin({ value }: { value?: string }) {

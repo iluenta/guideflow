@@ -3,11 +3,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import axios from 'axios'
-import { geminiREST, analyzeImageWithGemini, geminiVision } from '@/lib/ai/gemini-rest'
-import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/openai'
+import { geminiREST, analyzeImageWithGemini, geminiVision } from '@/lib/ai/clients/gemini-rest'
+import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/clients/openai'
 import { syncPropertyApplianceList } from './properties'
 import { syncWizardDataToRAG, syncManualToRAG } from './rag-sync'
-import { searchBrave, formatBraveResults } from '@/lib/ai/brave'
+import { searchBrave, formatBraveResults } from '@/lib/ai/clients/brave'
 import { sanitizeUUID } from '@/lib/utils'
 
 function logT(msg: string) {

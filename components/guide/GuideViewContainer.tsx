@@ -4,7 +4,7 @@ import { useLocalizedContent, seedTranslationCache } from '@/hooks/useLocalizedC
 import React, { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { Menu } from 'lucide-react';
+import { Menu, Bot } from 'lucide-react';
 import supabaseLoader from '@/lib/image-loader';
 
 // ─── Carga estática: SOLO lo visible en el primer render ──────────────────────
@@ -52,7 +52,7 @@ const MenuGrid = dynamic(
 );
 const GuestChat = dynamic(
     () => import('@/components/guide/GuestChat').then(m => ({ default: m.GuestChat })),
-    { ssr: false }
+    { loading: () => <div className="fixed bottom-24 right-5 w-14 h-14 bg-primary/20 rounded-full animate-pulse shadow-2xl z-50 flex items-center justify-center"><Bot className="w-7 h-7 text-primary/40" /></div>, ssr: false }
 );
 
 function ViewSkeleton() {
@@ -369,6 +369,7 @@ export function GuideViewContainer({
                     propertyName={property.name}
                     currentLanguage={language}
                     accessToken={accessToken}
+                    initialOpen={true}
                 />
             ) : (
                 <button

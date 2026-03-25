@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { TabsContent } from '@/components/ui/tabs'
 import { Loader2, Sparkles } from 'lucide-react'
 import { InventorySelector } from '@/components/dashboard/InventorySelector'
-import { useWizard } from '../WizardContext'
+import { useWizard } from '../../WizardContext'
 
 export default function StepInventory({ value }: { value?: string }) {
     const {

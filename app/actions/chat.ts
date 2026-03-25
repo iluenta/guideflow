@@ -1,8 +1,8 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { generateOpenAIEmbedding } from '@/lib/ai/openai'
-import { geminiREST } from '@/lib/ai/gemini-rest'
+import { generateOpenAIEmbedding } from '@/lib/ai/clients/openai'
+import { geminiREST } from '@/lib/ai/clients/gemini-rest'
 
 /**
  * RAG-enabled chat for guests using Gemini 2.0 Flash and OpenAI Embeddings

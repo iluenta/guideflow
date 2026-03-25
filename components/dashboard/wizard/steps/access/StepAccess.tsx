@@ -9,10 +9,10 @@ import { TabsContent } from '@/components/ui/tabs'
 import { MapPin, Loader2, Check, Info, Sparkles, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import dynamic from 'next/dynamic'
-import TransportInfo from '../../TransportInfo'
-import { useWizard } from '../WizardContext'
+import TransportInfo from '../../../TransportInfo'
+import { useWizard } from '../../WizardContext'
 
-const MapPreview = dynamic(() => import('../../MapPreview'), {
+const MapPreview = dynamic(() => import('../../../MapPreview'), {
     ssr: false,
     loading: () => (
         <div className="w-full h-48 bg-slate-100 animate-pulse rounded-xl flex items-center justify-center border-2 border-dashed border-slate-200">

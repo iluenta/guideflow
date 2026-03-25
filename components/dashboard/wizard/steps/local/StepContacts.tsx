@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { TabsContent } from '@/components/ui/tabs'
 import { ShieldAlert, Shield, Flame, HeartPulse, Pill, PawPrint, Car, Wrench, Sparkles, Loader2, Check, Home as HomeIcon, AlertTriangle, Phone, Trash2, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useWizard } from '../WizardContext'
+import { useWizard } from '../../WizardContext'
 import { useToast } from '@/hooks/use-toast'
 
 export default function StepContacts({ value }: { value?: string }) {

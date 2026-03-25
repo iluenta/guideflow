@@ -74,21 +74,7 @@ export async function POST(req: Request) {
                 }
             }
 
-            // FASE 18: Public Fallback for landing pages
-            // ONLY ALLOW if NO accessToken was provided. If an accessToken was provided and failed,
-            // we do NOT fallback to public mode (Security: prevent bypassing token restrictions)
-            if (!isAuthenticated && bodyPropertyId && !accessToken) {
-                const { data: propertyExists } = await supabaseAdmin
-                    .from('properties')
-                    .select('id')
-                    .eq('id', bodyPropertyId)
-                    .single();
 
-                if (propertyExists) {
-                    isAuthenticated = true; // Authorized as public
-                    propertyId = bodyPropertyId;
-                }
-            }
         }
 
         if (!isAuthenticated || !propertyId) {

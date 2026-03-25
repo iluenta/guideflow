@@ -1,9 +1,9 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { generateEmbedding } from '@/lib/ai/embeddings'
+import { generateEmbedding } from '@/lib/ai/services/embeddings'
 import { revalidatePath } from 'next/cache'
-import { geminiREST } from '@/lib/ai/gemini-rest'
+import { geminiREST } from '@/lib/ai/clients/gemini-rest'
 
 /**
  * Ingests a new manual, chunks it, and generates embeddings for RAG using REST API

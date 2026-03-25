@@ -1,6 +1,6 @@
 'use server'
 
-import { geminiREST } from './ai/gemini-rest';
+import { geminiREST } from './ai/clients/gemini-rest';
 import { GeocodingResult } from './geocoding';
 
 export interface ValidationResult {

@@ -4,11 +4,21 @@
  */
 export function generateSecureToken(length: number = 24): string {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    const array = new Uint8Array(length);
-    globalThis.crypto.getRandomValues(array);
+    const alphabetLength = chars.length;
+    // To avoid modulo bias, we find the largest multiple of alphabetLength that fits in a byte (256)
+    // 256 - (256 % 36) = 256 - 4 = 252.
+    const maxVal = 256 - (256 % alphabetLength);
+    
     let token = '';
-    for (let i = 0; i < length; i++) {
-        token += chars[array[i] % chars.length];
+    const buffer = new Uint8Array(1);
+    
+    while (token.length < length) {
+        globalThis.crypto.getRandomValues(buffer);
+        const val = buffer[0];
+        // Rejection sampling: only use values within the perfect multiple range
+        if (val < maxVal) {
+            token += chars[val % alphabetLength];
+        }
     }
     return token;
 }

@@ -18,15 +18,25 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // Verify property exists
+        // Security check: Property belongs to the host's tenant
+        const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).single();
+        const tenant_id = profile?.tenant_id;
+
+        if (!tenant_id) {
+            return NextResponse.json({ error: 'Tenant context missing' }, { status: 403 });
+        }
+
+        // Verify property exists AND belongs to this tenant
         const { data: property, error: propertyError } = await supabase
             .from('properties')
             .select('id, slug, name, tenant_id')
             .eq('id', propertyId)
+            .eq('tenant_id', tenant_id)
             .single();
 
         if (propertyError || !property) {
-            return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+            console.warn(`[GUEST_ACCESS] 🛡️ Host ${user.id} attempted to generate token for unauthorized property: ${propertyId}`);
+            return NextResponse.json({ error: 'Property not found or access denied' }, { status: 404 });
         }
 
         // Security check: Property MUST have a slug configured

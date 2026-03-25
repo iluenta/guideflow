@@ -1,5 +1,5 @@
 import { geocodeAddress, GeocodingResult } from '../geocoding';
-import { geminiREST } from '../ai/gemini-rest';
+import { geminiREST } from '../ai/clients/gemini-rest';
 import { createClient } from '../supabase/server';
 
 /**

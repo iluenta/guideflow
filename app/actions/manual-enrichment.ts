@@ -1,8 +1,8 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { geminiREST } from '@/lib/ai/gemini-rest'
-import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/openai'
+import { geminiREST } from '@/lib/ai/clients/gemini-rest'
+import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/clients/openai'
 import { syncManualToRAG } from './rag-sync'
 import { revalidatePath } from 'next/cache'
 

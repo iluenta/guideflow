@@ -14,7 +14,7 @@ import {
     UtensilsCrossed, Baby, Moon, Handshake
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useWizard } from '../WizardContext'
+import { useWizard } from '../../WizardContext'
 
 // ─── Icon system ──────────────────────────────────────────────────────────────
 const ICON_PRESETS = [

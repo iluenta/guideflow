@@ -1,0 +1,10 @@
+
+> my-v0-project@0.1.0 build
+> next build
+
+   ??? Next.js 15.5.12
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ??? turbopackUseSystemTlsCerts
+
+   Creating an optimized production build ...

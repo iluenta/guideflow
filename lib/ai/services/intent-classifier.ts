@@ -1,4 +1,4 @@
-import { geminiREST } from '@/lib/ai/gemini-rest'
+import { geminiREST } from '@/lib/ai/clients/gemini-rest'
 
 // ═══════════════════════════════════════════════════════
 // TIPOS
@@ -15,6 +15,7 @@ export type ChatIntent =
     | 'recommendation_shopping'
     | 'recommendation_other'
     | 'property_info'
+    | 'off_topic'
     | 'standard'
 
 export type FoodSubtype =
@@ -130,6 +131,7 @@ VALORES PERMITIDOS para "intent":
 - "recommendation_shopping": tiendas, compras, mercado, supermercado
 - "recommendation_other": otras recomendaciones externas
 - "property_info": WiFi, normas, check-in, check-out, acceso, llaves, parking, dirección
+- "off_topic": el huésped hace una pregunta que no tiene relación con el alojamiento, su estancia, ni servicios locales. Ejemplos: chistes, filosofía, preguntas sobre IA, conversación general, política, deportes, trivia. NO confundir con "standard" (preguntas válidas sobre la estancia que no encajan en otras categorías).
 - "standard": cualquier otra cosa
 
 VALORES PERMITIDOS para "detectedTask" (solo si intent es "appliance_task"):
@@ -217,7 +219,8 @@ export async function classifyIntent(
         const validIntents: ChatIntent[] = [
             'emergency', 'error_code', 'appliance_problem', 'appliance_usage',
             'appliance_task', 'recommendation_food', 'recommendation_activity',
-            'recommendation_shopping', 'recommendation_other', 'property_info', 'standard'
+            'recommendation_shopping', 'recommendation_other', 'property_info', 
+            'off_topic', 'standard'
         ]
 
         if (!result.intent || !validIntents.includes(result.intent)) {

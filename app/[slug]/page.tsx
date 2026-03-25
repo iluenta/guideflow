@@ -155,7 +155,7 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     if (token) {
         const cookieStore = await cookies()
         cookieStore.set(`gf_token_${slug}`, token, {
-            path: '/',
+            path: `/${slug}`,
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',

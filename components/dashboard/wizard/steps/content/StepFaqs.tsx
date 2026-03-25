@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { TabsContent } from '@/components/ui/tabs'
 import { Plus, Trash2, Sparkles } from 'lucide-react'
-import { useWizard } from '../WizardContext'
+import { useWizard } from '../../WizardContext'
 
 export default function StepFaqs({ value }: { value?: string }) {
     const {

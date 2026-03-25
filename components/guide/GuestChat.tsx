@@ -13,6 +13,7 @@ interface GuestChatProps {
     propertyName: string
     currentLanguage?: string
     accessToken?: string
+    initialOpen?: boolean
 }
 
 function QuickReplyButton({
@@ -120,8 +121,8 @@ function injectWifiMarkers(content: string): string {
     return content;
 }
 
-export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', accessToken }: GuestChatProps) {
-    const [isOpen, setIsOpen] = useState(false);
+export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', accessToken, initialOpen = false }: GuestChatProps) {
+    const [isOpen, setIsOpen] = useState(initialOpen);
     const [guestSessionId, setGuestSessionId] = useState('');
 
     useEffect(() => {
@@ -323,7 +324,19 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                     // Strip out any hallucinated internal RAG citations (e.g. [[GUÍA_TÉCNICA: Hervidor]])
                                     .replace(/\[\[(?!COPY:|MAP:)[^\]]+\]\]/gi, '')
                                     .replace(/\[\[COPY:(.+?)\]\]/g, (_match, val) => `[${val}](copy:${encodeURIComponent(val)})`)
-                                    .replace(/\[\[MAP:([^\]]+)\]\]/g, (_match, content) => { const parts = content.split(':'); const address = parts[0].trim(); const label = parts.length > 1 ? parts.slice(1).join(':').trim() : address; return `[${label}](maps:${encodeURIComponent(address)})`; })
+                                    .replace(/\[\[MAP:([^\]]+)\]\]/g, (_match, content) => {
+                                        if (content.startsWith('PLACE_ID:')) {
+                                            const withoutPrefix = content.slice('PLACE_ID:'.length)
+                                            const parts = withoutPrefix.split(':')
+                                            const placeId = parts[0].trim()
+                                            const name    = parts[1]?.trim() || placeId
+                                            return `[${name}](maps_place:${encodeURIComponent(placeId)})`
+                                        }
+                                        const parts = content.split(':')
+                                        const address = parts[0].trim()
+                                        const label = parts.length > 1 ? parts.slice(1).join(':').trim() : address
+                                        return `[${label}](maps:${encodeURIComponent(address)})`
+                                    })
                                     .replace(/(?<!\d|\[)(\+?\d{9,15})(?!\d|\])/g, '[$1](tel_wa:$1)');
 
                                 return (
@@ -355,7 +368,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                         remarkPlugins={[remarkGfm]}
                                                         urlTransform={(url) => url}
                                                         components={{
-                                                            a: ({ node, href, children, ...props }) => {
+                                                            a: ({ node, href, children, ...props }: any) => {
                                                                 if (href?.startsWith('copy:')) {
                                                                     const value = decodeURIComponent(href.slice('copy:'.length));
                                                                     return <CopyButton text={value} />;
@@ -388,19 +401,48 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                                         </span>
                                                                     );
                                                                 }
-                                                                // maps: — new tappable map button (Universal Google Maps)
-                                                                if (href?.startsWith('maps:')) {
-                                                                    const encodedAddress = href.slice('maps:'.length);
-                                                                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+                                                                // maps_place: — high-precision map pill using Place ID
+                                                                if (href?.startsWith('maps_place:')) {
+                                                                    const placeId = decodeURIComponent(href.slice('maps_place:'.length))
+                                                                    const mapsUrl = `https://www.google.com/maps/place/?q=place_id:${placeId}`
+
                                                                     return (
                                                                         <a
                                                                             href={mapsUrl}
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
-                                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium border border-blue-200 hover:bg-blue-100 active:scale-95 transition-all"
+                                                                            className="text-primary font-bold underline decoration-primary/30 underline-offset-2 hover:decoration-primary transition-all whitespace-nowrap"
                                                                         >
-                                                                            <span className="text-base leading-none">📍</span>
-                                                                            {decodeURIComponent(String(children))}
+                                                                            {children}
+                                                                        </a>
+                                                                    );
+                                                                }
+                                                                // maps: — legacy map pill (Google Maps search)
+                                                                if (href?.startsWith('maps:')) {
+                                                                    const encodedAddress = href.slice('maps:'.length);
+                                                                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+                                                                    const label = decodeURIComponent(String(children));
+                                                                    return (
+                                                                        <a
+                                                                            href={mapsUrl}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            style={{ textDecoration: 'none' }}
+                                                                            className="not-prose no-underline inline-block group"
+                                                                        >
+                                                                            <span className="inline-flex items-center gap-2 mt-1.5 pl-2 pr-3 py-1.5 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all shadow-sm cursor-pointer whitespace-nowrap overflow-hidden">
+                                                                                <span className="w-5 h-5 rounded-full bg-[#EA4335] flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                                                                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="white">
+                                                                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5-2.5z"/>
+                                                                                    </svg>
+                                                                                </span>
+                                                                                <span className="text-[12px] font-semibold text-slate-700 leading-none">
+                                                                                    {label}
+                                                                                </span>
+                                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 shrink-0 group-hover:text-slate-400">
+                                                                                    <polyline points="9 18 15 12 9 6"/>
+                                                                                </svg>
+                                                                            </span>
                                                                         </a>
                                                                     );
                                                                 }

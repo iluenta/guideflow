@@ -474,7 +474,7 @@ export async function POST(req: Request) {
           .join('\n\n')
         : allPlacesResults.slice(0, 18).map(r =>
           `- ${r.name} | Rating: ${r.rating ?? 'N/A'} | Distancia_Contexto: ${r.realDistance ?? 'desconocida'} | ${r.vicinity ?? r.formatted_address ?? ''} | ID: ${r.place_id}`
-        ).join('\n');
+      ).join('\n');
 
       const existingNamesStr = (existingData?.existingNames || []).join(', ');
 
@@ -843,7 +843,7 @@ JSON:`;
         }));
 
         const validCandidates = enriched.filter(Boolean);
-        const genAI = getGenAI();
+      const genAI = getGenAI();
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const contactPrompt = `Eres un conserje experto en seguridad. Filtra y categoriza estos contactos de emergencia para ${property.city}.
 CANDIDATOS: ${JSON.stringify(validCandidates, null, 2)}

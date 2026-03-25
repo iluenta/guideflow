@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useWizard } from '../WizardContext'
-import { ManualsSection } from '../sections/ManualsSection'
+import { useWizard } from '../../WizardContext'
+import { ManualsSection } from '../../sections/ManualsSection'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -103,7 +103,7 @@ export function StepApplianceManuals({ value }: { value?: string }) {
         <div className="space-y-6 animate-in fade-in-50 duration-500">
             <ManualsSection
                 manuals={manuals}
-                onDelete={(id) => setConfirmDeleteId(id)}
+                onDelete={(id: string) => setConfirmDeleteId(id)}
                 onSave={handleSave}
                 onRegenerate={handleRegenerate}
             />
