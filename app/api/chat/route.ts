@@ -582,6 +582,7 @@ export async function POST(req: Request) {
         const mapFormatBlock = `
 # FORMATO DE MAPAS:
 - Para cualquier lugar del contexto que tenga un enlace [Nombre](maps_place:...), ÚSALO EXACTAMENTE IGUAL.
+- **PROPIEDAD**: Para la dirección del alojamiento, úsala SIEMPRE en este formato: [[MAP:Dirección Completa]].
 - **IMPORTANTE**: No olvides copiar la descripción que aparece tras los dos puntos (:) en el contexto.
 - Ejemplo: "- [Nombre del lugar](maps_place:id) (400m) — Aquí va la descripción completa del sitio."`;
 
@@ -615,7 +616,7 @@ ${mapFormatBlock}
 
 No intentes diagnosticar. Prioridad absoluta: seguridad del huésped.
 NUNCA menciones "el manual" ni "la documentación".
-Incluye siempre la dirección del apartamento: ${criticalContext?.find((c: any) => c.category === 'access')?.content?.full_address || criticalContext?.find((c: any) => c.category === 'access')?.content?.address || propertyInfo?.full_address || propertyInfo?.address || 'la dirección del alojamiento'}
+Incluye siempre la dirección del apartamento en formato de mapa: [[MAP:${criticalContext?.find((c: any) => c.category === 'access')?.content?.full_address || criticalContext?.find((c: any) => c.category === 'access')?.content?.address || propertyInfo?.full_address || propertyInfo?.address || 'la dirección del alojamiento'}]]
 
 ${coreRulesBlock}`;
 

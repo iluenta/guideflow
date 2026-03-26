@@ -1,6 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { generateArrivalInstructions } from '../../../lib/arrival/generator-final';
+import { createClient } from '@/lib/supabase/server';
+import { RateLimiter } from '@/lib/security/rate-limiter';
+import { logSuspiciousActivity } from '@/lib/security';
 
 const getGenAI = () => {
   const key = process.env.GOOGLE_AI_API_KEY;
@@ -276,7 +279,8 @@ async function searchWithFallback(params: {
 // ═══════════════════════════════════════════════════════════════════════════
 export async function POST(req: Request) {
   try {
-    const { propertyId, section, existingData } = await req.json();
+    const body = await req.json();
+    const { propertyId, section, existingData } = body;
 
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyId);
     if (!isUuid || propertyId === 'address-only') {
@@ -285,6 +289,33 @@ export async function POST(req: Request) {
         debug: 'ROUTE_UUID_CHECK_FAIL',
         receivedId: propertyId
       }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // ── AUTHENTICATION CHECK ─────────────────────────────────────────────────
+    const supabaseUser = await createClient();
+    const { data: { user } } = await supabaseUser.auth.getUser();
+    
+    if (!user) {
+      const ip = req.headers.get('x-forwarded-for') || 'unknown';
+      console.warn(`[AI-FILL] 🔐 401 Unauthorized attempt from IP: ${ip}`);
+      // Internal logging only for now as we don't have a token here yet
+      return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
+    }
+
+    // ── RATE LIMITING ────────────────────────────────────────────────────────
+    const limit = await RateLimiter.checkLimit(`ai-fill:${user.id}`, {
+      windowMs: 60 * 1000,
+      maxRequests: 20, // Strict limit for AI generation
+      message: 'Demasiadas solicitudes de generación IA.'
+    });
+
+    if (!limit.allowed) {
+      await logSuspiciousActivity(createSupabaseAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!), 'host-session', {
+        type: 'RATE_LIMIT_EXCEEDED_AI_FILL',
+        details: { userId: user.id },
+        ip: req.headers.get('x-forwarded-for') || 'unknown'
+      });
+      return new Response(JSON.stringify({ error: limit.message }), { status: 429 });
     }
 
     const supabase = createSupabaseAdmin(

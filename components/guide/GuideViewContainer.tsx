@@ -120,6 +120,7 @@ export function GuideViewContainer({
     const [language, setLanguage] = useState<string>(initialLanguage);
     const [navigationPayload, setNavigationPayload] = useState<any>(null);
     const [chatMounted, setChatMounted] = useState(false);
+    const [pendingChatQuery, setPendingChatQuery] = useState<string | undefined>(undefined);
 
     const cacheKey = `guide_data_${property.id}`;
     const [localData, setLocalData] = useState<any>(null);
@@ -184,11 +185,15 @@ export function GuideViewContainer({
     };
 
     const handleChatWithQuery = (query: string) => {
-        setChatMounted(true);
-        window.dispatchEvent(new CustomEvent(
-            query ? 'open-guest-chat-with-query' : 'open-guest-chat',
-            query ? { detail: { query } } : undefined
-        ));
+        if (!chatMounted) {
+            setPendingChatQuery(query);
+            setChatMounted(true);
+        } else {
+            window.dispatchEvent(new CustomEvent(
+                query ? 'open-guest-chat-with-query' : 'open-guest-chat',
+                query ? { detail: { query } } : undefined
+            ));
+        }
     };
 
     const renderCurrentView = () => {
@@ -370,6 +375,7 @@ export function GuideViewContainer({
                     currentLanguage={language}
                     accessToken={accessToken}
                     initialOpen={true}
+                    initialQuery={pendingChatQuery}
                 />
             ) : (
                 <button

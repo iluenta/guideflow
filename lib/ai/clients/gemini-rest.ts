@@ -238,18 +238,27 @@ export function isValidExternalUrl(url: string): boolean {
         const hostname = parsed.hostname.toLowerCase();
 
         // 1. Block known loopback and internal hostnames
-        if (['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(hostname)) return false;
+        const blockedHostnames = [
+            'localhost', '127.0.0.1', '::1', '0.0.0.0', '[::1]', '[::]', 
+            '127.1', '127.0.0', '2130706433', // Decimal variations for 127.0.0.1
+            'chatflow.internal', 'supabase.internal'
+        ];
+        if (blockedHostnames.includes(hostname) || hostname.endsWith('.local') || hostname.endsWith('.internal')) return false;
 
         // 2. Block Metadata IP (SSRF primary target for AWS/GCP/Azure)
-        if (hostname === '169.254.169.254') return false;
+        if (hostname === '169.254.169.254' || hostname === 'metadata.google.internal' || hostname === 'instance-data') return false;
 
         // 3. Block Private IP Ranges (RFC 1918)
-        // 10.0.0.0 - 10.255.255.255
+        // 10.0.0.0 - 10.255.255.255 (Private)
         if (/^10\./.test(hostname)) return false;
-        // 172.16.0.0 - 172.31.255.255
+        // 172.16.0.0 - 172.31.255.255 (Private)
         if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)) return false;
-        // 192.168.0.0 - 192.168.255.255
+        // 192.168.0.0 - 192.168.255.255 (Private)
         if (/^192\.168\./.test(hostname)) return false;
+        // 100.64.0.0 - 100.127.255.255 (CGNAT)
+        if (/^100\.(6[4-9]|[7-9][0-9]|1[0-1][0-9]|12[0-7])\./.test(hostname)) return false;
+        // 169.254.0.0 - 169.254.255.255 (Link-Local)
+        if (/^169\.254\./.test(hostname)) return false;
 
         // 4. Block other suspicious patterns (simple regex for basic security)
         // This covers basic SSRF attempts via IP encoding or hidden characters

@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function auditTokens() {
     const { data, error } = await supabase
         .from('guest_access_tokens')
-        .select('*')
+        .select('*, properties(slug)')
         .order('valid_until', { ascending: false });
 
     if (error) {
@@ -19,14 +19,15 @@ async function auditTokens() {
 
     const now = new Date();
     console.log(`Audit at: ${now.toISOString()}\n`);
-    console.log(`| Guest Name | Valid Until (UTC) | Status | Days left/since |`);
-    console.log(`|------------|-------------------|--------|-----------------|`);
+    console.log(`| Guest Name | Valid Until (UTC) | Status | Days left/since | Slug | Token |`);
+    console.log(`|------------|-------------------|--------|-----------------|------|-------|`);
 
     data.forEach(token => {
         const until = new Date(token.valid_until);
         const diff = (until - now) / (1000 * 60 * 60 * 24);
         const status = now > until ? 'EXPIRED' : 'ACTIVE';
-        console.log(`| ${token.guest_name.padEnd(10)} | ${token.valid_until} | ${status.padEnd(7)} | ${diff.toFixed(2).padStart(15)} |`);
+        const slug = token.properties?.slug || 'N/A';
+        console.log(`| ${token.guest_name.padEnd(10)} | ${token.valid_until} | ${status.padEnd(7)} | ${diff.toFixed(2).padStart(15)} | ${slug.padEnd(10)} | ${token.access_token} |`);
     });
 }
 

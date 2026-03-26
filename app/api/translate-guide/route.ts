@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Translator } from '@/lib/gemini-i18n';
-import { validateAccessToken } from '@/lib/security';
+import { validateAccessToken, logSuspiciousActivity } from '@/lib/security';
 import { createClient } from '@/lib/supabase/server';
 import { RateLimiter } from '@/lib/security/rate-limiter';
 import { z } from 'zod';
@@ -78,12 +78,10 @@ export async function POST(req: Request) {
         }
 
         if (!isAuthenticated || !propertyId) {
-            console.warn('[API_TRANSLATE] 🔐 401 Unauthorized: ', {
-                hasAccessToken: !!accessToken,
-                hasAuthCookie,
-                hasBodyPropertyId: !!bodyPropertyId,
-                isAuthenticated,
-                resolvedPropertyId: propertyId
+            await logSuspiciousActivity(supabaseAdmin, accessToken || 'none', {
+                type: 'UNAUTHORIZED_TRANSLATE_ATTEMPT',
+                details: { hasAuthCookie, bodyPropertyId },
+                ip
             });
             return NextResponse.json({ error: 'No autorizado o PropertyId faltante' }, { status: 401 });
         }
@@ -118,6 +116,11 @@ export async function POST(req: Request) {
         });
 
         if (!limit.allowed) {
+            await logSuspiciousActivity(supabaseAdmin, accessToken || 'none', {
+                type: 'RATE_LIMIT_EXCEEDED_TRANSLATE',
+                details: { ip },
+                ip
+            });
             return NextResponse.json({ error: limit.message }, { status: 429 });
         }
 

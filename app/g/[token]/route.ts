@@ -48,7 +48,8 @@ export async function GET(
 
     // 4. Redirect to the slug page (no token in URL!)
     // We use a response object to set security headers like Referrer-Policy
-    const redirectUrl = new URL(`/${property.slug}`, request.url);
+    const lang = request.nextUrl.searchParams.get('lang');
+    const redirectUrl = new URL(`/${property.slug}${lang ? `?lang=${lang}` : ''}`, request.url);
     const response = NextResponse.redirect(redirectUrl);
     
     // Security: Stop the leak of the /g/[token] URL in the Referer header

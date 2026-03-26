@@ -14,6 +14,7 @@ interface GuestChatProps {
     currentLanguage?: string
     accessToken?: string
     initialOpen?: boolean
+    initialQuery?: string
 }
 
 function QuickReplyButton({
@@ -121,7 +122,7 @@ function injectWifiMarkers(content: string): string {
     return content;
 }
 
-export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', accessToken, initialOpen = false }: GuestChatProps) {
+export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', accessToken, initialOpen = false, initialQuery }: GuestChatProps) {
     const [isOpen, setIsOpen] = useState(initialOpen);
     const [guestSessionId, setGuestSessionId] = useState('');
 
@@ -143,6 +144,12 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
             guestSessionId
         },
     })
+
+    useEffect(() => {
+        if (initialQuery) {
+            append({ role: 'user', content: initialQuery });
+        }
+    }, [initialQuery, append]);
 
     useEffect(() => {
         const handleOpenChat = () => setIsOpen(true);
