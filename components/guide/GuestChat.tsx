@@ -182,7 +182,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
         accessToken,
         propertyId
     );
-    const { content: assistantLabel } = useLocalizedContent('Asistente de', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: assistantLabel } = useLocalizedContent('Asistente Virtual', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: expertLabel } = useLocalizedContent('EXPERTO EN', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: placeholderLabel } = useLocalizedContent('Escribe tu duda aquí...', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: triggerAriaLabel } = useLocalizedContent('Abrir asistente de ayuda', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -223,12 +223,12 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                             window.navigator.vibrate([50, 30, 50]);
                         }
                     }}
-                    className="fixed bottom-24 right-5 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50"
+                    className="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-tr from-primary to-primary/80 text-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-4 ring-primary/20 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50"
                     aria-label={triggerAriaLabel}
                 >
                     <div className="relative">
-                        <Bot className="w-7 h-7" strokeWidth={2.5} />
-                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse shadow-sm" />
+                        <MessageSquare className="w-6 h-6" strokeWidth={2.5} />
+                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full animate-pulse shadow-sm" />
                     </div>
                 </button>
             )}
@@ -266,7 +266,6 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                         <span className="text-[8px] font-black uppercase tracking-widest text-white">{onlineStatus}</span>
                                     </div>
                                 </div>
-                                <p className="text-white/60 text-xs font-medium mt-0.5">{propertyName}</p>
                             </div>
                         </div>
                         <button

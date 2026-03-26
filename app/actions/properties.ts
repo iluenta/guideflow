@@ -146,6 +146,8 @@ export async function getProperty(id: string) {
 export async function getPropertyBySlug(slug: string) {
     const supabase = await createClient()
 
+    let property = null;
+
     // 1. Try by slug
     const { data: bySlug } = await supabase
         .from('properties')
@@ -153,25 +155,35 @@ export async function getPropertyBySlug(slug: string) {
         .eq('slug', slug)
         .maybeSingle()
 
-    if (bySlug) return sanitizeProperty(bySlug)
+    property = bySlug;
 
-    // 2. Fallback to ID (for backwards compatibility or when slug isn't yet set)
-    const currentPropId = sanitizeUUID(slug)
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentPropId || '');
-    if (!currentPropId || !isUUID) return null
-
-    const { data: byId, error: idError } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('id', currentPropId)
-        .maybeSingle()
-
-    if (idError) {
-        console.error('Error fetching property by id fallback:', idError.message)
-        return null
+    // 2. Fallback to ID
+    if (!property) {
+        const currentPropId = sanitizeUUID(slug)
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentPropId || '');
+        if (currentPropId && isUUID) {
+            const { data: byId } = await supabase
+                .from('properties')
+                .select('*')
+                .eq('id', currentPropId)
+                .maybeSingle()
+            property = byId;
+        }
     }
 
-    return sanitizeProperty(byId)
+    if (!property) return null;
+
+    // SANITIZATION: Check if request is authenticated as host
+    const { data: { user } } = await supabase.auth.getUser()
+    let isHost = false;
+    if (user) {
+        const tenant_id = await getTenantId(supabase, user);
+        if (tenant_id === property.tenant_id) {
+            isHost = true;
+        }
+    }
+
+    return isHost ? property : sanitizeProperty(property);
 }
 
 export async function createProperty(formData: Partial<Property>) {

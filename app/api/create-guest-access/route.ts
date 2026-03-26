@@ -5,13 +5,18 @@ import { generateSecureToken } from '@/lib/security';
 
 export async function POST(req: Request) {
     try {
-        const supabase = await createEdgeAdminClient();
-
+        // Read standard cookies to verify who called the API
+        const { createClient } = await import('@/lib/supabase/server');
+        const supabaseAuth = await createClient();
+        
         // Check if user is authenticated (host)
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
         if (authError || !user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+        
+        // Use admin client for DB inserts across tenant if needed
+        const supabaseAdmin = createEdgeAdminClient();
 
         const { propertyId, guestName, checkinDate, checkoutDate, language } = await req.json();
 
@@ -20,7 +25,7 @@ export async function POST(req: Request) {
         }
 
         // Security check: Property belongs to the host's tenant
-        const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).single();
+        const { data: profile } = await supabaseAdmin.from('profiles').select('tenant_id').eq('id', user.id).single();
         const tenant_id = profile?.tenant_id;
 
         if (!tenant_id) {
@@ -28,7 +33,7 @@ export async function POST(req: Request) {
         }
 
         // Verify property exists AND belongs to this tenant
-        const { data: property, error: propertyError } = await supabase
+        const { data: property, error: propertyError } = await supabaseAdmin
             .from('properties')
             .select('id, slug, name, tenant_id')
             .eq('id', propertyId)
@@ -63,7 +68,7 @@ export async function POST(req: Request) {
         const validUntil = new Date(checkout);
         validUntil.setUTCHours(23, 59, 59, 999);
 
-        const { error: insertError } = await supabase
+        const { error: insertError } = await supabaseAdmin
             .from('guest_access_tokens')
             .insert({
                 property_id: propertyId,
