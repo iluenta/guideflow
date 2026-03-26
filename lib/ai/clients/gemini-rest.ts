@@ -2,6 +2,7 @@
  * Definitive REST-based Gemini Utility
  * Bypasses the @google/generative-ai SDK to avoid uncatchable "empty output" errors.
  */
+import { logger } from '@/lib/logger';
 
 export interface GeminiPart {
     text?: string;
@@ -275,7 +276,8 @@ export function isValidExternalUrl(url: string): boolean {
  */
 async function fetchImageAsBase64(imageUrl: string): Promise<{ mimeType: string, data: string }> {
     if (!isValidExternalUrl(imageUrl)) {
-        console.error(`[SSRF-BLOCK] Blocked potentially unsafe URL: ${imageUrl}`);
+        const domain = new URL(imageUrl).hostname;
+        logger.warn(`[SSRF-BLOCK] Blocked unsafe URL. Domain: ${domain}`);
         throw new Error('URL de imagen no válida o bloqueada por seguridad.');
     }
 

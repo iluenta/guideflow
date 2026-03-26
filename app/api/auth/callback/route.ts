@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     // Caso 2: token_hash (de nuestro script)
     if (token_hash && type) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('Verifying OTP:', { type, token_hash: token_hash.substring(0, 10) + '...' })
+        logger.debug('Verifying OTP:', { type, token_hash: token_hash.substring(0, 10) + '...' })
       }
       const { data, error } = await supabase.auth.verifyOtp({
         token_hash,
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   } catch (error) {
-    console.error('Error en callback API:', error)
+    logger.error('Error en callback API:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

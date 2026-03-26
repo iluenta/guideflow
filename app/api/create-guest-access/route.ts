@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createEdgeAdminClient } from '@/lib/supabase/edge';
+import { logger } from '@/lib/logger';
 import { generateSecureToken } from '@/lib/security';
 
 export async function POST(req: Request) {
     try {
-        const supabase = await createClient();
+        const supabase = await createEdgeAdminClient();
 
         // Check if user is authenticated (host)
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
             .single();
 
         if (propertyError || !property) {
-            console.warn(`[GUEST_ACCESS] 🛡️ Host ${user.id} attempted to generate token for unauthorized property: ${propertyId}`);
+            logger.warn(`[GUEST_ACCESS] Unauthorized token generation attempt blocked`);
             return NextResponse.json({ error: 'Property not found or access denied' }, { status: 404 });
         }
 
@@ -78,7 +79,7 @@ export async function POST(req: Request) {
             });
 
         if (insertError) {
-            console.error('[GUEST_ACCESS] Insert error:', insertError);
+            logger.error('[GUEST_ACCESS] Insert error:', insertError);
             return NextResponse.json({ error: 'Failed to create access token' }, { status: 500 });
         }
 
@@ -89,7 +90,7 @@ export async function POST(req: Request) {
         });
 
     } catch (error: any) {
-        console.error('[GUEST_ACCESS] Unexpected error:', error);
+        logger.error('[GUEST_ACCESS] Unexpected error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
@@ -10,13 +11,13 @@ export async function GET() {
     
     if (userError || !user) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[API-AUTH] Unauthorized access attempt or getUser error:', userError?.message)
+        logger.warn('[API-AUTH] Unauthorized access attempt or getUser error:', userError?.message)
       }
       return NextResponse.json({ profile: null, error: 'Unauthorized' }, { status: 401 })
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('[API-AUTH] Authenticated user:', user.email)
+      logger.debug('[API-AUTH] Authenticated user:', user.email)
     }
 
     // Get profile
@@ -28,7 +29,7 @@ export async function GET() {
 
     if (profileError) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('[API-AUTH] Error getting profile:', profileError.message)
+        logger.error('[API-AUTH] Error getting profile:', profileError.message)
       }
       return NextResponse.json(
         { profile: null, error: 'Error al obtener perfil' },
@@ -39,7 +40,7 @@ export async function GET() {
     return NextResponse.json({ profile, error: null })
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error('[API-AUTH] Fatal error in profile API route:', error)
+      logger.error('[API-AUTH] Fatal error in profile API route:', error)
     }
     return NextResponse.json(
       { profile: null, error: 'Internal server error' },

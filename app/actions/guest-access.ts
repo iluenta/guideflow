@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { generateSecureToken } from '@/lib/security'
 import { addDays, subDays } from 'date-fns'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 /**
  * Creates a unique access token for a guest reservation.

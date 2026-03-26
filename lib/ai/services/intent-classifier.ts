@@ -1,4 +1,6 @@
 import { geminiREST } from '@/lib/ai/clients/gemini-rest'
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { logger } from "@/lib/logger";
 
 // ═══════════════════════════════════════════════════════
 // TIPOS
@@ -219,7 +221,7 @@ export async function classifyIntent(
         const validIntents: ChatIntent[] = [
             'emergency', 'error_code', 'appliance_problem', 'appliance_usage',
             'appliance_task', 'recommendation_food', 'recommendation_activity',
-            'recommendation_shopping', 'recommendation_other', 'property_info', 
+            'recommendation_shopping', 'recommendation_other', 'property_info',
             'off_topic', 'standard'
         ]
 
@@ -228,14 +230,11 @@ export async function classifyIntent(
             return DEFAULT_INTENT
         }
 
-        console.log('[INTENT] Classified:', {
+        logger.debug('[INTENT] Classified:', {
+            text: inputForClassifier.substring(0, 50),
             intent: result.intent,
-            foodSubtype: result.foodSubtype,
-            detectedTask: result.detectedTask,
-            detectedErrorCode: result.detectedErrorCode,
-            isGenericFood: result.isGenericFood,
             confidence: result.confidence
-        })
+        });
 
         return result
 

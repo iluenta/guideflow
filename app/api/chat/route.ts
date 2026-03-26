@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+import { type CoreMessage, streamText } from 'ai';
 import { createEdgeAdminClient } from '@/lib/supabase/edge';
 import { generateOpenAIEmbedding } from '@/lib/ai/clients/openai';
 import { streamGeminiREST } from '@/lib/ai/clients/gemini-rest';
@@ -50,9 +52,9 @@ export async function POST(req: Request) {
                 const now = new Date();
                 const expiresAt = propertyStatus.halt_expires_at ? new Date(propertyStatus.halt_expires_at) : null;
                 if (!expiresAt || now < expiresAt) {
-                    console.warn(`[SECURITY] 🛡️ Halted Property: ${pidToCheck}. Reason: ${propertyStatus.halt_reason}`);
+                    logger.warn(`[SECURITY] Halted property access attempt blocked`);
                     return new Response(JSON.stringify({
-                        error: 'Servicio temporalmente pausado por seguridad',
+                        error: 'Property suspended',
                         reason: 'property_halted',
                         haltReason: propertyStatus.halt_reason,
                         resetAt: expiresAt
@@ -143,7 +145,7 @@ export async function POST(req: Request) {
 
                 if (profile?.tenant_id === property?.tenant_id) {
                     propertyId = legacyPropertyId;
-                    console.log(`[SECURITY] ✅ Host session authorized for property: ${propertyId}`);
+                    logger.debug(`[SECURITY] Host session authorized for property`);
                 } else {
                     console.warn(`[SECURITY] 🛡️ Host ${user.id} attempted to access unauthorized property: ${legacyPropertyId}`);
                     return new Response(JSON.stringify({ error: 'No autorizado para esta propiedad' }), { status: 403 });
@@ -171,7 +173,7 @@ export async function POST(req: Request) {
                     const { text: translatedQuery, metrics } = await TranslationService.translate(
                         ragQuery, language, 'es', { propertyId, context: 'rag_query' }
                     );
-                    console.log(`[TRANSLATION] RAG Query:`, { cacheHit: metrics?.cacheHit || false, timeMs: metrics?.translationTimeMs || 0 });
+                    logger.debug(`[TRANSLATION] RAG Query processed`);
                     return translatedQuery;
                 } catch (err: any) {
                     console.warn('[TRANSLATION] RAG Query failed, using original:', err.message);
@@ -193,14 +195,14 @@ export async function POST(req: Request) {
         const detectedErrorCode = intent.detectedErrorCode;
         const detectedTask = intent.detectedTask || null  // ← NUEVO
 
-        console.log('[CHAT-DEBUG] Intent classified:', {
-            chatStrategy,
+        logger.debug('[CHAT-DEBUG] Intent classified:', {
+            text: lastMessage.substring(0, 50),
             intent: intent.intent,
-            detectedTask,
+            confidence: intent.confidence,
             foodSubtype: intent.foodSubtype,
             detectedErrorCode,
             isGenericFood: intent.isGenericFood,
-            confidence: intent.confidence
+            detectedTask
         });
 
         // ═══════════════════════════════════════════════════════
@@ -273,7 +275,7 @@ export async function POST(req: Request) {
             } else {
                 ragQuery = `${ragQuery} ${expansionTerms.join(' ')} recomendaciones zona`;
             }
-            console.log('[CHAT-DEBUG] Expanded recommendation query:', ragQuery);
+            logger.debug('[CHAT-DEBUG] Expanded recommendation query');
 
         } else if (isApplianceTaskQuery && detectedTask) {
             // ── NUEVO: appliance_task usa TASK_TO_CONTEXT para expandir el RAG ──
@@ -283,7 +285,7 @@ export async function POST(req: Request) {
             } else {
                 ragQuery = `${ragQuery} instrucciones pasos usar aparato`
             }
-            console.log('[CHAT-DEBUG] Task expansion:', { detectedTask, ragQuery: ragQuery.substring(0, 120) })
+            logger.debug('[CHAT-DEBUG] Task expansion processed');
 
         } else if (isApplianceUsageQuery) {
             // appliance_usage: el huésped pregunta por un aparato concreto
@@ -319,14 +321,14 @@ export async function POST(req: Request) {
                 const detectedFood = Object.keys(FOOD_TO_APPLIANCE).find(food => msg.includes(food))
                 const applianceExpansion = detectedFood ? FOOD_TO_APPLIANCE[detectedFood] : 'horno cocina vitrocerámica microondas'
                 ragQuery = `${ragQuery} ${applianceExpansion} instrucciones temperatura tiempo pasos`
-                console.log('[CHAT-DEBUG] Recipe expansion:', { detectedFood, applianceExpansion })
+                logger.debug('[CHAT-DEBUG] Recipe expansion processed');
             } else {
                 const expansionTerms = detectedAppliance
                     ? applianceHints[detectedAppliance]
                     : ['usar', 'instrucciones', 'pasos', 'cómo funciona']
                 ragQuery = `${ragQuery} ${expansionTerms.join(' ')}`
             }
-            console.log('[CHAT-DEBUG] Appliance expansion:', { detectedAppliance: lastMessage.substring(0, 30), ragQuery: ragQuery.substring(0, 120) })
+            logger.debug('[CHAT-DEBUG] Appliance expansion processed');
         }
 
         const questionEmbedding = await generateOpenAIEmbedding(ragQuery);
@@ -351,16 +353,7 @@ export async function POST(req: Request) {
 
         if (rpcError) console.error('[RPC ERROR]', rpcError);
 
-        console.log('[CHAT-DEBUG] RAG results:', {
-            totalChunks: relevantChunks?.length || 0,
-            strategy: chatStrategy,
-            threshold: matchThreshold,
-            topSimilarities: relevantChunks?.slice(0, 3).map((c: any) => ({
-                type: c.source_type,
-                similarity: c.similarity?.toFixed(3),
-                preview: c.content.substring(0, 60) + '...'
-            })) || []
-        });
+        logger.debug('[CHAT-DEBUG] RAG results processed');
 
         // ═══════════════════════════════════════════════════════
         // 4. DATOS ESTRUCTURADOS
@@ -405,10 +398,7 @@ export async function POST(req: Request) {
             const { data: recs } = await recsQuery;
             directRecommendations = recs || [];
 
-            console.log('[CHAT-DEBUG] Direct recs from DB:', {
-                count: directRecommendations.length,
-                requestedTypes: detectedTypes
-            });
+            logger.debug('[CHAT-DEBUG] Direct recs from DB processed');
         }
 
         const contactsData = criticalContext?.find((c: any) => c.category === 'contacts')?.content;
@@ -433,7 +423,7 @@ export async function POST(req: Request) {
         const allFoodRecs = directRecommendations.filter(r => ALL_FOOD_TYPES.includes(getType(r)));
         const foodCatsInDB = Array.from(new Set(allFoodRecs.map(r => getType(r))));
 
-        console.log('[CHAT-DEBUG] Recommended Categories:', foodCatsInDB);
+        logger.debug('[CHAT-DEBUG] Recommended Categories processed');
 
         const catLabelMap: Record<string, string> = {
             'restaurant': 'RESTAURANTES_GENERALES', 'restaurante': 'RESTAURANTES_GENERALES', 'restaurantes': 'RESTAURANTES_GENERALES',

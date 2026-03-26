@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logger } from '@/lib/logger';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.MAPBOX_API_KEY || process.env.MAPBOX_TOKEN;
 
@@ -70,7 +71,7 @@ export async function findPOI(lat: number, lon: number, type: string, bbox?: num
 
         const response = await axios.get(url, { params });
 
-        console.log(`[MAPBOX] POI Search URL [${type}]: ${url}?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, (v as any).toString()])).toString()}`);
+        logger.debug(`[MAPBOX] POI Search URL [${type}] executed`);
 
         const result = response.data.features?.find((f: any) => {
             const [rLon, rLat] = f.center;
@@ -84,7 +85,7 @@ export async function findPOI(lat: number, lon: number, type: string, bbox?: num
         const finalDist = getDistance(lat, lon, lat2, lon2);
 
         if (finalDist > 100) {
-            console.warn(`[MAPBOX] Rejecting result '${result.text}' because it is too far (${Math.round(finalDist)}km).`);
+            logger.warn(`[MAPBOX] Rejecting result '${result.text}' because it is too far`);
             return null;
         }
 

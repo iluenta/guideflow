@@ -1,5 +1,6 @@
 'use server'
 
+import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabase/server'
 import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/clients/openai'
 import { sanitizeUUID } from '@/lib/utils'
@@ -71,7 +72,7 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
         return
     }
 
-    console.log(`[RAG-SYNC] Syncing ${category} for property ${currentPropId}...`)
+    logger.debug(`[RAG-SYNC] Syncing ${category} for property ${currentPropId}...`)
 
     const sourceTypeMap: Record<string, string> = {
         'faqs': 'faq',
@@ -208,7 +209,7 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
         if (insError) {
             console.error(`[RAG-SYNC] Error indexing ${category}:`, insError.message)
         } else {
-            console.log(`[RAG-SYNC] SUCCESS: ${category} indexed.`)
+            logger.debug(`[RAG-SYNC] SUCCESS: ${category} indexed.`)
         }
 
     } catch (err: any) {
@@ -239,7 +240,7 @@ export async function syncManualToRAG(
         return
     }
 
-    console.log(`[RAG-SYNC-MANUAL] Syncing manual for ${applianceName} (${brand})...`)
+    logger.debug(`[RAG-SYNC-MANUAL] Syncing manual for ${applianceName} (${brand})...`)
 
     try {
         // 0. Fetch latest metadata to get host notes
@@ -294,7 +295,7 @@ export async function syncManualToRAG(
             throw insError
         }
 
-        console.log(`[RAG-SYNC-MANUAL] SUCCESS: ${contextEmbeddings.length} chunks indexed for ${applianceName}.`)
+        logger.debug(`[RAG-SYNC-MANUAL] SUCCESS: ${contextEmbeddings.length} chunks indexed for ${applianceName}.`)
     } catch (err: any) {
         console.error(`[RAG-SYNC-MANUAL] Sync failed for ${applianceName}:`, err.message)
     }

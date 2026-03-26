@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 import { geminiREST } from '@/lib/ai/clients/gemini-rest'
 import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/clients/openai'
 import { syncManualToRAG } from './rag-sync'
@@ -24,7 +25,7 @@ export async function enrichManualWithHostNotes(manualId: string, hostNotes: str
 
     if (fetchErr || !manual) throw new Error('Manual no encontrado')
 
-    console.log(`[ENRICH] Enriqueciendo manual ${manual.appliance_name} (${manual.brand})...`)
+    logger.debug(`[ENRICH] Enriqueciendo manual ${manual.appliance_name} (${manual.brand})...`)
 
     // 2. Prompt de fusión para Gemini
     const fusionPrompt = `Eres un redactor técnico experto. Tu tarea es integrar las "Notas del Anfitrión" en un "Manual Técnico" existente de forma natural y profesional.

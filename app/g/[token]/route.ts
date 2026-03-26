@@ -3,6 +3,7 @@ import { validateAccessToken } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function GET(
     request: NextRequest,
@@ -44,7 +45,7 @@ export async function GET(
         expires: expires,
     });
 
-    console.log(`[GUEST_ACTIVATION] Access granted for ${access.guest_name} at /${property.slug}`);
+    logger.warn(`[GUEST_ACTIVATION] Access granted for ${access.guest_name} at /${property.slug}`);
 
     // 4. Redirect to the slug page (no token in URL!)
     // We use a response object to set security headers like Referrer-Policy

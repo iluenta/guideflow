@@ -2,6 +2,7 @@
  * Generates a random, secure token for guest access.
  * Uses Web Crypto API for compatibility with Edge Runtime.
  */
+import { logger } from './logger';
 export function generateSecureToken(length: number = 24): string {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     const alphabetLength = chars.length;
@@ -50,13 +51,13 @@ export async function validateAccessToken(supabase: any, token: string, expected
         .single();
 
     if (error || !access) {
-        console.error('[SECURITY_LIB] Token lookup failed:', error?.message || 'Not found');
+        logger.error('[SECURITY_LIB] Token lookup failed:', error?.message || 'Not found');
         return { valid: false, reason: 'invalid_token' };
     }
 
     // Verify token is for the correct property
     if (expectedPropertyId && access.property_id !== expectedPropertyId) {
-        console.warn(`[SECURITY_LIB] Token property mismatch: expected ${expectedPropertyId}, got ${access.property_id}`);
+        logger.warn(`[SECURITY_LIB] Token property mismatch detected`);
         return { valid: false, reason: 'invalid_token' };
     }
 

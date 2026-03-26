@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { generateArrivalInstructions } from '../../../lib/arrival/generator-final';
-import { createClient } from '@/lib/supabase/server';
+import { streamGeminiREST } from '@/lib/ai/clients/gemini-rest';
+import { logger } from '@/lib/logger';
 import { RateLimiter } from '@/lib/security/rate-limiter';
 import { logSuspiciousActivity } from '@/lib/security';
 
@@ -39,7 +40,7 @@ async function detectZoneType(lat: number, lng: number, placesKey: string): Prom
     if (count >= 3) return { type: 'town', walkRadius: 4000, driveRadius: 15000, label: 'pueblo', preferCar: true };
     return { type: 'rural', walkRadius: 6000, driveRadius: 30000, label: 'zona rural', preferCar: true };
   } catch (e) {
-    console.warn('[ZONE] Detection failed, defaulting to city:', e);
+    logger.warn('[ZONE] Detection failed, defaulting to city:', e);
     return { type: 'city', walkRadius: 2000, driveRadius: 8000, label: 'ciudad', preferCar: false };
   }
 }
@@ -297,7 +298,7 @@ export async function POST(req: Request) {
     
     if (!user) {
       const ip = req.headers.get('x-forwarded-for') || 'unknown';
-      console.warn(`[AI-FILL] 🔐 401 Unauthorized attempt from IP: ${ip}`);
+      logger.warn(`[ZONE] Unauthorized attempt blocked`);
       // Internal logging only for now as we don't have a token here yet
       return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
     }
@@ -330,7 +331,7 @@ export async function POST(req: Request) {
       .single();
 
     if (propError || !property) {
-      console.error('[AI-FILL] Property not found:', propertyId, propError);
+      logger.error('[AI-FILL] Property check failed');
       return new Response(JSON.stringify({
         error: 'Propiedad no encontrada en la base de datos',
         debug: 'PROPERTY_NOT_FOUND',
@@ -375,7 +376,7 @@ export async function POST(req: Request) {
           existingData?.propertyParking
         );
         const arrivalT1 = Date.now();
-        console.log(`[PERF][route.ts] Arrival section "${section}" total: ${((arrivalT1 - arrivalT0) / 1000).toFixed(2)}s`);
+        logger.debug(`[PERF] Arrival section total time calculated`);
         return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
       } catch (err) {
         console.error('[AI-API] Arrival Error:', err);
@@ -419,7 +420,7 @@ export async function POST(req: Request) {
               console.warn(`[PLACES] Geocoding failed for "${addressToGeo}": ${geoData.status}`);
             }
           } else {
-            console.log(`[PLACES] Using coordinates from DB/State: ${lat}, ${lng}`);
+            logger.debug(`[PLACES] Using coordinates from DB/State: ${lat}, ${lng}`);
           }
 
           if (lat && lng) {
@@ -479,10 +480,10 @@ export async function POST(req: Request) {
               allPlacesResults = groupedPlaces[selectedCat];
             }
 
-            const tPlaces = Date.now(); console.log(`[PLACES] Total collected: ${allPlacesResults.length} (+${tPlaces - t0}ms total)`);
+            const tPlaces = Date.now(); logger.debug(`[PLACES] Total collected: ${allPlacesResults.length} (+${tPlaces - t0}ms total)`);
           }
         } catch (err) {
-          console.error('[PLACES] API Error:', err);
+          logger.error('[PLACES] API Error:', err);
         }
       }
 
@@ -577,7 +578,7 @@ REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1
           } catch (err: any) {
             lastErr = err;
             if (err.status === 429 || err.message?.includes('429')) {
-              console.warn(`[GEMINI] 429 detected, retry ${i+1}/3...`);
+              logger.warn(`[GEMINI] 429 detected, retry ${i+1}/3...`);
               await new Promise(r => setTimeout(r, 2000 * (i + 1)));
               continue;
             }
@@ -648,7 +649,7 @@ REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1
         // 3. ENRIQUECIMIENTO DE HORARIO (Google Place Details)
         if (verified && placeId && placesKey) {
           try {
-            console.log(`[AI-FILL] 🕒 Enriching ${rec.name} (ID: ${placeId})...`);
+            logger.debug(`[AI-FILL] 🕒 Enriching ${rec.name} (ID: ${placeId})...`);
             const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json` +
               `?place_id=${placeId}&fields=name,opening_hours,price_level,rating,user_ratings_total&language=es&key=${placesKey}`;
             const dd = await fetch(detailsUrl).then(r => r.json());
@@ -677,7 +678,7 @@ REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1
             if (result.rating !== undefined) rec.rating = result.rating;
 
           } catch (e) {
-            console.warn(`[AI-FILL] Error fetching enriched hours for ${rec.name}:`, e);
+            logger.warn(`[AI-FILL] Error fetching enriched hours for ${rec.name}:`, e);
           }
         }
 
@@ -716,7 +717,7 @@ REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1
         };
       }));
 
-      console.log(`[AI-FILL] ✅ Final recommendations ready. First 2 distances:`, recommendations.slice(0, 2).map(r => r.distance));
+      logger.debug(`[AI-FILL] ✅ Final recommendations ready. First 2 distances:`, recommendations.slice(0, 2).map(r => r.distance));
 
       // Deduplicar: preferido por google_place_id, secundario por nombre
       const seenIds = new Set();
@@ -914,7 +915,7 @@ JSON:`;
     });
 
   } catch (error: any) {
-    console.error('[AI-API] Global Error:', error);
+    logger.error('[AI-API] Global Error:', error);
     return new Response(JSON.stringify({ error: 'Error interno', details: error.message }), {
       status: 500, headers: { 'Content-Type': 'application/json' }
     });

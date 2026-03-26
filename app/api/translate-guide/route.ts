@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { Translator } from '@/lib/gemini-i18n';
 import { validateAccessToken, logSuspiciousActivity } from '@/lib/security';
 import { createClient } from '@/lib/supabase/server';
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
         }
         
         const ip = req.headers.get('x-forwarded-for') || 'unknown';
-        console.log(`[API_TRANSLATE] 📥 Request for "${body.targetLanguage || '?'}" | Batch: ${!!body.batch} | HasToken: ${!!body.accessToken}`);
+        logger.debug(`[TRANSLATE] Request for "${body.targetLanguage || '?'}" | Batch: ${!!body.batch} | HasToken: ${!!body.accessToken}`);
 
         // 1. Validation with Zod
         const result = translateSchema.safeParse(body);
