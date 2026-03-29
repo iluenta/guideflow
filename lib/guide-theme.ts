@@ -55,6 +55,8 @@ export interface GuideThemeClasses {
     guideCardChevron: string
     /** Concierge helper text below search bar */
     conciergeText: string
+    /** Accent text color for active tabs and highlighted text bits */
+    accentText: string
 }
 
 // ── Type alias for backward compat with color-harmonizer.ts ──
@@ -86,6 +88,7 @@ const modern: GuideThemeClasses = {
     guideCardBg:      'bg-white border border-gray-100 shadow-sm',
     guideCardChevron: 'bg-gray-100 text-gray-700 group-hover:bg-gray-900 group-hover:text-white',
     conciergeText:    'text-gray-700 font-bold tracking-widest',
+    accentText:       'text-gray-900',
 }
 
 // ── Urban Dark ─────────────────────────────────────────────────
@@ -114,6 +117,7 @@ const urban: GuideThemeClasses = {
     guideCardBg:      'bg-[#1C1C1C] border border-[#333]',
     guideCardChevron: 'bg-[#0F0F0F] border border-[#555] text-[#555] group-hover:text-[#00E5FF]',
     conciergeText:    'text-[#00E5FF] font-bold tracking-[0.2em] uppercase',
+    accentText:       'text-[#00E5FF]',
 }
 
 // ── Coastal Breeze ─────────────────────────────────────────────────
@@ -148,6 +152,7 @@ const coastal: GuideThemeClasses = {
     guideCardBg:      'bg-white border border-[#E0F2FE] rounded-3xl shadow-sm',
     guideCardChevron: 'bg-[#F0F9FF] text-[#BAE6FD] group-hover:bg-[#0EA5E9] group-hover:text-white rounded-full',
     conciergeText:    'text-[#0EA5E9] font-extrabold tracking-widest uppercase',
+    accentText:       'text-[#0EA5E9]',
 }
 
 // ── Warm Boutique ─────────────────────────────────────────────────
@@ -176,6 +181,7 @@ const warm: GuideThemeClasses = {
     guideCardBg:      'bg-white border border-[#E8D5BE] shadow-sm',
     guideCardChevron: 'bg-[#FEF3E2] text-[#C4956A] group-hover:bg-[#8B5E3C] group-hover:text-white',
     conciergeText:    'text-[#8B5E3C] font-bold tracking-widest uppercase',
+    accentText:       'text-[#8B5E3C]',
 }
 
 // ── Luxury Estate ─────────────────────────────────────────────────
@@ -204,6 +210,7 @@ const luxury: GuideThemeClasses = {
     guideCardBg:      'bg-white border border-[#D4C5A9]',
     guideCardChevron: 'bg-[#F9F7F4] border border-[#D4C5A9] text-[#C9A84C] group-hover:bg-[#1B2A4A] group-hover:text-[#C9A84C]',
     conciergeText:    'text-[#8A8070] font-medium tracking-[0.25em] uppercase',
+    accentText:       'text-[#1B2A4A]',
 }
 
 // ── Registry ─────────────────────────────────────────────────

@@ -3,7 +3,6 @@
 import React from 'react';
 import { Home, UtensilsCrossed, Theater, Info, MessageSquare } from 'lucide-react';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
-import { cn } from '@/lib/utils';
 import { getGuideTheme } from '@/lib/guide-theme';
 
 interface BottomNavProps {
@@ -44,27 +43,44 @@ export function BottomNav({
     const hasLeisure = recommendations.filter(r => r.type === 'activity' || r.type === 'park' || r.type === 'museum' || r.type === 'landmark').length > 0;
 
     const tabs = [
-        { id: 'hub', icon: Home, label: labelHome, show: true },
-        { id: 'eat', icon: UtensilsCrossed, label: labelEat, show: hasEat },
-        { id: 'leisure', icon: Theater, label: labelLeisure, show: hasLeisure },
-        { id: 'info', icon: Info, label: labelInfo, show: hasInfo },
-        { id: 'chat', icon: MessageSquare, label: labelChat, show: true }
+        { id: 'hub', icon: Home, label: labelHome || 'Inicio', show: true },
+        { id: 'eat', icon: UtensilsCrossed, label: labelEat || 'Comer', show: hasEat },
+        { id: 'leisure', icon: Theater, label: labelLeisure || 'Ocio', show: hasLeisure },
+        { id: 'info', icon: Info, label: labelInfo || 'Info', show: hasInfo },
+        { id: 'chat', icon: MessageSquare, label: labelChat || 'Chat', show: true }
     ].filter(tab => tab.show);
+
     const handleTabClick = (tabId: string) => {
-        if (onTabChange) {
-            onTabChange(tabId);
-        }
+        if (onTabChange) onTabChange(tabId);
     };
 
-    const triggerHaptic = (pattern: number | number[] = 10) => {
-        if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-            window.navigator.vibrate(pattern);
-        }
-    };
+    // Resolve accent color from theme for active tab
+    const accentColor = t?.accentText?.match(/text-\[([^\]]+)\]/)?.[1] || '#0EA5E9';
 
     return (
-        <nav className={cn("fixed bottom-0 left-0 right-0 backdrop-blur-md border-t shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.08)] pb-safe z-40 transition-colors bg-opacity-95", t.pageBg, t.searchBorder)}>
-            <div className="max-w-md mx-auto flex items-center justify-around px-1 h-16">
+        <nav style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '64px',
+            backgroundColor: '#ffffff',
+            borderTop: '1px solid #e5e7eb',
+            boxShadow: '0 -4px 20px -4px rgba(0,0,0,0.1)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+        }}>
+            <div style={{
+                width: '100%',
+                maxWidth: '448px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-around',
+                height: '100%',
+                padding: '0 4px',
+            }}>
                 {tabs.map((tab) => {
                     const isActive = tab.id === activeTab;
                     const Icon = tab.icon;
@@ -72,37 +88,43 @@ export function BottomNav({
                     return (
                         <button
                             key={tab.id}
-                            onClick={() => {
-                                handleTabClick(tab.id);
-                                triggerHaptic([50, 30, 50]);
+                            onClick={() => handleTabClick(tab.id)}
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                flex: 1,
+                                height: '100%',
+                                border: 'none',
+                                background: 'transparent',
+                                cursor: 'pointer',
+                                color: isActive ? accentColor : '#6b7280',
+                                fontWeight: isActive ? 700 : 400,
+                                transition: 'color 0.2s',
+                                position: 'relative',
                             }}
-                            className={cn(
-                                "relative flex flex-col items-center justify-center gap-1.5 flex-1 h-full transition-all duration-200",
-                                isActive ? t.chipIconColor : t.sectionLabel
-                            )}
                         >
-                            {/* Active Tab Top Bar */}
                             {isActive && (
-                                <span 
-                                    className="absolute top-0 left-[20%] right-[20%] h-[3px] rounded-b-[3px] animate-in fade-in slide-in-from-top-1 duration-300" 
-                                    style={{ backgroundColor: 'currentColor' }}
-                                />
+                                <span style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: '20%',
+                                    right: '20%',
+                                    height: '3px',
+                                    borderRadius: '0 0 3px 3px',
+                                    backgroundColor: accentColor,
+                                }} />
                             )}
-
-                            <div className="relative flex items-center justify-center h-6 w-6">
-                                <Icon
-                                    className="w-6 h-6 transition-all duration-300"
-                                    style={{ color: 'currentColor' }}
-                                    strokeWidth={isActive ? 2.5 : 2}
-                                />
-                            </div>
-
-                            <span
-                                className={cn(
-                                    "text-[10px] font-bold tracking-tight transition-all duration-200",
-                                    isActive ? "opacity-100" : "opacity-80"
-                                )}
-                            >
+                            <Icon
+                                style={{ width: 24, height: 24, strokeWidth: isActive ? 2.5 : 2 }}
+                            />
+                            <span style={{
+                                fontSize: '10px',
+                                fontWeight: isActive ? 700 : 500,
+                                letterSpacing: '-0.02em',
+                            }}>
                                 {tab.label}
                             </span>
                         </button>

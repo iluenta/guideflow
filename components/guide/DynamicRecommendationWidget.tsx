@@ -23,6 +23,7 @@ interface DynamicRecommendationWidgetProps {
         sectionLabel?: string;
         searchBorder?: string;
         chipLayout?: string;
+        accentText?: string;
     };
 }
 
@@ -282,7 +283,7 @@ export function DynamicRecommendationWidget({
             <Card className={cn('overflow-hidden border-none shadow-[0_10px_30px_rgba(0,0,0,0.08)]', theme.cardBg)}>
                 <div className="p-5">
                     <div className="flex items-center justify-between mb-4">
-                        <div className={cn('flex items-center gap-2', theme.chipIconColor)}>
+                        <div className={cn('flex items-center gap-2', theme.accentText || theme.chipIconColor)}>
                             <Clock size={14} strokeWidth={2.5} />
                             <span className="text-[10px] font-black tracking-widest uppercase" suppressHydrationWarning>
                                 {timeStr} • {localizedGreeting} {emoji}

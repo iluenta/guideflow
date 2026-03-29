@@ -217,7 +217,7 @@ export function GuideHome({
                         {hasWifi && (
                             <button
                                 onClick={() => onNavigate('wifi')}
-                                className={cn('flex flex-col items-center justify-center p-4 rounded-2xl shadow-sm active:scale-95 transition-all', t.chipBg, t.chipIconColor)}
+                                className={cn('flex flex-col items-center justify-center p-4 rounded-2xl shadow-sm active:scale-95 transition-all', t.chipBg, t.accentText)}
                             >
                                 <Wifi size={24} className="mb-2" />
                                 <span className={cn('text-[9px] font-black tracking-widest uppercase', t.chipLabel)}>
@@ -265,7 +265,7 @@ export function GuideHome({
                                             <p className={cn('text-[11px]', t.guideCardSubtitle)}>{action.sub}</p>
                                         </div>
                                     </div>
-                                    <ChevronRight size={16} className={cn('group-hover:translate-x-1 transition-all', t.chipIconColor)} />
+                                    <ChevronRight size={16} className={cn('group-hover:translate-x-1 transition-all', t.accentText)} />
                                 </div>
                             ))}
                         </div>
@@ -288,7 +288,7 @@ export function GuideHome({
                                 onClick={() => onNavigate(navItem.id)}
                                 className={cn('flex flex-col items-center justify-center p-4 rounded-xl active:scale-95 transition-all group border', t.chipBg)}
                             >
-                                <navItem.icon size={20} className={cn('mb-2 group-hover:scale-110 transition-colors', t.chipIconColor)} />
+                                <navItem.icon size={20} className={cn('mb-2 group-hover:scale-110 transition-colors', t.accentText)} />
                                 <span className={cn('text-[9px] font-black uppercase tracking-widest', t.chipLabel)}>
                                     {navItem.label}
                                 </span>

@@ -2,9 +2,10 @@
 
 import { useLocalizedContent, seedTranslationCache } from '@/hooks/useLocalizedContent';
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { Menu, Bot } from 'lucide-react';
+import { Menu, Bot, MessageSquare } from 'lucide-react';
 import supabaseLoader from '@/lib/image-loader';
 
 // ─── Carga estática: SOLO lo visible en el primer render ──────────────────────
@@ -52,7 +53,7 @@ const MenuGrid = dynamic(
 );
 const GuestChat = dynamic(
     () => import('@/components/guide/GuestChat').then(m => ({ default: m.GuestChat })),
-    { loading: () => <div className="fixed bottom-24 right-5 w-14 h-14 bg-primary/20 rounded-full animate-pulse shadow-2xl z-50 flex items-center justify-center"><Bot className="w-7 h-7 text-primary/40" /></div>, ssr: false }
+    { loading: () => <div className="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-tr from-primary/50 to-primary/20 rounded-full animate-pulse shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-4 ring-primary/10 z-50 flex items-center justify-center"><MessageSquare className="w-6 h-6 text-primary/40" /></div>, ssr: false }
 );
 
 function ViewSkeleton() {
@@ -341,56 +342,65 @@ export function GuideViewContainer({
         }
     };
 
+    const [mounted, setMounted] = React.useState(false);
+    useEffect(() => { setMounted(true); }, []);
+
     return (
-        <div className="w-full max-w-md mx-auto min-h-screen bg-background shadow-2xl relative">
-            <main className="overflow-x-hidden pb-24">
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={currentPage || 'home'}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.25, ease: 'easeOut' }}
-                    >
-                        {renderCurrentView()}
-                    </motion.div>
-                </AnimatePresence>
-            </main>
-            <BottomNav
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-                currentLanguage={language}
-                accessToken={accessToken}
-                propertyId={property.id}
-                manuals={displayManuals}
-                recommendations={displayRecommendations}
-                context={displayContext}
-                sections={sections}
-                themeId={themeId}
-            />
-            {chatMounted ? (
-                <GuestChat
-                    propertyId={property.id}
-                    propertyName={property.name}
-                    currentLanguage={language}
-                    accessToken={accessToken}
-                    initialOpen={true}
-                    initialQuery={pendingChatQuery}
-                />
-            ) : (
-                <button
-                    onClick={handleChatOpen}
-                    className="fixed bottom-24 right-5 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50"
-                    aria-label="Abrir asistente de ayuda"
-                >
-                    <div className="relative">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="11" width="18" height="10" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4" /><line x1="8" y1="16" x2="8" y2="16" /><line x1="16" y1="16" x2="16" y2="16" />
-                        </svg>
-                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse" />
-                    </div>
-                </button>
+        <>
+            <div className="w-full max-w-md mx-auto min-h-screen bg-background shadow-2xl relative">
+                <main className="overflow-x-hidden pb-24">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={currentPage || 'home'}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                        >
+                            {renderCurrentView()}
+                        </motion.div>
+                    </AnimatePresence>
+                </main>
+            </div>
+            {mounted && createPortal(
+                <>
+                    <BottomNav
+                        activeTab={activeTab}
+                        onTabChange={handleTabChange}
+                        currentLanguage={language}
+                        accessToken={accessToken}
+                        propertyId={property.id}
+                        manuals={displayManuals}
+                        recommendations={displayRecommendations}
+                        context={displayContext}
+                        sections={sections}
+                        themeId={themeId}
+                    />
+                    {chatMounted ? (
+                        <GuestChat
+                            propertyId={property.id}
+                            propertyName={property.name}
+                            currentLanguage={language}
+                            accessToken={accessToken}
+                            initialOpen={true}
+                            initialQuery={pendingChatQuery}
+                        />
+                    ) : (
+                        <button
+                            onClick={handleChatOpen}
+                            style={{ position: 'fixed', bottom: '88px', right: '20px', width: '56px', height: '56px', zIndex: 10000 }}
+                            className="bg-gradient-to-tr from-primary to-primary/80 text-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-4 ring-primary/20 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95"
+                            aria-label="Abrir asistente de ayuda"
+                        >
+                            <div className="relative">
+                                <MessageSquare className="w-6 h-6" strokeWidth={2.5} />
+                                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full animate-pulse shadow-sm" />
+                            </div>
+                        </button>
+                    )}
+                </>,
+                document.body
             )}
-        </div>
+        </>
     );
 }
