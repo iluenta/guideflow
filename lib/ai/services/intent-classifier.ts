@@ -12,6 +12,7 @@ export type ChatIntent =
     | 'appliance_problem'
     | 'appliance_usage'     // Cómo usar un aparato: "¿cómo pongo la lavadora?"
     | 'appliance_task'      // NUEVO: quiere hacer una tarea: "tengo toallas sucias"
+    | 'manual_request'      // NUEVO: pide el manual completo
     | 'recommendation_food'
     | 'recommendation_activity'
     | 'recommendation_shopping'
@@ -123,11 +124,13 @@ VALORES PERMITIDOS para "intent":
 - "appliance_problem": electrodoméstico roto, no funciona, no enciende, hace ruido, avería
 - "appliance_usage": el huésped pregunta CÓMO FUNCIONA o CÓMO SE USA un aparato concreto.
   ej: "¿cómo pongo la lavadora?", "cómo uso el horno", "cómo funciona la cafetera"
+- "manual_request": el huésped pide explícitamente el manual, todas las instrucciones, o toda la información técnica de un aparato.
+  ej: "échame el manual", "échame el manual de la lavadora", "dame el manual", "dame todas las instrucciones", "explícame todo sobre la lavadora"
 - "appliance_task": el huésped quiere REALIZAR UNA TAREA que implica usar un aparato,
   aunque NO mencione el aparato directamente.
   ej: "tengo toallas sucias", "quiero hacer una pizza", "voy a preparar el desayuno",
   "tengo ropa mojada", "me apetece un café", "quiero cocinar algo", "hace mucho calor"
-  DIFERENCIA CLAVE: en appliance_usage pregunta POR EL APARATO, en appliance_task pregunta POR LA TAREA.
+  DIFERENCIA CLAVE: en appliance_usage pregunta POR EL APARATO, en appliance_task pregunta POR LA TAREA. En manual_request pide el manual COMPLETO.
 - "recommendation_food": quiere SALIR a comer/cenar/desayunar, busca restaurante/bar/cafetería
 - "recommendation_activity": qué hacer fuera, ocio, turismo, museos, visitas
 - "recommendation_shopping": tiendas, compras, mercado, supermercado
@@ -220,7 +223,7 @@ export async function classifyIntent(
 
         const validIntents: ChatIntent[] = [
             'emergency', 'error_code', 'appliance_problem', 'appliance_usage',
-            'appliance_task', 'recommendation_food', 'recommendation_activity',
+            'appliance_task', 'manual_request', 'recommendation_food', 'recommendation_activity',
             'recommendation_shopping', 'recommendation_other', 'property_info',
             'off_topic', 'standard'
         ]
@@ -254,7 +257,8 @@ export function intentToStrategy(intent: ClassifiedIntent): string {
         case 'error_code': return 'error_code'
         case 'appliance_problem':
         case 'appliance_usage':
-        case 'appliance_task': return 'appliance'
+        case 'appliance_task':
+        case 'manual_request': return 'appliance'
         case 'recommendation_food':
         case 'recommendation_activity':
         case 'recommendation_shopping':

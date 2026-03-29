@@ -293,6 +293,7 @@ export async function POST(req: Request) {
     }
 
     // ── AUTHENTICATION CHECK ─────────────────────────────────────────────────
+    const { createClient } = await import('@/lib/supabase/server');
     const supabaseUser = await createClient();
     const { data: { user } } = await supabaseUser.auth.getUser();
     
