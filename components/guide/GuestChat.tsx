@@ -410,7 +410,8 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                                 // maps_place: — high-precision map pill using Place ID
                                                                 if (href?.startsWith('maps_place:')) {
                                                                     const placeId = decodeURIComponent(href.slice('maps_place:'.length))
-                                                                    const mapsUrl = `https://www.google.com/maps/place/?q=place_id:${placeId}`
+                                                                    const queryName = encodeURIComponent(String(children));
+                                                                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${queryName}&query_place_id=${placeId}`
 
                                                                     return (
                                                                         <a
