@@ -12,6 +12,7 @@ import supabaseLoader from '@/lib/image-loader';
 import { GuideHome } from '@/components/guide/GuideHome';
 import { GuideWelcome } from '@/components/guide/GuideWelcome';
 import { BottomNav } from '@/components/guide/BottomNav';
+import { ContactModal } from '@/components/guide/ContactModal';
 import { AnimatePresence, motion } from 'framer-motion';
 
 // ─── Carga lazy: ssr:false evita que Next incluya estos chunks en el bundle SSR
@@ -117,10 +118,11 @@ export function GuideViewContainer({
     }, [initialTranslations, initialLanguage, property.id]);
 
     const [currentPage, setCurrentPage] = useState<string | null>('welcome');
-    const [activeTab, setActiveTab] = useState('hub');
+    const [activeTab, setActiveTab] = useState('welcome');
     const [language, setLanguage] = useState<string>(initialLanguage);
     const [navigationPayload, setNavigationPayload] = useState<any>(null);
     const [chatMounted, setChatMounted] = useState(false);
+    const [isContactModalOpen, setIsContactModalOpen] = useState(false);
     const [pendingChatQuery, setPendingChatQuery] = useState<string | undefined>(undefined);
 
     const cacheKey = `guide_data_${property.id}`;
@@ -143,6 +145,8 @@ export function GuideViewContainer({
     const displayContext = context || localData?.context || [];
     const displayManuals = manuals || localData?.manuals || [];
     const displayRecommendations = recommendations || localData?.recommendations || [];
+    
+    const contactsData = displayContext?.find((c: any) => c.category === 'contacts')?.content || {};
 
     const welcomeData = displayContext?.find((c: any) => c.category === 'welcome')?.content;
     const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', language, 'ui_label', accessToken, property.id);
@@ -158,8 +162,9 @@ export function GuideViewContainer({
     const handleNavigate = (pageId: string, payload?: any) => {
         setCurrentPage(pageId);
         setNavigationPayload(payload || null);
-        if (pageId === 'welcome') setActiveTab('hub');
+        if (pageId === 'welcome') setActiveTab('welcome');
         else if (pageId === 'home' || pageId === 'assistant') setActiveTab('hub');
+        else if (pageId === 'emergency') setActiveTab('emergency');
         else if (pageId === 'eat' || pageId === 'food') setActiveTab('eat');
         else if (['do', 'things-do', 'leisure'].includes(pageId)) setActiveTab('leisure');
         else if (['shop', 'shopping', 'compras'].includes(pageId)) setActiveTab('leisure');
@@ -172,8 +177,11 @@ export function GuideViewContainer({
 
     const handleTabChange = (tabId: string) => {
         if (tabId === 'chat') { handleChatOpen(); return; }
+        if (tabId === 'contact') { setIsContactModalOpen(true); return; }
         setActiveTab(tabId);
-        if (tabId === 'hub') setCurrentPage('home');
+        if (tabId === 'welcome') setCurrentPage('welcome');
+        else if (tabId === 'hub') setCurrentPage('home');
+        else if (tabId === 'emergency') setCurrentPage('emergency');
         else if (tabId === 'eat') setCurrentPage('eat');
         else if (tabId === 'leisure') setCurrentPage('do');
         else if (tabId === 'info') setCurrentPage('manuals');
@@ -374,6 +382,15 @@ export function GuideViewContainer({
                         recommendations={displayRecommendations}
                         context={displayContext}
                         sections={sections}
+                        themeId={themeId}
+                    />
+                    <ContactModal
+                        isOpen={isContactModalOpen}
+                        onClose={() => setIsContactModalOpen(false)}
+                        contactsData={contactsData}
+                        currentLanguage={language}
+                        accessToken={accessToken}
+                        propertyId={property.id}
                         themeId={themeId}
                     />
                     {chatMounted ? (

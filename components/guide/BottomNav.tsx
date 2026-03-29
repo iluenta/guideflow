@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Home, UtensilsCrossed, Theater, Info, MessageSquare } from 'lucide-react';
+import { Home, BookOpen, UtensilsCrossed, Theater, HeartPulse, UserCircle2 } from 'lucide-react';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { getGuideTheme } from '@/lib/guide-theme';
 
@@ -29,10 +29,11 @@ export function BottomNav({
     const t = getGuideTheme(themeId);
 
     const { content: labelHome } = useLocalizedContent('Inicio', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelGuia } = useLocalizedContent('Guía', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelEat } = useLocalizedContent('Comer', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelLeisure } = useLocalizedContent('Ocio', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelInfo } = useLocalizedContent('Info', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelChat } = useLocalizedContent('Chat', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelEmergency } = useLocalizedContent('SOS', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelContact } = useLocalizedContent('Contacto', currentLanguage, 'ui_label', accessToken, propertyId);
 
     const hasManuals = manuals.length > 0;
     const rulesContext = context?.find(c => c.category === 'rules')?.content;
@@ -43,11 +44,12 @@ export function BottomNav({
     const hasLeisure = recommendations.filter(r => r.type === 'activity' || r.type === 'park' || r.type === 'museum' || r.type === 'landmark').length > 0;
 
     const tabs = [
-        { id: 'hub', icon: Home, label: labelHome || 'Inicio', show: true },
+        { id: 'welcome', icon: Home, label: labelHome || 'Inicio', show: true },
+        { id: 'hub', icon: BookOpen, label: labelGuia || 'Guía', show: true },
         { id: 'eat', icon: UtensilsCrossed, label: labelEat || 'Comer', show: hasEat },
         { id: 'leisure', icon: Theater, label: labelLeisure || 'Ocio', show: hasLeisure },
-        { id: 'info', icon: Info, label: labelInfo || 'Info', show: hasInfo },
-        { id: 'chat', icon: MessageSquare, label: labelChat || 'Chat', show: true }
+        { id: 'emergency', icon: HeartPulse, label: labelEmergency || 'SOS', show: true },
+        { id: 'contact', icon: UserCircle2, label: labelContact || 'Contacto', show: true }
     ].filter(tab => tab.show);
 
     const handleTabClick = (tabId: string) => {

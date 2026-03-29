@@ -122,11 +122,9 @@ export function GuideWelcome({
     // Recomendaciones
     const EAT_SET  = new Set(['restaurantes','italiano','mediterraneo','hamburguesas','asiatico','alta_cocina','internacional','desayuno','restaurante','cafe','bar','food','comida','tapas']);
     const DO_SET   = new Set(['naturaleza','cultura','ocio','relax','activity','actividad','actividades','park','parque','museum','museo','landmark','experiencias','experience']);
-    const SHOP_SET = new Set(['compras','shopping','market','mercado','pharmacy','farmacia','supermarket','supermercado','supermercados']);
     const getRType = (r: any) => (r.type || r.category || '').toLowerCase();
     const eatRecs  = recommendations.filter(r => EAT_SET.has(getRType(r)));
     const doRecs   = recommendations.filter(r => DO_SET.has(getRType(r)));
-    const shopRecs = recommendations.filter(r => SHOP_SET.has(getRType(r)));
 
     const locationName = location.split(',')[0].trim();
 
@@ -141,11 +139,8 @@ export function GuideWelcome({
     const { content: labelCheckout }           = useLocalizedContent('Check-out',                 currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelComoLlegar }         = useLocalizedContent('Cómo llegar',               currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelDescubre }           = useLocalizedContent(`Descubre ${locationName}`,  currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelGastronomia }        = useLocalizedContent('Gastronomía',               currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelGastronomia }        = useLocalizedContent('Dónde comer...',            currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelQueHacer }           = useLocalizedContent('Qué hacer',                 currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelCompras }            = useLocalizedContent('Compras',                   currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelTuEstancia }         = useLocalizedContent('Tu Estancia',               currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelGuiaCasa }           = useLocalizedContent('Guía de la Casa',           currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelPoweredBy }          = useLocalizedContent('Desarrollado por',          currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelDondePuedoAparcar }  = useLocalizedContent('¿Dónde puedo aparcar?',    currentLanguage, 'ui_label', accessToken, propertyId);
 
@@ -407,7 +402,7 @@ export function GuideWelcome({
             </motion.div>
 
             {/* ── Descubre la zona ── */}
-            {(eatRecs.length > 0 || doRecs.length > 0 || shopRecs.length > 0) && (
+            {(eatRecs.length > 0 || doRecs.length > 0) && (
                 <motion.div variants={item} className="px-5 mt-10">
                     <h2 className={cn("text-[10px] font-bold tracking-widest uppercase mb-4", t.sectionLabel)}>
                         {labelDescubre}
@@ -427,54 +422,9 @@ export function GuideWelcome({
                                 <span className="absolute bottom-3 left-3 text-white text-xs font-bold">{labelQueHacer}</span>
                             </div>
                         )}
-                        {shopRecs.length > 0 && (
-                            <div onClick={() => onNavigate('shop')} className={cn("relative h-28 overflow-hidden shadow-sm cursor-pointer active:scale-[0.98] transition-all", t.chipLayout === 'stacked' ? 'rounded-3xl' : themeId === 'urban' ? '' : 'rounded-2xl')}>
-                                <img src="https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&h=300&fit=crop" className="w-full h-full object-cover" alt={labelCompras} />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                                <span className="absolute bottom-3 left-3 text-white text-xs font-bold">{labelCompras}</span>
-                            </div>
-                        )}
                     </div>
                 </motion.div>
-            )}
-
-            <motion.div variants={item} className="px-5 mt-10 mb-6">
-                {/* Luxury: decorative divider lines around label like reference */}
-                {themeId === 'luxury' ? (
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="h-px flex-1 bg-[#C9A84C]/30" />
-                        <h2 className={cn("text-[9px] font-medium tracking-[0.25em] uppercase", t.sectionLabel)}>
-                            {labelTuEstancia}
-                        </h2>
-                        <div className="h-px flex-1 bg-[#C9A84C]/30" />
-                    </div>
-                ) : (
-                    <h2 className={cn("text-[10px] font-bold tracking-widest uppercase mb-4", t.sectionLabel)}>
-                        {labelTuEstancia}
-                    </h2>
-                )}
-                <button
-                    onClick={onOpenGuide}
-                    className={cn(
-                        "w-full p-5 flex items-center justify-between shadow-sm border active:scale-[0.99] transition-all",
-                        // Theme-aware corner radius
-                        t.chipLayout === 'stacked' ? 'rounded-3xl' :
-                        themeId === 'urban' || themeId === 'luxury' ? '' :
-                        'rounded-[20px]',
-                        t.guideCardBg
-                    )}
-                >
-                    <div className="flex items-center gap-4">
-                        <div className={cn("h-10 w-10 flex items-center justify-center rounded-full", t.chipIconBg)}>
-                            <Info className={cn("h-5 w-5", t.chipIconColor)} strokeWidth={1.5} />
-                        </div>
-                        <span className={cn("text-base font-bold", t.guideCardTitle)}>{labelGuiaCasa}</span>
-                    </div>
-                    <ChevronRight className={cn("h-5 w-5", t.accentText)} />
-                </button>
-            </motion.div>
-
-            {/* ── Footer ── */}
+            )}            {/* ── Footer ── */}
             <motion.div variants={item} className="mt-6 text-center opacity-40 pb-4">
                 <p className={cn("text-[8px] font-black tracking-[0.4em] uppercase", t.chipLabel)}>
                     {labelPoweredBy} GuideFlow
