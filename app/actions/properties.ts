@@ -195,8 +195,9 @@ export async function createProperty(formData: Partial<Property>) {
     // Get tenant_id with robust fallback
     const tenant_id = await getTenantId(supabase, user)
 
-    if (!tenant_id) {
-        throw new Error('Usuario sin tenant asignado')
+    // Validate required fields
+    if (!formData.name?.trim()) {
+        throw new Error('El nombre del alojamiento es obligatorio')
     }
 
     // Auto-generate slug if missing
@@ -245,6 +246,11 @@ export async function updateProperty(id: string, formData: Partial<Property>) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
+
+    // Validate required fields
+    if (!formData.name?.trim()) {
+        throw new Error('El nombre del alojamiento es obligatorio')
+    }
 
     // Auto-generate slug if it's missing (e.g., manually cleared or first-time sync)
     if (!formData.slug && formData.name) {

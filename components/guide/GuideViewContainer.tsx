@@ -10,7 +10,7 @@ import supabaseLoader from '@/lib/image-loader';
 
 // ─── Carga estática: SOLO lo visible en el primer render ──────────────────────
 import { GuideHome } from '@/components/guide/GuideHome';
-import { ModernWelcome } from '@/components/guide/ModernWelcome';
+import { GuideWelcome } from '@/components/guide/GuideWelcome';
 import { BottomNav } from '@/components/guide/BottomNav';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -200,7 +200,7 @@ export function GuideViewContainer({
     const renderCurrentView = () => {
         if (currentPage === 'welcome') {
             return (
-                <ModernWelcome
+                <GuideWelcome
                     propertyName={property.name}
                     heroImage={property.main_image_url || branding?.hero_image_url || ''}
                     location={property.city || ''}

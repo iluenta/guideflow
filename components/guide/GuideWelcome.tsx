@@ -1,283 +1,485 @@
 'use client';
 
 import React from 'react';
-import { Variants, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-    Search,
+    Globe,
     Wifi,
-    Utensils,
     Key,
+    Clock,
     MapPin,
+    Info,
     ChevronRight,
-    Sparkles,
-    ArrowRight
+    ArrowLeft,
 } from 'lucide-react';
 import Image from 'next/image';
-import { LanguageSelector } from '@/components/guide/LanguageSelector';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
-import { getGuideTheme } from '@/lib/guide-theme';
 import { cn } from '@/lib/utils';
 import supabaseLoader from '@/lib/image-loader';
-
+import { DynamicRecommendationWidget } from './DynamicRecommendationWidget';
+import { WeatherWidgetMini } from './WeatherWidgetMini';
+import { LanguageSelector } from './LanguageSelector';
+import { getGuideTheme } from '@/lib/guide-theme';
 
 interface GuideWelcomeProps {
     propertyName: string;
     heroImage: string;
     location: string;
+    onBack: () => void;
     onOpenGuide: () => void;
-    onNavigate: (page: string) => void;
+    onNavigate: (screen: string, payload?: any) => void;
     onChatQuery: (query: string) => void;
-    currentLanguage?: string;
+    currentLanguage: string;
     onLanguageChange: (lang: string) => void;
+    recommendations?: any[];
     guestName?: string;
     accessToken?: string;
     propertyId?: string;
     themeId?: string;
     context?: any[];
-    recommendations?: any[];
+    sections?: any[];
+    manuals?: any[];
     disabledLanguage?: boolean;
+    /** Coords de la propiedad para el widget de clima */
+    latitude?: number | null;
+    longitude?: number | null;
+    showBack?: boolean;
+    hasParking?: boolean;
+    parkingNumber?: string;
 }
 
-const container: Variants = {
-    hidden: { opacity: 0 },
-    show: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1
-        }
-    }
+const item = {
+    hidden: { opacity: 0, y: 8 },
+    show:   { opacity: 1, y: 0 },
 };
-
-const item: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    show: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            type: 'spring',
-            stiffness: 50
-        }
-    }
+const container = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.06 } },
 };
 
 export function GuideWelcome({
     propertyName,
     heroImage,
     location,
+    onBack,
     onOpenGuide,
     onNavigate,
     onChatQuery,
     currentLanguage = 'es',
     onLanguageChange,
+    recommendations = [],
     guestName,
     accessToken,
     propertyId,
-    themeId = 'modern',
+    themeId = 'modern_v2',
     context = [],
-    recommendations = [],
+    sections = [],
+    manuals = [],
     disabledLanguage = false,
+    latitude,
+    longitude,
+    showBack = true,
+    hasParking: propHasParking = false,
+    parkingNumber: propParkingNumber = '',
 }: GuideWelcomeProps) {
-    const t = getGuideTheme(themeId)
-    const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
-    const accessData = context?.find(c => c.category === 'access')?.content || {};
-    const hasParking = Boolean(
-        (accessData.parking_info && accessData.parking_info.trim() !== '') ||
-        (accessData.garage_spot && accessData.garage_spot.trim() !== '') ||
-        (accessData.parking_instructions && accessData.parking_instructions.trim() !== '') ||
-        (accessData.parking && typeof accessData.parking === 'string' && accessData.parking.trim() !== '')
+
+    const t = getGuideTheme(themeId);
+
+    // ── Datos de contexto ────────────────────────────────────────────────────
+    const checkinData = context?.find(c => c.category === 'checkin')?.content || {};
+    const accessData  = context?.find(c => c.category === 'access')?.content  || {};
+    const techData    = context?.find(c => c.category === 'tech')?.content    || {};
+    const rulesData   = context?.find(c => c.category === 'rules')?.content   || {};
+
+    const hasWifi    = !!techData.wifi_ssid;
+    const hasCheckin = !!checkinData.steps?.length;
+
+    // Parking
+    const parkingNumber = propParkingNumber || accessData.parking_number || accessData.garage_spot || '';
+    const hasParkingVisible = propHasParking || !!(
+        parkingNumber ||
+        accessData.parking_info?.trim() ||
+        accessData.parking_instructions?.trim() ||
+        accessData.parking?.info ||
+        (typeof accessData.parking === 'string' && accessData.parking.trim())
     );
 
-    // Eat recommendations logic
-    const EAT_TYPES = new Set(['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'restaurant', 'cafe', 'bar']);
-    const getRecType = (r: any) => (r.type || r.category || '').toLowerCase();
-    const eatRecs = recommendations.filter(r => EAT_TYPES.has(getRecType(r)));
-    const hasEat = eatRecs.length > 0;
+    // Checkout
+    const checkoutTime = rulesData.checkout_time || rulesData.check_out_time || '';
 
-    const { content: localizedPropertyName } = useLocalizedContent(propertyName, currentLanguage, 'general', accessToken, propertyId);
-    const { content: welcomeHomeLabel } = useLocalizedContent('Bienvenido a casa', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: greetingLabel } = useLocalizedContent('Hola', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: conciergePlaceholder } = useLocalizedContent('¿En qué puedo ayudarte hoy?', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: conciergeLabel } = useLocalizedContent('Tu asistente digital en', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: commonQuestionsLabel } = useLocalizedContent('Preguntas Frecuentes', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: yourStayLabel } = useLocalizedContent('Tu Estancia', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: houseGuideLabel } = useLocalizedContent('Guía de la Casa', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: everythingYouNeedLabel } = useLocalizedContent('Todo lo que necesitas saber', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', currentLanguage, 'ui_label', accessToken, propertyId);
+    // Dirección
+    const address = accessData.full_address || '';
 
-    // Chip Labels
-    const { content: labelAcceso } = useLocalizedContent('Acceso', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelParking } = useLocalizedContent('Parking', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelComer } = useLocalizedContent('Comer', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: queryParking } = useLocalizedContent('¿Dónde puedo aparcar?', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: queryComer } = useLocalizedContent('¿Dónde puedo comer cerca?', currentLanguage, 'ui_label', accessToken, propertyId);
+    // Clima: tipo contextual inferido de la ubicación (se puede hacer más inteligente)
+    // Por ahora 'urban' como default seguro — el anfitrión puede configurarlo en el futuro
+    const locationType: 'coastal' | 'mountain' | 'urban' =
+        location.toLowerCase().includes('playa') || location.toLowerCase().includes('costa') || location.toLowerCase().includes('beach')
+            ? 'coastal'
+            : location.toLowerCase().includes('sierra') || location.toLowerCase().includes('montaña')
+                ? 'mountain'
+                : 'urban';
 
-    const localizedGreeting = guestName ? `${greetingLabel} ${guestName}` : greetingLabel;
+    // Recomendaciones
+    const EAT_SET  = new Set(['restaurantes','italiano','mediterraneo','hamburguesas','asiatico','alta_cocina','internacional','desayuno','restaurante','cafe','bar','food','comida','tapas']);
+    const DO_SET   = new Set(['naturaleza','cultura','ocio','relax','activity','actividad','actividades','park','parque','museum','museo','landmark','experiencias','experience']);
+    const SHOP_SET = new Set(['compras','shopping','market','mercado','pharmacy','farmacia','supermarket','supermercado','supermercados']);
+    const getRType = (r: any) => (r.type || r.category || '').toLowerCase();
+    const eatRecs  = recommendations.filter(r => EAT_SET.has(getRType(r)));
+    const doRecs   = recommendations.filter(r => DO_SET.has(getRType(r)));
+    const shopRecs = recommendations.filter(r => SHOP_SET.has(getRType(r)));
+
+    const locationName = location.split(',')[0].trim();
+
+    // ── Labels ───────────────────────────────────────────────────────────────
+    const { content: localizedPropertyName }   = useLocalizedContent(propertyName,                currentLanguage, 'general',  accessToken, propertyId);
+    const { content: greetingLabel }           = useLocalizedContent('Hola',                      currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: welcomeToLabel }          = useLocalizedContent('Bienvenido a',              currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: conciergeLabel }          = useLocalizedContent('Tu asistente digital en',   currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelWifi }               = useLocalizedContent('Wifi',                      currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelAcceso }             = useLocalizedContent('Acceso',                    currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelParking }            = useLocalizedContent('Parking',                   currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelCheckout }           = useLocalizedContent('Check-out',                 currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelComoLlegar }         = useLocalizedContent('Cómo llegar',               currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelDescubre }           = useLocalizedContent(`Descubre ${locationName}`,  currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelGastronomia }        = useLocalizedContent('Gastronomía',               currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelQueHacer }           = useLocalizedContent('Qué hacer',                 currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelCompras }            = useLocalizedContent('Compras',                   currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelTuEstancia }         = useLocalizedContent('Tu Estancia',               currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelGuiaCasa }           = useLocalizedContent('Guía de la Casa',           currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelPoweredBy }          = useLocalizedContent('Desarrollado por',          currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelDondePuedoAparcar }  = useLocalizedContent('¿Dónde puedo aparcar?',    currentLanguage, 'ui_label', accessToken, propertyId);
+
+    // ── Handlers ─────────────────────────────────────────────────────────────
+    const handleParkingClick = () => {
+        onChatQuery(labelDondePuedoAparcar || '¿Dónde puedo aparcar?');
+    };
+
+    const handleComoLlegarClick = () => {
+        if (address) {
+            const isIOS = typeof window !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
+            const url = isIOS
+                ? `maps://?q=${encodeURIComponent(address)}`
+                : `https://maps.google.com/?q=${encodeURIComponent(address)}`;
+            window.open(url, '_blank');
+        } else {
+            onNavigate('checkin');
+        }
+    };
 
     return (
         <motion.div
-            className={cn('flex flex-col min-h-full relative', t.pageBg)}
+            className={cn("min-h-screen pb-32", t.pageBg)}
             variants={container}
             initial="hidden"
             animate="show"
         >
-            {/* Hero Section */}
-            <div className="relative h-[45vh] w-full overflow-hidden">
-                {heroImage && heroImage.trim() !== '' ? (
+            {/* ── Top bar ── */}
+            <motion.div variants={item} className="px-5 pt-6 pb-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    {showBack && (
+                        <button
+                            onClick={onBack}
+                            className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+                        >
+                            <ArrowLeft size={16} />
+                        </button>
+                    )}
+                    <span className={cn("text-sm font-bold tracking-wide uppercase truncate max-w-[180px]", t.heroPropertyName)}>
+                        {localizedPropertyName || propertyName}
+                    </span>
+                </div>
+                <LanguageSelector
+                    currentLanguage={currentLanguage}
+                    onLanguageChange={onLanguageChange}
+                    disabled={disabledLanguage}
+                />
+            </motion.div>
+
+            {/* ── Hero ── */}
+            <motion.div
+                variants={item}
+                className={cn(
+                    "mx-5 relative h-64 overflow-hidden shadow-sm",
+                    // Coastal/Modern = very rounded, Urban = square, Warm/Luxury = slightly rounded
+                    themeId === 'urban' ? '' :
+                    themeId === 'luxury' ? '' :
+                    themeId === 'coastal' ? 'rounded-3xl' :
+                    'rounded-3xl'
+                )}
+            >
+                {heroImage ? (
                     <Image
                         loader={supabaseLoader}
                         src={heroImage}
                         alt={propertyName}
                         fill
                         priority
-                        sizes="100vw"
+                        sizes="(max-width: 768px) 100vw, 448px"
                         className="object-cover"
                     />
                 ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-700" />
+                    <div className="w-full h-full bg-gray-200" />
                 )}
-
-                <div className={cn('absolute inset-0', t.heroOverlay)} />
-
-                <div className="absolute top-4 right-4 z-20">
-                    <LanguageSelector
-                        currentLanguage={currentLanguage}
-                        onLanguageChange={onLanguageChange}
-                        disabled={disabledLanguage}
-                    />
-                </div>
-
-                <div className="absolute bottom-0 left-0 w-full p-6 pb-12">
-                    <motion.div variants={item}>
-                        <p className={cn('text-sm font-medium tracking-widest uppercase opacity-90 mb-2 flex items-center gap-2', t.heroSubLabel)}>
-                            <Sparkles size={14} className="text-amber-400" />
-                            {welcomeHomeLabel}
-                        </p>
-                        <h1 className={cn('text-4xl font-bold mb-1 leading-tight', t.heroGreeting)}>
-                            {localizedGreeting}
-                        </h1>
-                        <p className={cn('text-lg opacity-90', t.heroPropertyName)}>
-                            {localizedPropertyName}
-                        </p>
-                    </motion.div>
-                </div>
-            </div>
-
-            {/* Content Container - Overlapping Hero */}
-            <div className="flex-1 px-6 -mt-8 relative z-10 pb-8">
-                {/* Search Bar */}
-                <motion.div variants={item} className="mb-8">
-                    <div
-                        className={cn('relative group shadow-[0_15px_40px_rgba(0,0,0,0.12)] rounded-2xl overflow-hidden cursor-pointer border', t.searchBg, t.searchBorder)}
-                        onClick={() => onChatQuery('')}
-                    >
-                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-primary">
-                            <Search size={20} />
-                        </div>
-                        <div className={cn('w-full h-16 pl-12 pr-14 flex items-center text-base', t.searchBg, t.searchText)}>
-                            {conciergePlaceholder}
-                        </div>
-
-                        <div className="absolute inset-y-0 right-2 flex items-center">
-                            <button className={cn('w-10 h-10 rounded-xl flex items-center justify-center transition-transform active:scale-95', t.actionBtn)}>
-                                <ArrowRight size={20} />
-                            </button>
-                        </div>
-                    </div>
-                    <p className={cn('text-center text-xs mt-3 font-medium uppercase tracking-[0.1em]', t.conciergeText)}>
-                        {conciergeLabel} {location}
+                <div className={cn("absolute inset-x-0 bottom-0 h-full pointer-events-none", t.heroOverlay)} />
+                <div className="absolute bottom-6 left-6 z-10">
+                    <p className={cn("text-[9px] font-bold tracking-[0.2em] uppercase mb-1.5", t.heroSubLabel)}>
+                        {welcomeToLabel} {propertyName}
                     </p>
-                </motion.div>
+                    <h1 className={cn("text-3xl font-bold leading-none mb-1", t.heroGreeting)}>
+                        {guestName ? `${greetingLabel}, ${guestName}` : greetingLabel}
+                    </h1>
+                    <p className={cn("text-sm opacity-90", t.heroPropertyName)}>{propertyName}</p>
+                </div>
+            </motion.div>
 
-                {/* Quick Actions - FAQs */}
-                <motion.div variants={item} className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className={cn('text-[10px] font-black uppercase tracking-widest', t.sectionLabel)}>
-                            {commonQuestionsLabel}
-                        </h3>
-                    </div>
+            {/* ── Widget clima ── */}
+            <motion.div variants={item}>
+                <WeatherWidgetMini
+                    lat={latitude}
+                    lng={longitude}
+                    locationType={locationType}
+                    themeId={themeId}
+                />
+            </motion.div>
 
-                    {t.chipLayout === 'stacked' ? (
-                        // ── Stacked layout: 4-col circular badge + label below (Coastal) ──
-                        <div className="grid grid-cols-4 gap-2">
-                            {[
-                                { id: 'wifi', icon: Wifi, label: 'WiFi', type: 'nav', target: 'wifi', show: hasWifi },
-                                { id: 'access', icon: Key, label: labelAcceso, type: 'nav', target: 'checkin', show: true },
-                                { id: 'parking', icon: MapPin, label: labelParking, type: 'chat', query: queryParking, show: hasParking },
-                                { id: 'eat', icon: Utensils, label: labelComer, type: 'chat', query: queryComer, show: hasEat }
-                            ].filter(c => c.show).map((chip, i) => (
-                                <button
-                                    key={chip.id}
-                                    onClick={() => chip.type === 'nav' ? onNavigate(chip.target!) : onChatQuery(chip.query!)}
-                                    className="flex flex-col items-center gap-2 active:scale-95 transition-transform"
-                                >
-                                    <div className={cn(
-                                        'w-14 h-14 rounded-full flex items-center justify-center shadow-md',
-                                        t.perChipColors[i] ?? 'bg-sky-400',
-                                    )}>
-                                        <chip.icon size={22} className="text-white" />
-                                    </div>
-                                    <span className={cn('text-[11px] font-bold text-center leading-tight', t.chipLabel)}>
-                                        {chip.label}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    ) : (
-                        // ── Inline layout: 2×2 icon-left (Modern / Urban) ──
-                        <div className="grid grid-cols-2 gap-3">
-                            {[
-                                { id: 'wifi', icon: Wifi, label: 'WiFi', type: 'nav', target: 'wifi', show: hasWifi },
-                                { id: 'access', icon: Key, label: labelAcceso, type: 'nav', target: 'checkin', show: true },
-                                { id: 'parking', icon: MapPin, label: labelParking, type: 'chat', query: queryParking, show: hasParking },
-                                { id: 'eat', icon: Utensils, label: labelComer, type: 'chat', query: queryComer, show: hasEat }
-                            ].filter(c => c.show).map((chip) => (
-                                <button
-                                    key={chip.id}
-                                    onClick={() => chip.type === 'nav' ? onNavigate(chip.target!) : onChatQuery(chip.query!)}
-                                    className={cn('flex items-center gap-3 p-3.5 rounded-xl transition-colors text-left group', t.chipBg)}
-                                >
-                                    <div className={cn('w-8 h-8 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform', t.chipIconBg, t.chipIconColor)}>
-                                        <chip.icon size={16} />
-                                    </div>
-                                    <span className={cn('text-sm font-bold', t.chipLabel)}>{chip.label}</span>
-                                </button>
-                            ))}
-                        </div>
+            {/* ── Concierge pill ── */}
+            <motion.div variants={item} className="flex justify-center mt-6 px-5 w-full">
+                <button
+                    onClick={() => onChatQuery('')}
+                    className={cn(
+                        "w-full px-5 py-4 text-left shadow-sm border transition-colors flex items-center justify-between",
+                        // Coastal = rounded-full pill, Urban = no radius, others = rounded-2xl
+                        t.chipLayout === 'stacked' ? 'rounded-full' :
+                        themeId === 'urban' ? '' :
+                        'rounded-2xl',
+                        t.searchBg,
+                        t.searchBorder
                     )}
-                </motion.div>
+                >
+                    <div className="flex items-center gap-3">
+                        <span>✨</span>
+                        <span className={cn("text-[13px] font-medium uppercase tracking-widest", t.searchText)}>
+                            {conciergeLabel} {locationName}
+                        </span>
+                    </div>
+                    <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", t.actionBtn)}>
+                        <ChevronRight size={16} className="shrink-0" />
+                    </div>
+                </button>
+            </motion.div>
 
+            {/* ── Grid accesos ── */}
+            <motion.div
+                variants={item}
+                className={cn(
+                    "grid grid-cols-3 gap-3 px-5 mt-8",
+                    t.chipLayout === 'stacked' ? 'gap-4' : 'gap-3'
+                )}
+            >
+                {t.chipLayout === 'stacked' ? (
+                    // ── Stacked layout: circular icon on top, label below ──
+                    <>
+                        {hasWifi && (
+                            <button
+                                onClick={() => onNavigate('wifi')}
+                                className="flex flex-col items-center justify-center gap-2 active:scale-95 transition-all outline-none"
+                            >
+                                <div className={cn(
+                                    "h-14 w-14 rounded-full flex items-center justify-center shadow-md",
+                                    t.perChipColors[0] || t.chipIconBg
+                                )}>
+                                    <Wifi className="h-6 w-6 text-white" strokeWidth={2} />
+                                </div>
+                                <span className={cn("text-[10px] font-extrabold", t.chipLabel)}>{labelWifi}</span>
+                            </button>
+                        )}
+                        {hasCheckin && (
+                            <button
+                                onClick={() => onNavigate('checkin')}
+                                className="flex flex-col items-center justify-center gap-2 active:scale-95 transition-all outline-none"
+                            >
+                                <div className={cn(
+                                    "h-14 w-14 rounded-full flex items-center justify-center shadow-md",
+                                    t.perChipColors[1] || t.chipIconBg
+                                )}>
+                                    <Key className="h-6 w-6 text-white" strokeWidth={2} />
+                                </div>
+                                <span className={cn("text-[10px] font-extrabold", t.chipLabel)}>{labelAcceso}</span>
+                            </button>
+                        )}
+                        {hasParkingVisible && (
+                            <button
+                                onClick={handleParkingClick}
+                                className="flex flex-col items-center justify-center gap-1 active:scale-95 transition-all outline-none"
+                            >
+                                <div className={cn(
+                                    "h-14 w-14 rounded-full flex items-center justify-center shadow-md",
+                                    t.perChipColors[2] || t.chipIconBg
+                                )}>
+                                    <span className="text-2xl font-extrabold text-white leading-none">P</span>
+                                </div>
+                                <span className={cn("text-[10px] font-extrabold", t.chipLabel)}>{labelParking}</span>
+                                {parkingNumber && (
+                                    <span className={cn("text-[8px] font-semibold opacity-70", t.chipLabel)}>{parkingNumber}</span>
+                                )}
+                            </button>
+                        )}
+                    </>
+                ) : (
+                    // ── Inline layout: rectangular cards ──
+                    <>
+                        {hasWifi && (
+                            <button
+                                onClick={() => onNavigate('wifi')}
+                                className={cn("rounded-2xl p-4 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all outline-none", t.chipBg)}
+                            >
+                                <Wifi className={cn("h-6 w-6", t.chipIconColor)} strokeWidth={1.5} />
+                                <span className={cn("text-[10px] font-bold uppercase tracking-widest", t.chipLabel)}>{labelWifi}</span>
+                            </button>
+                        )}
+                        {hasCheckin && (
+                            <button
+                                onClick={() => onNavigate('checkin')}
+                                className={cn("rounded-2xl p-4 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all outline-none", t.chipBg)}
+                            >
+                                <Key className={cn("h-6 w-6", t.chipIconColor)} strokeWidth={1.5} />
+                                <span className={cn("text-[10px] font-bold uppercase tracking-widest", t.chipLabel)}>{labelAcceso}</span>
+                            </button>
+                        )}
+                        {hasParkingVisible && (
+                            <button
+                                onClick={handleParkingClick}
+                                className={cn("rounded-2xl p-4 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all h-full outline-none", t.chipBg)}
+                            >
+                                <span className={cn("text-2xl font-black leading-none", t.chipIconColor)}>P</span>
+                                <span className={cn("text-[10px] font-bold uppercase tracking-widest mt-0.5", t.chipLabel)}>{labelParking}</span>
+                                {parkingNumber && (
+                                    <span className={cn("text-[9px] font-medium opacity-70", t.chipLabel)}>{parkingNumber}</span>
+                                )}
+                            </button>
+                        )}
+                    </>
+                )}
+            </motion.div>
 
-                {/* Guide Link Card */}
-                <motion.div variants={item} className="mt-auto">
-                    <div
-                        className={cn('rounded-2xl p-5 flex items-center justify-between shadow-md cursor-pointer group', t.guideCardBg)}
-                        onClick={onOpenGuide}
+            {/* ── Recomendación dinámica ── */}
+            <motion.div variants={item} className="px-5 mt-4">
+                <DynamicRecommendationWidget
+                    recommendations={recommendations}
+                    currentLanguage={currentLanguage}
+                    onNavigate={onNavigate}
+                    accessToken={accessToken}
+                    propertyId={propertyId}
+                    theme={{
+                        cardBg: t.guideCardBg,
+                        chipIconColor: t.chipIconColor,
+                        actionBtn: t.actionBtn,
+                        guideCardTitle: t.guideCardTitle,
+                        guideCardSubtitle: t.guideCardSubtitle,
+                        guideCardTag: t.guideCardTag,
+                        sectionLabel: t.sectionLabel,
+                        chipLayout: t.chipLayout,
+                        accentText: t.accentText,
+                    }}
+                />
+            </motion.div>
+
+            {/* ── Pills checkout + cómo llegar ── */}
+            <motion.div variants={item} className="flex gap-3 px-5 mt-4">
+                {checkoutTime && (
+                    <button
+                        onClick={() => onNavigate('rules')}
+                        className={cn("flex-1 rounded-full py-2.5 flex items-center justify-center gap-2 active:scale-95 transition-all", t.chipBg)}
                     >
-                        <div>
-                            <p className={cn('text-[10px] font-black uppercase tracking-widest mb-1', t.guideCardTag)}>
-                                {yourStayLabel}
-                            </p>
-                            <h3 className={cn('text-xl font-bold mb-1', t.guideCardTitle)}>
-                                {houseGuideLabel}
-                            </h3>
-                            <p className={cn('text-xs', t.guideCardSubtitle)}>
-                                {everythingYouNeedLabel}
-                            </p>
-                        </div>
-                        <div className={cn('w-12 h-12 rounded-full flex items-center justify-center transition-all group-hover:scale-110', t.guideCardChevron)}>
-                            <ChevronRight size={24} />
-                        </div>
+                        <Clock className={cn("h-3.5 w-3.5", t.chipIconColor)} strokeWidth={1.5} />
+                        <span className={cn("text-xs font-semibold", t.chipLabel)}>
+                            {labelCheckout} {checkoutTime}
+                        </span>
+                    </button>
+                )}
+                <button
+                    onClick={handleComoLlegarClick}
+                    className={cn("flex-1 rounded-full py-2.5 flex items-center justify-center gap-2 active:scale-95 transition-all", t.chipBg)}
+                >
+                    <MapPin className={cn("h-3.5 w-3.5", t.chipIconColor)} strokeWidth={1.5} />
+                    <span className={cn("text-xs font-semibold", t.chipLabel)}>{labelComoLlegar}</span>
+                </button>
+            </motion.div>
+
+            {/* ── Descubre la zona ── */}
+            {(eatRecs.length > 0 || doRecs.length > 0 || shopRecs.length > 0) && (
+                <motion.div variants={item} className="px-5 mt-10">
+                    <h2 className={cn("text-[10px] font-bold tracking-widest uppercase mb-4", t.sectionLabel)}>
+                        {labelDescubre}
+                    </h2>
+                    <div className="grid grid-cols-2 gap-3">
+                        {eatRecs.length > 0 && (
+                            <div onClick={() => onNavigate('eat')} className={cn("relative h-28 overflow-hidden shadow-sm cursor-pointer active:scale-[0.98] transition-all", t.chipLayout === 'stacked' ? 'rounded-3xl' : themeId === 'urban' ? '' : 'rounded-2xl')}>
+                                <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop" className="w-full h-full object-cover" alt={labelGastronomia} />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                                <span className="absolute bottom-3 left-3 text-white text-xs font-bold">{labelGastronomia}</span>
+                            </div>
+                        )}
+                        {doRecs.length > 0 && (
+                            <div onClick={() => onNavigate('leisure')} className={cn("relative h-28 overflow-hidden shadow-sm cursor-pointer active:scale-[0.98] transition-all", t.chipLayout === 'stacked' ? 'rounded-3xl' : themeId === 'urban' ? '' : 'rounded-2xl')}>
+                                <img src="https://images.unsplash.com/photo-1533105079780-92b9be482077?w=400&h=300&fit=crop" className="w-full h-full object-cover" alt={labelQueHacer} />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                                <span className="absolute bottom-3 left-3 text-white text-xs font-bold">{labelQueHacer}</span>
+                            </div>
+                        )}
+                        {shopRecs.length > 0 && (
+                            <div onClick={() => onNavigate('shop')} className={cn("relative h-28 overflow-hidden shadow-sm cursor-pointer active:scale-[0.98] transition-all", t.chipLayout === 'stacked' ? 'rounded-3xl' : themeId === 'urban' ? '' : 'rounded-2xl')}>
+                                <img src="https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&h=300&fit=crop" className="w-full h-full object-cover" alt={labelCompras} />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                                <span className="absolute bottom-3 left-3 text-white text-xs font-bold">{labelCompras}</span>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
+            )}
 
+            <motion.div variants={item} className="px-5 mt-10 mb-6">
+                {/* Luxury: decorative divider lines around label like reference */}
+                {themeId === 'luxury' ? (
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="h-px flex-1 bg-[#C9A84C]/30" />
+                        <h2 className={cn("text-[9px] font-medium tracking-[0.25em] uppercase", t.sectionLabel)}>
+                            {labelTuEstancia}
+                        </h2>
+                        <div className="h-px flex-1 bg-[#C9A84C]/30" />
+                    </div>
+                ) : (
+                    <h2 className={cn("text-[10px] font-bold tracking-widest uppercase mb-4", t.sectionLabel)}>
+                        {labelTuEstancia}
+                    </h2>
+                )}
+                <button
+                    onClick={onOpenGuide}
+                    className={cn(
+                        "w-full p-5 flex items-center justify-between shadow-sm border active:scale-[0.99] transition-all",
+                        // Theme-aware corner radius
+                        t.chipLayout === 'stacked' ? 'rounded-3xl' :
+                        themeId === 'urban' || themeId === 'luxury' ? '' :
+                        'rounded-[20px]',
+                        t.guideCardBg
+                    )}
+                >
+                    <div className="flex items-center gap-4">
+                        <div className={cn("h-10 w-10 flex items-center justify-center rounded-full", t.chipIconBg)}>
+                            <Info className={cn("h-5 w-5", t.chipIconColor)} strokeWidth={1.5} />
+                        </div>
+                        <span className={cn("text-base font-bold", t.guideCardTitle)}>{labelGuiaCasa}</span>
+                    </div>
+                    <ChevronRight className={cn("h-5 w-5", t.accentText)} />
+                </button>
+            </motion.div>
 
-                {/* Footer */}
-                <motion.div variants={item} className="mt-8 text-center">
-                    <p className="text-[9px] font-black text-gray-300 tracking-[0.4em] uppercase">
-                        {poweredByLabel} GuideFlow
-                    </p>
-                </motion.div>
-            </div>
+            {/* ── Footer ── */}
+            <motion.div variants={item} className="mt-6 text-center opacity-40 pb-4">
+                <p className={cn("text-[8px] font-black tracking-[0.4em] uppercase", t.chipLabel)}>
+                    {labelPoweredBy} GuideFlow
+                </p>
+            </motion.div>
         </motion.div>
     );
 }

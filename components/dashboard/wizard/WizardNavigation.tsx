@@ -23,8 +23,18 @@ export function WizardNavigation() {
     const currentIndex = filteredSteps.indexOf(activeTab)
     const isFirstStep = currentIndex === 0
     const isLastStep = currentIndex === filteredSteps.length - 1
-    const canContinue = property?.id || isFirstStep
-    const isDisabled = loading || !!aiLoading || !canContinue
+
+    // Validar el paso activo
+    let isCurrentStepValid = true;
+    if (activeTab === 'property') {
+        const hasName = !!data.property?.name?.trim();
+        const hasSlug = !!data.property?.slug?.trim();
+        isCurrentStepValid = hasName && hasSlug;
+    }
+
+    const canContinue = (property?.id || isFirstStep) && isCurrentStepValid;
+    const isDisabled = loading || !!aiLoading || !canContinue;
+    const isNextDisabled = !!loading || !isCurrentStepValid;
 
     const mainLabel = isEditing ? 'Guardar Sección' : (isLastStep ? 'Finalizar configuración' : 'Guardar y continuar')
     const mainIcon = (isLastStep && !isEditing)
@@ -118,7 +128,7 @@ export function WizardNavigation() {
                         {isEditing && !isLastStep && (
                             <button
                                 onClick={handleOnlyNext}
-                                disabled={!!loading}
+                                disabled={isNextDisabled}
                                 className="w-full flex items-center justify-center gap-2 font-bold text-slate-600 border border-slate-200 bg-white rounded-2xl py-4 text-base shadow-sm"
                             >
                                 Siguiente paso
@@ -169,7 +179,7 @@ export function WizardNavigation() {
                         {isEditing && !isLastStep && (
                             <button
                                 onClick={handleOnlyNext}
-                                disabled={!!loading}
+                                disabled={isNextDisabled}
                                 className="flex items-center justify-center gap-2 font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 rounded-2xl px-6 py-4 text-[15px] shadow-sm transition-all"
                             >
                                 Siguiente

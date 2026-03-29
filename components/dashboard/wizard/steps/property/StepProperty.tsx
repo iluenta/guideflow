@@ -16,9 +16,12 @@ export default function StepProperty({ value }: { value?: string }) {
     const [localUploading, setLocalUploading] = useState(false)
     const [justUploaded, setJustUploaded] = useState(false)
     const [slugTouched, setSlugTouched] = useState(false)
+    const [nameTouched, setNameTouched] = useState(false)
 
     const slugEmpty = !data.property?.slug
     const slugInvalid = slugTouched && slugEmpty
+    const nameEmpty = !data.property?.name?.trim()
+    const nameInvalid = nameTouched && nameEmpty
 
     const handleLocalImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.files?.[0]
@@ -135,15 +138,39 @@ export default function StepProperty({ value }: { value?: string }) {
 
                 {/* ── Nombre ───────────────────────────────────── */}
                 <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
-                        Nombre del Alojamiento
-                    </Label>
-                    <div className="relative group">
-                        <Home className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-[#316263] transition-colors" />
+                    <div className="flex items-center justify-between ml-1">
+                        <div className="flex items-center gap-2">
+                            <Label className="text-xs font-bold text-slate-700 uppercase tracking-widest">
+                                Nombre del Alojamiento
+                            </Label>
+                            <span className="text-[10px] font-bold text-white bg-[#316263] px-2 py-0.5 rounded-full uppercase tracking-wide">
+                                Obligatorio
+                            </span>
+                        </div>
+                        {nameInvalid && (
+                            <span className="text-[11px] font-semibold text-red-500 flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" /> Requerido
+                            </span>
+                        )}
+                    </div>
+                    <div className={cn(
+                        "relative group rounded-xl transition-all duration-200",
+                        nameInvalid
+                            ? "ring-2 ring-red-400/50"
+                            : "focus-within:ring-2 focus-within:ring-[#316263]/25"
+                    )}>
+                        <Home className={cn(
+                            "absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors",
+                            nameInvalid ? "text-red-400" : "text-slate-300 group-focus-within:text-[#316263]"
+                        )} />
                         <Input
                             placeholder="Ej: Villa Marítima Premium"
-                            className="h-12 pl-12 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-[#316263]/20 text-base font-medium"
+                            className={cn(
+                                "h-12 pl-12 rounded-xl border-none text-base font-medium",
+                                nameInvalid ? "bg-red-50" : "bg-slate-50"
+                            )}
                             value={data.property?.name || ''}
+                            onBlur={() => setNameTouched(true)}
                             onChange={e => setData({ ...data, property: { ...data.property, name: e.target.value } })}
                         />
                     </div>
