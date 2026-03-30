@@ -48,15 +48,21 @@ interface Recommendation {
     personal_note?: string;
     map_url?: string;
     google_place_id?: string;
+    rating?: number | null;
     tags?: string[];
     opening_hours?: {
         open: string | null;
         close: string | null;
         always_open?: boolean;
+        open_now?: boolean;
         weekday_text?: string[];
     };
     metadata?: {
+        photo_url?: string | null;
+        rating_count?: number | null;
+        editorial_summary?: string | null;
         time?: string;
+        price_level?: number;
         price_range?: string;
         personal_note?: string;
         google_place_id?: string;
@@ -70,6 +76,7 @@ interface Recommendation {
             open: string | null;
             close: string | null;
             always_open?: boolean;
+            open_now?: boolean;
             weekday_text?: string[];
         };
     };
@@ -109,37 +116,21 @@ function RecommendationCard({
     const { content: localizedName } = useLocalizedContent(rec.name, currentLanguage, 'recommendation_name', accessToken, propertyId);
     const { content: localizedDescription } = useLocalizedContent(rec.description || '', currentLanguage, 'recommendation_description', accessToken, propertyId);
 
-    const rawPrice = rec.price_range || rec.metadata?.price_range || '';
-    const rawTime = rec.time || rec.metadata?.time || '';
-    const rawNote = rec.personal_note || rec.metadata?.personal_note || '';
-    const openingHours = (rec as any).metadata?.opening_hours || (rec as any).opening_hours;
+    const metadata = rec.metadata || {};
+    const photoUrl = metadata.photo_url || null;
+    const rating = rec.rating || null;
+    const editorialSummary = metadata.editorial_summary || null;
+    const openNow = metadata.opening_hours?.open_now;
 
-    const { content: localizedPrice } = useLocalizedContent(rawPrice, currentLanguage, 'recommendation_price', accessToken, propertyId);
-    const { content: localizedTimeOriginal } = useLocalizedContent(rawTime, currentLanguage, 'recommendation_time', accessToken, propertyId);
+    const rawNote = rec.personal_note || metadata.personal_note || '';
+    const openingHours = metadata.opening_hours || rec.opening_hours;
+
     const { content: localizedNote } = useLocalizedContent(rawNote, currentLanguage, 'recommendation_note', accessToken, propertyId);
-
-    const { content: labelPrice } = useLocalizedContent('Precio:', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelTime } = useLocalizedContent('Tiempo:', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelHostTip } = useLocalizedContent('Consejo del anfitrión', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: label24h } = useLocalizedContent('24 HORAS', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelOpen } = useLocalizedContent('Abierto', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelClosed } = useLocalizedContent('Cerrado', currentLanguage, 'ui_label', accessToken, propertyId);
 
-    // Hide "Consultar horario" if we have structured hours
-    const tags = rec.metadata?.tags || rec.tags || [];
-    const openingHoursStr = openingHours?.always_open 
-        ? (label24h || '24 HORAS') 
-        : (openingHours?.open && openingHours?.close) 
-            ? `${openingHours.open} – ${openingHours.close}` 
-            : null;
-    
-    // Priority: Manual time (if not generic) > Google hours > Generic manual time
-    const isGenericTime = !localizedTimeOriginal || localizedTimeOriginal.toLowerCase().includes('horario');
-    const hasManualTime = localizedTimeOriginal && !isGenericTime;
-    
-    // finalTime is used for display
-    const finalTime = hasManualTime ? localizedTimeOriginal : (openingHoursStr || localizedTimeOriginal);
-    const showOpeningHours = !!openingHoursStr && !hasManualTime;
-    const showManualTime = hasManualTime || (!openingHoursStr && !!localizedTimeOriginal);
-
+    const tags = metadata.tags || rec.tags || [];
     const distanceText = rec.distance && !rec.distance.toLowerCase().includes('distance') ? rec.distance : null;
 
     const catLabel = (rec.type || 'ocio').toLowerCase();
@@ -150,111 +141,154 @@ function RecommendationCard({
         <div
             onClick={() => toggleExpand(rec.id)}
             className={cn(
-                "bg-white rounded-2xl p-5 shadow-card hover:shadow-card-hover transition-all duration-300 group cursor-pointer flex flex-col gap-4 overflow-hidden border border-transparent",
-                isExpanded && "border-navy/5 ring-1 ring-navy/5 shadow-lg"
+                "bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer border border-navy/5",
+                isExpanded && "ring-1 ring-navy/10 shadow-lg"
             )}
         >
-            <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${catStyle.bgColor} ${catStyle.color}`}>
-                    <Icon className="w-6 h-6" strokeWidth={1.5} />
+            <div className="flex relative items-start p-3 sm:p-4 gap-3">
+                {/* Accent Border (Colored) - Thin Line on the left */}
+                <div 
+                    className="absolute left-0 top-0 bottom-0 w-1" 
+                    style={{ backgroundColor: catStyle.hex }}
+                />
+
+                {/* Left: Small Square Image / Icon Fallback */}
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-xl overflow-hidden shadow-inner border border-navy/5 bg-slate/5">
+                    {photoUrl ? (
+                        <img 
+                            src={photoUrl} 
+                            alt={rec.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                    ) : (
+                        <div 
+                            className="w-full h-full flex items-center justify-center relative overflow-hidden"
+                            style={{ 
+                                background: `linear-gradient(135deg, ${catStyle.hex}15 0%, ${catStyle.hex}30 100%)` 
+                            }}
+                        >
+                            {/* Decorative background icon */}
+                            <Icon 
+                                className="absolute -right-2 -bottom-2 w-16 h-16 opacity-5 rotate-12" 
+                                strokeWidth={1} 
+                            />
+                            {/* Main centered icon */}
+                            <div 
+                                className="relative z-10 p-4 rounded-full bg-white/40 backdrop-blur-sm shadow-sm"
+                                style={{ color: catStyle.hex }}
+                            >
+                                <Icon className="w-8 h-8 sm:w-10 sm:h-10" strokeWidth={1.5} />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                <div className="flex-1 min-w-0 pt-0.5">
-                    <div className="flex items-center justify-between gap-2 mb-1">
+                {/* Right: Content Area (Tighter) */}
+                <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
+                    {/* Title + Rating Line */}
+                    <div className="flex justify-between items-start gap-2 mb-0.5">
                         <h3 className={cn(
-                            "font-serif text-lg text-navy font-bold leading-tight",
-                            !localizedName && "h-6 w-3/4 bg-slate/10 animate-pulse rounded-md",
-                            !isExpanded && "line-clamp-2"
+                            "text-[15px] sm:text-base font-bold text-navy leading-tight line-clamp-2 min-h-[1.2em]",
+                            !localizedName && "h-5 w-3/4 bg-slate/10 animate-pulse rounded-md"
                         )}>
                             {localizedName}
                         </h3>
-                        {isExpanded ? (
-                            <ChevronUp className="w-4 h-4 text-navy/20 shrink-0" />
-                        ) : (
-                            <ChevronDown className="w-4 h-4 text-navy/20 shrink-0" />
-                        )}
-                    </div>
-
-                    <div className={cn(
-                        "text-[13px] text-slate leading-relaxed transition-all duration-300",
-                        !isExpanded && "line-clamp-3",
-                        !localizedDescription && "space-y-2"
-                    )}>
-                        {localizedDescription ? (
-                            localizedDescription
-                        ) : (
-                            <>
-                                <div className="h-3 w-full bg-slate/5 animate-pulse rounded-sm" />
-                                <div className="h-3 w-5/6 bg-slate/5 animate-pulse rounded-sm" />
-                            </>
-                        )}
-                    </div>
-
-                    {isExpanded && (
-                        <div className="mt-4 space-y-4 pt-4 border-t border-navy/5">
-                            <div className="flex flex-wrap gap-4">
-                                {localizedPrice && (
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate/80 bg-slate/5 px-2.5 py-1 rounded-lg">
-                                        <span className="text-navy/40">{labelPrice}</span>
-                                        <span className="text-primary">{localizedPrice}</span>
-                                    </div>
-                                )}
+                        {rating && (
+                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                                <Star className="w-3 h-3 text-orange-400 fill-current" />
+                                <span className="text-[13px] font-bold text-navy/80">{rating}</span>
                             </div>
+                        )}
+                    </div>
 
+                    {/* Subtitle / Description */}
+                    <p className="text-[12px] sm:text-[13px] text-slate/70 leading-snug mb-2 line-clamp-2 italic">
+                        {editorialSummary || localizedDescription}
+                    </p>
+
+                    {/* Meta Info: Distance + Status */}
+                    <div className="flex items-center gap-3 text-[11px] font-bold text-slate/50 mb-2">
+                        {distanceText && (
+                            <div className="flex items-center gap-1.5">
+                                <MapPin className="w-3 h-3 opacity-40" />
+                                {distanceText}
+                            </div>
+                        )}
+                        {openNow !== undefined && (
+                            <div className="flex items-center gap-2">
+                                <div className={cn("w-2 h-2 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-500")} />
+                                <span className={cn(openNow ? "text-emerald-600" : "text-rose-600")}>
+                                    {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Tags + Maps Link Footer */}
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex flex-wrap items-center gap-2 overflow-hidden">
+                            {tags.slice(0, 2).map(tag => (
+                                <span key={tag} className="text-[10px] font-bold text-slate/30 lowercase italic">
+                                    #{tag}
+                                </span>
+                            ))}
+                        </div>
+                        
+                        <a
+                            href={getMapsUrl(rec)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (getMapsUrl(rec).startsWith('http')) {
+                                    window.open(getMapsUrl(rec), '_blank', 'noopener,noreferrer');
+                                    e.preventDefault();
+                                }
+                            }}
+                            className="flex items-center gap-1.5 text-[11px] font-bold text-slate/40 hover:text-navy transition-colors shrink-0"
+                        >
+                            Maps
+                            <Navigation className="w-3 h-3" />
+                        </a>
+                    </div>
+
+                    {/* Expanded Detail Overlay */}
+                    {isExpanded && (
+                        <div className="mt-4 space-y-3 pt-3 border-t border-navy/5 animate-in fade-in slide-in-from-top-1">
                             {localizedNote && (
-                                <div className="p-4 rounded-xl bg-beige/50 border-l-2 border-primary/20 italic">
-                                    <p className="text-[13px] text-navy/70 leading-relaxed">
+                                <div 
+                                    className="p-3 rounded-2xl text-[12px] relative overflow-hidden group/note border border-navy/5 shadow-sm"
+                                    style={{ 
+                                        background: `linear-gradient(to right, ${catStyle.hex}10, transparent)` 
+                                    }}
+                                >
+                                    {/* Decorative subtle left line */}
+                                    <div 
+                                        className="absolute left-0 top-0 bottom-0 w-1 opacity-20"
+                                        style={{ backgroundColor: catStyle.hex }}
+                                    />
+                                    
+                                    <p className="font-serif italic text-navy/70 relative z-10 leading-relaxed pr-8">
                                         "{localizedNote}"
                                     </p>
-                                    <p className="text-[10px] text-primary/60 font-black uppercase tracking-widest mt-2 not-italic">
-                                        {labelHostTip}
-                                    </p>
+                                    
+                                    <div className="flex items-center gap-2 mt-2 opacity-60">
+                                        <div 
+                                            className="h-[1px] flex-1"
+                                            style={{ backgroundColor: `${catStyle.hex}20` }}
+                                        />
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-navy/40">
+                                            {labelHostTip}
+                                        </span>
+                                    </div>
+
+                                    {/* Small floating icon in background */}
+                                    <Icon 
+                                        className="absolute -right-2 -bottom-2 w-10 h-10 opacity-5 rotate-12" 
+                                        style={{ color: catStyle.hex }}
+                                    />
                                 </div>
                             )}
                         </div>
                     )}
-
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4">
-                        {distanceText && (
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
-                                <MapPin className="w-3.5 h-3.5 opacity-50" />
-                                {distanceText}
-                            </div>
-                        )}
-                        {showOpeningHours && (
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
-                                <Clock className="w-3.5 h-3.5 opacity-50" />
-                                {openingHoursStr}
-                            </div>
-                        )}
-                        {showManualTime && (
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate/60">
-                                <Clock className="w-3.5 h-3.5 opacity-50" />
-                                {localizedTimeOriginal}
-                            </div>
-                        )}
-                        {tags.slice(0, 2).map(tag => (
-                            <div key={tag} className="text-[10px] font-bold text-primary/40 uppercase tracking-wider">
-                                #{tag}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="self-start pt-1">
-                    <a
-                        href={getMapsUrl(rec)}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (getMapsUrl(rec).startsWith('http')) {
-                                window.open(getMapsUrl(rec), '_blank', 'noopener,noreferrer');
-                                e.preventDefault();
-                            }
-                        }}
-                        className="w-10 h-10 rounded-full bg-beige hover:bg-primary/10 flex items-center justify-center text-navy transition-all active:scale-90"
-                    >
-                        <ArrowRight className="w-5 h-5" />
-                    </a>
                 </div>
             </div>
         </div>

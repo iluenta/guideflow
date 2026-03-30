@@ -124,60 +124,32 @@ VALORES PERMITIDOS para "intent":
 - "appliance_problem": electrodoméstico roto, no funciona, no enciende, hace ruido, avería
 - "appliance_usage": el huésped pregunta CÓMO FUNCIONA o CÓMO SE USA un aparato concreto.
   ej: "¿cómo pongo la lavadora?", "cómo uso el horno", "cómo funciona la cafetera"
-- "manual_request": el huésped pide explícitamente el manual, todas las instrucciones, o toda la información técnica de un aparato.
-  ej: "échame el manual", "échame el manual de la lavadora", "dame el manual", "dame todas las instrucciones", "explícame todo sobre la lavadora"
-- "appliance_task": el huésped quiere REALIZAR UNA TAREA que implica usar un aparato,
-  aunque NO mencione el aparato directamente.
-  ej: "tengo toallas sucias", "quiero hacer una pizza", "voy a preparar el desayuno",
-  "tengo ropa mojada", "me apetece un café", "quiero cocinar algo", "hace mucho calor"
-  DIFERENCIA CLAVE: en appliance_usage pregunta POR EL APARATO, en appliance_task pregunta POR LA TAREA. En manual_request pide el manual COMPLETO.
+- "manual_request": el huésped pide el manual, todas las instrucciones, o TODOS los códigos/errores de un aparato.
+  ej: "échame el manual", "dame todos los códigos de error", "códigos de error del horno", "qué errores puede dar la lavadora", "todos los programas de la lavadora"
+  DISTINCIÓN CRÍTICA:
+  - "la lavadora pone E5" → error_code (tiene un código concreto)
+  - "códigos de error del horno" → manual_request (pide la lista completa)
+  - "qué significa E3" → error_code
+  - "qué errores puede dar" → manual_request
+- "appliance_task": el huésped quiere REALIZAR UNA TAREA que implica usar un aparato, aunque NO mencione el aparato directamente.
 - "recommendation_food": quiere SALIR a comer/cenar/desayunar, busca restaurante/bar/cafetería
 - "recommendation_activity": qué hacer fuera, ocio, turismo, museos, visitas
 - "recommendation_shopping": tiendas, compras, mercado, supermercado
 - "recommendation_other": otras recomendaciones externas
 - "property_info": WiFi, normas, check-in, check-out, acceso, llaves, parking, dirección
-- "off_topic": el huésped hace una pregunta que no tiene relación con el alojamiento, su estancia, ni servicios locales. Ejemplos: chistes, filosofía, preguntas sobre IA, conversación general, política, deportes, trivia. NO confundir con "standard" (preguntas válidas sobre la estancia que no encajan en otras categorías).
-- "standard": cualquier otra cosa
+- "off_topic": chistes, filosofía, trivia, conversación no relacionada con la estancia.
+- "standard": cualquier otra cosa válida sobre el alojamiento que no encaja arriba.
 
 VALORES PERMITIDOS para "detectedTask" (solo si intent es "appliance_task"):
-- "lavar_ropa": toallas sucias, ropa sucia, lavar, centrifugar
-- "cocinar_pizza": hacer pizza, pizza en casa
-- "cocinar_pasta": hacer pasta, macarrones, espaguetis
-- "hacer_cafe": café, cortado, espresso, preparar café EN CASA
-- "hacer_tostadas": tostadas, pan tostado
-- "cocinar_huevos": huevos fritos, tortilla, huevos revueltos
-- "cocinar_carne": carne, filete, pollo
-- "cocinar_pescado": pescado, merluza, salmón
-- "calentar_comida": calentar, recalentar, descongelar comida
-- "planchar": planchar, arrugas en la ropa
-- "poner_frio": hace calor, aire acondicionado, fresco, enfriar habitación
-- "poner_calor": hace frío, calefacción, calentar habitación
-- "lavar_vajilla": platos sucios, fregar, lavavajillas
-- "general_cooking": cocinar en general sin especificar
-- null: si intent NO es appliance_task
-
-VALORES PERMITIDOS para "foodSubtype" (solo si intent es "recommendation_food"):
-- "desayuno", "almuerzo", "cena", "tapas", "cafe", "italiano", "mediterraneo",
-  "hamburguesas", "asiatico", "alta_cocina", "internacional", "general"
-- null: si intent NO es recommendation_food
-
-ATENCIÓN — DISTINCIÓN CRÍTICA:
-- "me apetece un café" = appliance_task (quiere hacerse un café en el apartamento)
-- "donde tomo un café" = recommendation_food, foodSubtype: "cafe" (quiere salir)
-- "quiero hacer una pizza" = appliance_task (cocinar en casa)
-- "me apetece una pizza" SIN contexto de cocinar = recommendation_food, foodSubtype: "italiano"
-- "quiero hacer pizza EN CASA" = appliance_task
-
-Para "isGenericFood": true solo si intent es recommendation_food y no especifica tipo de cocina.
-Para "detectedErrorCode": código en mayúsculas si existe. null si no hay.
+- "lavar_ropa", "cocinar_pizza", "cocinar_pasta", "hacer_cafe", "hacer_tostadas", "cocinar_huevos", "cocinar_carne", "cocinar_pescado", "calentar_comida", "planchar", "poner_frio", "poner_calor", "lavar_vajilla", "general_cooking"
 
 EJEMPLOS:
 - "tengo unas toallas sucias" → {"intent":"appliance_task","detectedTask":"lavar_ropa","foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "¿cómo pongo la lavadora?" → {"intent":"appliance_usage","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
-- "hace mucho calor" → {"intent":"appliance_task","detectedTask":"poner_frio","foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
-- "donde tomo un café" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"cafe","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
-- "me apetece un café" → {"intent":"appliance_task","detectedTask":"hacer_cafe","foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"medium"}
 - "la lavadora pone E5" → {"intent":"error_code","detectedTask":null,"foodSubtype":null,"detectedErrorCode":"E5","isGenericFood":false,"confidence":"high"}
+- "échame el manual del horno" → {"intent":"manual_request","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "dame todos los errores de la lavadora" → {"intent":"manual_request","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "qué errores puede dar el lavavajillas" → {"intent":"manual_request","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 
 Responde SOLO con el JSON. Sin explicaciones, sin markdown, sin backticks.`
 

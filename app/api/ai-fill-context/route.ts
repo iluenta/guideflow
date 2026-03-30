@@ -33,6 +33,11 @@ async function detectZoneType(lat: number, lng: number, placesKey: string): Prom
       `?location=${lat},${lng}&radius=800&type=restaurant&key=${placesKey}`;
     const res = await fetch(url);
     const data = await res.json();
+    
+    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+      logger.error(`[ZONE] ❌ Error de Google detectZoneType: ${data.status} - ${data.error_message || 'N/A'}`);
+    }
+    
     const count: number = data.results?.length ?? 0;
 
     if (count >= 15) return { type: 'metropolis', walkRadius: 1000, driveRadius: 5000, label: 'gran ciudad', preferCar: false };
@@ -234,6 +239,9 @@ async function searchWithFallback(params: {
       (isDistanceRank ? `&rankby=distance` : `&radius=${zone.walkRadius}`) +
       `&type=${placeType}&keyword=${encodeURIComponent(keyword)}&language=es&key=${placesKey}`;
     const walkData = await fetch(walkUrl).then(r => r.json());
+    if (walkData.status !== 'OK' && walkData.status !== 'ZERO_RESULTS') {
+      logger.error(`[PLACES] ❌ Error Nearby(Walk) para "${keyword}": ${walkData.status} - ${walkData.error_message || 'N/A'}`);
+    }
     addResults(walkData.results || [], { searchKeyword: keyword, radiusType: isDistanceRank ? 'distance-rank' : 'walk' });
 
     // Si ya tenemos suficiente con el radio walk, no hacemos mas llamadas
@@ -245,6 +253,9 @@ async function searchWithFallback(params: {
         `?location=${lat},${lng}&radius=${zone.driveRadius}` +
         `&type=${placeType}&keyword=${encodeURIComponent(keyword)}&language=es&key=${placesKey}`;
       const driveData = await fetch(driveUrl).then(r => r.json());
+      if (driveData.status !== 'OK' && driveData.status !== 'ZERO_RESULTS') {
+        logger.error(`[PLACES] ❌ Error Nearby(Drive) para "${keyword}": ${driveData.status} - ${driveData.error_message || 'N/A'}`);
+      }
       addResults(driveData.results || [], { searchKeyword: keyword, radiusType: 'drive' });
     }
 
@@ -391,7 +402,7 @@ export async function POST(req: Request) {
     // 2. DINING / RECOMMENDATIONS
     // ════════════════════════════════════════════════════════════════════════
     if (section === 'dining' || section === 'recommendations') {
-      const placesKey = process.env.GOOGLE_PLACES_API_KEY || '';
+      const placesKey = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_AI_API_KEY || '';
       const selectedCat: string = existingData?.category || 'restaurantes';
       const isTodos = selectedCat === 'todos';
 
@@ -489,6 +500,7 @@ export async function POST(req: Request) {
       }
 
       // ── Contexto agrupado para Gemini ──────────────────────────────────
+      // ── Contexto agrupado para Gemini ──────────────────────────────────
       const numRequested = isTodos
         ? Object.values(TODOS_QUOTA).reduce((s, c) => s + c.quota, 0)
         : 6;
@@ -511,33 +523,21 @@ export async function POST(req: Request) {
 
       const existingNamesStr = (existingData?.existingNames || []).join(', ');
 
-      // ── Instrucciones de distancia según zona ─────────────────────────
-      const distanceRule = zone.preferCar
-        ? `La zona es ${zone.label}. Expresa distancias en "X min en coche". Si está literalmente a menos de 5 min andando, usa "X min andando".`
-        : `La zona es ${zone.label}. Expresa distancias en "X min andando" (máx 30 min). Si supera 30 min, usa "X min en coche".`;
-
-      // ── Cuotas para modo todos ────────────────────────────────────────
       const todosBlock = isTodos ? `
 CUOTAS OBLIGATORIAS — respeta EXACTAMENTE estas cantidades:
 ┌──────────────────────┬───────┐
 │ Slug de salida       │ Cuota │
 ├──────────────────────┼───────┤
-│ supermercados        │   2   │  ← para hacer la compra del primer día
-│ restaurantes         │   2   │  ← para comer sin cocinar al llegar
-│ desayuno             │   2   │  ← cafeterías para el desayuno del día siguiente
-│ tapas                │   2   │  ← salir a tomar algo la primera noche
-│ cultura              │   2   │  ← qué ver cerca sin planificar mucho
-│ naturaleza           │   2   │  ← paseo, parque, zona verde cercana
-│ ocio (nocturno)      │   2   │  ← bares de copas, música, ocio nocturno
+│ supermercados        │   2   │
+│ restaurantes         │   2   │
+│ desayuno             │   2   │
+│ tapas                │   2   │
+│ cultura              │   2   │
+│ naturaleza           │   2   │
+│ ocio (nocturno)      │   2   │
 └──────────────────────┴───────┘
 TOTAL: ${numRequested} recomendaciones.
-
-⚠️  REGLAS DE SLUG:
-- ocio_nocturno del contexto → usa slug de salida "ocio".
-- farmacia → slug exacto "farmacia".
-- DISTANCIAS: copia el campo Distancia_Contexto del contexto exactamente. PROHIBIDO usar "REALDISTANCE" o "KM".
-- Prioriza siempre los sitios MÁS CERCANOS a la propiedad.
-` : `Genera exactamente 4-6 recomendaciones NUEVAS de tipo "${selectedCat}" que sean relevantes y estén en el contexto. NO incluyas ninguno de estos que ya existen: ${existingNamesStr || 'ninguno'}. Si hay suficientes sitios nuevos en el contexto, intenta darlos todos hasta un máximo de 6.`;
+` : '';
 
       const prompt = `Anfitrión experto en ${property.city}. Guía de "${property.name}".
 
@@ -547,19 +547,21 @@ ${placesContext || `Sin datos. Usa conocimiento de ${property.city}.`}
 ${todosBlock}
 
 REGLAS CRÍTICAS: 
-1. Usa ÚNICAMENTE lugares del contexto Google Places. 
-2. PROHIBIDO recomendar sitios que no estén en el listado verificado de arriba.
-3. PROHIBIDO usar la palabra "REALDISTANCE" o inventar la distancia.
-4. "METROS" significa que el sitio está a menos de 2 minutos andando. "MIN" son minutos.
-5. Prioriza sitios a menos de 10 minutos si están disponibles. Los primeros de la lista son los más cercanos.
-6. NO INVENTES: Si el campo "Distancia_Contexto" del contexto no existe, pon null.
+1. PRIORIDAD: Usa los lugares del contextos Google Places de arriba si están disponibles.
+2. REGLA DEL ID: Si usas un sitio del listado de Google, COPIA su "ID" exactamente. Si el listado de Google está VACÍO, usa tu conocimiento real, pero pon "google_place_id": null.
+3. PROHIBIDO: Inventar IDs. Prohibido añadir "(Inventado)" al nombre.
+4. PROHIBIDO usar la palabra "REALDISTANCE".
+5. "METROS" significa < 2 min andando. "MIN" son minutos.
+6. COMPLIANCE: NO generes ratings, niveles de precio ni horarios detallados. Ponlos como null.
 
-REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1ana","mediodia","tarde"]\n- restaurantes/hamburguesas/italiano/asiatico/alta_cocina/internacional: ["mediodia","tarde","noche"]\n- desayuno/cafe: solo ["ma\u00f1ana","mediodia"]\n- tapas/bar: ["tarde","noche"]\n- cultura/naturaleza/relax: ["ma\u00f1ana","mediodia","tarde"]\n- ocio_nocturno: solo ["noche","madrugada"]\nCRITICO: jamas pongas "madrugada" a restaurantes, supermercados, cafeterias, cultura o naturaleza.\n\nJSON con array "recommendations", cada elemento:\n{"name":"nombre exacto","description":"max 150 chars hospitalario","distance":"copia de Distancia_Contexto","type":"slug de: ${ALL_SLUGS}","google_place_id":"ID o null","price_level":null|"gratis"|"economico"|"moderado"|"alto"|"exclusivo","price_range":"10-20EUR o null","best_time_slots":["ma\u00f1ana"|"mediodia"|"tarde"|"noche"|"madrugada"],"atmosphere":"tranquilo|animado|romantico|familiar|cultural|deportivo","tags":["tag1","tag2"],"availability":{"days":["todos"],"notes":"horario real o Consultar horario"}}\nSOLO JSON:`;
+JSON con array "recommendations", cada elemento:
+{"name":"nombre real","description":"descripción hospitalaria max 150 chars","personal_note":"CONSEJO CORTITO DEL ANFITRIÓN (ej. 'Ideal para desayunar', 'Pide sus bravas')","distance":"X MIN o METROS o null","type":"slug de: ${ALL_SLUGS}","google_place_id":"ID de Google o null","rating":null,"price_level":null,"price_range":null,"best_time_slots":["mañana"|...|"madrugada"],"atmosphere":"...","tags":["tag1","tag2"],"availability":null}
+SOLO JSON:`;
 
       // ── Llamada a Gemini ───────────────────────────────────────────────
-      // En modo todos: dividir en 2 llamadas paralelas (8 cats cada una) para reducir latencia
       const genAI = getGenAI();
       const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
 
       let recommendations: any[] = [];
 
@@ -615,25 +617,37 @@ REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1
       recommendations = await Promise.all(recommendations.map(async rec => {
         const recNameNorm = normalizeHtml(rec.name || '');
         
-        // 1. Verificación básica
+        // Limpiamos google_place_id del metadata generado por Gemini (evita conflictos)
+        const { google_place_id: _ignored, ...cleanMetadata } = rec.metadata || {};
+        let metadata = {
+            ...cleanMetadata,
+            personal_note: rec.personal_note || cleanMetadata.personal_note || null
+        };
+
+        // Verificación mejorada — match exacto o por substring (para museos/lugares largos)
         let verified = rec.google_place_id ? realIds.has(rec.google_place_id) : false;
         if (!verified) {
-            verified = realNamesMap.has(recNameNorm);
+            verified = realNamesMap.has(recNameNorm) || 
+                      [...realNamesMap.keys()].some(k => k.includes(recNameNorm) || recNameNorm.includes(k));
         }
 
-        // 2. Recuperación de ID si es verificado pero no tiene ID
         let placeId = rec.google_place_id;
         let realPlace: any = null;
         
-        if (verified) {
+        if (verified || placeId) {
             realPlace = allPlacesResults.find(p => 
                 (placeId && p.place_id === placeId) || 
-                normalizeHtml(p.name || '') === recNameNorm
+                normalizeHtml(p.name || '') === recNameNorm ||
+                normalizeHtml(p.name || '').includes(recNameNorm) ||
+                recNameNorm.includes(normalizeHtml(p.name || ''))
             );
             if (!placeId && realPlace) {
                 placeId = realPlace.place_id;
+                verified = true;
             }
-        } else {
+        }
+
+        if (!verified && !placeId) {
             // Intento desesperado: buscar por substring si no es verificado
             realPlace = allPlacesResults.find(p => 
                 normalizeHtml(p.name || '').includes(recNameNorm) || 
@@ -645,43 +659,10 @@ REGLAS best_time_slots (obligatorio por tipo):\n- supermercados: solo ["ma\u00f1
             }
         }
 
-        let metadata = rec.metadata || {};
+        // 3. ENRIQUECIMIENTO DE HORARIO (DESACTIVADO POR COSTE Y CUMPLIMIENTO)
+        // Se ha eliminado la llamada a Place Details para ahorrar ~20€/1k req y cumplir con ToS de Google.
+        // Solo conservamos el Place ID para el enlace externo.
 
-        // 3. ENRIQUECIMIENTO DE HORARIO (Google Place Details)
-        if (verified && placeId && placesKey) {
-          try {
-            logger.debug(`[AI-FILL] 🕒 Enriching ${rec.name} (ID: ${placeId})...`);
-            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json` +
-              `?place_id=${placeId}&fields=name,opening_hours,price_level,rating,user_ratings_total&language=es&key=${placesKey}`;
-            const dd = await fetch(detailsUrl).then(r => r.json());
-            const result = dd.result || {};
-            const hours = result.opening_hours;
-            
-            if (hours) {
-              const currentDay = new Date().getDay();
-              const period = hours.periods?.find((p: any) => p.open?.day === currentDay);
-              
-              metadata.opening_hours = {
-                always_open: hours.periods ? (hours.periods.length === 1 && hours.periods[0].open?.day === 0 && !hours.periods[0].close) : false,
-                open: period?.open?.time ? `${period.open.time.slice(0, 2)}:${period.open.time.slice(2)}` : null,
-                close: period?.close?.time ? `${period.close.time.slice(0, 2)}:${period.close.time.slice(2)}` : null,
-                weekday_text: hours.weekday_text
-              };
-
-              // Si tenemos horario real, quitar el placeholder de notas
-              if (metadata.availability?.notes?.toLowerCase().includes('horario')) {
-                metadata.availability.notes = null;
-              }
-            }
-            
-            // Aprovechar para actualizar rating/precio si faltan
-            if (result.price_level !== undefined) rec.price_level = result.price_level;
-            if (result.rating !== undefined) rec.rating = result.rating;
-
-          } catch (e) {
-            logger.warn(`[AI-FILL] Error fetching enriched hours for ${rec.name}:`, e);
-          }
-        }
 
         // 4. ENRIQUECIMIENTO DE DISTANCIA
         let distance = rec.distance;

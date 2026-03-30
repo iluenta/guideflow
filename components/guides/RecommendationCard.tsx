@@ -18,11 +18,13 @@ export interface Recommendation {
     tags?: string[]
     description?: string
     google_place_id?: string
+    rating?: number
     opening_hours?: {
         open: string | null
         close: string | null
         always_open?: boolean
         weekday_text?: string[]
+        open_now?: boolean
     }
     metadata?: {
         time?: string
@@ -30,6 +32,9 @@ export interface Recommendation {
         personal_note?: string
         google_place_id?: string
         tags?: string[]
+        photo_url?: string
+        rating_count?: number
+        editorial_summary?: string
         best_time_slots?: string[]
         availability?: {
             days: string[]
@@ -40,6 +45,7 @@ export interface Recommendation {
             close: string | null
             always_open?: boolean
             weekday_text?: string[]
+            open_now?: boolean
         }
     }
 }
@@ -90,104 +96,118 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
     const Icon = categoryIcons[category] || Star
     const colorClass = categoryColors[category] || categoryColors.todos
 
-    const price = recommendation.price_range || recommendation.metadata?.price_range
     const timeStr = recommendation.time || recommendation.metadata?.time
     const openingHours = (recommendation as any).metadata?.opening_hours || (recommendation as any).opening_hours
-    const note = recommendation.personal_note || recommendation.metadata?.personal_note
+    const photoUrl = recommendation.metadata?.photo_url || (recommendation as any).photo_url
+    const rating = recommendation.rating || (recommendation.metadata as any)?.rating
+    const ratingCount = recommendation.metadata?.rating_count || (recommendation.metadata as any)?.user_ratings_total
+    const openNow = openingHours?.open_now
 
     return (
         <Card
             className={cn(
-                "relative group overflow-hidden border border-slate-100 shadow-md hover:shadow-xl transition-all cursor-pointer bg-white rounded-2xl",
+                "relative group overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer bg-white rounded-xl flex flex-col",
                 className
             )}
             onClick={onClick}
         >
-            <CardHeader className="p-5 pb-2">
-                <div className="flex justify-between items-start gap-4">
-                    <div className="flex gap-3 items-center">
-                        <div className={cn("p-2 rounded-lg shrink-0 transition-transform group-hover:scale-110", colorClass)}>
-                            <Icon className="w-4 h-4" />
-                        </div>
-                        <div className="space-y-0 text-left">
-                            <CardTitle className="text-sm font-bold leading-tight line-clamp-2 text-slate-900">{recommendation.name}</CardTitle>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{category}</p>
-                        </div>
-                    </div>
-                    {onDelete && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="sm:opacity-0 sm:group-hover:opacity-100 text-slate-200 hover:text-rose-500 hover:bg-rose-50 transition-all rounded-xl shrink-0"
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                onDelete()
-                            }}
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </Button>
-                    )}
-                </div>
-            </CardHeader>
-            <CardContent className="p-5 pt-2">
-                <div className="flex flex-wrap gap-2 text-[10px] text-slate-500 mb-3 font-bold uppercase tracking-tight">
-                    {recommendation.distance && !recommendation.distance.toLowerCase().includes('distance') && (
-                        <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                            <MapPin className="w-3 h-3" />
-                            {recommendation.distance}
-                        </div>
-                    )}
-                    {openingHours && (
-                        <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                            <Clock className="w-3 h-3" />
-                            <span>
-                                {openingHours.always_open 
-                                    ? '24 HORAS' 
-                                    : (openingHours.open && openingHours.close) 
-                                        ? `${openingHours.open} – ${openingHours.close}`
-                                        : 'ABIERTO'
-                                }
-                            </span>
-                        </div>
-                    )}
-                    {timeStr && !openingHours && (
-                        <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                            <Clock className="w-3 h-3" />
-                            {timeStr}
-                        </div>
-                    )}
-                    {price && (
-                        <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                            <span className="">{price}</span>
-                        </div>
-                    )}
-                </div>
+            {/* Top Bar / Accent */}
+            <div className={cn("h-1 w-full", colorClass.split(' ')[0])} />
 
-                {recommendation.description && (
-                    <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-2 mb-2 font-medium text-left">
-                        {recommendation.description}
-                    </p>
-                )}
-
-                {note && (
-                    <p className="text-[#316263] text-[11px] italic font-bold text-left mb-3">
-                        "{note}"
-                    </p>
-                )}
-
-                {(recommendation.metadata?.tags || recommendation.tags) && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                        {(recommendation.metadata?.tags || recommendation.tags)?.map((tag, i) => (
-                            <span key={i} className="text-[9px] font-bold text-primary/40 uppercase tracking-tight bg-primary/5 px-1.5 py-0.5 rounded-md">
-                                #{tag}
-                            </span>
-                        ))}
+            <div className="flex">
+                {/* Left side: Photo (Optional) */}
+                {photoUrl && (
+                    <div className="relative w-24 sm:w-28 shrink-0 bg-slate-50 overflow-hidden">
+                        <img 
+                            src={photoUrl} 
+                            alt={recommendation.name} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        {openNow !== undefined && (
+                            <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 bg-black/50 backdrop-blur-sm rounded-full border border-white/10">
+                                <div className={cn("w-1 h-1 rounded-full", openNow ? "bg-emerald-400" : "bg-rose-400")} />
+                                <span className="text-[7px] font-black text-white uppercase tracking-wider">
+                                    {openNow ? 'Open' : 'Closed'}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 )}
-            </CardContent>
 
-            {/* Hover effect overlay */}
-            <div className="absolute inset-0 border-2 border-[#316263]/0 group-hover:border-[#316263]/10 rounded-2xl pointer-events-none transition-all" />
+                {/* Right side: Content */}
+                <div className="flex-1 min-w-0">
+                    <CardHeader className="p-3 pb-1">
+                        <div className="flex justify-between items-start gap-2">
+                            <div className="flex gap-2 items-center min-w-0">
+                                {!photoUrl && (
+                                    <div className={cn("p-2 rounded-xl shrink-0 shadow-sm", colorClass)}>
+                                        <Icon className="w-5 h-5 opacity-80" />
+                                    </div>
+                                )}
+                                <div className="space-y-0 text-left min-w-0">
+                                    <CardTitle className="text-[13px] font-bold leading-tight line-clamp-2 text-slate-900 h-[32px]">
+                                        {recommendation.name}
+                                    </CardTitle>
+                                    <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{category}</p>
+                                </div>
+                            </div>
+                            
+                            {rating && (
+                                <div className="flex flex-col items-end shrink-0 pt-0.5">
+                                    <div className="flex items-center gap-0.5 text-orange-400">
+                                        <Star className="w-2.5 h-2.5 fill-current" />
+                                        <span className="text-[10px] font-black text-slate-700">{rating}</span>
+                                    </div>
+                                    {ratingCount && (
+                                        <span className="text-[7px] text-slate-300 font-bold">
+                                            ({ratingCount > 1000 ? `${(ratingCount/1000).toFixed(1)}k` : ratingCount})
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </CardHeader>
+
+                    <CardContent className="p-3 pt-1">
+                        <div className="flex flex-wrap gap-1.5 text-[9px] text-slate-500 mb-1.5 font-bold uppercase tracking-tight">
+                            {recommendation.distance && !recommendation.distance.toLowerCase().includes('distance') && (
+                                <div className="flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">
+                                    <MapPin className="w-2 h-2" />
+                                    {recommendation.distance}
+                                </div>
+                            )}
+                            {(openingHours || timeStr) && (
+                                <div className="flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">
+                                    <Clock className="w-2 h-2" />
+                                    <span>
+                                        {openingHours?.always_open ? '24H' : (timeStr || 'OPEN')}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {recommendation.description && (
+                            <p className="text-slate-400 text-[10px] leading-relaxed line-clamp-3 italic font-medium text-left mt-1">
+                                {recommendation.metadata?.editorial_summary || recommendation.description}
+                            </p>
+                        )}
+                    </CardContent>
+                </div>
+            </div>
+
+            {onDelete && (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute bottom-1 right-1 sm:opacity-0 sm:group-hover:opacity-100 text-slate-200 hover:text-rose-500 h-7 w-7 transition-all"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onDelete()
+                    }}
+                >
+                    <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+            )}
         </Card>
     )
 }
