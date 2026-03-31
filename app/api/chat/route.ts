@@ -390,9 +390,17 @@ export async function POST(req: Request) {
         let foodSubcatFromIntent: string[] = [];
         if (intent.intent === 'recommendation_food') {
             if (isGenericFoodSearch || !intent.foodSubtype || intent.foodSubtype === 'general') {
-                foodSubcatFromIntent = ['restaurant', 'restaurante', 'restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'cafe', 'tapas'];
+                foodSubcatFromIntent = ['restaurant', 'restaurante', 'restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'cafe', 'tapas', 'taberna', 'tapas_bar', 'bar_restaurante'];
             } else {
-                foodSubcatFromIntent = [intent.foodSubtype];
+                // Relaciones funcionales entre categorías:
+                // Si piden café, mostrar también desayunos. Si piden desayunos, mostrar también cafés.
+                const relatedMap: Record<string, string[]> = {
+                    'cafe': ['cafe', 'desayuno'],
+                    'desayuno': ['desayuno', 'cafe'],
+                    'tapas': ['tapas', 'taberna', 'tapas_bar', 'bar_restaurante'],
+                    'restaurante': ['restaurante', 'restaurant', 'food', 'comida'],
+                };
+                foodSubcatFromIntent = relatedMap[intent.foodSubtype] || [intent.foodSubtype];
             }
         }
         const activityTypes = intent.intent === 'recommendation_activity' ? ['ocio', 'naturaleza', 'cultura', 'relax', 'activity'] : [];

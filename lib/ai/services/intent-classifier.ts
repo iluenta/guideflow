@@ -147,9 +147,10 @@ EJEMPLOS:
 - "tengo unas toallas sucias" → {"intent":"appliance_task","detectedTask":"lavar_ropa","foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "¿cómo pongo la lavadora?" → {"intent":"appliance_usage","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "la lavadora pone E5" → {"intent":"error_code","detectedTask":null,"foodSubtype":null,"detectedErrorCode":"E5","isGenericFood":false,"confidence":"high"}
-- "échame el manual del horno" → {"intent":"manual_request","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
-- "dame todos los errores de la lavadora" → {"intent":"manual_request","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
-- "qué errores puede dar el lavavajillas" → {"intent":"manual_request","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "echame el manual del horno" → {"intent":"manual_request","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "me apetece un café" → {"intent":"appliance_task","detectedTask":"hacer_cafe","foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "me apetece un café fuera" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"cafe","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "[CONTEXTO RECIENTE]: me apetece un café / [ÚLTIMO MENSAJE]: quiero fuera" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"cafe","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 
 Responde SOLO con el JSON. Sin explicaciones, sin markdown, sin backticks.`
 

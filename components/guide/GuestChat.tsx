@@ -35,7 +35,7 @@ function QuickReplyButton({
     return (
         <button
             onClick={() => onClick(localizedReply)}
-            className="w-full text-[11px] bg-white text-primary/80 px-4 py-3 rounded-2xl border border-stone-100 hover:border-primary/20 hover:bg-stone-50 transition-all text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-[0.98] font-bold leading-tight"
+            className="w-full text-[12px] bg-white text-primary/80 px-4 py-3 rounded-2xl border border-stone-100 hover:border-primary/20 hover:bg-stone-50 transition-all text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-[0.98] font-bold leading-tight"
         >
             {localizedReply}
         </button>
@@ -245,7 +245,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
             {/* Chat Container */}
             <div
                 className={cn(
-                    "fixed inset-x-0 bottom-0 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[400px] h-[85vh] sm:h-[680px] bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl z-50 flex flex-col transition-all duration-300 transform overflow-hidden",
+                    "fixed inset-x-0 bottom-[64px] sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[400px] h-[calc(85vh-64px)] sm:h-[680px] bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl z-50 flex flex-col transition-all duration-300 transform overflow-hidden",
                     isOpen ? "translate-y-0 opacity-100" : "translate-y-full sm:translate-y-8 sm:scale-95 opacity-0 pointer-events-none"
                 )}
             >
@@ -324,7 +324,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                             </div>
                         </div>
                     ) : (
-                        <div className="p-6 space-y-6">
+                        <div className="px-4 py-6 space-y-6">
                             {messages.map((m) => {
                                 const processedContent = injectWifiMarkers(m.content)
                                     // Strip out any hallucinated internal RAG citations (e.g. [[GUÍA_TÉCNICA: Hervidor]])
@@ -354,7 +354,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                         )}
                                     >
                                         <div className={cn(
-                                            "flex items-end gap-3 max-w-[85%]",
+                                            "flex items-end gap-3 max-w-[92%]",
                                             m.role === 'user' ? "flex-row-reverse" : "flex-row"
                                         )}>
                                             <div className={cn(
@@ -364,12 +364,12 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                 {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                                             </div>
                                             <div className={cn(
-                                                "px-5 py-3.5 rounded-2xl text-[14px] leading-relaxed",
+                                                "px-5 py-3.5 rounded-2xl text-[16px] leading-relaxed break-words [overflow-wrap:anywhere]",
                                                 m.role === 'user'
                                                     ? "bg-primary text-white rounded-br-none shadow-md font-medium"
                                                     : "bg-stone-50 text-primary/90 rounded-bl-none border border-stone-100"
                                             )}>
-                                                <div className="text-[14px] leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-800 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1">
+                                                <div className="text-[16px] leading-relaxed max-w-full overflow-x-hidden [&_p]:mb-3 [&_p:last-child]:mb-0 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-800 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-2">
                                                     <ReactMarkdown
                                                         remarkPlugins={[remarkGfm]}
                                                         urlTransform={(url) => url}
@@ -418,7 +418,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                                             href={mapsUrl}
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
-                                                                            className="text-primary font-bold underline decoration-primary/30 underline-offset-2 hover:decoration-primary transition-all whitespace-nowrap"
+                                                                            className="text-primary font-bold underline decoration-primary/30 underline-offset-2 hover:decoration-primary transition-all"
                                                                         >
                                                                             {children}
                                                                         </a>
@@ -437,13 +437,13 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                                             style={{ textDecoration: 'none' }}
                                                                             className="not-prose no-underline inline-block group"
                                                                         >
-                                                                            <span className="inline-flex items-center gap-2 mt-1.5 pl-2 pr-3 py-1.5 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all shadow-sm cursor-pointer whitespace-nowrap overflow-hidden">
+                                                                            <span className="inline-flex items-center gap-2 mt-1.5 pl-2 pr-3 py-1.5 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all shadow-sm cursor-pointer overflow-hidden max-w-full">
                                                                                 <span className="w-5 h-5 rounded-full bg-[#EA4335] flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
                                                                                     <svg width="9" height="9" viewBox="0 0 24 24" fill="white">
                                                                                         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5-2.5z"/>
                                                                                     </svg>
                                                                                 </span>
-                                                                                <span className="text-[12px] font-semibold text-slate-700 leading-none">
+                                                                                <span className="text-[12px] font-semibold text-slate-700 leading-none truncate">
                                                                                     {label}
                                                                                 </span>
                                                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 shrink-0 group-hover:text-slate-400">
@@ -497,7 +497,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                             value={input}
                             onChange={handleInputChange}
                             placeholder={placeholderLabel}
-                            className="w-full bg-stone-50 border-none rounded-2xl h-14 pl-5 pr-14 focus-visible:ring-2 focus-visible:ring-primary/5 text-sm font-medium placeholder:text-slate-400 transition-all focus:bg-white focus:shadow-sm"
+                            className="w-full bg-stone-50 border-none rounded-2xl h-14 pl-5 pr-14 focus-visible:ring-2 focus-visible:ring-primary/5 text-[16px] font-medium placeholder:text-slate-400 transition-all focus:bg-white focus:shadow-sm"
                         />
                         <button
                             type="submit"

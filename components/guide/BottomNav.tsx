@@ -40,7 +40,10 @@ export function BottomNav({
     const hasRules = !!(rulesContext?.rules_items?.length > 0 || rulesContext?.quiet_hours || rulesContext?.checkout_time) ||
         !!sections?.find(s => s.type === 'rules' || s.title?.toLowerCase().includes('normas'));
     const hasInfo = hasManuals || hasRules;
-    const hasEat = recommendations.filter(r => r.type === 'restaurant' || r.type === 'cafe' || r.type === 'bar').length > 0;
+    const hasEat = recommendations.filter(r => {
+        const type = (r.type || '').toLowerCase();
+        return ['restaurant', 'restaurante', 'cafe', 'bar', 'tapas', 'taberna', 'tapas_bar', 'bar_restaurante', 'food'].includes(type);
+    }).length > 0;
     const hasLeisure = recommendations.filter(r => r.type === 'activity' || r.type === 'park' || r.type === 'museum' || r.type === 'landmark').length > 0;
 
     const tabs = [

@@ -188,7 +188,8 @@ function RecommendationCard({
                     {/* Title + Rating Line */}
                     <div className="flex justify-between items-start gap-2 mb-0.5">
                         <h3 className={cn(
-                            "text-[15px] sm:text-base font-bold text-navy leading-tight line-clamp-2 min-h-[1.2em]",
+                            "text-[15px] sm:text-base font-bold text-navy leading-tight min-h-[1.2em]",
+                            !isExpanded && "line-clamp-2",
                             !localizedName && "h-5 w-3/4 bg-slate/10 animate-pulse rounded-md"
                         )}>
                             {localizedName}
@@ -202,7 +203,10 @@ function RecommendationCard({
                     </div>
 
                     {/* Subtitle / Description */}
-                    <p className="text-[12px] sm:text-[13px] text-slate/70 leading-snug mb-2 line-clamp-2 italic">
+                    <p className={cn(
+                        "text-[12px] sm:text-[13px] text-slate/70 leading-snug mb-2 italic",
+                        !isExpanded && "line-clamp-2"
+                    )}>
                         {editorialSummary || localizedDescription}
                     </p>
 
@@ -321,7 +325,7 @@ const groupConfigs = {
         categories: [
             'restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico',
             'alta_cocina', 'internacional', 'desayuno', 'restaurante', 'cafe',
-            'food', 'comida', 'gastronomia', 'gastronomía', 'tapas'
+            'food', 'comida', 'gastronomia', 'gastronomía', 'tapas', 'taberna', 'tapas_bar', 'bar_restaurante'
         ],
         pills: [
             { id: 'todos', label: 'Todo', type: 'todos' },
@@ -440,6 +444,10 @@ export function RecommendationsView({
             items = items.filter(r => {
                 const type = (r.type || r.category || '').toLowerCase();
                 if (type === selectedCategory) return true;
+
+                // Tapas/Taberna mapping for Restaurantes filter
+                const RESTAURANTE_SUBTYPES = ['tapas', 'taberna', 'tapas_bar', 'bar_restaurante', 'restaurante', 'food', 'comida'];
+                if (selectedCategory === 'restaurantes' && RESTAURANTE_SUBTYPES.includes(type)) return true;
 
                 // Nightlife mapping for Ocio filter
                 const OCIO_SUBTYPES = ['ocio_nocturno', 'nightclub', 'night_club', 'bar_copas', 'discoteca', 'pub'];
