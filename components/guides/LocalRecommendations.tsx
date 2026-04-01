@@ -58,6 +58,7 @@ export function LocalRecommendations({
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isEssentialModalOpen, setIsEssentialModalOpen] = useState(false)
     const [editingRec, setEditingRec] = useState<Partial<Recommendation> | null>(null)
+    const [tagsInput, setTagsInput] = useState('')
 
     const essentialCategories = [
         { id: 'supermercados', label: 'Supermercados', icon: Store, color: 'bg-orange-100 text-orange-700', desc: 'Para la compra del primer día' },
@@ -132,12 +133,13 @@ export function LocalRecommendations({
                 price_range: rec.price_range || rec.metadata?.price_range || '',
                 personal_note: rec.personal_note || rec.metadata?.personal_note || '',
                 google_place_id: rec.google_place_id || rec.metadata?.google_place_id || '',
-                tags: rec.tags || rec.metadata?.tags || [],
+                address: rec.address || (rec.metadata as any)?.address || '',
                 metadata: {
                     ...(rec.metadata || {}),
                     best_time_slots: rec.metadata?.best_time_slots || [],
                 }
             })
+            setTagsInput((rec.tags || rec.metadata?.tags || []).join(', '))
 
         } else {
             setEditingRec({
@@ -148,11 +150,13 @@ export function LocalRecommendations({
                 price_range: '',
                 description: '',
                 personal_note: '',
+                address: '',
                 tags: [],
                 metadata: {
                     best_time_slots: []
                 }
             })
+            setTagsInput('')
         }
         setIsDialogOpen(true)
     }
@@ -269,24 +273,41 @@ export function LocalRecommendations({
 
             {/* Dialog for Manual Add/Edit */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 md:p-10 border-none shadow-2xl custom-scrollbar">
-                    <DialogHeader className="text-left">
+                <DialogContent className="max-w-2xl w-[95vw] h-[85dvh] md:h-auto md:max-h-[90vh] p-0 overflow-hidden border-none shadow-2xl rounded-3xl bg-white flex flex-col">
+                    <DialogHeader className="p-6 md:p-10 pb-2 md:pb-2 text-left border-b border-slate-50 shrink-0">
                         <DialogTitle className="text-xl font-bold text-slate-900">{editingRec?.id ? 'Editar Sitio' : 'Nueva Recomendación'}</DialogTitle>
                         <DialogDescription className="text-xs font-medium text-slate-500">
                             Completa los detalles para que tus huéspedes tengan la mejor información.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-6 py-4 text-left">
-                        <div className="space-y-2">
-                            <Label htmlFor="name" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nombre del sitio</Label>
-                            <Input
-                                id="name"
-                                placeholder="Ej: Restaurante El Mirador"
-                                value={editingRec?.name || ''}
-                                onChange={e => setEditingRec({ ...editingRec, name: e.target.value })}
-                                className="h-12 rounded-xl bg-slate-50/50 border-slate-100 px-4 font-medium focus:ring-2 focus:ring-[#316263]/20"
-                            />
+                    <div className="flex-1 overflow-y-auto px-6 md:px-10 py-6 space-y-6 text-left custom-scrollbar">
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nombre del sitio</Label>
+                                <Input
+                                    id="name"
+                                    placeholder="Ej: Restaurante El Mirador"
+                                    value={editingRec?.name || ''}
+                                    onChange={e => setEditingRec({ ...editingRec, name: e.target.value })}
+                                    className="h-12 rounded-xl bg-slate-50/50 border-slate-100 px-4 font-medium focus:ring-2 focus:ring-[#316263]/20"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="address" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Dirección / Ubicación (Para Maps)</Label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                                    <Input
+                                        id="address"
+                                        placeholder="Ej: Calle Mayor 1, Madrid"
+                                        value={editingRec?.address || ''}
+                                        onChange={e => setEditingRec({ ...editingRec, address: e.target.value })}
+                                        className="h-12 rounded-xl bg-slate-50/50 border-slate-100 pl-12 pr-4 font-medium focus:ring-2 focus:ring-[#316263]/20"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-medium italic ml-1">Añadir la dirección ayuda a que Google Maps localice el sitio con precisión.</p>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -359,9 +380,11 @@ export function LocalRecommendations({
                             <Input
                                 id="tags"
                                 placeholder="Ej: Vistas, Romántico, Barato"
-                                value={(editingRec?.tags || []).join(', ')}
+                                value={tagsInput}
                                 onChange={e => {
-                                    const newTags = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
+                                    const val = e.target.value;
+                                    setTagsInput(val);
+                                    const newTags = val.split(',').map(t => t.trim()).filter(Boolean);
                                     setEditingRec({ ...editingRec, tags: newTags });
                                 }}
                                 className="h-12 rounded-xl bg-slate-50/50 border-slate-100 px-4 font-medium text-xs focus:ring-2 focus:ring-[#316263]/20"
@@ -432,10 +455,12 @@ export function LocalRecommendations({
                         </div>
                     </div>
 
-                    <DialogFooter className="gap-2 sm:gap-2 mt-6">
-                        <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-xl font-bold text-xs">Cancelar</Button>
-                        <Button onClick={handleSaveManual} className="bg-[#316263] hover:bg-[#316263]/90 text-white font-bold rounded-xl px-8 h-12 shadow-lg shadow-teal-900/20 text-sm">
-                            {editingRec?.id ? 'Actualizar Sitio' : 'Guardar Sitio'}
+                    <DialogFooter className="p-6 md:p-8 bg-slate-50 border-t border-slate-100 flex flex-row gap-3 shrink-0">
+                        <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="flex-1 h-12 rounded-xl font-bold text-slate-500 hover:text-slate-900">
+                            Cancelar
+                        </Button>
+                        <Button onClick={handleSaveManual} className="flex-1 bg-[#316263] hover:bg-[#254d4e] text-white font-bold rounded-xl h-12 shadow-lg shadow-teal-900/20 text-sm">
+                            {editingRec?.id ? 'Actualizar' : 'Guardar'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

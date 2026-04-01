@@ -17,6 +17,7 @@ export interface Recommendation {
     category?: string
     tags?: string[]
     description?: string
+    address?: string
     google_place_id?: string
     rating?: number
     opening_hours?: {

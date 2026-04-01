@@ -108,35 +108,41 @@ export async function saveWizardStep(
         // 2. Insertar nuevos
         if (stepData && stepData.length > 0) {
             const { error } = await supabase.from('property_recommendations').insert(
-                stepData.map((rec: any) => ({
-                    property_id: currentPropId,
-                    tenant_id: currentTenantId,
-                    type: rec.category || rec.type || 'restaurant',
-                    name: rec.name,
-                    description: rec.description || rec.specialty || '',
-                    distance: rec.distance || '',
-                    time: rec.time || '',
-                    price_range: rec.price_range || '',
-                    personal_note: rec.personal_note || '',
-                    google_place_id: rec.google_place_id || null,
-                    map_url: rec.map_url || null,
-                    rating: rec.rating || null,
-                    metadata: {
-                        time: rec.time,
-                        price_level: rec.price_level,
-                        price_range: rec.price_range,
-                        personal_note: rec.personal_note,
-                        photo_url: rec.metadata?.photo_url || rec.photo_url || null,
-                        rating_count: rec.metadata?.rating_count || rec.rating_count || null,
-                        editorial_summary: rec.metadata?.editorial_summary || rec.editorial_summary || null,
-                        best_time_slots: rec.best_time_slots || [],
-                        atmosphere: rec.atmosphere,
-                        tags: rec.tags || [],
-                        availability: rec.availability || { days: ["todos"], notes: "" },
-                        opening_hours: rec.metadata?.opening_hours || rec.opening_hours || null,
-                        google_place_id: rec.google_place_id || null
-                    }
-                }))
+                stepData.map((rec: any) => {
+                    const metadata = rec.metadata || {};
+                    return {
+                        property_id: currentPropId,
+                        tenant_id: currentTenantId,
+                        type: rec.category || rec.type || 'restaurant',
+                        name: rec.name,
+                        description: rec.description || rec.specialty || '',
+                        distance: rec.distance || '',
+                        time: rec.time || '',
+                        price_range: rec.price_range || '',
+                        personal_note: rec.personal_note || '',
+                        address: rec.address || '',
+                        google_place_id: rec.google_place_id || null,
+                        map_url: rec.map_url || null,
+                        rating: rec.rating || null,
+                        metadata: {
+                            ...metadata,
+                            time: rec.time || metadata.time,
+                            price_level: rec.price_level || metadata.price_level,
+                            price_range: rec.price_range || metadata.price_range,
+                            personal_note: rec.personal_note || metadata.personal_note,
+                            address: rec.address || metadata.address || '',
+                            photo_url: metadata.photo_url || rec.photo_url || null,
+                            rating_count: metadata.rating_count || rec.rating_count || null,
+                            editorial_summary: metadata.editorial_summary || rec.editorial_summary || null,
+                            best_time_slots: metadata.best_time_slots || rec.best_time_slots || [],
+                            atmosphere: rec.atmosphere || metadata.atmosphere,
+                            tags: rec.tags || metadata.tags || [],
+                            availability: rec.availability || metadata.availability || { days: ["todos"], notes: "" },
+                            opening_hours: metadata.opening_hours || rec.opening_hours || null,
+                            google_place_id: rec.google_place_id || null
+                        }
+                    };
+                })
             )
             if (error) throw error
         }

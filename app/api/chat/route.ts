@@ -410,7 +410,7 @@ export async function POST(req: Request) {
         let directRecommendations: any[] = [];
         if (isRecommendationQuery) {
             const recsQuery = supabase.from('property_recommendations')
-                .select('name, type, description, distance, personal_note, price_range, google_place_id')
+                .select('name, type, description, distance, personal_note, price_range, google_place_id, address')
                 .eq('property_id', propertyId);
 
             if (detectedTypes.length > 0) {

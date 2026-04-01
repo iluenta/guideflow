@@ -30,6 +30,8 @@ import {
     Store,
     Sunrise,
     Sunset,
+    Sun,
+    Moon,
     Telescope,
     Compass
 } from 'lucide-react';
@@ -48,6 +50,7 @@ interface Recommendation {
     personal_note?: string;
     map_url?: string;
     google_place_id?: string;
+    address?: string;
     rating?: number | null;
     tags?: string[];
     opening_hours?: {
@@ -256,7 +259,40 @@ function RecommendationCard({
 
                     {/* Expanded Detail Overlay */}
                     {isExpanded && (
-                        <div className="mt-4 space-y-3 pt-3 border-t border-navy/5 animate-in fade-in slide-in-from-top-1">
+                        <div className="mt-4 space-y-4 pt-4 border-t border-navy/5 animate-in fade-in slide-in-from-top-1">
+                            {/* Best Time Slots */}
+                            {metadata.best_time_slots && metadata.best_time_slots.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-navy/30 px-1">
+                                        Mejor momento para visitar
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {metadata.best_time_slots.map(slot => {
+                                            const timeSlotConfigs: any = {
+                                                morning: { label: 'Mañana', icon: Sunrise, color: 'text-amber-600', bg: 'bg-amber-50' },
+                                                midday: { label: 'Mediodía', icon: Sun, color: 'text-orange-600', bg: 'bg-orange-50' },
+                                                afternoon: { label: 'Tarde', icon: Sunset, color: 'text-rose-600', bg: 'bg-rose-50' },
+                                                night: { label: 'Noche', icon: Moon, color: 'text-indigo-600', bg: 'bg-indigo-50' }
+                                            };
+                                            const cfg = timeSlotConfigs[slot] || { label: slot, icon: Clock, color: 'text-navy/50', bg: 'bg-navy/5' };
+                                            const SlotIcon = cfg.icon;
+                                            return (
+                                                <div 
+                                                    key={slot}
+                                                    className={cn(
+                                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold shadow-sm border border-navy/5",
+                                                        cfg.bg, cfg.color
+                                                    )}
+                                                >
+                                                    <SlotIcon className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                                    {cfg.label}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
                             {localizedNote && (
                                 <div 
                                     className="p-3 rounded-2xl text-[12px] relative overflow-hidden group/note border border-navy/5 shadow-sm"
@@ -463,8 +499,10 @@ export function RecommendationsView({
         // If there's a specific map_url, use it.
         if (rec.map_url && rec.map_url.startsWith('http')) return rec.map_url;
 
-        const locationContext = city ? ` ${city}` : '';
-        const query = encodeURIComponent(`${rec.name}${locationContext}`);
+        // Use the specific address if available, otherwise fallback to name + city
+        const queryBase = rec.address ? `${rec.name} ${rec.address}` : `${rec.name}${city ? ` ${city}` : ''}`;
+        const query = encodeURIComponent(queryBase);
+        
         const placeId = rec.google_place_id || rec.metadata?.google_place_id;
 
         // Universal Google Maps Search URL - Works on all platforms (Mobile App & Desktop)
