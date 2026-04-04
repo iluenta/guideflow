@@ -52,9 +52,16 @@ export default async function ConversationsPage({ searchParams }: { searchParams
                                             </span>
                                         </CardDescription>
                                     </div>
-                                    <Badge variant="secondary" className="font-mono text-xs">
-                                        {Math.ceil(messageCount / 2)} interacciones
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                        {chat.language && (
+                                            <Badge variant="outline" className="bg-white border-blue-100 text-blue-600 font-bold text-[10px] uppercase">
+                                                {chat.language}
+                                            </Badge>
+                                        )}
+                                        <Badge variant="secondary" className="font-mono text-xs">
+                                            {Math.ceil(messageCount / 2)} interacciones
+                                        </Badge>
+                                    </div>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">

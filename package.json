@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 next build",
     "analyze": "cross-env ANALYZE=true next build",
     "dev": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 next dev",
     "lint": "eslint .",

@@ -15,6 +15,7 @@ interface GuestChatProps {
     accessToken?: string
     initialOpen?: boolean
     initialQuery?: string
+    guestSessionId?: string
 }
 
 function QuickReplyButton({
@@ -122,9 +123,9 @@ function injectWifiMarkers(content: string): string {
     return content;
 }
 
-export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', accessToken, initialOpen = false, initialQuery }: GuestChatProps) {
+export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', accessToken, initialOpen = false, initialQuery, guestSessionId: propGuestSessionId }: GuestChatProps) {
     const [isOpen, setIsOpen] = useState(initialOpen);
-    const [guestSessionId, setGuestSessionId] = useState('');
+    const [internalGuestSessionId, setInternalGuestSessionId] = useState('');
 
     useEffect(() => {
         let sid = localStorage.getItem('guideflow_guest_session_id');
@@ -132,7 +133,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
             sid = crypto.randomUUID();
             localStorage.setItem('guideflow_guest_session_id', sid);
         }
-        setGuestSessionId(sid);
+        setInternalGuestSessionId(sid);
     }, []);
 
     const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
@@ -141,7 +142,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
             propertyId,
             language: currentLanguage,
             accessToken,
-            guestSessionId
+            guestSessionId: propGuestSessionId || internalGuestSessionId
         },
     })
 

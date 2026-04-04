@@ -127,6 +127,38 @@ export function GuideViewContainer({
 
     const cacheKey = `guide_data_${property.id}`;
     const [localData, setLocalData] = useState<any>(null);
+    const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
+
+    // Initialize guest session
+    useEffect(() => {
+        let sid = localStorage.getItem('guideflow_guest_session_id');
+        if (!sid) {
+            sid = crypto.randomUUID();
+            localStorage.setItem('guideflow_guest_session_id', sid);
+        }
+        setGuestSessionId(sid);
+    }, []);
+
+    // Track page views
+    useEffect(() => {
+        if (currentPage && property?.id && guestSessionId) {
+            const trackView = async () => {
+                try {
+                    await fetch('/api/tracking', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            propertyId: property.id,
+                            guestSessionId,
+                            section: currentPage
+                        })
+                    });
+                } catch (err) {
+                    console.error('[TRACKING] Failed:', err);
+                }
+            };
+            trackView();
+        }
+    }, [currentPage, property?.id, guestSessionId]);
 
     useEffect(() => {
         const cached = localStorage.getItem(cacheKey);
@@ -401,6 +433,7 @@ export function GuideViewContainer({
                             accessToken={accessToken}
                             initialOpen={true}
                             initialQuery={pendingChatQuery}
+                            guestSessionId={guestSessionId || undefined}
                         />
                     ) : (
                         <button

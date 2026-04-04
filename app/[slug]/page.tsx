@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 import { GuideViewContainer } from '@/components/guide/GuideViewContainer'
 import { getLayoutTheme } from '@/lib/themes'
 import { headers, cookies } from 'next/headers'
-import { Translator } from '@/lib/gemini-i18n'
+import { Translator } from '@/lib/ai/services/gemini-i18n'
 import { playfair, oswald, nunito, cormorant, jost } from '@/lib/fonts-themes'
 
 function detectLanguageFromHeader(acceptLanguage: string): string {

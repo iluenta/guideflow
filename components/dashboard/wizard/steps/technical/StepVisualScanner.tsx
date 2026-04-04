@@ -3,7 +3,7 @@
 import React from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { TabsContent } from '@/components/ui/tabs'
-import { VisualScanner } from '@/components/guides/VisualScanner'
+import { VisualScanner } from '@/components/guide/extras/VisualScanner'
 import { useWizard } from '../../WizardContext'
 import { useToast } from '@/hooks/use-toast'
 

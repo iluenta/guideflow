@@ -151,6 +151,7 @@ EJEMPLOS:
 - "me apetece un café" → {"intent":"appliance_task","detectedTask":"hacer_cafe","foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "me apetece un café fuera" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"cafe","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "[CONTEXTO RECIENTE]: me apetece un café / [ÚLTIMO MENSAJE]: quiero fuera" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"cafe","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "[CONTEXTO RECIENTE]: tengo hambre / [ÚLTIMO MENSAJE]: ¿qué opciones tienes?" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"general","detectedErrorCode":null,"isGenericFood":true,"confidence":"high"}
 
 Responde SOLO con el JSON. Sin explicaciones, sin markdown, sin backticks.`
 

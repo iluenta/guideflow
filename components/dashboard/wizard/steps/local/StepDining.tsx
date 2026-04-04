@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { TabsContent } from '@/components/ui/tabs'
-import { LocalRecommendations } from '@/components/guides/LocalRecommendations'
+import { LocalRecommendations } from '@/components/guide/extras/LocalRecommendations'
 import { useWizard } from '../../WizardContext'
 
 export default function StepDining({ value }: { value?: string }) {

@@ -5,7 +5,7 @@ import { generateOpenAIEmbedding } from '@/lib/ai/clients/openai';
 import { streamGeminiREST } from '@/lib/ai/clients/gemini-rest';
 import { validateAccessToken, generateDeviceFingerprint, logSuspiciousActivity } from '@/lib/security';
 import { RateLimiter } from '@/lib/security/rate-limiter';
-import { TranslationService } from '@/lib/translation-service';
+import { TranslationService } from '@/lib/ai/services/translation-service';
 import { NotificationService } from '@/lib/notifications';
 import { classifyIntent, intentToStrategy, isRecommendation, isAppliance, TASK_TO_CONTEXT } from '@/lib/ai/services/intent-classifier';
 
@@ -471,6 +471,9 @@ export async function POST(req: Request) {
             // B. Datos estructurados
             ...(criticalContext || []).map((c: any) => {
                 const label = c.category === 'notes' ? 'NOTAS_ANFITRION' : `INFO_${c.category.toUpperCase()}`;
+                if (c.category === 'contacts' && (String(c.content).toLowerCase().includes('hospital') || String(c.content).toLowerCase().includes('clinic'))) {
+                    return `[SOLO_EMERGENCIAS_MEDICAS]: ${String(JSON.stringify(c.content)).replace(brandRegex, '')}`;
+                }
                 let contentString = '';
                 if (typeof c.content === 'object' && c.content !== null) {
                     if (c.category === 'access') {
@@ -692,7 +695,9 @@ ${hasDirectRecs ? (
 - Da 3-5 opciones siguiendo el formato: "- [Nombre](maps_place:id) ([distancia]) — [Descripción completa que aparece en el contexto]."
 - Usa una lista con guiones (-).`
                 ) : `
-- Si no hay recomendaciones en el contexto, di amablemente que no tienes lista guardada y sugiere preguntar a ${supportContact}.` }
+- Si no hay recomendaciones en el contexto, di amablemente que no tienes una lista de favoritos guardada todavía para esta zona específica.
+- Sugiere que pueden consultar a ${supportContact} o buscar en Google Maps general.` }
+- ⛔ NUNCA sugieras hospitales, clínicas o centros médicos como opciones para comer, ocio o compras. Estos son SOLO para [SOLO_EMERGENCIAS_MEDICAS].
 - ⛔ No inventes nombres que no estén en el CONTEXTO.
 ` : '';
 
@@ -828,27 +833,53 @@ ${formattedContext}`;
                         try {
                             const newMessages = [...messages, { role: 'assistant', content: globalAccumulatedText, timestamp: new Date().toISOString() }];
 
+                            // --- ANALYTICS ENHANCEMENT ---
+                            const isUnanswered = (relevantChunks?.length === 0 || !relevantChunks) && 
+                                               (globalAccumulatedText.includes(supportContact) || globalAccumulatedText.includes('contacta con'));
+
+                            if (isUnanswered) {
+                                await supabase.rpc('increment_unanswered_question', {
+                                    p_property_id: propertyId,
+                                    p_tenant_id: tenantId,
+                                    p_question: lastMessage,
+                                    p_intent: intent.intent
+                                });
+                            }
+
                             const { data: existingChat } = await supabase
                                 .from('guest_chats')
-                                .select('id')
+                                .select('*')
                                 .eq('guest_session_id', guestSessionId)
                                 .eq('property_id', propertyId)
                                 .maybeSingle();
 
+                            const firstMsgAt = existingChat?.created_at || new Date().toISOString();
+                            const duration = Math.floor((Date.now() - new Date(firstMsgAt).getTime()) / 1000);
+                            
+                            const existingIntents = Array.isArray(existingChat?.intent_summary) ? existingChat.intent_summary : [];
+                            const newIntents = [...new Set([...existingIntents, intent.intent])];
+
+                            const updateData = {
+                                messages: newMessages,
+                                updated_at: new Date().toISOString(),
+                                language: language,
+                                message_count: newMessages.length,
+                                session_duration_seconds: duration,
+                                intent_summary: newIntents,
+                                unanswered_count: (existingChat?.unanswered_count || 0) + (isUnanswered ? 1 : 0)
+                            };
+
                             if (existingChat) {
-                                await supabase.from('guest_chats').update({
-                                    messages: newMessages,
-                                    updated_at: new Date().toISOString()
-                                }).eq('id', existingChat.id)
-                                  .eq('property_id', propertyId); // Additional safety
+                                await supabase.from('guest_chats').update(updateData).eq('id', existingChat.id);
                             } else {
                                 await supabase.from('guest_chats').insert({
+                                    ...updateData,
                                     property_id: propertyId,
                                     tenant_id: tenantId,
-                                    guest_session_id: guestSessionId,
-                                    messages: newMessages
+                                    guest_session_id: guestSessionId
                                 });
                             }
+                            // --- END ANALYTICS ENHANCEMENT ---
                         } catch (err: any) {
                             console.error('[CHAT LOG] Failed to log chat:', err.message);
                         }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { Translator } from '@/lib/gemini-i18n';
+import { Translator } from '@/lib/ai/services/gemini-i18n';
 import { validateAccessToken, logSuspiciousActivity } from '@/lib/security';
 import { createClient } from '@/lib/supabase/server';
 import { RateLimiter } from '@/lib/security/rate-limiter';
