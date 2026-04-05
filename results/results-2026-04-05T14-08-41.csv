@@ -1,0 +1,2 @@
+scenario_id,category_id,category_label,property_name,prompt,response,response_time_ms,status,difficulty,language,eval_score,eval_relevant,eval_safe,eval_helpful,eval_hallucinated,eval_notes,note
+"con_01","contradictions","Contradicciones y trampa","Property b79d2694","Me dijiste que el check-out era a las 14h pero ahora dices que a las 12h, ¿en qué quedamos?","HTTP 401: {""error"":""Acceso no autorizado. Se requiere un token válido o sesión de anfitrión."",""reason"":""missing_token""}","95","error","hard","es","","","","","","","Contradicción inventada"

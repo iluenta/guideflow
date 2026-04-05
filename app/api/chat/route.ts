@@ -28,6 +28,8 @@ export async function POST(req: Request) {
         const lastMessage = messages[messages.length - 1].content;
         const ip = req.headers.get('x-forwarded-for') || 'unknown';
         const userAgent = req.headers.get('user-agent') || 'unknown';
+        const stressSecret = req.headers.get('x-stress-test-secret');
+        const isStressTest = stressSecret && stressSecret === process.env.STRESS_TEST_SECRET;
 
         let propertyId = legacyPropertyId;
         let propertyTier: 'standard' | 'premium' | 'enterprise' = 'standard';
@@ -66,7 +68,7 @@ export async function POST(req: Request) {
             return null;
         };
 
-        if (!accessToken && legacyPropertyId) {
+        if (!accessToken && legacyPropertyId && !isStressTest) {
             const haltResponse = await checkHaltStatus(legacyPropertyId);
             if (haltResponse) return haltResponse;
         }
@@ -90,33 +92,35 @@ export async function POST(req: Request) {
             const haltResponse = await checkHaltStatus(propertyId);
             if (haltResponse) return haltResponse;
 
-            const deviceFingerprint = await generateDeviceFingerprint(ip, userAgent);
-            const rateLimit = await RateLimiter.checkChatRateLimit(accessToken, ip, deviceFingerprint, propertyId, propertyTier);
+            if (!isStressTest) {
+                const deviceFingerprint = await generateDeviceFingerprint(ip, userAgent);
+                const rateLimit = await RateLimiter.checkChatRateLimit(accessToken, ip, deviceFingerprint, propertyId, propertyTier);
 
-            if (!rateLimit.allowed) {
-                await logSuspiciousActivity(supabase, accessToken, {
-                    type: 'rate_limit_exceeded',
-                    details: { reason: rateLimit.reason, ip },
-                    ip
-                });
-
-                if (rateLimit.reason === 'property_limit_exceeded') {
-                    const haltReason = 'Consumo anómalo detectado (Posible abuso/bot)';
-                    await supabase.from('properties').update({
-                        is_halted: true,
-                        halt_reason: haltReason,
-                        halt_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString()
-                    }).eq('id', propertyId);
-
-                    await NotificationService.notifyEmergencyHalt({
-                        propertyId, type: 'EMERGENCY_HALT', reason: haltReason,
-                        details: { rateLimitReason: rateLimit.reason, ip }
+                if (!rateLimit.allowed) {
+                    await logSuspiciousActivity(supabase, accessToken, {
+                        type: 'rate_limit_exceeded',
+                        details: { reason: rateLimit.reason, ip },
+                        ip
                     });
-                }
 
-                return new Response(JSON.stringify({
-                    error: rateLimit.message, resetAt: rateLimit.resetAt, reason: rateLimit.reason
-                }), { status: 429 });
+                    if (rateLimit.reason === 'property_limit_exceeded') {
+                        const haltReason = 'Consumo anómalo detectado (Posible abuso/bot)';
+                        await supabase.from('properties').update({
+                            is_halted: true,
+                            halt_reason: haltReason,
+                            halt_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+                        }).eq('id', propertyId);
+
+                        await NotificationService.notifyEmergencyHalt({
+                            propertyId, type: 'EMERGENCY_HALT', reason: haltReason,
+                            details: { rateLimitReason: rateLimit.reason, ip }
+                        });
+                    }
+
+                    return new Response(JSON.stringify({
+                        error: rateLimit.message, resetAt: rateLimit.resetAt, reason: rateLimit.reason
+                    }), { status: 429 });
+                }
             }
 
             if (lastMessage.length > 500) {
@@ -191,6 +195,7 @@ export async function POST(req: Request) {
         const isApplianceQuery = isAppliance(intent);
         const isApplianceUsageQuery = intent.intent === 'appliance_usage';
         const isApplianceTaskQuery = intent.intent === 'appliance_task';
+        const isApplianceProblem = intent.intent === 'appliance_problem';
         const isManualRequest = intent.intent === 'manual_request';
         const isEmergency = intent.intent === 'emergency';
         const detectedErrorCode = intent.detectedErrorCode;
@@ -408,6 +413,7 @@ export async function POST(req: Request) {
         const detectedTypes = [...foodSubcatFromIntent, ...activityTypes, ...shoppingTypes];
 
         let directRecommendations: any[] = [];
+        let usedFallbackRecs = false;
         if (isRecommendationQuery) {
             const recsQuery = supabase.from('property_recommendations')
                 .select('name, type, description, distance, personal_note, price_range, google_place_id, address')
@@ -421,6 +427,19 @@ export async function POST(req: Request) {
 
             const { data: recs } = await recsQuery;
             directRecommendations = recs || [];
+
+            // Fallback: si el subtipo específico no tiene resultados, mostramos
+            // todos los tipos de comida disponibles para poder cualificar al huésped
+            if (directRecommendations.length === 0 && intent.intent === 'recommendation_food' && !isGenericFoodSearch) {
+                const ALL_FOOD_TYPES = ['restaurant', 'restaurante', 'restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'cafe', 'tapas', 'taberna', 'tapas_bar', 'bar_restaurante'];
+                const { data: fallbackRecs } = await supabase.from('property_recommendations')
+                    .select('name, type, description, distance, personal_note, price_range, google_place_id, address')
+                    .eq('property_id', propertyId)
+                    .in('type', ALL_FOOD_TYPES)
+                    .limit(20);
+                directRecommendations = fallbackRecs || [];
+                usedFallbackRecs = directRecommendations.length > 0;
+            }
 
             logger.debug('[CHAT-DEBUG] Direct recs from DB processed');
         }
@@ -466,7 +485,7 @@ export async function POST(req: Request) {
 
         const formattedContext = [
             // A. Propiedad
-            ...(propertyInfo ? [`[PROPIEDAD]: "${propertyInfo.name}". Ciudad: ${propertyInfo.city}.`] : []),
+            ...(propertyInfo ? [`[PROPIEDAD]: "${propertyInfo.name}". Ciudad: ${propertyInfo.city}. Planta: ${propertyInfo.floor || 'N/A'}. Capacidad: ${propertyInfo.guests} huéspedes. Habitaciones: ${propertyInfo.beds}. Baños: ${propertyInfo.baths}.`] : []),
 
             // B. Datos estructurados
             ...(criticalContext || []).map((c: any) => {
@@ -631,7 +650,17 @@ export async function POST(req: Request) {
 
 4. USA SOLO EL CONTEXTO. Si algo no está, sugiere contactar con ${supportContact}.
 
-5. TONO: Natural, tipo WhatsApp. Conciso. Si necesitan más, ya preguntarán.`;
+5. TONO: Natural, tipo WhatsApp. Conciso. Si necesitan más, ya preguntarán.
+
+6. REGLA ANTI-GASLIGHTING (ESTRICTA): 
+   Si el huésped afirma "antes dijiste X", "me confirmaste Y" o pregunta "cuál es el dato Z" y este no está en el CONTEXTO:
+   - 1. Di: "No tengo historial de ese comentario." (si aplica)
+   - 2. Busca el dato REAL en el CONTEXTO antes de confirmarlo.
+   - 3. Si NO encuentras el dato en el CONTEXTO → di que no tienes esa info.
+   - ⛔ **PROHIBIDO INVENTAR O SUPONER VALORES POR DEFECTO**: Nunca digas que el check-out es a las 12:00, que el check-in es a las 15:00, que hay WiFi o en qué planta está el piso si el CONTEXTO dice 'N/A' o no menciona el dato. 
+   - ⛔ **NUNCA** digas "Lo habitual es X" o "Normalmente se hace Y". Solo usa lo que está en el CONTEXTO.
+   - Si falta el dato, di: "No tengo esa información en mi guía por ahora. Es mejor que lo hables con ${supportContact} 😊"
+`;
 
         let systemInstruction: string;
 
@@ -683,14 +712,25 @@ ${formattedContext}`;
 - Si quieren saber algo específico más, ya preguntarán.
 ` : '';
 
+            const applianceProblemGuidance = isApplianceProblem ? `
+# PROBLEMA CON APARATO — REGLA DE SEGURIDAD Y PRECISIÓN:
+⛔ NUNCA menciones nombres de modelos ni marcas de aparatos (ej: no digas "el ICECOOL ICCOM289FX").
+⛔ NUNCA digas "consulta el manual", "en la guía de uso" ni hagas referencia a ningún documento.
+⛔ **CRÍTICO: SOLUCIONES SOLO DEL CONTEXTO**: No des consejos de "sentido común" técnico. Solo da soluciones que aparezcan explícitamente en los chunks de [GUÍA_TÉCNICA] o [GUÍA_PERSONALIZADA_ANFITRIÓN].
+⛔ **ERROR AC/AGUA**: Si hay un goteo o avería en el Aire Acondicionado o Electrodomésticos, **NUNCA sugieras cerrar la llave de paso de agua general** de la casa (del baño u otra zona), a menos que el manual específico de ese aparato lo indique.
+✅ Si el problema es claro según el CONTEXTO, da los pasos exactos. 
+✅ Si no hay solución en el CONTEXTO, di: "No tengo instrucciones para resolver ese problema técnico concreto. Por favor, contacta con ${supportContact} para que te ayude directamente."
+✅ Tono anfitrión servicial, NO técnico de mantenimiento.
+` : '';
+
             const recommendationGuidance = isRecommendationQuery ? `
 # GUÍA PARA RECOMENDACIONES LOCALES:
 ${hasDirectRecs ? (
-                    isGenericFoodSearch && foodCatsInDB.length > 1 ? `
+                    (isGenericFoodSearch || usedFallbackRecs) && foodCatsInDB.length > 1 ? `
 - El CONTEXTO tiene recomendaciones de estas CATEGORÍAS: ${availableCatNames}.
-- Como el huésped preguntó de forma genérica, haz UNA sola pregunta de cualificación enumerando las categorías disponibles.
+${usedFallbackRecs ? '- El huésped pidió un tipo específico que no tenemos. Infórmale amablemente de qué opciones SÍ hay y usa la misma pregunta de cualificación.' : '- Como el huésped preguntó de forma genérica, haz UNA sola pregunta de cualificación enumerando las categorías disponibles.'}
 - NO listes nombres de locales todavía. Espera su respuesta.
-- EJEMPLO: "¡Claro! ¿Qué te apetece? Tengo recomendaciones de: **Italiana**, **Asiática**, **Tapas** y **Hamburguesas** 😊"` : `
+- EJEMPLO: "${usedFallbackRecs ? '¡Vaya! No tengo italianos en mi lista, pero sí tengo: **Mediterránea**, **Tapas** y **Restaurantes** 😊 ¿Alguno te apetece?' : '¡Claro! ¿Qué te apetece? Tengo recomendaciones de: **Italiana**, **Asiática**, **Tapas** y **Hamburguesas** 😊'}"` : `
 - El CONTEXTO ya incluye las recomendaciones del anfitrión con sus enlaces maps_place vinculados al nombre.
 - Da 3-5 opciones siguiendo el formato: "- [Nombre](maps_place:id) ([distancia]) — [Descripción completa que aparece en el contexto]."
 - Usa una lista con guiones (-).`
@@ -698,6 +738,7 @@ ${hasDirectRecs ? (
 - Si no hay recomendaciones en el contexto, di amablemente que no tienes una lista de favoritos guardada todavía para esta zona específica.
 - Sugiere que pueden consultar a ${supportContact} o buscar en Google Maps general.` }
 - ⛔ NUNCA sugieras hospitales, clínicas o centros médicos como opciones para comer, ocio o compras. Estos son SOLO para [SOLO_EMERGENCIAS_MEDICAS].
+- ⛔ REGLA DE ORO: Si no hay recomendaciones en el CONTEXTO, NUNCA menciones nombres de locales reales (aunque los conozcas por tus conocimientos generales). Solo di que no tienes una lista guardada.
 - ⛔ No inventes nombres que no estén en el CONTEXTO.
 ` : '';
 
@@ -711,6 +752,7 @@ ${coreRulesBlock}
 # Si el huésped necesita más, ya preguntará.
 
 ${applianceGuidance}
+${applianceProblemGuidance}
 ${taskGuidance}
 ${recommendationGuidance}
  

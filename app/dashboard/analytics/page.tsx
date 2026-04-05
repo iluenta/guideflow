@@ -16,9 +16,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { RefreshCw, BarChart, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 
 export default function AnalyticsPage() {
   const { profile } = useUserProfile();
@@ -28,12 +28,14 @@ export default function AnalyticsPage() {
 
   const [stats, setStats] = useState({
     totalConversations: 0,
-    languagesCount: 0,
+    languagesCount: 1,
+    timeSaved: "~0h",
+    callsAvoided: 0,
     avgMessages: 0,
     avgDuration: 0,
     totalResolved: 0,
-    intentDistribution: [] as any[],
-    sectionUsage: [] as any[],
+    intentDistribution: [] as { intent: string; count: number }[],
+    sectionUsage: [] as { section: string; count: number }[],
     unansweredQuestions: [] as any[],
     recentChats: [] as any[],
   });
@@ -44,37 +46,49 @@ export default function AnalyticsPage() {
     const supabase = createClient();
 
     try {
+      // 1. Properties
       const { data: props } = await supabase
         .from("properties")
         .select("id, name")
         .eq("tenant_id", profile.tenant_id);
-
       setProperties(props || []);
 
+      // 2. Guest chats
       let chatQuery = supabase
         .from("guest_chats")
         .select("*")
         .eq("tenant_id", profile.tenant_id)
         .order("created_at", { ascending: false });
-
       if (selectedPropertyId !== "all") {
         chatQuery = chatQuery.eq("property_id", selectedPropertyId);
       }
-
       const { data: chats } = await chatQuery;
 
       if (chats) {
         const total = chats.length;
         const languages = new Set(chats.map((c) => c.language).filter(Boolean));
-        const avgMsg =
-          total > 0
-            ? chats.reduce((acc, c) => acc + (c.message_count || 0), 0) / total
-            : 0;
-        const avgDur =
-          total > 0
-            ? chats.reduce((acc, c) => acc + (c.session_duration_seconds || 0), 0) / total
-            : 0;
+        const languagesCount = languages.size || 1;
 
+        // Tiempo ahorrado: ~12 min por conversación evitada al propietario
+        const totalMinutesSaved = total * 12;
+        const hoursSaved = Math.floor(totalMinutesSaved / 60);
+        const remainingMins = totalMinutesSaved % 60;
+        const timeSaved = hoursSaved > 0
+          ? `~${hoursSaved}h${remainingMins > 0 ? ` ${remainingMins}m` : ""}`
+          : `~${remainingMins}m`;
+
+        // Llamadas evitadas: 25% de las conversaciones hubieran sido llamadas
+        const callsAvoided = Math.round(total * 0.25);
+
+        // Métricas de sesión
+        const avgMessages = total > 0
+          ? chats.reduce((acc, c) => acc + (c.message_count || 0), 0) / total
+          : 0;
+        const avgDuration = total > 0
+          ? chats.reduce((acc, c) => acc + (c.session_duration_seconds || 0), 0) / total
+          : 0;
+
+        // Intent distribution
         const intentCounts: Record<string, number> = {};
         chats.forEach((c) => {
           if (Array.isArray(c.intent_summary)) {
@@ -83,25 +97,24 @@ export default function AnalyticsPage() {
             });
           }
         });
-
-        const sortedIntents = Object.entries(intentCounts)
+        const intentDistribution = Object.entries(intentCounts)
           .map(([intent, count]) => ({ intent, count }))
           .sort((a, b) => b.count - a.count)
           .slice(0, 5);
 
-        const resolved =
-          total > 0
-            ? (chats.filter((c) => (c.message_count || 0) >= 2).length / total) * 100
-            : 0;
+        // Tasa de resolución: sesiones con ≥2 mensajes = conversación completada
+        const totalResolved = total > 0
+          ? Math.round((chats.filter((c) => (c.message_count || 0) >= 2).length / total) * 100)
+          : 0;
 
+        // Últimas 5 conversaciones enriquecidas para la lista
         const propMap = new Map(props?.map((p) => [p.id, p.name]));
-        const recent = chats.slice(0, 3).map((c) => {
+        const recentChats = chats.slice(0, 5).map((c) => {
           const msgs = Array.isArray(c.messages) ? c.messages : [];
           const firstQuestion =
-            msgs.find((m: any) => m.role === "user")?.content || "...";
+            msgs.find((m: any) => m.role === "user" || m.role === "guest")?.content || "...";
           const lastAiResponse =
-            [...msgs].reverse().find((m: any) => m.role === "assistant")?.content || "...";
-
+            [...msgs].reverse().find((m: any) => m.role === "assistant" || m.role === "guide")?.content || "...";
           return {
             ...c,
             property_name: propMap.get(c.property_id) || "Property",
@@ -113,15 +126,18 @@ export default function AnalyticsPage() {
         setStats((prev) => ({
           ...prev,
           totalConversations: total,
-          languagesCount: languages.size || 1,
-          avgMessages: avgMsg,
-          avgDuration: avgDur,
-          totalResolved: Math.round(resolved),
-          intentDistribution: sortedIntents,
-          recentChats: recent,
+          languagesCount,
+          timeSaved,
+          callsAvoided,
+          avgMessages,
+          avgDuration,
+          totalResolved,
+          intentDistribution,
+          recentChats,
         }));
       }
 
+      // 3. Preguntas sin respuesta
       let unQuery = supabase
         .from("unanswered_questions")
         .select("*")
@@ -133,10 +149,11 @@ export default function AnalyticsPage() {
       const { data: unanswered } = await unQuery;
       setStats((prev) => ({ ...prev, unansweredQuestions: unanswered || [] }));
 
+      // 4. Vistas de secciones de la guía
       let viewQuery = supabase.from("guide_section_views").select("section, id");
       if (selectedPropertyId === "all") {
         const propIds = props?.map((p) => p.id) || [];
-        viewQuery = viewQuery.in("property_id", propIds);
+        if (propIds.length > 0) viewQuery = viewQuery.in("property_id", propIds);
       } else {
         viewQuery = viewQuery.eq("property_id", selectedPropertyId);
       }
@@ -146,13 +163,13 @@ export default function AnalyticsPage() {
         views.forEach((v) => {
           sectionCounts[v.section] = (sectionCounts[v.section] || 0) + 1;
         });
-        const sortedViews = Object.entries(sectionCounts)
+        const sectionUsage = Object.entries(sectionCounts)
           .map(([section, count]) => ({ section, count }))
           .sort((a, b) => b.count - a.count);
-        setStats((prev) => ({ ...prev, sectionUsage: sortedViews }));
+        setStats((prev) => ({ ...prev, sectionUsage }));
       }
     } catch (err: any) {
-      console.error("[ANALYTICS] Fetch Error:", err.message);
+      console.error("[ANALYTICS] Error:", err.message);
       toast.error("Error al cargar las analíticas");
     } finally {
       setIsLoading(false);
@@ -164,8 +181,9 @@ export default function AnalyticsPage() {
   }, [profile?.tenant_id, selectedPropertyId]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-1000 pb-12 min-h-screen -m-4 p-4 md:-m-8 md:p-8 bg-curator-mint/10">
-      {/* Header */}
+    <div className="space-y-6 animate-in fade-in duration-700 pb-12 min-h-screen -m-4 p-4 md:-m-8 md:p-8 bg-curator-mint/10">
+
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between px-1">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
@@ -198,11 +216,7 @@ export default function AnalyticsPage() {
                 All Estates
               </SelectItem>
               {properties.map((p) => (
-                <SelectItem
-                  key={p.id}
-                  value={p.id}
-                  className="font-bold text-[9px] uppercase tracking-widest"
-                >
+                <SelectItem key={p.id} value={p.id} className="font-bold text-[9px] uppercase tracking-widest">
                   {p.name.toUpperCase()}
                 </SelectItem>
               ))}
@@ -222,17 +236,19 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* ── KPIs ───────────────────────────────────────────────────────────── */}
       <ExecutiveSummaryCard
         totalConversations={stats.totalConversations}
+        timeSaved={stats.timeSaved}
+        callsAvoided={stats.callsAvoided}
         languagesCount={stats.languagesCount}
         isLoading={isLoading}
       />
 
-      {/* ── Layout principal ─────────────────────────────────────────────────── */}
+      {/* ── Layout principal ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
 
-        {/* Columna izquierda */}
+        {/* Columna principal */}
         <div className="xl:col-span-8 space-y-6">
           <RecentConversations conversations={stats.recentChats} isLoading={isLoading} />
 

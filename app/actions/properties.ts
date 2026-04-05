@@ -64,6 +64,7 @@ export type Property = {
     beds: number
     baths: number
     guests: number
+    floor: string | null
     status: 'draft' | 'active' | 'archived'
     description?: string | null  // eliminado en migration 033; opcional para compatibilidad
     main_image_url: string | null

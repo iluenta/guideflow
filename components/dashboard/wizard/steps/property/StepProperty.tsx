@@ -242,22 +242,27 @@ export default function StepProperty({ value }: { value?: string }) {
                 </div>
 
                 {/* ── Stats ────────────────────────────────────── */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     {[
-                        { label: 'Huéspedes', key: 'guests' },
-                        { label: 'Habitaciones', key: 'beds' },
-                        { label: 'Baños', key: 'baths' },
-                    ].map(({ label, key }) => (
+                        { label: 'Huéspedes', key: 'guests', type: 'number' },
+                        { label: 'Habitaciones', key: 'beds', type: 'number' },
+                        { label: 'Baños', key: 'baths', type: 'number' },
+                        { label: 'Planta', key: 'floor', type: 'text' },
+                    ].map(({ label, key, type }) => (
                         <div key={key} className="space-y-2">
                             <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center block">{label}</Label>
                             <Input
-                                type="number"
-                                min={1}
+                                type={type}
+                                placeholder={type === 'text' ? 'Bajo' : undefined}
                                 className="h-12 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-[#316263]/20 text-center text-xl font-bold"
                                 value={data.property?.[key] || ''}
                                 onChange={e => {
-                                    const val = e.target.value === '' ? 0 : parseInt(e.target.value)
-                                    setData({ ...data, property: { ...data.property, [key]: isNaN(val) ? 0 : val } })
+                                    if (type === 'number') {
+                                        const val = e.target.value === '' ? 0 : parseInt(e.target.value)
+                                        setData({ ...data, property: { ...data.property, [key]: isNaN(val) ? 0 : val } })
+                                    } else {
+                                        setData({ ...data, property: { ...data.property, [key]: e.target.value } })
+                                    }
                                 }}
                             />
                         </div>

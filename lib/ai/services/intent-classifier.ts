@@ -121,7 +121,11 @@ Analiza el mensaje del huésped (y el contexto reciente si se proporciona) y dev
 VALORES PERMITIDOS para "intent":
 - "emergency": incendio, humo, olor a gas, fuga, inundación, emergencia médica
 - "error_code": el huésped menciona un código de error de aparato (E1, F3, etc.)
-- "appliance_problem": electrodoméstico roto, no funciona, no enciende, hace ruido, avería
+- "appliance_problem": electrodoméstico roto, no funciona, no enciende, hace ruido, avería.
+  IMPORTANTE: Si el huésped NO identifica el aparato concreto (ej: "oigo un ruido raro", "algo hace ruido", "hay un pitido", "viene de arriba"), clasifica igualmente como appliance_problem. El asistente hará las preguntas de diagnóstico.
+  Si el huésped SÍ menciona el aparato (ej: "el frigorífico hace ruido", "la lavadora no enciende"), también es appliance_problem.
+  NUNCA usar appliance_usage para problemas o fallos: appliance_problem es para averías, appliance_usage es solo para preguntar cómo se usa algo.
+
 - "appliance_usage": el huésped pregunta CÓMO FUNCIONA o CÓMO SE USA un aparato concreto.
   ej: "¿cómo pongo la lavadora?", "cómo uso el horno", "cómo funciona la cafetera"
 - "manual_request": el huésped pide el manual, todas las instrucciones, o TODOS los códigos/errores de un aparato.
@@ -143,17 +147,34 @@ VALORES PERMITIDOS para "intent":
 VALORES PERMITIDOS para "detectedTask" (solo si intent es "appliance_task"):
 - "lavar_ropa", "cocinar_pizza", "cocinar_pasta", "hacer_cafe", "hacer_tostadas", "cocinar_huevos", "cocinar_carne", "cocinar_pescado", "calentar_comida", "planchar", "poner_frio", "poner_calor", "lavar_vajilla", "general_cooking"
 
+REGLA DE PRIORIDAD \u2014 MENSAJES CON INTENCIÓN MIXTA:
+Cuando el mensaje contiene múltiples intents, SIEMPRE clasifica según la INTENCIÓN FINAL del huésped (lo que pide al final del mensaje), no según menciones anteriores.
+- "iba a hacer pasta pero voy a comer fuera, ¿me recomiendas algo?" → recommendation_food (aunque mencione "hacer pasta", la acción final es salir a comer)
+- "no tengo ganas de cocinar, ¿dónde puedo cenar?" → recommendation_food
+- "el horno no funciona así que quiero pedir comida" → recommendation_food
+- "tenía pensado lavar pero al final voy a salir, ¿hay algo cerca?" → recommendation_activity o recommendation_food según contexto
+Señales de "comer fuera": "comer fuera", "cenar fuera", "salir a comer", "busco restaurante", "me recomiendas dónde", "hay algún sitio para".
+Señales que NO implican comer fuera: "me apetece un café", "quiero hacer pasta", "voy a cocinar" SIN mencionar salir.
+
 EJEMPLOS:
 - "tengo unas toallas sucias" → {"intent":"appliance_task","detectedTask":"lavar_ropa","foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "¿cómo pongo la lavadora?" → {"intent":"appliance_usage","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "la lavadora pone E5" → {"intent":"error_code","detectedTask":null,"foodSubtype":null,"detectedErrorCode":"E5","isGenericFood":false,"confidence":"high"}
-- "echame el manual del horno" → {"intent":"manual_request","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "échame el manual del horno" → {"intent":"manual_request","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "¿Cómo funciona la lavadora?" → {"intent":"appliance_usage","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "me apetece un café" → {"intent":"appliance_task","detectedTask":"hacer_cafe","foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "me apetece un café fuera" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"cafe","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "[CONTEXTO RECIENTE]: me apetece un café / [ÚLTIMO MENSAJE]: quiero fuera" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"cafe","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "[CONTEXTO RECIENTE]: tengo hambre / [ÚLTIMO MENSAJE]: ¿qué opciones tienes?" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"general","detectedErrorCode":null,"isGenericFood":true,"confidence":"high"}
+- "oigo un ruido raro en la cocina" → {"intent":"appliance_problem","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "del frigorífico" → {"intent":"appliance_problem","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "[CONTEXTO RECIENTE]: oigo un ruido / [ÚLTIMO MENSAJE]: no, viene de arriba" → {"intent":"appliance_problem","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "iba a hacer pasta pero como no hay agua voy a comer fuera, ¿me recomiendas algún italiano?" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"italiano","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "el horno no funciona, ¿hay algún restaurante cerca?" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"general","detectedErrorCode":null,"isGenericFood":true,"confidence":"high"}
+- "y algún restaurante en general?" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"general","detectedErrorCode":null,"isGenericFood":true,"confidence":"high"}
 
 Responde SOLO con el JSON. Sin explicaciones, sin markdown, sin backticks.`
+
 
 // ═══════════════════════════════════════════════════════
 // FALLBACK

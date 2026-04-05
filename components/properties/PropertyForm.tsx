@@ -21,6 +21,7 @@ const propertySchema = z.object({
     beds: z.number().min(0).default(1),
     baths: z.number().min(0).default(1),
     guests: z.number().min(1).default(2),
+    floor: z.string().optional().nullable(),
     description: z.string().optional(),
     main_image_url: z.string().optional().nullable(),
     theme_config: z.object({
@@ -64,6 +65,7 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
             beds: property?.beds || 1,
             baths: property?.baths || 1,
             guests: property?.guests || 2,
+            floor: property?.floor || '',
             description: property?.description || '',
             main_image_url: property?.main_image_url || null,
             theme_config: property?.theme_config || { primary_color: '#ef4444' },
@@ -218,7 +220,7 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
                             )}
                         />
 
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <FormField
                                 control={form.control}
                                 name="beds"
@@ -253,6 +255,19 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
                                         <FormLabel>Huéspedes</FormLabel>
                                         <FormControl>
                                             <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="floor"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Planta / Piso</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Ej: 3º B" {...field} value={field.value || ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

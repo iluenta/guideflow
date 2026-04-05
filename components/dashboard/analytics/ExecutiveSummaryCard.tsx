@@ -14,30 +14,29 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon: Icon, variant = "default", isLoading }: StatCardProps) {
   const isDark = variant === "dark";
-
   return (
     <Card className={cn(
-      "border-none shadow-curator rounded-[2rem] overflow-hidden transition-all duration-500 hover:scale-[1.02]",
+      "border-none shadow-sm rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]",
       isDark ? "bg-curator-primary text-white" : "bg-white text-curator-on-surface"
     )}>
-      <CardContent className="p-8 space-y-6">
+      <CardContent className="p-5 space-y-4">
         <div className={cn(
-          "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner",
+          "w-9 h-9 rounded-xl flex items-center justify-center",
           isDark ? "bg-white/10" : "bg-curator-mint"
         )}>
-          <Icon className={cn("w-6 h-6", isDark ? "text-teal-300" : "text-curator-primary")} />
+          <Icon className={cn("w-4 h-4", isDark ? "text-teal-300" : "text-curator-primary")} />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {isLoading ? (
-            <div className={cn("h-10 w-20 animate-pulse rounded-lg", isDark ? "bg-white/10" : "bg-curator-mint")} />
+            <div className={cn("h-8 w-16 animate-pulse rounded-lg", isDark ? "bg-white/10" : "bg-curator-mint")} />
           ) : (
-            <p className="text-5xl font-extrabold tracking-tighter font-manrope">
+            <p className="text-4xl font-extrabold tracking-tighter font-manrope leading-none">
               {value}
             </p>
           )}
           <p className={cn(
-            "text-[11px] font-bold uppercase tracking-[0.2em] font-manrope leading-tight",
-            isDark ? "text-white/60" : "text-curator-on-surface/40"
+            "text-[9px] font-bold uppercase tracking-[0.2em] font-manrope",
+            isDark ? "text-white/50" : "text-curator-on-surface/40"
           )}>
             {label}
           </p>
@@ -49,40 +48,45 @@ function StatCard({ label, value, icon: Icon, variant = "default", isLoading }: 
 
 interface ExecutiveSummaryProps {
   totalConversations: number;
+  timeSaved: string;
+  callsAvoided: number;
   languagesCount: number;
   isLoading?: boolean;
 }
 
-export function ExecutiveSummaryCard({ totalConversations, languagesCount, isLoading }: ExecutiveSummaryProps) {
-  const timeSavedHours = Math.floor((totalConversations * 12) / 60);
-  const callsAvoided = Math.round(totalConversations * 0.2);
-
+export function ExecutiveSummaryCard({
+  totalConversations,
+  timeSaved,
+  callsAvoided,
+  languagesCount,
+  isLoading,
+}: ExecutiveSummaryProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <StatCard 
-        label="Conversations" 
-        value={totalConversations} 
-        icon={MessageSquare} 
-        isLoading={isLoading} 
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <StatCard
+        label="Conversations"
+        value={totalConversations}
+        icon={MessageSquare}
+        isLoading={isLoading}
       />
-      <StatCard 
-        label="Time Saved" 
-        value={`~${timeSavedHours}h`} 
-        icon={Clock} 
-        isLoading={isLoading} 
+      <StatCard
+        label="Time Saved"
+        value={timeSaved}
+        icon={Clock}
+        isLoading={isLoading}
       />
-      <StatCard 
-        label="Calls Avoided" 
-        value={callsAvoided} 
-        icon={Phone} 
-        isLoading={isLoading} 
+      <StatCard
+        label="Calls Avoided"
+        value={callsAvoided}
+        icon={Phone}
+        isLoading={isLoading}
       />
-      <StatCard 
-        label="Languages" 
-        value={languagesCount} 
-        icon={Globe} 
+      <StatCard
+        label="Languages"
+        value={languagesCount}
+        icon={Globe}
         variant="dark"
-        isLoading={isLoading} 
+        isLoading={isLoading}
       />
     </div>
   );
