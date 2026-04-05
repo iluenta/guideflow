@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageCircleOff, Plus, ChevronRight, HelpCircle } from "lucide-react";
+import { MessageCircleOff, CheckCircle2, ChevronRight, HelpCircle } from "lucide-react";
 import Link from "next/link";
 
 interface UnansweredQuestion {
@@ -19,57 +19,84 @@ interface UnansweredQuestionsListProps {
   isLoading?: boolean;
 }
 
+function getTabForIntent(intent?: string): string {
+  switch (intent) {
+    case 'wifi':
+    case 'tech':
+      return 'tech';
+    case 'appliance_usage':
+    case 'manual_request':
+      return 'appliance-manuals';
+    case 'checkin':
+    case 'access':
+      return 'checkin';
+    case 'recommendation_food':
+    case 'recommendation_activity':
+      return 'dining';
+    case 'rules':
+      return 'rules';
+    case 'emergency':
+      return 'contacts';
+    default:
+      return 'welcome';
+  }
+}
+
 export function UnansweredQuestionsList({
   questions,
   propertyId,
   isLoading,
 }: UnansweredQuestionsListProps) {
   return (
-    <Card className="border-none shadow-sm bg-white rounded-2xl overflow-hidden flex flex-col">
-      <CardHeader className="bg-curator-mint/50 px-5 py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
-            <MessageCircleOff className="w-4 h-4 text-curator-primary" />
+    <Card className="border-none shadow-sm bg-white rounded-[2rem] overflow-hidden flex flex-col h-full border border-red-50">
+      <CardHeader className="bg-gradient-to-r from-amber-50/50 to-transparent px-8 py-6 border-b border-amber-100/50">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center shadow-sm shrink-0">
+            <MessageCircleOff className="w-5 h-5 text-amber-600" />
           </div>
           <div>
-            <CardTitle className="text-sm font-extrabold text-curator-on-surface font-manrope tracking-tight leading-none">
-              Silent Queries
+            <CardTitle className="text-[14px] font-extrabold text-slate-800 font-manrope tracking-tight leading-none mb-1">
+              Lo que tus huéspedes preguntan y tu guía no responde
             </CardTitle>
-            <CardDescription className="text-[10px] text-curator-teal/60 font-medium font-manrope mt-0.5">
-              Encounters where the guide reached its current limits.
+            <CardDescription className="text-[11px] text-slate-500 font-medium font-manrope">
+              Preguntas identificadas donde el asistente no tenía información suficiente.
             </CardDescription>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-3 flex-grow">
+      <CardContent className="p-4 flex-grow bg-slate-50/30">
         {isLoading ? (
-          <div className="space-y-2 p-2">
+          <div className="space-y-3 p-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-12 bg-curator-mint/30 rounded-xl animate-pulse" />
+              <div key={i} className="h-16 bg-slate-100 rounded-2xl animate-pulse" />
             ))}
           </div>
         ) : questions.length > 0 ? (
-          <>
-            <div className="space-y-1.5">
-              {questions.map((q) => (
+          <div className="space-y-2">
+            {questions.map((q) => {
+              const targetTab = getTabForIntent(q.intent);
+              
+              return (
                 <div
                   key={q.id}
-                  className="flex items-center justify-between p-3 bg-curator-surface/30 rounded-xl hover:bg-curator-surface transition-all duration-200 group"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-slate-200 transition-all duration-200 group gap-3"
                 >
-                  <div className="flex items-start gap-2 min-w-0">
-                    <HelpCircle className="w-3.5 h-3.5 text-curator-teal/30 group-hover:text-curator-primary transition-colors shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="mt-0.5">
+                      <HelpCircle className="w-4 h-4 text-amber-500/70" />
+                    </div>
                     <div className="min-w-0">
-                      <p className="text-[11px] font-bold text-curator-on-surface leading-tight font-manrope truncate">
+                      <p className="text-[13px] font-bold text-slate-800 leading-tight font-manrope">
                         "{q.question}"
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="flex items-center gap-1 text-[8px] font-extrabold text-curator-primary uppercase tracking-widest">
-                          <span className="w-1 h-1 rounded-full bg-curator-primary animate-pulse" />
-                          {q.times_asked}×
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-600 uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded-md">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          {q.times_asked}× veces
                         </span>
-                        <span className="text-[8px] text-curator-teal/40 font-bold uppercase tracking-wider">
-                          {new Date(q.asked_at).toLocaleDateString()}
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          Última vez: {new Date(q.asked_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                         </span>
                       </div>
                     </div>
@@ -77,40 +104,27 @@ export function UnansweredQuestionsList({
 
                   <Button
                     asChild
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="rounded-lg hover:bg-curator-primary hover:text-white text-curator-teal/40 h-7 px-2 shrink-0 ml-2"
+                    className="rounded-xl border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800 shrink-0 h-9 font-bold text-[10px] uppercase tracking-widest w-full sm:w-auto"
                   >
-                    <Link href={`/dashboard/properties/${propertyId}/setup`}>
-                      <ChevronRight className="w-3 h-3" />
+                    <Link href={`/dashboard/properties/${propertyId}/setup?tab=${targetTab}`}>
+                      Añadir a la guía <ChevronRight className="w-3.5 h-3.5 ml-1" />
                     </Link>
                   </Button>
                 </div>
-              ))}
-            </div>
-
-            <div className="pt-3 flex justify-center">
-              <Button
-                asChild
-                variant="link"
-                className="text-curator-primary font-bold text-[9px] font-manrope tracking-widest uppercase hover:text-curator-teal h-auto p-0 group"
-              >
-                <Link href={`/dashboard/properties/${propertyId}/setup`} className="flex items-center gap-1.5">
-                  Enrich Knowledge Base
-                  <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-                </Link>
-              </Button>
-            </div>
-          </>
+              );
+            })}
+          </div>
         ) : (
-          <div className="py-10 text-center space-y-3">
-            <div className="w-14 h-14 bg-curator-mint rounded-full flex items-center justify-center mx-auto">
-              <Plus className="w-6 h-6 text-curator-primary opacity-20" />
+          <div className="py-16 text-center space-y-4">
+            <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-7 h-7 text-emerald-500" />
             </div>
             <div>
-              <p className="text-curator-primary font-extrabold text-sm font-manrope">Seamless Knowledge</p>
-              <p className="text-curator-teal/60 text-[11px] max-w-[220px] mx-auto font-manrope leading-relaxed mt-1">
-                Your guide has resolved every query this month. The digital concierge is fully informed.
+              <p className="text-slate-800 font-extrabold text-sm font-manrope">¡Todo perfecto!</p>
+              <p className="text-slate-500 text-[12px] max-w-[250px] mx-auto font-manrope mt-1">
+                Tu guía responde todo lo que preguntan tus huéspedes. Buen trabajo.
               </p>
             </div>
           </div>
