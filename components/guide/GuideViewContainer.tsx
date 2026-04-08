@@ -98,7 +98,7 @@ export function GuideViewContainer({
     accessToken,
     tokenLanguage,
     initialLanguage = 'es',
-    initialTranslations = {}
+    initialTranslations = {},
 }: GuideViewContainerProps) {
     const themeId: string =
         branding?.layout_theme_id ||

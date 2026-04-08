@@ -4,7 +4,11 @@
  * Esto permite que el stress test funcione sin errores 401.
  */
 
+import * as path from "path";
+import { config } from "dotenv";
 import { generateSecureToken } from "../../lib/security";
+
+config({ path: path.resolve(__dirname, "../../.env.stress") });
 
 // Desactivar validación TLS para entornos con proxies/VPNs
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";

@@ -64,3 +64,8 @@ all_files.csv
 scraped_debug.html
 tsc-output.log
 test-results.json
+
+# Chat stress test results
+scripts/chat-stress-test/results/
+scripts/chat-stress-test/*.json
+!scripts/chat-stress-test/properties.json
