@@ -2,7 +2,6 @@
 // Construye el system instruction de Gemini según el intent.
 // Extraído de app/api/chat/route.ts líneas 644–797.
 
-import { TASK_TO_CONTEXT } from '@/lib/ai/services/intent-classifier';
 import type { PropertyContext, ChatContextParams } from './types';
 
 // ─── Bloques constantes de módulo ────────────────────────────────────────────
@@ -43,6 +42,7 @@ function buildCoreRulesBlock(supportContact: string): string {
    - Para datos específicos de la propiedad (normas, acceso, WiFi, check-in/out, contactos): USA SOLO EL CONTEXTO. Si no está, di que no tienes esa info y sugiere contactar con ${supportContact}.
    - Para uso genérico de electrodomésticos (cómo usar una lavadora, qué olla usar en inducción, limpiar vitrocerámica): PUEDES usar conocimiento general si el CONTEXTO no lo cubre — es información válida que evita llamadas innecesarias.
    - ⛔ NUNCA respondas una pregunta con un chunk del CONTEXTO que trate un tema diferente. Si preguntan por barbacoas y el contexto habla de no fumar, di que no tienes esa info específica. NO extrapoles ni mezcles temas.
+   - 📺 EXCEPCIÓN INTERNET/SMART TV: Si el huésped pregunta si la TV u otro aparato "tiene internet" o "es Smart", y el CONTEXTO o el manual del aparato menciona Netflix, Prime Video, Smart Hub, aplicaciones o WiFi integrado → CONFIRMA que sí tiene internet/Smart TV. No digas que no tienes información — es una capacidad del aparato, no un dato de la propiedad.
 
 5. TONO: Natural, tipo WhatsApp. Conciso. Si necesitan más, ya preguntarán.
 
