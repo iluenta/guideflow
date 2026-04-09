@@ -134,8 +134,15 @@ export async function fetchPropertyContext(
         const name = contactsData.support_name || 'Soporte';
         const mobile = contactsData.support_mobile || contactsData.host_mobile || '';
         const phone = contactsData.support_phone || contactsData.host_phone || '';
-        const bestNumber = mobile || phone;
-        if (bestNumber) supportContact = `${name}: ${bestNumber}`;
+        const parts: string[] = [];
+        if (name) parts.push(name);
+        if (mobile) parts.push(`WhatsApp/móvil: ${mobile}`);
+        if (phone && phone !== mobile) parts.push(`Tel: ${phone}`);
+        if (parts.length > 1) {
+            supportContact = parts.join(' · ');
+        } else if (mobile || phone) {
+            supportContact = `${name}: ${mobile || phone}`;
+        }
     }
 
     // ── foodCatsInDB: categorías de comida presentes en las recomendaciones ──
