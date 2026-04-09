@@ -425,32 +425,18 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                                         </a>
                                                                     );
                                                                 }
-                                                                // maps: — legacy map pill (Google Maps search)
+                                                                // maps: — búsqueda por nombre+ciudad, mismo estilo que maps_place
                                                                 if (href?.startsWith('maps:')) {
                                                                     const encodedAddress = href.slice('maps:'.length);
                                                                     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-                                                                    const label = decodeURIComponent(String(children));
                                                                     return (
                                                                         <a
                                                                             href={mapsUrl}
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
-                                                                            style={{ textDecoration: 'none' }}
-                                                                            className="not-prose no-underline inline-block group"
+                                                                            className="text-primary font-bold underline decoration-primary/30 underline-offset-2 hover:decoration-primary transition-all"
                                                                         >
-                                                                            <span className="inline-flex items-center gap-2 mt-1.5 pl-2 pr-3 py-1.5 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all shadow-sm cursor-pointer overflow-hidden max-w-full">
-                                                                                <span className="w-5 h-5 rounded-full bg-[#EA4335] flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
-                                                                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="white">
-                                                                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5-2.5z"/>
-                                                                                    </svg>
-                                                                                </span>
-                                                                                <span className="text-[12px] font-semibold text-slate-700 leading-none truncate">
-                                                                                    {label}
-                                                                                </span>
-                                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 shrink-0 group-hover:text-slate-400">
-                                                                                    <polyline points="9 18 15 12 9 6"/>
-                                                                                </svg>
-                                                                            </span>
+                                                                            {children}
                                                                         </a>
                                                                     );
                                                                 }

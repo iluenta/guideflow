@@ -96,6 +96,8 @@ function buildRecommendationLines(
 ): string[] {
     if (!params.flags.isRecommendationQuery || ctx.directRecommendations.length === 0) return [];
 
+    const city = ctx.propertyInfo?.city || '';
+
     if (params.isGenericFoodSearch && ctx.foodCatsInDB.length > 1) {
         const catSummary = ctx.foodCatsInDB.map(c => CATEGORY_LABEL_NAMES[c] || c).join(', ');
         const previewRecs = ctx.directRecommendations.slice(0, 5).map(r =>
@@ -122,13 +124,18 @@ function buildRecommendationLines(
         const itemLines = items.map((r: any) => {
             let namePart: string;
             if (r.google_place_id) {
+                // place_id verificado → enlace exacto
                 namePart = `[${r.name}](maps_place:${r.google_place_id})`;
             } else {
-                const searchQuery = encodeURIComponent(r.address ? `${r.name}, ${r.address}` : r.name);
-                namePart = `[${r.name}](maps:${searchQuery})`;
+                // sin place_id → búsqueda nombre + ciudad para acotar geográficamente
+                const searchTerm = r.address || (city ? `${r.name}, ${city}` : r.name);
+                const q = encodeURIComponent(searchTerm);
+                namePart = `[${r.name}](maps:${q})`;
             }
             let line = `- ${namePart}`;
-            if (r.distance) line += ` (${r.distance})`;
+            // Omitir distancia nula o placeholder
+            const dist = r.distance;
+            if (dist && dist !== 'null' && dist !== 'N/A') line += ` (${dist})`;
             if (r.price_range) line += ` ${r.price_range}`;
             if (r.description) line += `: ${r.description.substring(0, 150)}`;
             if (r.personal_note) line += ` 💬 "${r.personal_note}"`;

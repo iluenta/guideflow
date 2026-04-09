@@ -107,17 +107,30 @@ function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
   if (!place.photos || place.photos.length === 0) return false;
 
   // 2. Umbrales adaptativos por zona y categoría
-  const isNatureOrCulture = ['cultura', 'naturaleza'].includes(catLabel.toLowerCase());
-  const isRural = zone.type === 'town' || zone.type === 'rural';
+  const cat = catLabel.toLowerCase();
+  const isNatureOrCulture = ['cultura', 'naturaleza'].includes(cat);
 
-  let minReviews = 20;
-  let minRating = 3.8;
+  let minReviews: number;
+  let minRating: number;
 
-  if (isNatureOrCulture) {
-    minReviews = 5; // Miradores/parajes naturales suelen tener menos volumen
-  } else if (isRural) {
-    minReviews = 8;
-    minRating = 3.5;
+  switch (zone.type) {
+    case 'metropolis':
+      minReviews = isNatureOrCulture ? 30 : 25;
+      minRating = 4.0;
+      break;
+    case 'city':
+      minReviews = isNatureOrCulture ? 20 : 20;
+      minRating = 3.9;
+      break;
+    case 'town':
+      minReviews = isNatureOrCulture ? 10 : 12;
+      minRating = 3.7;
+      break;
+    case 'rural':
+    default:
+      minReviews = isNatureOrCulture ? 5 : 8;
+      minRating = 3.5;
+      break;
   }
 
   if ((place.user_ratings_total || 0) < minReviews) return false;
@@ -141,6 +154,9 @@ function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
   const types = place.types || [];
   const hasRealType = types.some((t: string) => !blacklist.includes(t));
   if (!hasRealType) return false;
+
+  // 4. Distancia mínima para parques/naturaleza (evita jardines del propio edificio)
+  if (isNatureOrCulture && (place.realDistanceMeters || 0) < 150) return false;
 
   return true;
 }
@@ -271,8 +287,12 @@ async function searchWithFallback(params: {
   }
 
   // Priorizar los mas cercanos y filtrar por un radio útil
-  // En ciudad, limitamos a lo que sea razonable caminando (máx 30 min = ~2km haversine)
-  const distanceLimit = zone.preferCar ? zone.driveRadius : Math.min(zone.walkRadius, 2000);
+  // Naturaleza/cultura: siempre limitar a distancia peatonal/ciclable (máx 4km) — no tiene sentido
+  // recomendar un embalse a 10km cuando hay parques más cercanos.
+  const isNatureOrCultureCat = ['naturaleza', 'cultura'].includes(catLabel.toLowerCase());
+  const distanceLimit = isNatureOrCultureCat
+    ? Math.min(zone.walkRadius, 4000)
+    : zone.preferCar ? zone.driveRadius : Math.min(zone.walkRadius, 2000);
 
   return collected
     .filter(r => r.realDistanceMeters != null && r.realDistanceMeters <= distanceLimit)
@@ -512,13 +532,13 @@ export async function POST(req: Request) {
               return `[${cat.toUpperCase()}]: Sin resultados de Google. Usa conocimiento de ${property.city}.`;
             }
             const lines = places.slice(0, 6).map(r =>
-              `  - ${r.name} | Rating: ${r.rating ?? 'N/A'} | Distancia_Contexto: ${r.realDistance ?? 'desconocida'} | ${r.vicinity ?? r.formatted_address ?? ''} | ID: ${r.place_id}`
+              `  - ${r.name} (${r.vicinity ?? r.formatted_address ?? ''}) | Rating: ${r.rating ?? 'N/A'} | ${r.realDistance ?? 'desconocida'} | ID: ${r.place_id}`
             ).join('\n');
             return `[${cat.toUpperCase()}] (${places.length} candidatos):\n${lines}`;
           })
           .join('\n\n')
         : allPlacesResults.slice(0, 18).map(r =>
-          `- ${r.name} | Rating: ${r.rating ?? 'N/A'} | Distancia_Contexto: ${r.realDistance ?? 'desconocida'} | ${r.vicinity ?? r.formatted_address ?? ''} | ID: ${r.place_id}`
+          `- ${r.name} (${r.vicinity ?? r.formatted_address ?? ''}) | Rating: ${r.rating ?? 'N/A'} | ${r.realDistance ?? 'desconocida'} | ID: ${r.place_id}`
       ).join('\n');
 
       const existingNamesStr = (existingData?.existingNames || []).join(', ');
@@ -539,16 +559,20 @@ CUOTAS OBLIGATORIAS — respeta EXACTAMENTE estas cantidades:
 TOTAL: ${numRequested} recomendaciones.
 ` : '';
 
+      const singleCatBlock = !isTodos ? `
+⚠️ CATEGORÍA ÚNICA: Solo genera recomendaciones de tipo "${selectedCat}". PROHIBIDO incluir restaurantes, supermercados, cafeterías ni cualquier otro tipo. Si el listado de Places está vacío o tiene pocos sitios relevantes, genera ÚNICAMENTE sitios de la categoría "${selectedCat}" usando tu conocimiento de ${property.city}. Máximo 6 resultados.
+` : '';
+
       const prompt = `Anfitrión experto en ${property.city}. Guía de "${property.name}".
 
 LUGARES GOOGLE PLACES:
 ${placesContext || `Sin datos. Usa conocimiento de ${property.city}.`}
 
-${todosBlock}
+${todosBlock}${singleCatBlock}
 
-REGLAS CRÍTICAS: 
+REGLAS CRÍTICAS:
 1. PRIORIDAD: Usa los lugares del contextos Google Places de arriba si están disponibles.
-2. REGLA DEL ID: Si usas un sitio del listado de Google, COPIA su "ID" exactamente. Si el listado de Google está VACÍO, usa tu conocimiento real, pero pon "google_place_id": null.
+2. REGLA DEL ID Y NOMBRE: Si usas un sitio del listado de Google, COPIA su "ID" exactamente Y usa el nombre EXACTO tal como aparece en el listado (incluyendo barrio o sufijo). NUNCA uses el nombre genérico de una cadena si el listado muestra la sucursal específica. Ejemplo: si el listado dice "Lateral Paseo de Recoletos", escribe ese nombre completo en el JSON, no solo "Lateral". Si el listado está VACÍO, usa tu conocimiento y pon "google_place_id": null.
 3. PROHIBIDO: Inventar IDs. Prohibido añadir "(Inventado)" al nombre.
 4. PROHIBIDO usar la palabra "REALDISTANCE".
 5. "METROS" significa < 2 min andando. "MIN" son minutos.
@@ -599,7 +623,25 @@ SOLO JSON:`;
         const result = await generateWithRetry(prompt);
         recommendations = parseRecs(result);
 
-        // Forzar tipo en modo refill para evitar que el frontend los filtre
+        // Descartar cualquier recomendación que no sea del tipo solicitado (Gemini puede colarse)
+        // Solo se descarta si claramente es otro tipo — si type es null/undefined lo aceptamos
+        const CATEGORY_ALIASES: Record<string, string[]> = {
+          naturaleza: ['naturaleza', 'nature', 'park', 'parque'],
+          cultura: ['cultura', 'culture', 'museum', 'monumento'],
+          ocio: ['ocio', 'ocio_nocturno', 'leisure', 'entertainment'],
+          restaurantes: ['restaurantes', 'restaurant'],
+          tapas: ['tapas', 'bar', 'tapas_bar'],
+          desayuno: ['desayuno', 'cafe', 'breakfast'],
+          supermercados: ['supermercados', 'supermarket'],
+          compras: ['compras', 'shopping'],
+        };
+        const validTypes = new Set(CATEGORY_ALIASES[selectedCat] || [selectedCat]);
+        recommendations = recommendations.filter(r => {
+          if (!r.type) return true; // sin tipo → aceptar
+          return validTypes.has(r.type.toLowerCase());
+        });
+
+        // Forzar tipo correcto en todos los resultados que quedan
         recommendations = recommendations.map(r => ({ ...r, type: selectedCat }));
       }
 
@@ -616,7 +658,7 @@ SOLO JSON:`;
 
       recommendations = await Promise.all(recommendations.map(async rec => {
         const recNameNorm = normalizeHtml(rec.name || '');
-        
+
         // Limpiamos google_place_id del metadata generado por Gemini (evita conflictos)
         const { google_place_id: _ignored, ...cleanMetadata } = rec.metadata || {};
         let metadata = {
@@ -624,23 +666,36 @@ SOLO JSON:`;
             personal_note: rec.personal_note || cleanMetadata.personal_note || null
         };
 
-        // Verificación mejorada — match exacto o por substring (para museos/lugares largos)
+        // Verificación: place_id exacto primero, luego nombre más cercano
         let verified = rec.google_place_id ? realIds.has(rec.google_place_id) : false;
         if (!verified) {
-            verified = realNamesMap.has(recNameNorm) || 
+            verified = realNamesMap.has(recNameNorm) ||
                       [...realNamesMap.keys()].some(k => k.includes(recNameNorm) || recNameNorm.includes(k));
         }
 
-        let placeId = rec.google_place_id;
+        // Descartar place_ids alucinados (Gemini pone el nombre en vez de "ChIJ...")
+        let placeId: string | null = (rec.google_place_id && realIds.has(rec.google_place_id))
+            ? rec.google_place_id
+            : null;
         let realPlace: any = null;
-        
+
+        const findClosestByName = (norm: string) => {
+            const candidates = allPlacesResults.filter(p => {
+                const pNorm = normalizeHtml(p.name || '');
+                return pNorm === norm || pNorm.includes(norm) || norm.includes(pNorm);
+            });
+            return candidates.sort((a, b) => (a.realDistanceMeters || 9999) - (b.realDistanceMeters || 9999))[0] ?? null;
+        };
+
         if (verified || placeId) {
-            realPlace = allPlacesResults.find(p => 
-                (placeId && p.place_id === placeId) || 
-                normalizeHtml(p.name || '') === recNameNorm ||
-                normalizeHtml(p.name || '').includes(recNameNorm) ||
-                recNameNorm.includes(normalizeHtml(p.name || ''))
-            );
+            // Primero: match exacto por place_id verificado
+            if (placeId) {
+                realPlace = allPlacesResults.find(p => p.place_id === placeId) ?? null;
+            }
+            // Si no, buscar por nombre y coger el más cercano
+            if (!realPlace) {
+                realPlace = findClosestByName(recNameNorm);
+            }
             if (!placeId && realPlace) {
                 placeId = realPlace.place_id;
                 verified = true;
@@ -648,11 +703,8 @@ SOLO JSON:`;
         }
 
         if (!verified && !placeId) {
-            // Intento desesperado: buscar por substring si no es verificado
-            realPlace = allPlacesResults.find(p => 
-                normalizeHtml(p.name || '').includes(recNameNorm) || 
-                recNameNorm.includes(normalizeHtml(p.name || ''))
-            );
+            // Intento desesperado: buscar por substring, siempre el más cercano
+            realPlace = findClosestByName(recNameNorm);
             if (realPlace) {
                 verified = true;
                 placeId = realPlace.place_id;
@@ -674,12 +726,13 @@ SOLO JSON:`;
 
         if (needsDistFix) {
             if (!realPlace) {
-                realPlace = allPlacesResults.find(p => 
-                  (placeId && p.place_id === placeId) ||
-                  normalizeHtml(p.name || '') === recNameNorm ||
-                  normalizeHtml(p.name || '').includes(recNameNorm) ||
-                  recNameNorm.includes(normalizeHtml(p.name || ''))
-                );
+                // Usar place_id exacto si existe, si no el más cercano por nombre
+                if (placeId && realIds.has(placeId)) {
+                    realPlace = allPlacesResults.find(p => p.place_id === placeId) ?? null;
+                }
+                if (!realPlace) {
+                    realPlace = findClosestByName(recNameNorm);
+                }
             }
 
             if (realPlace?.realDistance) {
