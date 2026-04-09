@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import {
   Calendar,
   TrendingUp,
@@ -100,9 +103,28 @@ const recentActivity = [
   },
 ];
 
+function DashboardErrorHandler() {
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error) {
+      toast({ title: "Aviso", description: error, variant: "destructive" });
+      // Limpiar el parámetro de la URL sin recargar
+      const url = new URL(window.location.href);
+      url.searchParams.delete('error');
+      window.history.replaceState(null, '', url.toString());
+    }
+  }, []);
+
+  return null;
+}
+
 export default function DashboardPage() {
   return (
     <div className="space-y-8">
+      <Suspense fallback={null}><DashboardErrorHandler /></Suspense>
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

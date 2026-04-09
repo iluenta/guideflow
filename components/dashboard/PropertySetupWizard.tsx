@@ -25,7 +25,7 @@ interface PropertySetupWizardProps {
 
 /**
  * PropertySetupWizard - Orchestrator Component
- * 
+ *
  * Provides the WizardContext to all its children and renders the layout
  * with all the individual step components.
  */

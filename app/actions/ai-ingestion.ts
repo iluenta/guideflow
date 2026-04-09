@@ -173,20 +173,41 @@ FORMATO DE SALIDA (JSON ESTRICTO):
 
         const generateManualsInBackground = async () => {
             try {
-                logT(`[PHASE2] Starting background manual generation for ${identifiedAppliances.length} appliances...`)
+                logT(`[PHASE2] Starting manual generation for ${identifiedAppliances.length} appliances...`)
                 const MANUAL_CONCURRENCY = 3;
+
+                // Deduplicación intra-batch
+                const processedTypesInBatch = new Set<string>();
+
+                // Fetch existentes UNA sola vez (no N queries en loop)
+                const { data: existingManuals } = replaceExisting
+                    ? await supabase.from('property_manuals').select('id, appliance_name').eq('property_id', currentPropId)
+                    : { data: [] as any[] };
 
                 async function generateOneManual(item: IdentificationResult, index: number): Promise<{ success: boolean; error?: string }> {
                     try {
                         const { url, analysis, imgRecordId } = item
-                        logT(`[PHASE2] [${index + 1}/${identifiedAppliances.length}] Generating manual: ${analysis.appliance_type} (${analysis.brand || '?'})`)
+
+                        // Skip duplicados del mismo scan
+                        const typeKey = (analysis.appliance_type || '').toUpperCase().trim();
+                        if (processedTypesInBatch.has(typeKey)) {
+                            logT(`[PHASE2] [${index + 1}] Skipping duplicate type: ${typeKey}`);
+                            return { success: true };
+                        }
+                        processedTypesInBatch.add(typeKey);
+
+                        logT(`[PHASE2] [${index + 1}/${identifiedAppliances.length}] Generating: ${analysis.appliance_type} (${analysis.brand || '?'})`)
 
                         const [groundingResult, errorCodesResult] = await Promise.allSettled([
                             fetchGroundingData(analysis.brand, analysis.model, analysis.appliance_type),
                             fetchErrorCodes(analysis.brand, analysis.model, analysis.appliance_type)
                         ])
-                        const groundingData = groundingResult.status === 'fulfilled' ? groundingResult.value : ''
-                        const errorCodesData = errorCodesResult.status === 'fulfilled' ? errorCodesResult.value : ''
+
+                        // Validar contexto ≥ MIN_CONTEXT_CHARS antes de usar
+                        const groundingData = (groundingResult.status === 'fulfilled' && (groundingResult.value?.length ?? 0) >= MIN_CONTEXT_CHARS)
+                            ? groundingResult.value : '';
+                        const errorCodesData = (errorCodesResult.status === 'fulfilled' && (errorCodesResult.value?.length ?? 0) >= MIN_CONTEXT_CHARS)
+                            ? errorCodesResult.value : '';
                         logT(`[PHASE2] [${index + 1}] Context: ${groundingData?.length || 0} chars technical + ${errorCodesData?.length || 0} chars errors`)
 
                         const manualContent = await generateManualSinglePass(url, analysis, groundingData, errorCodesData)
@@ -196,18 +217,11 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                         }
                         logT(`[PHASE2] [${index + 1}] Manual: ${manualContent.length} chars`)
 
-                        if (replaceExisting) {
-                            const normalizedTargetType = (analysis.appliance_type || '').toUpperCase().trim()
-                            const { data: existingManuals } = await supabase
-                                .from('property_manuals')
-                                .select('id, appliance_name, brand, model')
-                                .eq('property_id', currentPropId)
-
-                            const duplicate = existingManuals?.find(m => {
+                        if (replaceExisting && existingManuals) {
+                            const duplicate = existingManuals.find((m: any) => {
                                 const existingType = (m.appliance_name || '').toUpperCase().trim()
-                                return existingType === normalizedTargetType
+                                return existingType === typeKey
                             })
-
                             if (duplicate) {
                                 logT(`[PHASE2] [${index + 1}] Replacing existing: ${duplicate.id}`)
                                 await supabase.from('property_manuals').delete().eq('id', duplicate.id)
@@ -216,7 +230,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                         }
 
                         const { data: manual, error: manError } = await supabase.from('property_manuals').insert({
-                            property_id: propertyId,
+                            property_id: currentPropId,
                             tenant_id: tenant_id,
                             appliance_name: analysis.appliance_type || 'Aparato',
                             brand: analysis.brand,
@@ -226,6 +240,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                                 confidence: 'high',
                                 has_pdf: false,
                                 has_web: false,
+                                generation_version: 2,
                                 visual: analysis
                             }
                         }).select().single()
@@ -953,14 +968,23 @@ Si tu modelo incluye Aquálisis:
     return cleanContent || '## 3. Consejos\n\n- Usa con precaución\n- Limpia después de usar'
 }
 
+// ─── Límites pipeline ────────────────────────────────────────────────────────
+const MAX_OUTPUT_TOKENS = 2048;
+const MAX_MANUAL_CHARS = 12_000;
+const MIN_CONTEXT_CHARS = 50;
+
 async function fetchGroundingData(brand: string, model: string, type: string): Promise<string> {
-    const query = `Busca información técnica detallada, ficha de producto y SOLUCIÓN DE PROBLEMAS (tabla de errores) para el siguiente aparato: ${brand} ${type} ${model}.
+    const hasSpecificModel = model && model !== 'No identificado' && model !== 'Desconocido' && model.length > 2;
+    const brandLabel = (!brand || brand === 'Desconocido' || brand === 'Desconocida') ? '' : brand;
+    const modelLabel = hasSpecificModel ? model : '';
+
+    const query = `Busca información técnica detallada, ficha de producto y SOLUCIÓN DE PROBLEMAS (tabla de errores) para el siguiente aparato: ${brandLabel} ${type} ${modelLabel}.
     Necesito saber:
     1. Capacidad real y potencia.
     2. Significado de botones o luces.
     3. Tiempos de funcionamiento/espera estándar.
     4. Tabla de errores frecuentes y cómo resetearlo.
-    
+
     TODO DEBE ESTAR EN ESPAÑOL.
     IMPORTANTE: Dame solo los datos crudos, sin formato de manual aún.`
 
@@ -1195,6 +1219,8 @@ async function generateManualSinglePass(
 ): Promise<string> {
     const applianceType = basicAnalysis.appliance_type || 'Electrodoméstico';
     const specificInstructions = getApplianceSpecificInstructions(applianceType);
+    const brand = basicAnalysis.brand || '';
+    const isUnknown = !brand || brand === 'Desconocido' || brand === 'Desconocida';
 
     const systemInstruction = `Eres un experto en electrodomésticos que crea manuales de uso PRÁCTICOS para huéspedes de apartamentos turísticos.
 
@@ -1205,78 +1231,102 @@ IDENTIDAD Y TONO:
 
 REGLAS DE ORO:
 1. Empieza directamente con el título h1 (ej: # Guía de Uso: Horno Balay)
-2. NO escribas preámbulos
-3. NO repitas información ya escrita
-4. Usa markdown limpio (sin bloques de código)
-5. NUNCA describas controles de forma abstracta — describe CADA programa/función con su nombre y PARA QUÉ SIRVE
-6. Para CADA programa/función, describe el SÍMBOLO o ICONO que verá el usuario en el mando/panel
-7. Si no tienes datos específicos del modelo, usa conocimiento general del tipo de aparato
+2. NO escribas preámbulos ni repeticiones
+3. Usa markdown limpio (sin bloques de código)
+4. NUNCA describas controles de forma abstracta — describe cada función con su nombre
+5. Para cada programa/modo, describe el SÍMBOLO o ICONO visible en el panel
+6. ⚠️ LÍMITE ESTRICTO: máximo 600 palabras en total. Sé conciso y directo.
 
 FORMATO OBLIGATORIO:
-- Título: # Guía de Uso: [Tipo de aparato] [Marca]
-- 4 secciones: Panel de Control, Programas y Funciones, Diagnóstico de Problemas, Consejos Prácticos
-- Máximo 2500 palabras
+- Título: # Guía de Uso: [Tipo] [Marca si la conoces]
+- 3-4 secciones: Primeros Pasos / Programas y Funciones / Diagnóstico de Problemas / Consejos Útiles
+- Cada sección: máximo 5-6 puntos
 
 ${specificInstructions}
 
 SECCIÓN "Diagnóstico de Problemas" (OBLIGATORIA):
 - Tabla markdown: | Código/Señal | Significado | Solución |
-- Incluir TODOS los códigos de error disponibles
+- Máximo 8-10 códigos de error más frecuentes
 - Al final: "Si el problema persiste, contacta con el personal de soporte"
 
 PROHIBIDO:
 - Mencionar MODELOS TÉCNICOS en el texto — solo marca y tipo
-- Decir "no tengo información"
-- Mencionar la imagen ("en la foto se ve...")`;
+- Inventar funciones o botones que no existen en este tipo de aparato
+- Decir "no tengo información" — si no tienes datos específicos, usa conocimiento general básico
+- Mencionar la imagen ("en la foto se ve...")
+- Repetir información ya escrita`;
 
-    const userPrompt = `Genera un manual de uso PRÁCTICO para este electrodoméstico.
+    const userPrompt = `Genera un manual de uso PRÁCTICO y CONCISO para este electrodoméstico.
 
 DATOS DEL APARATO:
 - Tipo: ${applianceType}
-- Marca: ${basicAnalysis.brand || 'Desconocida'}
+- Marca: ${isUnknown ? 'No identificada' : brand}
 - Modelo (solo referencia, NO pongas en el manual): ${basicAnalysis.model || 'No identificado'}
 
 ${groundingData ? `
-INFORMACIÓN TÉCNICA DEL MANUAL OFICIAL:
-${groundingData.substring(0, 12000)}
-` : `⚠️ Sin manual oficial. Usa conocimiento general sobre ${applianceType} de la marca ${basicAnalysis.brand}.`}
+INFORMACIÓN TÉCNICA DEL MANUAL OFICIAL (úsala como base):
+${groundingData.substring(0, 8000)}
+` : `⚠️ Sin manual oficial. Usa conocimiento general sobre ${applianceType}${isUnknown ? '' : ` de la marca ${brand}`}.`}
 
 ${errorCodesData ? `
 CÓDIGOS DE ERROR Y DIAGNÓSTICO:
-${errorCodesData.substring(0, 5000)}
-⚠️ Integra TODOS estos códigos en la sección "Diagnóstico de Problemas".
-` : `⚠️ Sin códigos específicos. Incluye los problemas más comunes para ${applianceType}.`}
+${errorCodesData.substring(0, 3000)}
+⚠️ Incluye los más relevantes en la sección "Diagnóstico de Problemas" (máximo 10).
+` : `⚠️ Sin códigos específicos. Incluye los 5-6 problemas más comunes para ${applianceType}.`}
 
-RECUERDA: La sección más importante es "Programas y Funciones". Lista CADA programa con PARA QUÉ SIRVE en la vida real.`;
+RECUERDA: Máximo 600 palabras. Calidad > cantidad.`;
 
     try {
-        logT(`[GEN-SINGLE] Expert generation for ${basicAnalysis.brand} ${applianceType}`);
+        logT(`[GEN] Generating: ${brand || 'genérico'} ${applianceType}`);
 
-        const { data: manual, error } = await geminiVision(imageUrl, userPrompt, {
+        const opts = {
             systemInstruction,
             responseMimeType: 'text/plain',
-            temperature: 0.25,
-            maxOutputTokens: 6000
-        });
+            temperature: 0.2,
+            maxOutputTokens: MAX_OUTPUT_TOKENS
+        };
 
+        // Usar visión si hay imagen válida, fallback a texto si la imagen fue eliminada
+        let result = imageUrl && isValidExternalUrl(imageUrl)
+            ? await geminiVision(imageUrl, userPrompt, opts)
+            : await geminiREST('gemini-2.0-flash', userPrompt, opts);
+
+        if (result.error && imageUrl) {
+            logT(`[GEN] Image unavailable (${result.error}), retrying without image...`);
+            result = await geminiREST('gemini-2.0-flash', userPrompt, opts);
+        }
+
+        const { data: manual, error } = result;
         if (error) throw new Error(`Gemini error: ${error}`);
-        if (!manual || (manual as string).length < 500) throw new Error('Generated manual too short');
+        if (!manual || (manual as string).length < 300) throw new Error('Manual generado demasiado corto');
 
-        const cleaned = (manual as string).trim();
+        let cleaned = (manual as string).trim();
+
+        // Cap post-generación
+        if (cleaned.length > MAX_MANUAL_CHARS) {
+            const cutoff = cleaned.lastIndexOf('\n\n', MAX_MANUAL_CHARS);
+            cleaned = cutoff > 0 ? cleaned.substring(0, cutoff) : cleaned.substring(0, MAX_MANUAL_CHARS);
+            logT(`[GEN] Manual truncated to ${cleaned.length} chars`);
+        }
 
         if (!cleaned.startsWith('#')) {
             const h1Index = cleaned.indexOf('#');
-            if (h1Index !== -1) return cleaned.substring(h1Index).trim();
-            return `# Guía de Uso: ${basicAnalysis.brand || ''} ${basicAnalysis.model || applianceType}\n\n${cleaned}`;
+            if (h1Index !== -1) cleaned = cleaned.substring(h1Index).trim();
+            else cleaned = `# Guía de Uso: ${isUnknown ? '' : brand + ' '}${applianceType}\n\n${cleaned}`;
         }
 
-        logT(`[GEN-SINGLE] ✅ Manual generated: ${cleaned.length} chars`);
+        logT(`[GEN] ✅ Manual: ${cleaned.length} chars`);
         return cleaned;
 
     } catch (err: any) {
-        logT(`[GEN-ERROR] ${err.message}`);
+        logT(`[GEN] ERROR: ${err.message}`);
         throw err;
     }
+}
+
+// Exportada para uso en endpoints de quality test (no guarda en DB)
+export async function generateManualForQualityTest(imageUrl: string, basicAnalysis: any): Promise<string> {
+    return generateManualSinglePass(imageUrl, basicAnalysis, '', '');
 }
 
 export async function regenerateManualAction(manualId: string) {

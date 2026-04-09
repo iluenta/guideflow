@@ -29,14 +29,26 @@ export function splitIntoChunks(text: string, maxLength: number = 800): string[]
     let currentChunk = '';
 
     for (const para of paragraphs) {
-        if ((currentChunk + para).length > maxLength && currentChunk) {
+        // Párrafo solo ya supera el límite → dividir por líneas (cubre tablas markdown)
+        if (para.length > maxLength) {
+            if (currentChunk) { chunks.push(currentChunk.trim()); currentChunk = ''; }
+            for (const line of para.split('\n')) {
+                const joined = currentChunk ? currentChunk + '\n' + line : line;
+                if (joined.length > maxLength && currentChunk) {
+                    chunks.push(currentChunk.trim());
+                    currentChunk = line;
+                } else {
+                    currentChunk = joined;
+                }
+            }
+        } else if ((currentChunk + '\n\n' + para).length > maxLength && currentChunk) {
             chunks.push(currentChunk.trim());
             currentChunk = para;
         } else {
             currentChunk = currentChunk ? currentChunk + '\n\n' + para : para;
         }
     }
-    if (currentChunk) chunks.push(currentChunk.trim());
+    if (currentChunk.trim()) chunks.push(currentChunk.trim());
 
     return chunks;
 }

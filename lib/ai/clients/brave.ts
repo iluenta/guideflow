@@ -1,6 +1,13 @@
 import axios from 'axios';
 
+// Throttle de módulo: máximo ~0.9 req/s para evitar rate limit 429
+let _lastBraveCall = 0;
+const BRAVE_MIN_INTERVAL_MS = 1100;
+
 export async function searchBrave(query: string, count: number = 5, extraSnippets: boolean = true) {
+    const wait = BRAVE_MIN_INTERVAL_MS - (Date.now() - _lastBraveCall);
+    if (wait > 0) await new Promise(res => setTimeout(res, wait));
+    _lastBraveCall = Date.now();
     let retries = 0;
     const maxRetries = 2;
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
