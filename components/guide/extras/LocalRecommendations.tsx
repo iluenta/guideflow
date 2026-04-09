@@ -101,6 +101,8 @@ export function LocalRecommendations({
             ...editingRec,
             // Prioritize existing category, then selected category (if not 'todos'), then fallback to 'restaurantes'
             category: editingRec.category || (selectedCategory !== 'todos' ? selectedCategory : 'restaurantes'),
+            // Normalize empty string to null so the fallback maps: link works
+            google_place_id: editingRec.google_place_id || null,
             metadata: {
                 ...(editingRec.metadata || {}),
                 best_time_slots: editingRec.metadata?.best_time_slots || [],
@@ -453,6 +455,33 @@ export function LocalRecommendations({
                                 className="h-12 rounded-xl bg-slate-50/50 border-slate-100 px-4 font-medium italic text-xs focus:ring-2 focus:ring-[#316263]/20"
                             />
                         </div>
+
+                        {/* Google Place ID — visible only when set, so host can verify/clear if wrong */}
+                        {editingRec?.google_place_id && (
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Enlace Google Maps (asignado por IA)</Label>
+                                <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                                    <span className="text-[10px] text-slate-500 font-mono flex-1 truncate">{editingRec.google_place_id}</span>
+                                    <a
+                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(editingRec.name || '')}&query_place_id=${editingRec.google_place_id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[10px] font-bold text-[#316263] hover:underline shrink-0"
+                                    >
+                                        Verificar
+                                    </a>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingRec({ ...editingRec, google_place_id: '' })}
+                                        className="text-[10px] font-bold text-red-400 hover:text-red-600 shrink-0"
+                                    >
+                                        Limpiar
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-slate-400 italic ml-1">Si Maps abre el sitio incorrecto, pulsa "Limpiar" para usar la búsqueda por nombre.</p>
+                            </div>
+                        )}
                     </div>
 
                     <DialogFooter className="p-6 md:p-8 bg-slate-50 border-t border-slate-100 flex flex-row gap-3 shrink-0">
