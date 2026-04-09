@@ -120,9 +120,13 @@ function buildRecommendationLines(
     return Object.entries(grouped).map(([cat, items]) => {
         const catLabel = CATEGORY_LABEL_MAP[cat] || 'RECOMENDACIONES_LOCALES';
         const itemLines = items.map((r: any) => {
-            const namePart = r.google_place_id
-                ? `[${r.name}](maps_place:${r.google_place_id})`
-                : `**${r.name}**`;
+            let namePart: string;
+            if (r.google_place_id) {
+                namePart = `[${r.name}](maps_place:${r.google_place_id})`;
+            } else {
+                const searchQuery = encodeURIComponent(r.address ? `${r.name}, ${r.address}` : r.name);
+                namePart = `[${r.name}](maps:${searchQuery})`;
+            }
             let line = `- ${namePart}`;
             if (r.distance) line += ` (${r.distance})`;
             if (r.price_range) line += ` ${r.price_range}`;
