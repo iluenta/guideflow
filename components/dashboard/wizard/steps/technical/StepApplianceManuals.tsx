@@ -24,6 +24,7 @@ export function StepApplianceManuals({ value }: { value?: string }) {
     if (!property) return null
 
     const manuals = property.manuals || []
+    const isGenerating = property?.inventory_status === 'generating' || property?.inventory_status === 'identifying'
 
     const handleDelete = async () => {
         if (!confirmDeleteId) return
@@ -103,6 +104,7 @@ export function StepApplianceManuals({ value }: { value?: string }) {
         <div className="space-y-6 animate-in fade-in-50 duration-500">
             <ManualsSection
                 manuals={manuals}
+                isGenerating={isGenerating}
                 onDelete={(id: string) => setConfirmDeleteId(id)}
                 onSave={handleSave}
                 onRegenerate={handleRegenerate}

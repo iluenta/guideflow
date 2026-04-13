@@ -39,9 +39,21 @@ export interface InventoryItem {
     name: string
     category: string
     icon: any
+    aliases?: string[]
     isPresent: boolean
     customContext?: string
     isFromScanner?: boolean
+}
+
+/**
+ * Comprueba si el nombre de un manual (generado por el scanner visual) corresponde
+ * a un ítem del inventario. Usa el id, el nombre y los aliases para matching robusto.
+ */
+export function matchesInventoryItem(manualName: string, item: Pick<InventoryItem, 'id' | 'name' | 'aliases'>): boolean {
+    const norm = manualName.toLowerCase().trim()
+    if (norm.length < 2) return false
+    const terms = [item.id, item.name, ...(item.aliases || [])].map(t => t.toLowerCase())
+    return terms.some(t => norm.includes(t) || t.includes(norm))
 }
 
 interface InventorySelectorProps {
@@ -61,22 +73,22 @@ const CATEGORIES = [
 
 export const DEFAULT_ITEMS: Omit<InventoryItem, 'isPresent'>[] = [
     // Pequeños Electrodomésticos
-    { id: 'cafetera', name: 'Cafetera', category: 'small-appliances', icon: Coffee },
-    { id: 'tostadora', name: 'Tostadora', category: 'small-appliances', icon: Wind },
-    { id: 'batidora', name: 'Batidora', category: 'small-appliances', icon: Wind },
-    { id: 'exprimidor', name: 'Exprimidor', category: 'small-appliances', icon: Wind },
-    { id: 'secador', name: 'Secador de pelo', category: 'small-appliances', icon: Wind },
-    { id: 'plancha', name: 'Plancha', category: 'small-appliances', icon: Wind },
-    { id: 'hervidor', name: 'Hervidor eléctrico', category: 'small-appliances', icon: Wind },
+    { id: 'cafetera', name: 'Cafetera', category: 'small-appliances', icon: Coffee, aliases: ['cafetera', 'cafe', 'coffee', 'moka', 'italiana'] },
+    { id: 'tostadora', name: 'Tostadora', category: 'small-appliances', icon: Wind, aliases: ['tostadora', 'toaster'] },
+    { id: 'batidora', name: 'Batidora', category: 'small-appliances', icon: Wind, aliases: ['batidora', 'blender', 'mixer', 'picadora'] },
+    { id: 'exprimidor', name: 'Exprimidor', category: 'small-appliances', icon: Wind, aliases: ['exprimidor', 'juicer'] },
+    { id: 'secador', name: 'Secador de pelo', category: 'small-appliances', icon: Wind, aliases: ['secador', 'hair', 'pelo', 'hairdryer'] },
+    { id: 'plancha', name: 'Plancha', category: 'small-appliances', icon: Wind, aliases: ['plancha', 'iron'] },
+    { id: 'hervidor', name: 'Hervidor eléctrico', category: 'small-appliances', icon: Wind, aliases: ['hervidor', 'kettle'] },
 
     // Cocina
     { id: 'utensilios', name: 'Utensilios de cocina básicos', category: 'kitchen', icon: Utensils },
     { id: 'tuppers', name: 'Tuppers / Recipientes', category: 'kitchen', icon: Utensils },
     { id: 'fuente-horno', name: 'Fuentes de horno', category: 'kitchen', icon: Utensils },
-    { id: 'sartenes', name: 'Sartenes y Ollas', category: 'kitchen', icon: Utensils },
+    { id: 'sartenes', name: 'Sartenes y Ollas', category: 'kitchen', icon: Utensils, aliases: ['sarten', 'olla', 'cacerola', 'frying', 'pan'] },
     { id: 'vajilla', name: 'Vajilla completa', category: 'kitchen', icon: Utensils },
     { id: 'copas-vino', name: 'Copas de vino', category: 'kitchen', icon: Utensils },
-    { id: 'cafetera-capsulas', name: 'Cafetera de cápsulas', category: 'kitchen', icon: Coffee },
+    { id: 'cafetera-capsulas', name: 'Cafetera de cápsulas', category: 'kitchen', icon: Coffee, aliases: ['capsulas', 'cápsulas', 'nespresso', 'dolce gusto', 'dolce', 'espresso', 'capsule'] },
 
     // Baño
     { id: 'toallas', name: 'Juego de toallas', category: 'bathroom', icon: Bath },
@@ -91,18 +103,18 @@ export const DEFAULT_ITEMS: Omit<InventoryItem, 'isPresent'>[] = [
     { id: 'cuna', name: 'Cuna / Parque para bebés', category: 'bedroom', icon: Bed },
 
     // Living
-    { id: 'smart-tv', name: 'Smart TV', category: 'living', icon: Tv },
-    { id: 'altavoz-bluetooth', name: 'Altavoz Bluetooth', category: 'living', icon: Tv },
+    { id: 'smart-tv', name: 'Smart TV', category: 'living', icon: Tv, aliases: ['tv', 'televisión', 'television', 'televisor', 'tele', 'pantalla'] },
+    { id: 'altavoz-bluetooth', name: 'Altavoz Bluetooth', category: 'living', icon: Tv, aliases: ['altavoz', 'bluetooth', 'speaker', 'sonos', 'bose', 'altavoces'] },
     { id: 'juegos-mesa', name: 'Juegos de mesa', category: 'living', icon: Tv },
     { id: 'libros', name: 'Libros / Revistas', category: 'living', icon: Tv },
 
     // Confort / Otros
-    { id: 'aire-acondicionado', name: 'Aire acondicionado', category: 'comfort', icon: Wind },
-    { id: 'calefaccion', name: 'Calefacción', category: 'comfort', icon: Flame },
-    { id: 'lavadora', name: 'Lavadora', category: 'comfort', icon: WashingMachine },
-    { id: 'lavavajillas', name: 'Lavavajillas', category: 'comfort', icon: Utensils },
-    { id: 'extintor', name: 'Extintor', category: 'comfort', icon: ShieldCheck },
-    { id: 'botiquin', name: 'Botiquín de primeros auxilios', category: 'comfort', icon: ShieldCheck },
+    { id: 'aire-acondicionado', name: 'Aire acondicionado', category: 'comfort', icon: Wind, aliases: ['aire', 'ac', 'split', 'clima', 'climatizador', 'acondicionado'] },
+    { id: 'calefaccion', name: 'Calefacción', category: 'comfort', icon: Flame, aliases: ['calefaccion', 'calefacción', 'radiador', 'caldera', 'termostato', 'heating'] },
+    { id: 'lavadora', name: 'Lavadora', category: 'comfort', icon: WashingMachine, aliases: ['lavadora', 'washing', 'washer', 'lavasecadora'] },
+    { id: 'lavavajillas', name: 'Lavavajillas', category: 'comfort', icon: Utensils, aliases: ['lavavajillas', 'lavaplatos', 'dishwasher'] },
+    { id: 'extintor', name: 'Extintor', category: 'comfort', icon: ShieldCheck, aliases: ['extintor', 'fuego', 'fire'] },
+    { id: 'botiquin', name: 'Botiquín de primeros auxilios', category: 'comfort', icon: ShieldCheck, aliases: ['botiquin', 'botiquín', 'primeros auxilios', 'first aid'] },
 ]
 
 export function InventorySelector({ items = [], onChange, existingManuals = [] }: InventorySelectorProps) {
@@ -122,19 +134,23 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
             // Ignore manuals created by the inventory selector itself (not detections)
             if (m.metadata?.source === 'inventory_selector') return false
 
-            const manualName = (m.appliance_name || '').toLowerCase().trim()
+            const manualName = (m.appliance_name || '').trim()
             if (manualName.length < 3) return false
-            const itemId = di.id.toLowerCase()
-            const itemName = di.name.toLowerCase()
-            return manualName.includes(itemId) ||
-                itemName.includes(manualName)
+            return matchesInventoryItem(manualName, di)
         })
+
+        // isPresent logic:
+        // - If newly detected by scanner (existingItem didn't know about scanner): force present
+        // - If user had previously unchecked a scanner-detected item (existingItem.isFromScanner=true, isPresent=false): respect that
+        // - Otherwise: use stored state or false
+        const isNewlyDetectedByScanner = isFromScanner && !existingItem?.isFromScanner
+        const isPresent = isNewlyDetectedByScanner
+            ? true
+            : (existingItem ? existingItem.isPresent : isFromScanner)
 
         return {
             ...di,
-            // If it's already in the selection list, use that state.
-            // If not, but it was found by scanner, default to present (but allowed to toggle).
-            isPresent: existingItem ? existingItem.isPresent : isFromScanner,
+            isPresent,
             customContext: existingItem?.customContext || '',
             isFromScanner
         }
@@ -245,7 +261,7 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
                                     </div>
 
                                     <div className="flex items-center gap-2 shrink-0">
-                                        {item.isPresent && (
+                                        {item.isPresent && !item.isFromScanner && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"

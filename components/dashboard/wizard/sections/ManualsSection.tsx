@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import {
     FileText, Sparkles, Trash2, Edit2, CheckCircle2,
     Droplets, ChefHat, Wind, Laptop, Lightbulb, Cpu,
-    ChevronDown, ChevronUp, RefreshCcw, Save, X
+    ChevronDown, ChevronUp, RefreshCcw, Save, X, Loader2
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +32,7 @@ interface Manual {
 
 interface ManualsSectionProps {
     manuals: Manual[]
+    isGenerating?: boolean
     onDelete?: (id: string) => void
     onSave?: (id: string, updates: { manual_content: string, notes: string }) => Promise<void>
     onRegenerate?: (manual: Manual) => Promise<void>
@@ -42,6 +43,7 @@ interface ManualsSectionProps {
 
 export function ManualsSection({
     manuals,
+    isGenerating = false,
     onDelete,
     onSave,
     onRegenerate,
@@ -124,6 +126,17 @@ export function ManualsSection({
 
     return (
         <div className="space-y-8">
+            {/* Banner generando */}
+            {isGenerating && (
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 animate-in fade-in duration-300">
+                    <Loader2 className="w-5 h-5 text-amber-600 animate-spin shrink-0" />
+                    <div>
+                        <p className="text-sm font-bold text-amber-900">Generando manuales técnicos...</p>
+                        <p className="text-xs text-amber-700">La IA está redactando cada manual en segundo plano. Aparecerán automáticamente al completarse.</p>
+                    </div>
+                </div>
+            )}
+
             {/* Stats Row */}
             <div className="grid grid-cols-3 gap-6 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
                 <div className="flex flex-col items-center justify-center text-center py-2 border-r border-slate-50">
@@ -148,6 +161,23 @@ export function ManualsSection({
 
             {/* Grid of Manuals */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                {/* Skeletons cuando se está generando y no hay manuales todavía */}
+                {isGenerating && manuals.length === 0 && Array.from({ length: 6 }).map((_, i) => (
+                    <div key={`skeleton-${i}`} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm animate-pulse">
+                        <div className="flex items-start gap-6">
+                            <div className="h-14 w-14 rounded-xl bg-slate-100 shrink-0" />
+                            <div className="flex-1 space-y-3 pt-1">
+                                <div className="h-4 bg-slate-100 rounded-full w-2/3" />
+                                <div className="h-3 bg-slate-100 rounded-full w-1/3" />
+                            </div>
+                        </div>
+                        <div className="space-y-2 mt-6">
+                            <div className="h-3 bg-slate-100 rounded-full w-full" />
+                            <div className="h-3 bg-slate-100 rounded-full w-5/6" />
+                        </div>
+                    </div>
+                ))}
+
                 {manuals.map((manual, index) => {
                     const isExpanded = expandedId === manual.id
                     return (

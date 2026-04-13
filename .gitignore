@@ -64,8 +64,13 @@ all_files.csv
 scraped_debug.html
 tsc-output.log
 test-results.json
+analysis_output.txt
 
-# Chat stress test results
-scripts/chat-stress-test/results/
-scripts/chat-stress-test/*.json
-!scripts/chat-stress-test/properties.json
+# Scripts de stress test y herramientas de desarrollo interno
+# (contienen datos de propiedades reales y tokens de test)
+scripts/chat-stress-test/
+
+# Ficheros de debug y scripts internos
+debug_db_v2.js
+proxy.ts
+run_git.ps1

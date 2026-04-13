@@ -36,7 +36,6 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
     const [photos, setPhotos] = useState<SelectedPhoto[]>([])
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [uploadingIds, setUploadingIds] = useState<Set<string>>(new Set())
-    const [replaceExisting, setReplaceExisting] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Validate propertyId before allowing operations
@@ -140,8 +139,8 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
 
             toast.loading('Analizando con IA...', { id: 'analyze-process' })
 
-            // 2. Process with AI (Fase 1)
-            const result = await processBatchScans(propertyId, uploadedUrls, replaceExisting)
+            // 2. Process with AI (Fase 1) — replaceExisting siempre true
+            const result = await processBatchScans(propertyId, uploadedUrls, true)
 
             toast.success(`Análisis completado: Se han generado ${result.identifiedCount} manuales técnicos`, { id: 'analyze-process' })
 
@@ -318,15 +317,12 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                 </div>
             )}
 
-            {/* Replacement Toggle & Analysis Button Container */}
+            {/* Analysis Button Container */}
             <div className="bg-muted/20 rounded-2xl border border-dashed border-muted-foreground/10 p-4 space-y-4">
-                <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setReplaceExisting(!replaceExisting)}>
-                    <div className={`h-6 w-11 rounded-full relative transition-colors duration-300 ${replaceExisting ? 'bg-primary' : 'bg-slate-200'}`}>
-                        <div className={`absolute top-1 left-1 bg-white h-4 w-4 rounded-full transition-transform duration-300 ${replaceExisting ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </div>
+                <div className="flex items-start gap-3">
                     <div className="flex-1">
                         <p className="text-xs font-bold text-slate-700">Actualizar manuales si ya existen</p>
-                        <p className="text-[10px] text-muted-foreground">Si la IA detecta un aparato que ya tienes, lo sustituirá por la nueva versión.</p>
+                        <p className="text-[10px] text-muted-foreground">Si la IA detecta un aparato que ya tienes con la misma marca y modelo, lo sustituirá por la nueva versión. Aparatos distintos del mismo tipo (ej: dos TVs de modelos diferentes) generan manuales separados.</p>
                     </div>
                 </div>
 

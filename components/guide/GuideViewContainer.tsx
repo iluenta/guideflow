@@ -217,6 +217,7 @@ export function GuideViewContainer({
         else if (tabId === 'eat') setCurrentPage('eat');
         else if (tabId === 'leisure') setCurrentPage('do');
         else if (tabId === 'info') setCurrentPage('manuals');
+        else if (tabId === 'house-info') setCurrentPage('house-info');
         window.scrollTo(0, 0);
     };
 
@@ -325,7 +326,7 @@ export function GuideViewContainer({
                 return <EmergencyView onBack={handleBack} contactsData={contactsData} hostName={welcomeData?.host_name || labelHostNameFallback} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
             }
             case 'house-info':
-                return <HouseInfoView onBack={handleBack} property={property} welcomeData={welcomeData} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
+                return <HouseInfoView onBack={handleBack} property={property} welcomeData={welcomeData} contactsData={contactsData} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
             case 'eat':
                 return <RecommendationsView onBack={handleBack} recommendations={recommendations} group="eat" currentLanguage={language} onLanguageChange={setLanguage} city={property.city} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} initialRecId={navigationPayload?.recId} />;
             case 'do':

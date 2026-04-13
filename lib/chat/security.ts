@@ -52,8 +52,8 @@ async function checkHaltStatus(
                 tenantId,
             };
         } else {
-            // Expirado: auto-unhalt
-            supabase.from('properties').update({ is_halted: false }).eq('id', pidToCheck);
+            // Expirado: auto-unhalt — await es crítico en serverless para que la escritura complete antes de que la función termine
+            await supabase.from('properties').update({ is_halted: false }).eq('id', pidToCheck);
         }
     }
 

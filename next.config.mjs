@@ -3,9 +3,6 @@ import bundleAnalyzer from '@next/bundle-analyzer'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   compress: true,
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   async headers() {
     return [{
       source: '/(.*)',

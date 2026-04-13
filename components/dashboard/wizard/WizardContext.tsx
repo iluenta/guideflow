@@ -11,7 +11,7 @@ import { geocodeAddress, GeocodingResult } from '@/lib/geocoding'
 import { validateLocation, ValidationResult } from '@/lib/geocoding-validation'
 import { PRESET_THEMES, Theme } from '@/lib/themes'
 import { harmonizeThemeFromPrimary } from '@/lib/color-harmonizer'
-import { DEFAULT_ITEMS } from '@/components/dashboard/InventorySelector'
+import { DEFAULT_ITEMS, matchesInventoryItem } from '@/components/dashboard/InventorySelector'
 import { isValidUUID } from '@/lib/utils'
 
 export const steps = ['property', 'appearance', 'access', 'welcome', 'contacts', 'checkin', 'rules', 'tech', 'visual-scanner', 'appliance-manuals', 'inventory', 'dining', 'faqs']
@@ -279,14 +279,10 @@ export function WizardProvider({
                     const updatedSelected = [...currentSelected]
 
                     trulyDetectedManuals.forEach((m: any) => {
-                        const manualName = (m.appliance_name || '').toLowerCase().trim()
+                        const manualName = (m.appliance_name || '').trim()
                         if (manualName.length < 3) return
 
-                        const matchedItem = DEFAULT_ITEMS.find(di => {
-                            const itemId = di.id.toLowerCase()
-                            const itemName = di.name.toLowerCase()
-                            return manualName.includes(itemId) || itemName.includes(manualName)
-                        })
+                        const matchedItem = DEFAULT_ITEMS.find(di => matchesInventoryItem(manualName, di))
 
                         if (matchedItem) {
                             const existingIndex = updatedSelected.findIndex(i => i.id === matchedItem.id)
@@ -433,6 +429,32 @@ export function WizardProvider({
                         newData.dining = recommendations
                         completed.push('dining')
                     }
+
+                    // Auto-sync: merge scanner-detected manuals into inventory selected_items on load.
+                    // The polling only fires on status/count changes, so we need this on initial load too.
+                    if (!isAltaMode && propDetails?.property_manuals?.length) {
+                        const currentSelected: any[] = newData.inventory?.selected_items || []
+                        const updatedSelected = [...currentSelected]
+                        const trulyDetected = (propDetails.property_manuals as any[]).filter(
+                            (m: any) => m.metadata?.source !== 'inventory_selector'
+                        )
+                        trulyDetected.forEach((m: any) => {
+                            const manualName = (m.appliance_name || '').trim()
+                            if (manualName.length < 3) return
+                            const matchedItem = DEFAULT_ITEMS.find(di => matchesInventoryItem(manualName, di))
+                            if (!matchedItem) return
+                            const idx = updatedSelected.findIndex(i => i.id === matchedItem.id)
+                            if (idx === -1) {
+                                updatedSelected.push({ ...matchedItem, isPresent: true, isFromScanner: true, customContext: '' })
+                            } else if (!updatedSelected[idx].isFromScanner) {
+                                // Newly detected (wasn't previously a scanner item) → mark present
+                                updatedSelected[idx] = { ...updatedSelected[idx], isPresent: true, isFromScanner: true }
+                            }
+                            // If already isFromScanner: respect stored isPresent (user may have unchecked)
+                        })
+                        newData.inventory = { ...(newData.inventory || {}), selected_items: updatedSelected }
+                    }
+
                     return newData
                 })
             }

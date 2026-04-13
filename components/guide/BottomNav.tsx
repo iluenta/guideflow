@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Home, BookOpen, UtensilsCrossed, Theater, HeartPulse, UserCircle2 } from 'lucide-react';
+import { Home, BookOpen, UtensilsCrossed, Theater, HeartPulse, UserCircle2, Info } from 'lucide-react';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { getGuideTheme } from '@/lib/guide-theme';
 
@@ -30,6 +30,7 @@ export function BottomNav({
 
     const { content: labelHome } = useLocalizedContent('Inicio', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelGuia } = useLocalizedContent('Guía', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelInfo } = useLocalizedContent('Info', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelEat } = useLocalizedContent('Comer', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelLeisure } = useLocalizedContent('Ocio', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelEmergency } = useLocalizedContent('SOS', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -48,6 +49,7 @@ export function BottomNav({
 
     const tabs = [
         { id: 'welcome', icon: Home, label: labelHome || 'Inicio', show: true },
+        { id: 'house-info', icon: Info, label: labelInfo || 'Info', show: true },
         { id: 'hub', icon: BookOpen, label: labelGuia || 'Guía', show: true },
         { id: 'eat', icon: UtensilsCrossed, label: labelEat || 'Comer', show: hasEat },
         { id: 'leisure', icon: Theater, label: labelLeisure || 'Ocio', show: hasLeisure },

@@ -18,7 +18,14 @@ export async function saveWizardStep(
 
     // Sanitizar IDs para evitar errores 22P02 (UUID inválido por usar string vacía o valor semántico como "new")
     const currentPropId = sanitizeUUID(propertyId)
-    const currentTenantId = sanitizeUUID(tenantId)
+
+    // tenant_id siempre se deriva del perfil del servidor, nunca del cliente
+    const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single()
+    const currentTenantId = userProfile?.tenant_id ?? sanitizeUUID(tenantId)
 
     if (category === 'property') {
         // description eliminado en migration 033; no incluir en properties

@@ -59,13 +59,21 @@ export async function updateSession(request: NextRequest) {
         // y el middleware redirigirá si es una ruta protegida.
     }
 
-    // 2. Proteger el dashboard: si intentas entrar a /dashboard sin usuario, redirigir a login
-    if (!user && pathname.startsWith('/dashboard')) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/auth/login'
-        // Guardar la URL original para volver después del login
-        url.searchParams.set('next', pathname)
-        return NextResponse.redirect(url)
+    // 2. Proteger rutas sin sesión
+    if (!user && !isPublicRoute) {
+        // Las rutas /api/ no pueden recibir un redirect HTML — devolver 401 JSON.
+        // El cliente detecta el 401 y redirige a login por su cuenta.
+        if (pathname.startsWith('/api/')) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+        }
+
+        // Las rutas de dashboard redirigen a login con la URL original para volver
+        if (pathname.startsWith('/dashboard')) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/auth/login'
+            url.searchParams.set('next', pathname)
+            return NextResponse.redirect(url)
+        }
     }
 
     // 3. Si tienes usuario e intentas ir a login/signup, mándalo al dashboard

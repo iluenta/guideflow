@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"export.*from\\\\|export.*const\\\\|export.*function\" /c/Proyectos/guideflow/lib/chat/*.ts)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

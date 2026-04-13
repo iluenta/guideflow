@@ -101,9 +101,6 @@ async function expandRAGQuery(
             ragQuery = `${ragQuery} ${expansionTerms.join(' ')}`;
             logger.debug('[CHAT-V2] Appliance expansion processed');
         }
-    } else if (intent.intent === 'arrival_transport') {
-        ragQuery = `${ragQuery} llegada transporte aeropuerto estación parking acceso dirección cómo llegar instrucciones`;
-        logger.debug('[CHAT-V2] Arrival/transport expansion processed');
     }
 
     return ragQuery;
@@ -117,9 +114,7 @@ export async function classifyAndRoute(
     language: string,
     propertyId: string
 ): Promise<IntentResult> {
-    const [intent] = await Promise.all([
-        classifyIntent(lastMessage, recentContext),
-    ]);
+    const intent = await classifyIntent(lastMessage, recentContext);
 
     logger.debug('[CHAT-V2] Intent classified:', {
         text: lastMessage.substring(0, 50),
@@ -161,16 +156,7 @@ export async function classifyAndRoute(
         }
     }
 
-    // Override 4: arrival_transport misclassifying "how do I enter the apartment"
-    // "entro/entrar + apartamento/piso" = access question, not transport
-    if (effectiveIntent.intent === 'arrival_transport') {
-        const lower = lastMessage.toLowerCase();
-        const entryKeywords = ['cómo entro', 'cómo entrar', 'cómo accedo', 'cómo acceder', 'abrir la puerta', 'entro al apartamento', 'entrar al piso', 'entrar al apartamento', 'acceder al apartamento', 'acceder al piso'];
-        if (entryKeywords.some(k => lower.includes(k))) {
-            effectiveIntent = { ...effectiveIntent, intent: 'standard' as const };
-            logger.debug('[CHAT-V2] arrival_transport → standard override (entry question)');
-        }
-    }
+
 
     const ragQuery = await expandRAGQuery(lastMessage, effectiveIntent, recentContext, language, propertyId);
 
@@ -180,7 +166,7 @@ export async function classifyAndRoute(
         isApplianceUsageQuery: effectiveIntent.intent === 'appliance_usage',
         isApplianceTaskQuery: effectiveIntent.intent === 'appliance_task',
         isApplianceProblem: effectiveIntent.intent === 'appliance_problem',
-        isArrivalTransportQuery: effectiveIntent.intent === 'arrival_transport',
+        isArrivalTransportQuery: false, // 'arrival_transport' intent removed — always false
         isManualRequest: effectiveIntent.intent === 'manual_request',
         isEmergency: effectiveIntent.intent === 'emergency',
         detectedErrorCode: effectiveIntent.detectedErrorCode ?? null,

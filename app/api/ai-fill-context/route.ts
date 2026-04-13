@@ -872,11 +872,12 @@ JSON:`;
 
       if (placesKey && lat && lng) {
         const searchPromises = [
-          { keyword: 'hospital urgencias' },
+          { keyword: 'Hospital Público SAS Universitario' },
+          { keyword: 'Centro de Salud Público SAS' },
           { keyword: 'farmacia pharmacy' },
-          { keyword: 'comisaría policía' },
           { keyword: 'bomberos fire station' },
           { keyword: 'veterinario veterinary' },
+          { keyword: 'parada taxi taxi stand' },
         ].map(item => {
           const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
             `?location=${lat},${lng}&rankby=distance&keyword=${encodeURIComponent(item.keyword)}&language=es&key=${placesKey}`;
@@ -884,7 +885,8 @@ JSON:`;
         });
 
         const searchResults = await Promise.all(searchPromises);
-        const candidates = searchResults.flatMap(r => r.results || []).slice(0, 15);
+        // Analizamos hasta 10 candidatos para hospitales/salud, y 4 para el resto (incluyendo taxi)
+        const candidates = searchResults.flatMap((r, idx) => (r.results || []).slice(0, idx < 2 ? 10 : 4));
 
         const enriched = await Promise.all(candidates.map(async (c: any) => {
           try {
@@ -893,36 +895,64 @@ JSON:`;
             const dd = await fetch(detailsUrl).then(r => r.json());
             const r = dd.result || {};
             let distance = '';
+            let distanceValue = 999;
             if (r.geometry?.location && lat && lng) {
               const R = 6371;
               const dLat = (r.geometry.location.lat - lat) * Math.PI / 180;
               const dLng = (r.geometry.location.lng - lng) * Math.PI / 180;
               const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat * Math.PI / 180) * Math.cos(r.geometry.location.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-              distance = `${(2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1)} km`;
+              const d = 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+              distance = `${d.toFixed(1)} km`;
+              distanceValue = d;
             }
             return {
               name: r.name || c.name,
               phone: r.formatted_phone_number || '',
               address: r.vicinity || c.vicinity || '',
-              distance, place_id: c.place_id, google_types: r.types || []
+              distance, 
+              distanceValue,
+              place_id: c.place_id, 
+              google_types: r.types || []
             };
           } catch { return null; }
         }));
 
-        const validCandidates = enriched.filter(Boolean);
-      const genAI = getGenAI();
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-        const contactPrompt = `Eres un conserje experto en seguridad. Filtra y categoriza estos contactos de emergencia para ${property.city}.
-CANDIDATOS: ${JSON.stringify(validCandidates, null, 2)}
-1. Elimina lugares que no sean de emergencia.
-2. Conserva: hospital, farmacia (prioriza 24h), policía, bomberos, veterinario. Máx 6.
-3. Tipos exactos: "salud","farmacia","policia","bomberos","veterinario","mantenimiento","taxi".
-4. JSON con array "emergency_contacts".
+        const validCandidates = (enriched.filter(Boolean) as any[])
+          .sort((a, b) => a.distanceValue - b.distanceValue);
+
+        const genAI = getGenAI();
+        const model = genAI.getGenerativeModel({ 
+          model: 'gemini-2.0-flash',
+          generationConfig: { temperature: 0 } 
+        });
+
+        const contactPrompt = `Eres un experto en hospitalidad y seguridad. Criba estos contactos para ${property.city} (España).
+CANDIDATOS GOOGLE (Ordenados por cercanía): ${JSON.stringify(validCandidates, null, 2)}
+
+GUIA DE IDENTIFICACIÓN (ESPAÑA):
+- PÚBLICO: "Hospital de la Inmaculada", "Consultorio", "Centro de Salud", "SAS", "Hospital Universitario", "Servicio Andaluz de Salud".
+- PRIVADO: "Healthcare", "Clínica", "Sanatorio", "Vithas", "Quirón", "Sanitas".
+
+REGLAS DE SELECCIÓN (MÁXIMO 8 CONTACTOS):
+1. OBLIGATORIO: Al menos 1 Hospital General (prioriza el PÚBLICO de referencia aunque esté a 15-20km).
+2. OBLIGATORIO: Al menos 1 Centro de Salud / Consultorio (PÚBLICO).
+3. OBLIGATORIO: Al menos 1 Farmacia (prioriza 24h).
+4. OBLIGATORIO: Al menos 1 Clínica Veterinaria.
+5. OBLIGATORIO: Al menos 1 Parada de Taxi o Servicio de Taxis local.
+6. PROHIBIDO: NO incluyas "Policía Local" ni "Policía Nacional" ni "Bomberos".
+7. PRIORIDAD: 
+   a) Centros PÚBLICOS (imprescindible).
+   b) Si NO hay público en los candidatos, usa el privado más cercano.
+   c) Cercanía.
+
+TIPOS DE SALIDA: "salud", "farmacia", "veterinario", "taxi", "mantenimiento".
+JSON con array "emergency_contacts".
 JSON:`;
 
         try {
           const result = await model.generateContent(contactPrompt);
-          const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+          const rawText = result.response.text();
+          const text = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
           const aiContacts = (JSON.parse(text).emergency_contacts || []).map((c: any) => ({ ...c, id: uuid() }));
           const finalContacts = [...emergencyContacts];
           aiContacts.forEach((ac: any) => {

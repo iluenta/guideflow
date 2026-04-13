@@ -9,7 +9,9 @@ import {
     User,
     Clock,
     HeartPulse,
-    MapPin
+    MapPin,
+    ArrowRight,
+    Navigation,
 } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { cn } from '@/lib/utils';
@@ -45,6 +47,14 @@ interface EmergencyViewProps {
     disabledLanguage?: boolean;
 }
 
+const contactCategoryStyles: Record<string, { hex: string, bg: string, text: string }> = {
+    policia: { hex: '#2563EB', bg: 'bg-blue-50', text: 'text-blue-600' },
+    salud: { hex: '#E11D48', bg: 'bg-rose-50', text: 'text-rose-600' },
+    farmacia: { hex: '#059669', bg: 'bg-emerald-50', text: 'text-emerald-600' },
+    bomberos: { hex: '#EA580C', bg: 'bg-orange-50', text: 'text-orange-600' },
+    default: { hex: '#1E3A5F', bg: 'bg-slate-50', text: 'text-slate-600' }
+};
+
 function ContactItem({
     contact,
     idx,
@@ -53,7 +63,7 @@ function ContactItem({
     getIcon,
     getMapsUrl,
     isCustom = false,
-    propertyId // FASE 17
+    propertyId
 }: {
     contact: any,
     idx: number,
@@ -62,26 +72,29 @@ function ContactItem({
     getIcon: (type: string) => any,
     getMapsUrl: (name: string, address?: string, placeId?: string) => string,
     isCustom?: boolean,
-    propertyId?: string // FASE 17
+    propertyId?: string
 }) {
     const { content: localizedName } = useLocalizedContent(contact.name, currentLanguage, 'contact_name', accessToken, propertyId);
     const { content: localizedDistance } = useLocalizedContent(contact.distance || '', currentLanguage, 'contact_distance', accessToken, propertyId);
+    const { content: labelNavigate } = useLocalizedContent('Cómo llegar', currentLanguage, 'ui_label', accessToken, propertyId);
+
+    const style = contactCategoryStyles[contact.type] || contactCategoryStyles.default;
 
     if (isCustom) {
         return (
             <div
                 key={`${contact.id}-${idx}`}
-                className="bg-surface rounded-3xl p-4 shadow-sm border border-primary/[0.01] flex items-center justify-between group"
+                className="bg-white rounded-3xl p-5 shadow-sm border border-navy/5 flex items-center justify-between group transition-all hover:shadow-md"
             >
                 <div className="flex flex-col text-left">
-                    <span className="text-slate-800 font-bold text-sm tracking-tight">{localizedName}</span>
-                    <span className="text-[11px] text-primary/40 font-medium mt-0.5">{contact.phone}</span>
+                    <span className="text-navy font-bold text-base tracking-tight font-serif">{localizedName}</span>
+                    <span className="text-[12px] text-slate/50 font-medium mt-1">{contact.phone}</span>
                 </div>
                 <a
                     href={`tel:${(contact.phone || '').replace(/\s/g, '')}`}
-                    className="w-9 h-9 bg-primary/[0.04] text-primary rounded-full flex items-center justify-center hover:bg-primary/[0.08] transition-all active:scale-95 shrink-0"
+                    className="w-11 h-11 bg-primary/10 text-primary rounded-full flex items-center justify-center hover:bg-primary/20 transition-all active:scale-95 shrink-0 shadow-sm"
                 >
-                    <Phone className="w-4 h-4" strokeWidth={2} />
+                    <Phone className="w-5 h-5" strokeWidth={2} />
                 </a>
             </div>
         );
@@ -90,37 +103,76 @@ function ContactItem({
     return (
         <div
             key={`${contact.id}-${idx}`}
-            className="bg-surface rounded-3xl p-4 shadow-sm border border-primary/[0.01] flex items-center justify-between group"
+            className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group border border-navy/5 relative"
         >
-            <div className="flex items-center gap-4 overflow-hidden">
-                <div className="w-11 h-11 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 transition-colors group-hover:bg-blue-100/50">
-                    {getIcon(contact.type)}
-                </div>
-                <div className="flex flex-col overflow-hidden text-left">
-                    <span className="text-slate-800 font-bold text-sm leading-tight truncate font-sans">{localizedName}</span>
-                    {localizedDistance && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                            <Clock className="w-3 h-3 text-primary/20" />
-                            <span className="text-[10px] text-primary/40 font-bold tracking-tight">{localizedDistance}</span>
+            {/* Color Accent Line */}
+            <div 
+                className="absolute left-0 top-0 bottom-0 w-1.5" 
+                style={{ backgroundColor: style.hex }}
+            />
+
+            <div className="p-5 flex flex-col gap-5">
+                <div className="flex items-start gap-4">
+                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-105 shadow-inner", style.bg, style.text)}>
+                        {getIcon(contact.type)}
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col pt-0.5">
+                        <div className="flex justify-between items-start gap-4">
+                            <h3 className="text-navy font-serif text-lg font-bold leading-snug">
+                                {localizedName}
+                            </h3>
+                            {!(contact.place_id || (contact.address && !['Servicio Nacional', 'Servicio Local', 'En todo el territorio nacional'].includes(contact.address))) && (
+                                <a
+                                    href={`tel:${(contact.phone || '').replace(/\s/g, '')}`}
+                                    className="flex items-center gap-2.5 bg-primary text-white px-4 py-2 rounded-full text-[13px] font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 shrink-0"
+                                >
+                                    <Phone className="w-4 h-4" />
+                                    <span>{contact.phone}</span>
+                                </a>
+                            )}
                         </div>
-                    )}
+
+                        {contact.address && (
+                            <div className="flex items-start gap-1.5 mt-2 group/addr">
+                                <MapPin className="w-3.5 h-3.5 text-slate/30 shrink-0 mt-0.5" />
+                                <span className="text-[13px] text-slate/60 leading-relaxed font-medium">
+                                    {contact.address}
+                                </span>
+                            </div>
+                        )}
+                        
+                        {!contact.address && contact.phone && (
+                             <span className="text-[13px] text-slate/40 font-medium mt-1">{contact.phone}</span>
+                        )}
+                    </div>
                 </div>
-            </div>
-            <div className="flex items-center gap-2 relative z-10">
-                <a
-                    href={getMapsUrl(contact.name, contact.address, contact.place_id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-9 h-9 bg-primary/[0.04] text-primary rounded-full flex items-center justify-center hover:bg-primary/[0.08] transition-all active:scale-95 shrink-0 shadow-sm"
-                >
-                    <MapPin className="w-4 h-4" strokeWidth={2} />
-                </a>
-                <a
-                    href={`tel:${(contact.phone || '').replace(/\s/g, '')}`}
-                    className="w-9 h-9 bg-primary/10 text-primary rounded-full flex items-center justify-center hover:bg-primary/20 transition-all active:scale-95 shrink-0"
-                >
-                    <Phone className="w-4 h-4" strokeWidth={2} />
-                </a>
+
+                {/* Optional Actions Footer - Only for REAL locations or if specifically needed */}
+                {(contact.place_id || (contact.address && !['Servicio Nacional', 'Servicio Local', 'En todo el territorio nacional'].includes(contact.address))) && (
+                    <div className="pt-4 border-t border-navy/5 flex items-center justify-between">
+                        <a
+                            href={getMapsUrl(contact.name, contact.address, contact.place_id)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-[12px] font-bold text-slate/60 hover:text-navy transition-all group/nav w-fit"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-slate/5 flex items-center justify-center group-hover/nav:bg-primary/10 group-hover/nav:text-primary transition-colors">
+                                <Navigation className="w-3.5 h-3.5" />
+                            </div>
+                            {labelNavigate}
+                            <ArrowRight className="w-3.5 h-3.5 opacity-40 group-hover/nav:translate-x-1 transition-transform" />
+                        </a>
+
+                        <a
+                            href={`tel:${(contact.phone || '').replace(/\s/g, '')}`}
+                            className="flex items-center gap-2.5 bg-primary text-white px-5 py-2.5 rounded-full text-[13px] font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95"
+                        >
+                            <Phone className="w-4 h-4" />
+                            <span>{contact.phone}</span>
+                        </a>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -267,7 +319,9 @@ export function EmergencyView({
                             {labelLocalServices}
                         </h3>
                         <div className="space-y-3">
-                            {(contactsData.emergency_contacts || []).map((contact, idx) => (
+                            {(contactsData.emergency_contacts || [])
+                                .filter(c => c.phone !== '112')
+                                .map((contact, idx) => (
                                 <ContactItem
                                     key={`${contact.id}-${idx}`}
                                     contact={contact}

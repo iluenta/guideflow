@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { after } from 'next/server'
 import axios from 'axios'
 import { geminiREST, analyzeImageWithGemini, geminiVision, isValidExternalUrl } from '@/lib/ai/clients/gemini-rest'
 import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/clients/openai'
@@ -10,7 +9,6 @@ import { syncPropertyApplianceList, getTenantId } from './properties'
 import { syncWizardDataToRAG, syncManualToRAG } from './rag-sync'
 import { searchBrave, formatBraveResults } from '@/lib/ai/clients/brave'
 import { sanitizeUUID } from '@/lib/utils'
-import { matchesInventoryItem } from '@/components/dashboard/InventorySelector'
 
 function logT(msg: string) {
     const time = new Date().toLocaleTimeString('es-ES', { hour12: false });
@@ -190,16 +188,10 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                     try {
                         const { url, analysis, imgRecordId } = item
 
-                        // Clave de dedup: tipo + marca + modelo
-                        // - Mismo tipo SIN marca/modelo conocido → una sola clave → un manual (ej: dos mandos genéricos de TV)
-                        // - Mismo tipo CON modelos distintos → claves distintas → dos manuales (ej: TV Samsung QLED + TV LG OLED)
-                        const normBrand = ['', 'desconocido', 'desconocida', 'unknown'].includes((analysis.brand || '').toLowerCase().trim())
-                            ? '' : (analysis.brand || '').toUpperCase().trim();
-                        const normModel = ['', 'no identificado', 'unknown'].includes((analysis.model || '').toLowerCase().trim())
-                            ? '' : (analysis.model || '').toUpperCase().trim();
-                        const typeKey = `${(analysis.appliance_type || '').toUpperCase().trim()}|${normBrand}|${normModel}`;
+                        // Skip duplicados del mismo scan
+                        const typeKey = (analysis.appliance_type || '').toUpperCase().trim();
                         if (processedTypesInBatch.has(typeKey)) {
-                            logT(`[PHASE2] [${index + 1}] Skipping duplicate: ${typeKey}`);
+                            logT(`[PHASE2] [${index + 1}] Skipping duplicate type: ${typeKey}`);
                             return { success: true };
                         }
                         processedTypesInBatch.add(typeKey);
@@ -226,27 +218,14 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                         logT(`[PHASE2] [${index + 1}] Manual: ${manualContent.length} chars`)
 
                         if (replaceExisting && existingManuals) {
-                            const applianceTypeNorm = (analysis.appliance_type || '').toUpperCase().trim();
-                            // filter() en lugar de find() para eliminar TODOS los duplicados existentes,
-                            // no solo el primero (evita acumulación de duplicados entre scans).
-                            // Doble criterio de matching:
-                            //   1. Exacto: tipo|marca|modelo coinciden
-                            //   2. Fallback: appliance_name contiene el tipo (cubre casos donde Gemini
-                            //      guardó "HORNO CANDY" como nombre completo en lugar de separado)
-                            const duplicates = existingManuals.filter((m: any) => {
-                                const mType = (m.appliance_name || '').toUpperCase().trim();
-                                const mBrand = ['', 'desconocido', 'desconocida', 'unknown'].includes((m.brand || '').toLowerCase().trim())
-                                    ? '' : (m.brand || '').toUpperCase().trim();
-                                const mModel = ['', 'no identificado', 'unknown'].includes((m.model || '').toLowerCase().trim())
-                                    ? '' : (m.model || '').toUpperCase().trim();
-                                const exactMatch = `${mType}|${mBrand}|${mModel}` === typeKey;
-                                const nameMatch = mType === applianceTypeNorm || mType.startsWith(applianceTypeNorm);
-                                return exactMatch || nameMatch;
+                            const duplicate = existingManuals.find((m: any) => {
+                                const existingType = (m.appliance_name || '').toUpperCase().trim()
+                                return existingType === typeKey
                             })
-                            for (const dup of duplicates) {
-                                logT(`[PHASE2] [${index + 1}] Removing duplicate: ${dup.id} (${dup.appliance_name} ${dup.brand || ''})`)
-                                await supabase.from('property_manuals').delete().eq('id', dup.id)
-                                await supabase.from('context_embeddings').delete().eq('source_id', dup.id)
+                            if (duplicate) {
+                                logT(`[PHASE2] [${index + 1}] Replacing existing: ${duplicate.id}`)
+                                await supabase.from('property_manuals').delete().eq('id', duplicate.id)
+                                await supabase.from('context_embeddings').delete().eq('source_id', duplicate.id)
                             }
                         }
 
@@ -339,13 +318,9 @@ FORMATO DE SALIDA (JSON ESTRICTO):
             }
         }
 
-        // Phase 2 corre tras enviar la respuesta HTTP. `after()` garantiza que Vercel
-        // mantiene la función viva hasta que la promesa resuelva (Next.js 15+).
-        // La UI hace polling de inventory_status (WizardContext.tsx:228) y desbloquea
-        // las tarjetas cuando llega a 'completed'.
-        after(generateManualsInBackground())
+        await generateManualsInBackground()
 
-        logT(`[BATCH] Phase 1 complete. Phase 2 scheduled via after() for ${identifiedAppliances.length} appliances.`)
+        logT(`[BATCH] Pipeline complete for ${identifiedAppliances.length} appliances.`)
         return { success: true, identifiedCount: identifiedAppliances.length }
 
     } catch (error: any) {
@@ -401,7 +376,8 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
         const itemsToProcess = items.filter(item => {
             if (!item.isPresent) return false
             const exists = existingManuals?.some(m =>
-                matchesInventoryItem(m.appliance_name || '', item)
+                m.appliance_name.toLowerCase().includes(item.id.toLowerCase()) ||
+                item.name.toLowerCase().includes(m.appliance_name.toLowerCase())
             )
             return !exists
         })
@@ -1305,7 +1281,7 @@ RECUERDA: Máximo 600 palabras. Calidad > cantidad.`;
 
         const opts = {
             systemInstruction,
-            responseMimeType: 'text/plain' as const,
+            responseMimeType: 'text/plain',
             temperature: 0.2,
             maxOutputTokens: MAX_OUTPUT_TOKENS
         };

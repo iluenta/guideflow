@@ -57,9 +57,13 @@ export async function POST(req: Request) {
 
         // Calculate access windows (UTC based)
         // From: 2 days before check-in (UTC 00:00:00)
-        // Until: End of checkout day (UTC 23:59:59) - Grace period reduced from 2 days to 0
-        const checkin = new Date(checkinDate);
-        const checkout = new Date(checkoutDate);
+        // Until: End of checkout day (UTC 23:59:59)
+        //
+        // NOTE: Date-only strings like "2026-05-01" are parsed as UTC midnight by JS.
+        // We anchor to T12:00:00Z (noon UTC) before applying UTC date arithmetic so the
+        // resulting calendar day is always correct regardless of the server timezone.
+        const checkin = new Date(`${checkinDate}T12:00:00Z`);
+        const checkout = new Date(`${checkoutDate}T12:00:00Z`);
 
         const validFrom = new Date(checkin);
         validFrom.setUTCDate(validFrom.getUTCDate() - 2);
