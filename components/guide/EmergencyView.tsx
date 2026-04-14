@@ -12,6 +12,11 @@ import {
     MapPin,
     ArrowRight,
     Navigation,
+    Pill,
+    PawPrint,
+    Car,
+    Shield,
+    Flame,
 } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { cn } from '@/lib/utils';
@@ -49,9 +54,11 @@ interface EmergencyViewProps {
 
 const contactCategoryStyles: Record<string, { hex: string, bg: string, text: string }> = {
     policia: { hex: '#2563EB', bg: 'bg-blue-50', text: 'text-blue-600' },
-    salud: { hex: '#E11D48', bg: 'bg-rose-50', text: 'text-rose-600' },
-    farmacia: { hex: '#059669', bg: 'bg-emerald-50', text: 'text-emerald-600' },
+    salud: { hex: '#E11D48', bg: 'bg-rose-50', text: 'text-rose-500' },
+    farmacia: { hex: '#10B981', bg: 'bg-emerald-50', text: 'text-emerald-500' },
     bomberos: { hex: '#EA580C', bg: 'bg-orange-50', text: 'text-orange-600' },
+    taxi: { hex: '#F59E0B', bg: 'bg-amber-50', text: 'text-amber-500' },
+    veterinario: { hex: '#3B82F6', bg: 'bg-blue-50', text: 'text-blue-500' },
     default: { hex: '#1E3A5F', bg: 'bg-slate-50', text: 'text-slate-600' }
 };
 
@@ -217,10 +224,14 @@ export function EmergencyView({
 
     const getIcon = (type: string) => {
         switch (type) {
-            case 'policia': return <ShieldAlert className="w-5 h-5" strokeWidth={2} />;
+            case 'policia':
+            case 'guardia':
+                return <Shield className="w-5 h-5" strokeWidth={2} />;
             case 'salud': return <HeartPulse className="w-5 h-5" strokeWidth={2} />;
-            case 'farmacia': return <Plus className="w-5 h-5" strokeWidth={2} />;
-            case 'bomberos': return <Phone className="w-5 h-5" strokeWidth={2} />;
+            case 'farmacia': return <Pill className="w-5 h-5" strokeWidth={2} />;
+            case 'bomberos': return <Flame className="w-5 h-5" strokeWidth={2} />;
+            case 'taxi': return <Car className="w-5 h-5" strokeWidth={2} />;
+            case 'veterinario': return <PawPrint className="w-5 h-5" strokeWidth={2} />;
             default: return <Phone className="w-5 h-5" strokeWidth={2} />;
         }
     };

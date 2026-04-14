@@ -135,7 +135,7 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
             if (m.metadata?.source === 'inventory_selector') return false
 
             const manualName = (m.appliance_name || '').trim()
-            if (manualName.length < 3) return false
+            if (manualName.length < 2) return false
             return matchesInventoryItem(manualName, di)
         })
 

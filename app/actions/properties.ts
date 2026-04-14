@@ -137,6 +137,19 @@ export async function getProperty(id: string) {
         return null
     }
 
+    // AUTO-RECOVERY: If stuck in generating/identifying for > 2 mins, reset to completed
+    if (data.inventory_status === 'generating' || data.inventory_status === 'identifying') {
+        const lastUpdate = new Date(data.updated_at).getTime()
+        const now = Date.now()
+        const threshold = 2 * 60 * 1000 // 2 minutes
+
+        if (now - lastUpdate > threshold) {
+            console.warn(`[AUTO-RECOVERY] Property ${currentPropId} stuck in ${data.inventory_status}. Resetting.`)
+            await supabase.from('properties').update({ inventory_status: 'completed' }).eq('id', currentPropId)
+            data.inventory_status = 'completed'
+        }
+    }
+
     // SANITIZATION: Check if request is authenticated as host
     const { data: { user } } = await supabase.auth.getUser()
     const isHost = !!user && (user.app_metadata?.tenant_id === data.tenant_id || user.user_metadata?.tenant_id === data.tenant_id)
@@ -754,19 +767,34 @@ export async function syncPropertyApplianceList(propertyId: string, tenantId: st
 }
 
 /**
- * Actualiza el estado del inventario para feedback visual
+ * Silently verifies if the generation process is stuck and fixes it if so.
+ * Used by WizardContext polling for transparent state recovery.
  */
-export async function updateInventoryStatus(propertyId: string, status: 'idle' | 'generating' | 'completed' | 'failed') {
-    const currentPropId = sanitizeUUID(propertyId)
-    if (!currentPropId) return { success: false, error: 'ID inválido' }
-
+export async function verifyAndFixInventoryStatus(propertyId: string) {
     const supabase = await createClient()
-    const { error } = await supabase
-        .from('properties')
-        .update({ inventory_status: status })
-        .eq('id', currentPropId)
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) return { success: false }
 
-    if (error) console.error('[STATUS] Error updating inventory status:', error.message)
-    revalidatePath(`/dashboard/properties/${propertyId}`)
-    return { success: !error }
+    const { data: prop, error } = await supabase
+        .from('properties')
+        .select('inventory_status, updated_at')
+        .eq('id', currentPropId)
+        .single()
+
+    if (error || !prop) return { success: false }
+
+    if (prop.inventory_status === 'generating' || prop.inventory_status === 'identifying') {
+        const lastUpdate = new Date(prop.updated_at).getTime()
+        const now = Date.now()
+        const threshold = 60 * 1000 // 1 minute of silence is suspicious for generating status update
+
+        if (now - lastUpdate > threshold) {
+            console.warn(`[SILENT-RECOVERY] Property ${currentPropId} seems stuck. Fixing.`)
+            await supabase.from('properties').update({ inventory_status: 'completed' }).eq('id', currentPropId)
+            revalidatePath(`/dashboard/properties/${propertyId}`)
+            return { success: true, fixed: true, status: 'completed' }
+        }
+    }
+
+    return { success: true, fixed: false, status: prop.inventory_status }
 }

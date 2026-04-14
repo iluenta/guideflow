@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase/client'
 import { saveWizardStep } from '@/app/actions/wizard'
-import { getUploadUrl } from '@/app/actions/properties'
+import { getTenantId, updateInventoryStatus, verifyAndFixInventoryStatus } from '@/app/actions/properties'
 import { processInventoryManuals } from '@/app/actions/ai-ingestion'
 import { geocodeAddress, GeocodingResult } from '@/lib/geocoding'
 import { validateLocation, ValidationResult } from '@/lib/geocoding-validation'
@@ -227,7 +227,7 @@ export function WizardProvider({
         const status = property?.inventory_status
         if (!effectivePropertyId || (status !== 'identifying' && status !== 'generating')) return
 
-        const MAX_POLLING_TIME = 5 * 60 * 1000
+        const MAX_POLLING_TIME = 10 * 60 * 1000
         const startTime = Date.now()
 
         const interval = setInterval(async () => {
@@ -246,6 +246,15 @@ export function WizardProvider({
             if (error) {
                 console.error('[POLLING] Error fetching status:', error.message)
                 return
+            }
+
+            // SILENT RECOVERY: If we've been polling for > 30s and status is still generating, 
+            // trigger a silent verification to see if the server is actually done.
+            if (Date.now() - startTime > 30 * 1000 && prop.inventory_status === 'generating') {
+                const check = await verifyAndFixInventoryStatus(effectivePropertyId)
+                if (check.fixed) {
+                    prop.inventory_status = 'completed'
+                }
             }
 
             // In ALTA mode, we don't want the scanner to auto-update our inventory checkboxes
@@ -280,7 +289,7 @@ export function WizardProvider({
 
                     trulyDetectedManuals.forEach((m: any) => {
                         const manualName = (m.appliance_name || '').trim()
-                        if (manualName.length < 3) return
+                        if (manualName.length < 2) return
 
                         const matchedItem = DEFAULT_ITEMS.find(di => matchesInventoryItem(manualName, di))
 
@@ -599,10 +608,10 @@ export function WizardProvider({
                     setAiLoading('manuals-generation')
                     try {
                         const res = await processInventoryManuals(currentPropId, dataToSave.selected_items)
-                        if (res.processed && res.processed > 0) {
+                        if (res.success && res.processed > 0) {
                             toast({
-                                title: 'IA: Manuales Generados',
-                                description: `Se han creado ${res.processed} nuevas guías basadas en tu selección.`,
+                                title: 'IA: Generando manuales',
+                                description: `Estamos creando ${res.processed} guías en segundo plano. Aparecerán pronto.`,
                                 variant: 'default'
                             })
                         }

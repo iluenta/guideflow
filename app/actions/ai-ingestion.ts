@@ -408,87 +408,101 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
 
         if (itemsToProcess.length === 0) {
             console.log('[INVENTORY] No new items to process.')
+            await supabase.from('properties').update({ inventory_status: 'completed' }).eq('id', currentPropId)
             return { success: true, processed: 0 }
         }
 
-        console.log(`[INVENTORY] Generating ${itemsToProcess.length} new manuals...`)
-
-        for (const item of itemsToProcess) {
+        // Proceso en segundo plano
+        after(async () => {
             try {
-                console.log(`[INVENTORY] Generating manual for: ${item.name}...`)
+                console.log(`[INVENTORY-BG] Generating ${itemsToProcess.length} new manuals...`)
 
-                const prompt = `Genera una guía de uso rápida y amable para un huésped sobre el siguiente elemento: ${item.name}.
-                ${item.customContext ? `Información específica del anfitrión: ${item.customContext}` : ''}
-                
-                REGLAS CRÍTICAS:
-                1. FORMATO: Markdown estructurado.
-                2. TONO: Útil y directo.
-                3. CONTENIDO: Indica para qué sirve y consejos básicos.
-                4. NO INVENTES: No describas detalles físicos específicos (colores, materiales, tipos exactos, cantidades) que no se hayan proporcionado. Tampoco inventes marcas o modelos técnicos.
-                5. Si no sabes dónde está, usa frases genéricas como "Suele encontrarse en..." o "Pregunta al anfitrión si no lo localizas".
+                for (const item of itemsToProcess) {
+                    try {
+                        console.log(`[INVENTORY-BG] Generating manual for: ${item.name}...`)
 
-                RESPONDE SOLO CON EL TEXTO DEL MANUAL.`
+                        const prompt = `Genera una guía de uso rápida y amable para un huésped sobre el siguiente elemento: ${item.name}.
+                        ${item.customContext ? `Información específica del anfitrión: ${item.customContext}` : ''}
+                        
+                        REGLAS CRÍTICAS:
+                        1. FORMATO: Markdown estructurado.
+                        2. TONO: Útil y directo.
+                        3. CONTENIDO: Indica para qué sirve y consejos básicos.
+                        4. NO INVENTES: No describas detalles físicos específicos (colores, materiales, tipos exactos, cantidades) que no se hayan proporcionado. Tampoco inventes marcas o modelos técnicos.
+                        5. Si no sabes dónde está, usa frases genéricas como "Suele encontrarse en..." o "Pregunta al anfitrión si no lo localizas".
+        
+                        RESPONDE SOLO CON EL TEXTO DEL MANUAL.`
 
-                const genResponse = await geminiREST('gemini-2.0-flash', prompt, {
-                    responseMimeType: 'text/plain',
-                    temperature: 0.7
-                })
+                        const genResponse = await geminiREST('gemini-2.0-flash', prompt, {
+                            responseMimeType: 'text/plain',
+                            temperature: 0.7
+                        })
 
-                const manualContent = genResponse?.data
-                if (!manualContent) continue
+                        const manualContent = genResponse?.data
+                        if (!manualContent) continue
 
-                const { data: manual, error: manError } = await supabase.from('property_manuals').insert({
-                    property_id: currentPropId,
-                    tenant_id: tenant_id,
-                    appliance_name: item.name,
-                    manual_content: manualContent,
-                    metadata: {
-                        source: 'inventory_selector',
-                        item_id: item.id,
-                        host_context: item.customContext
+                        const { data: manual, error: manError } = await supabase.from('property_manuals').insert({
+                            property_id: currentPropId,
+                            tenant_id: tenant_id,
+                            appliance_name: item.name,
+                            manual_content: manualContent,
+                            metadata: {
+                                source: 'inventory_selector',
+                                item_id: item.id,
+                                host_context: item.customContext
+                            }
+                        }).select().single()
+
+                        if (manError) throw manError
+
+                        const chunks = splitIntoChunks(manualContent, 800)
+                        const contextEmbeddings = await Promise.all(chunks.map(async chunk => {
+                            const enrichedContent = `[ELEMENTO: ${item.name}]\n${item.customContext ? `Nota del anfitrión: ${item.customContext}\n` : ''}${chunk}`
+                            const enrichedEmbedding = await generateOpenAIEmbedding(enrichedContent)
+                            return {
+                                property_id: currentPropId,
+                                tenant_id: tenant_id,
+                                source_type: 'manual',
+                                source_id: manual.id,
+                                content: enrichedContent,
+                                embedding: enrichedEmbedding,
+                                metadata: {
+                                    appliance: item.name,
+                                    item_category: item.category
+                                }
+                            }
+                        }))
+
+                        await supabase.from('context_embeddings').delete().eq('source_id', manual.id);
+                        await supabase.from('context_embeddings').insert(contextEmbeddings);
+
+                    } catch (itemErr: any) {
+                        console.error(`[INVENTORY-BG] Error processing ${item.name}:`, itemErr.message)
                     }
-                }).select().single()
+                }
 
-                if (manError) throw manError
+                await syncPropertyApplianceList(currentPropId, tenant_id)
 
-                const chunks = splitIntoChunks(manualContent, 800)
-                const contextEmbeddings = await Promise.all(chunks.map(async chunk => {
-                    const enrichedContent = `[ELEMENTO: ${item.name}]\n${item.customContext ? `Nota del anfitrión: ${item.customContext}\n` : ''}${chunk}`
-                    const enrichedEmbedding = await generateOpenAIEmbedding(enrichedContent)
-                    return {
-                        property_id: currentPropId,
-                        tenant_id: tenant_id,
-                        source_type: 'manual',
-                        source_id: manual.id,
-                        content: enrichedContent,
-                        embedding: enrichedEmbedding,
-                        metadata: {
-                            appliance: item.name,
-                            item_category: item.category
-                        }
-                    }
-                }))
+                await supabase
+                    .from('properties')
+                    .update({ inventory_status: 'completed' })
+                    .eq('id', currentPropId)
 
-                await supabase.from('context_embeddings').delete().eq('source_id', manual.id);
-                await supabase.from('context_embeddings').insert(contextEmbeddings);
-
-            } catch (itemErr: any) {
-                console.error(`[INVENTORY] Error processing ${item.name}:`, itemErr.message)
+                console.log('[INVENTORY-BG] Background processing completed.')
+            } catch (bgErr: any) {
+                console.error('[INVENTORY-BG] Fatal background error:', bgErr.message)
+                await supabase
+                    .from('properties')
+                    .update({ inventory_status: 'failed' })
+                    .eq('id', currentPropId)
             }
-        }
+        })
 
-        await syncPropertyApplianceList(currentPropId, tenant_id)
-
-        await supabase
-            .from('properties')
-            .update({ inventory_status: 'completed' })
-            .eq('id', currentPropId)
-
-        console.log('[INVENTORY] Background processing completed.')
-        return { success: true, processed: itemsToProcess.length }
+        return { success: true, processed: itemsToProcess.length, isBackground: true }
 
     } catch (error: any) {
-        console.error('[INVENTORY] Fatal processing error:', error.message)
+        console.error('[INVENTORY] Fatal initialization error:', error.message)
+        await supabase.from('properties').update({ inventory_status: 'failed' }).eq('id', currentPropId)
         return { success: false, error: error.message }
     }
 }

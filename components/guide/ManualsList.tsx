@@ -2,7 +2,22 @@
 
 import { useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { BookText, ChevronRight, FileText } from 'lucide-react'
+import {
+    BookText,
+    ChevronRight,
+    FileText,
+    Coffee,
+    Tv,
+    Wind,
+    WashingMachine,
+    Utensils,
+    Flame,
+    ShieldCheck,
+    Refrigerator,
+    Microwave,
+    Bath,
+    Bed
+} from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import {
     Dialog,
@@ -60,6 +75,24 @@ function ManualItem({ manual, language }: { manual: Manual, language: string }) 
     const { content: localizedContent, isTranslating: contentLoading } = useLocalizedContent(manual.manual_content, language, 'manual_content');
     const { content: officialLabel } = useLocalizedContent("Manual Oficial", language, 'ui_label');
 
+    const getIcon = (name: string) => {
+        const n = name.toLowerCase();
+        if (n.includes('cafeter') || n.includes('coffee') || n.includes('nespresso') || n.includes('dolce')) return Coffee;
+        if (n.includes('tv') || n.includes('televisión') || n.includes('television') || n.includes('pantalla')) return Tv;
+        if (n.includes('aire') || n.includes('ac') || n.includes('clima') || n.includes('secador') || n.includes('tostadora') || n.includes('hervidor')) return Wind;
+        if (n.includes('lavadora') || n.includes('washer') || n.includes('lavasecadora')) return WashingMachine;
+        if (n.includes('lavavajillas') || n.includes('dish') || n.includes('horno') || n.includes('vitro')) return Utensils;
+        if (n.includes('calefacción') || n.includes('caldera') || n.includes('termostato')) return Flame;
+        if (n.includes('botiquín') || n.includes('extintor') || n.includes('seguridad')) return ShieldCheck;
+        if (n.includes('nevera') || n.includes('frigo') || n.includes('refrigerador')) return Refrigerator;
+        if (n.includes('microondas')) return Microwave;
+        if (n.includes('ducha') || n.includes('baño') || n.includes('grifo')) return Bath;
+        if (n.includes('cama') || n.includes('almohada')) return Bed;
+        return BookText;
+    };
+
+    const StatusIcon = getIcon(manual.appliance_name);
+
     return (
         <Dialog>
             <DialogTrigger asChild>
@@ -67,7 +100,7 @@ function ManualItem({ manual, language }: { manual: Manual, language: string }) 
                     <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] transition-all duration-500 rounded-[2rem] overflow-hidden group-active:scale-[0.98]">
                         <div className="flex items-center p-6 gap-5">
                             <div className="h-14 w-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-500 shrink-0">
-                                <BookText className="h-7 w-7" />
+                                <StatusIcon className="h-7 w-7" />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <h4 className={`font-bold text-slate-900 truncate ${nameLoading ? 'animate-pulse opacity-50' : ''}`}>
