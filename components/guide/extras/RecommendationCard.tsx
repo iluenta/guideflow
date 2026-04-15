@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -119,9 +120,10 @@ export function RecommendationCard({ recommendation, onDelete, onClick, classNam
                 {/* Left side: Photo (Optional) */}
                 {photoUrl && (
                     <div className="relative w-24 sm:w-28 shrink-0 bg-slate-50 overflow-hidden">
-                        <img 
-                            src={photoUrl} 
-                            alt={recommendation.name} 
+                        {/* eslint-disable-next-line @next/next/no-img-element -- contenedor sin altura fija; la altura la define el contenido adyacente */}
+                        <img
+                            src={photoUrl}
+                            alt={recommendation.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                         {openNow !== undefined && (

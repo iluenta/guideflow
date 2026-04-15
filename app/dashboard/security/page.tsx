@@ -19,6 +19,7 @@ export default function SecurityPage() {
 
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     async function fetchData() {

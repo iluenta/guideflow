@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import {
     ChevronLeft,
     UtensilsCrossed,
@@ -158,10 +159,12 @@ function RecommendationCard({
                 {/* Left: Small Square Image / Icon Fallback */}
                 <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-xl overflow-hidden shadow-inner border border-navy/5 bg-slate/5">
                     {photoUrl ? (
-                        <img 
-                            src={photoUrl} 
+                        <Image
+                            src={photoUrl}
                             alt={rec.name}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            fill
+                            unoptimized
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                     ) : (
                         <div 
@@ -307,7 +310,7 @@ function RecommendationCard({
                                     />
                                     
                                     <p className="font-serif italic text-navy/70 relative z-10 leading-relaxed pr-8">
-                                        "{localizedNote}"
+                                        &quot;{localizedNote}&quot;
                                     </p>
                                     
                                     <div className="flex items-center gap-2 mt-2 opacity-60">
@@ -493,7 +496,7 @@ export function RecommendationsView({
             });
         }
         return items;
-    }, [recommendations, group, selectedCategory]);
+    }, [recommendations, selectedCategory, config.categories]);
 
     const getMapsUrl = (rec: Recommendation) => {
         // If there's a specific map_url, use it.

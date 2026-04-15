@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -183,11 +184,12 @@ export default function StepCheckin({ value }: { value?: string }) {
                                                     {step.image_url ? (
                                                         // Imagen: preview local inmediato + overlay de subida encima
                                                         <div className="relative w-full aspect-video rounded-xl overflow-hidden group/img">
-                                                            <img
+                                                            <Image
                                                                 src={step.image_url}
                                                                 alt="Vista previa"
+                                                                fill
                                                                 className={cn(
-                                                                    "w-full h-full object-cover transition-all duration-500",
+                                                                    "object-cover transition-all duration-500",
                                                                     isUploading && "blur-sm scale-105"
                                                                 )}
                                                             />

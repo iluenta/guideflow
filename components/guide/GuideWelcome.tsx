@@ -234,6 +234,9 @@ export function GuideWelcome({
                     lng={longitude}
                     locationType={locationType}
                     themeId={themeId}
+                    currentLanguage={currentLanguage}
+                    accessToken={accessToken}
+                    propertyId={propertyId}
                 />
             </motion.div>
 
@@ -410,14 +413,14 @@ export function GuideWelcome({
                     <div className="grid grid-cols-2 gap-3">
                         {eatRecs.length > 0 && (
                             <div onClick={() => onNavigate('eat')} className={cn("relative h-28 overflow-hidden shadow-sm cursor-pointer active:scale-[0.98] transition-all", t.chipLayout === 'stacked' ? 'rounded-3xl' : themeId === 'urban' ? '' : 'rounded-2xl')}>
-                                <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop" className="w-full h-full object-cover" alt={labelGastronomia} />
+                                <Image src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop" fill className="object-cover" alt={labelGastronomia} />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                                 <span className="absolute bottom-3 left-3 text-white text-xs font-bold">{labelGastronomia}</span>
                             </div>
                         )}
                         {doRecs.length > 0 && (
                             <div onClick={() => onNavigate('leisure')} className={cn("relative h-28 overflow-hidden shadow-sm cursor-pointer active:scale-[0.98] transition-all", t.chipLayout === 'stacked' ? 'rounded-3xl' : themeId === 'urban' ? '' : 'rounded-2xl')}>
-                                <img src="https://images.unsplash.com/photo-1533105079780-92b9be482077?w=400&h=300&fit=crop" className="w-full h-full object-cover" alt={labelQueHacer} />
+                                <Image src="https://images.unsplash.com/photo-1533105079780-92b9be482077?w=400&h=300&fit=crop" fill className="object-cover" alt={labelQueHacer} />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                                 <span className="absolute bottom-3 left-3 text-white text-xs font-bold">{labelQueHacer}</span>
                             </div>

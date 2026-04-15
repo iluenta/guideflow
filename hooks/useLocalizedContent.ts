@@ -3,9 +3,17 @@
 import { useState, useEffect } from 'react';
 
 /**
- * Hook to handle on-demand translation of content blocks.
+ * Module-level translation cache.
+ * Plain object — fast reads, no overhead.
  */
 const translationCache: Record<string, string> = {};
+
+/**
+ * Global listener set: called by seedTranslationCache when new translations arrive.
+ * Each listener closes over its own cacheKey and updates its component if that key landed.
+ * React 18 automatic batching groups all resulting setContent() calls into one commit.
+ */
+const cacheListeners = new Set<() => void>();
 
 /**
  * FASE 18: Ultra-robust cleaning to strip ANY leaked JSON, objects, or artifacts.
@@ -15,21 +23,15 @@ function cleanTranslation(val: any): string {
 
     // 1. Handle actual objects
     if (typeof val === 'object' && !Array.isArray(val) && val !== null) {
-        // Check for any key that looks like a translation result (case-insensitive)
         const keys = Object.keys(val);
         const lowerKeys = keys.map(k => k.toLowerCase());
-
-        // Priority sequence for candidates
         const priorities = ['t', 'translated', 'translation', 'text', 'result', 'o', 'original', 'value'];
         for (const p of priorities) {
             const idx = lowerKeys.indexOf(p);
             if (idx !== -1) return cleanTranslation(val[keys[idx]]);
         }
-
-        // Final fallback: just take the first value if it's a string
         const values = Object.values(val);
         if (values.length > 0) return cleanTranslation(values[0]);
-
         return JSON.stringify(val);
     }
 
@@ -41,24 +43,18 @@ function cleanTranslation(val: any): string {
     // 3. Handle strings (might be stringified JSON)
     if (typeof val === 'string') {
         const trimmed = val.trim();
-
-        // Recursive JSON cleaning
         if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
             try {
                 const parsed = JSON.parse(trimmed);
                 return cleanTranslation(parsed);
             } catch (e) {
-                // Not valid JSON, try regex extraction
                 const match = trimmed.match(/"(?:o|t|translated|translation|text|value)":\s*"([^"]+)"/i);
                 if (match) return match[1];
             }
         }
-
-        // Quote stripping
         if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
             return trimmed.slice(1, -1);
         }
-
         return trimmed;
     }
 
@@ -66,12 +62,25 @@ function cleanTranslation(val: any): string {
 }
 
 /**
- * Seeds the cache with pre-translated content from the server.
+ * Silent write — safe to call during render (useMemo).
+ * Populates the cache without notifying listeners; child components that mount
+ * afterwards will read the warm cache directly via their useState initializer.
  */
-export function seedTranslationCache(translations: Record<string, string>) {
+export function seedTranslationCacheQuiet(translations: Record<string, string>) {
     Object.entries(translations).forEach(([key, value]) => {
         translationCache[key] = cleanTranslation(value);
     });
+}
+
+/**
+ * Write + notify — for use inside useEffect only (never during render).
+ * Fires all registered listeners so already-mounted components pick up
+ * translations that arrived after they first rendered (eager prefetch).
+ * React 18 batches all resulting setContent() calls into a single commit.
+ */
+export function seedTranslationCache(translations: Record<string, string>) {
+    seedTranslationCacheQuiet(translations);
+    cacheListeners.forEach(listener => listener());
 }
 
 // Group for batching
@@ -86,7 +95,7 @@ class TranslationManager {
         timer: NodeJS.Timeout | null;
     }> = new Map();
 
-    private static BATCH_DELAY = 50; // Faster batching
+    private static BATCH_DELAY = 50;
 
     static async request(
         text: string,
@@ -140,7 +149,7 @@ class TranslationManager {
                     targetLanguage: language,
                     propertyId: propertyId === 'global' ? undefined : propertyId,
                     accessToken: accessToken === 'none' ? undefined : accessToken,
-                    contextType: 'ui' // Default to ui for batches
+                    contextType: 'ui'
                 })
             });
 
@@ -177,48 +186,61 @@ export function useLocalizedContent(
     propertyId?: string
 ) {
     const isSpanish = !text || language === 'es';
-
     const cacheKey = `${language}:${text}:${propertyId || 'global'}`;
-    const cachedValue = translationCache[cacheKey];
 
-    const initialState = isSpanish ? text : (cachedValue || text);
-    const [content, setContent] = useState(initialState);
-    const [isTranslating, setIsTranslating] = useState(!isSpanish && !cachedValue);
+    // Initialize from cache synchronously — warm cache (SSR prefetch or prior visit) = no flash at all.
+    const [content, setContent] = useState(() =>
+        isSpanish ? text : (translationCache[cacheKey] || text)
+    );
+    const [isTranslating, setIsTranslating] = useState(!isSpanish && !translationCache[cacheKey]);
 
+    // Effect 1: listen for eager-prefetch updates that arrive AFTER this component mounts.
+    // Stable deps — never re-runs unless cacheKey or language changes.
     useEffect(() => {
-        if (isSpanish) {
-            setContent(text);
-            return;
-        }
+        if (isSpanish) return;
 
-        if (cachedValue) {
-            setContent(cachedValue);
-            return;
-        }
-
-        const translate = async () => {
-            if (!accessToken && !propertyId) return;
-
-            setIsTranslating(true);
-            try {
-                const translated = await TranslationManager.request(
-                    text,
-                    language,
-                    propertyId!,
-                    accessToken,
-                    contextType
-                );
-                setContent(translated);
-            } catch (error) {
-                console.error('[useLocalizedContent] Error:', error);
-                setContent(text);
-            } finally {
+        const checkCache = () => {
+            const cached = translationCache[cacheKey];
+            if (cached) {
+                setContent(cached);
                 setIsTranslating(false);
             }
         };
 
-        translate();
-    }, [text, language, contextType, accessToken, propertyId, cachedValue, isSpanish, cacheKey]);
+        // Check immediately in case the prefetch completed between render and this effect.
+        checkCache();
+
+        cacheListeners.add(checkCache);
+        return () => { cacheListeners.delete(checkCache); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [cacheKey, isSpanish]);
+
+    // Effect 2: on-demand translation when still a cache miss after Effect 1 ran.
+    // Stable deps — no cascade re-runs when cache is populated.
+    useEffect(() => {
+        if (isSpanish || translationCache[cacheKey]) return;
+        if (!accessToken && !propertyId) return;
+
+        let cancelled = false;
+        setIsTranslating(true);
+
+        TranslationManager.request(text, language, propertyId!, accessToken, contextType)
+            .then(translated => {
+                if (!cancelled) {
+                    setContent(translated);
+                    setIsTranslating(false);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setContent(text);
+                    setIsTranslating(false);
+                }
+            });
+
+        return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [text, language, contextType, accessToken, propertyId]);
 
     return { content, isTranslating };
 }

@@ -3,7 +3,6 @@
 // Extraído de app/api/chat/route.ts líneas 802–979.
 
 import { streamGeminiREST } from '@/lib/ai/clients/gemini-rest';
-import { TranslationService } from '@/lib/ai/services/translation-service';
 import type { ClassifiedIntent } from '@/lib/ai/services/intent-classifier';
 
 type SupabaseClient = ReturnType<typeof import('@/lib/supabase/edge').createEdgeAdminClient>;
@@ -131,7 +130,6 @@ export async function createChatStream(
 
             const decoder = new TextDecoder();
             let eventBuffer = '';
-            let accumulatedText = '';
             let mapMarkerBuffer = '';
             let globalAccumulatedText = '';
 
@@ -151,52 +149,15 @@ export async function createChatStream(
                                 const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
                                 if (text) {
                                     globalAccumulatedText += text;
-
-                                    if (language === 'es') {
-                                        // Path español: stream directo con buffer para [[MAP:...]]
-                                        if (text.includes('[[') || mapMarkerBuffer) {
-                                            mapMarkerBuffer += text;
-                                            if (mapMarkerBuffer.includes(']]')) {
-                                                controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(mapMarkerBuffer)}\n`));
-                                                mapMarkerBuffer = '';
-                                            }
-                                        } else {
-                                            controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(text)}\n`));
+                                    // AI responde directamente en el idioma del huésped — stream directo
+                                    if (text.includes('[[') || mapMarkerBuffer) {
+                                        mapMarkerBuffer += text;
+                                        if (mapMarkerBuffer.includes(']]')) {
+                                            controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(mapMarkerBuffer)}\n`));
+                                            mapMarkerBuffer = '';
                                         }
                                     } else {
-                                        // Path no español: acumular y traducir por frases
-                                        accumulatedText += text;
-                                        const hasOpening = accumulatedText.includes('[[');
-                                        const hasClosing = accumulatedText.includes(']]');
-                                        const isInsideMarker = hasOpening && !hasClosing;
-
-                                        if (!isInsideMarker) {
-                                            const boundaryRegex = /(\n|[\.!?]\s+|\s[\*\-]\s|\s\d+\.\s)/g;
-                                            let match;
-                                            while ((match = boundaryRegex.exec(accumulatedText)) !== null) {
-                                                const breakPoint = match.index + (match[0].startsWith(' ') ? 0 : 1);
-                                                const chunkToTranslate = accumulatedText.substring(0, breakPoint).trim();
-                                                if (chunkToTranslate) {
-                                                    const { text: translatedChunk } = await TranslationService.translate(
-                                                        chunkToTranslate, 'es', language, { propertyId, context: 'chat' }
-                                                    );
-                                                    controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(translatedChunk + ' ')}\n`));
-                                                }
-                                                accumulatedText = accumulatedText.substring(breakPoint).trimStart();
-                                                boundaryRegex.lastIndex = 0;
-                                            }
-                                        }
-
-                                        if (accumulatedText.length > 200 && !isInsideMarker) {
-                                            const lastSpace = accumulatedText.lastIndexOf(' ', 200);
-                                            const breakPoint = lastSpace !== -1 ? lastSpace : 200;
-                                            const chunkToTranslate = accumulatedText.substring(0, breakPoint).trim();
-                                            const { text: translatedChunk } = await TranslationService.translate(
-                                                chunkToTranslate, 'es', language, { propertyId, context: 'chat' }
-                                            );
-                                            controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(translatedChunk + ' ')}\n`));
-                                            accumulatedText = accumulatedText.substring(breakPoint).trimStart();
-                                        }
+                                        controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(text)}\n`));
                                     }
                                 }
                             } catch (e) { /* ignorar líneas SSE parciales */ }
@@ -207,12 +168,6 @@ export async function createChatStream(
                 // Flush final
                 if (mapMarkerBuffer) {
                     controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(mapMarkerBuffer)}\n`));
-                }
-                if (language !== 'es' && accumulatedText.trim()) {
-                    const { text: translatedChunk } = await TranslationService.translate(
-                        accumulatedText, 'es', language, { propertyId, context: 'chat' }
-                    );
-                    controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(translatedChunk)}\n`));
                 }
 
                 // Analytics: no bloquea el cierre del stream

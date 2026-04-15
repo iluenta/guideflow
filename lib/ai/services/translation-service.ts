@@ -132,13 +132,15 @@ export class TranslationService {
     }
 
     try {
-      const batchPayload = missingIndices.reduce((acc, idx) => { acc[idx] = texts[idx].trim(); return acc; }, {} as Record<string, string>);
-      const prompt = `Translate from ${getLangName(sourceLang)} to ${getLangName(targetLang)}. 
-      Output JSON with SAME keys. Values MUST be PLAIN STRINGS. NO objects.
-      
+      // Dense array: always sequential 0,1,2... so Gemini never re-indexes or loses entries.
+      // missingIndices[pos] maps each dense position back to the original results slot.
+      const denseTexts = missingIndices.map(idx => texts[idx].trim());
+      const prompt = `Translate from ${getLangName(sourceLang)} to ${getLangName(targetLang)}.
+      Output a JSON ARRAY with exactly ${denseTexts.length} strings, one per input. Values MUST be PLAIN STRINGS. NO objects.
+
       CONTEXT: This is for a luxury vacation rental digital guide (concierge). Tone should be helpful and professional.
-      
-      Payload: ${JSON.stringify(batchPayload)}`;
+
+      Input: ${JSON.stringify(denseTexts)}`;
 
       const batchModel = TranslationService.genAI.getGenerativeModel({
         model: "gemini-2.0-flash",
@@ -156,13 +158,17 @@ export class TranslationService {
         throw e;
       }
 
-      console.log(`[TRANSLATION-AI] 🤖 Response for ${targetLang}:`, translatedBatch);
+      // Normalise: accept both array and object keyed by position
+      const getAt = (pos: number): any => {
+        if (Array.isArray(translatedBatch)) return translatedBatch[pos];
+        return translatedBatch[pos] !== undefined ? translatedBatch[pos] : translatedBatch[String(pos)];
+      };
+
       const dbRecords: any[] = [];
 
-      for (const idx of missingIndices) {
-        // Highly resilient access: check index, string index, or even array access if Gemini slipped
-        const rawVal = translatedBatch[idx] !== undefined ? translatedBatch[idx] : translatedBatch[String(idx)];
-        const cleaned = TranslationService.cleanTranslation(rawVal);
+      for (let pos = 0; pos < missingIndices.length; pos++) {
+        const idx = missingIndices[pos];
+        const cleaned = TranslationService.cleanTranslation(getAt(pos));
 
         if (cleaned) {
           results[idx] = cleaned;
@@ -194,7 +200,9 @@ export class TranslationService {
   }
 
   private static async saveToDBBulk(supabase: any, records: any[]) {
-    try { await supabase.from('translation_cache').upsert(records, { onConflict: 'hash,property_id' }); } catch (e) { }
+    try { await supabase.from('translation_cache').upsert(records, { onConflict: 'hash,property_id' }); } catch (e) {
+      console.warn('[TRANSLATION] saveToDBBulk failed:', e);
+    }
   }
 
   private static async generateHash(text: string): Promise<string> {
@@ -211,6 +219,54 @@ export class TranslationService {
       if (firstKey) memoryCache.delete(firstKey);
     }
     memoryCache.set(key, value);
+  }
+
+  /**
+   * DB-cache-only lookup — no Gemini fallback.
+   * Returns { originalText: translatedText } for every cache hit.
+   * Used by SSR page to enrich initialTranslations without blocking TTFB on cold cache.
+   */
+  static async fetchCachedBatch(
+    texts: string[],
+    sourceLang: string,
+    targetLang: string,
+    propertyId: string
+  ): Promise<Record<string, string>> {
+    if (sourceLang === targetLang || !texts.length || !propertyId) return {};
+
+    const clean = texts.map(t => t?.trim()).filter(Boolean);
+    if (!clean.length) return {};
+
+    const hashMap = new Map<string, string>(); // hash → original text
+    await Promise.all(
+      clean.map(async (t) => {
+        const cacheKey = `${propertyId}:${t}|${sourceLang}|${targetLang}`;
+        const hash = await this.generateHash(cacheKey);
+        hashMap.set(hash, t);
+      })
+    );
+
+    try {
+      const supabase = createEdgeAdminClient();
+      const { data } = await supabase
+        .from('translation_cache')
+        .select('hash, translated_text')
+        .eq('property_id', propertyId)
+        .in('hash', [...hashMap.keys()]);
+
+      if (!data?.length) return {};
+
+      const result: Record<string, string> = {};
+      for (const row of data) {
+        const original = hashMap.get(row.hash);
+        if (original && row.translated_text) {
+          result[original] = TranslationService.cleanTranslation(row.translated_text);
+        }
+      }
+      return result;
+    } catch {
+      return {};
+    }
   }
 
   static async translate(

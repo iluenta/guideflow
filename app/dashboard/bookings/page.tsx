@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useId } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -560,11 +561,11 @@ function BookingsPageContent() {
                       <div className="flex flex-col lg:flex-row">
                         {/* Property Image */}
                         <div className="relative h-32 w-full shrink-0 lg:h-auto lg:w-40">
-                          <img
+                          <Image
                             src={booking.propertyImage || "/placeholder.svg"}
                             alt={booking.propertyName}
-                            className="h-full w-full object-cover"
-                            crossOrigin="anonymous"
+                            fill
+                            className="object-cover"
                           />
                           <div className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full ${statusConfig.color} text-white`}>
                             <StatusIcon className="h-3.5 w-3.5" />
@@ -717,11 +718,12 @@ function BookingsPageContent() {
               <div className="space-y-6 pt-4">
                 {/* Property Info */}
                 <div className="flex items-center gap-4 rounded-lg border border-border p-4">
-                  <img
+                  <Image
                     src={selectedBooking.propertyImage || "/placeholder.svg"}
                     alt={selectedBooking.propertyName}
-                    className="h-16 w-24 rounded-lg object-cover"
-                    crossOrigin="anonymous"
+                    width={96}
+                    height={64}
+                    className="rounded-lg object-cover"
                   />
                   <div>
                     <h4 className="font-medium text-foreground">{selectedBooking.propertyName}</h4>

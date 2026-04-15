@@ -169,6 +169,7 @@ export default function StepAppearance({ value }: { value?: string }) {
                             <div className="relative group min-h-[180px] border-2 border-dashed border-slate-100 rounded-xl bg-slate-50 flex flex-col items-center justify-center p-6 transition-all hover:border-[#316263]/30 hover:bg-white cursor-pointer" onClick={triggerLogoUpload}>
                                 {data.branding?.custom_logo_url ? (
                                     <div className="relative group w-full flex justify-center">
+                                        {/* eslint-disable-next-line @next/next/no-img-element -- logo con max-h y w-auto; dimensiones variables no compatibles con Image fill */}
                                         <img
                                             src={data.branding.custom_logo_url}
                                             alt="Logo"

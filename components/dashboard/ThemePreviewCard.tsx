@@ -48,6 +48,7 @@ export function ThemePreviewCard({
                             style={{ backgroundColor: theme.colors.primary }}
                         >
                             {logoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element -- logo con w-auto, dimensiones dinámicas no compatibles con Image fill
                                 <img src={logoUrl} alt="Logo" className="h-2.5 w-auto object-contain brightness-0 invert opacity-90" />
                             ) : (
                                 <div className="h-0.5 w-1/3 rounded-full bg-white/30" />

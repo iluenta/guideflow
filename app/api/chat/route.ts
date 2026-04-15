@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         const formattedContext = buildFormattedContext(propertyContext, params);
 
         // 5. Construir system instruction
-        const systemInstruction = buildSystemInstruction(propertyContext, params, formattedContext);
+        const systemInstruction = buildSystemInstruction(propertyContext, params, formattedContext, language);
 
         // 6. Mensajes Gemini + stream
         const geminiMessages = buildGeminiMessages(messages, language, ragQuery);

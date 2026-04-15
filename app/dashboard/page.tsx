@@ -2,6 +2,7 @@
 
 import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,7 @@ function DashboardErrorHandler() {
       url.searchParams.delete('error');
       window.history.replaceState(null, '', url.toString());
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return null;
@@ -194,12 +196,14 @@ export default function DashboardPage() {
                     key={property.id}
                     className="flex flex-col gap-4 rounded-lg border border-border p-4 sm:flex-row sm:items-center"
                   >
-                    <img
-                      src={property.image || "/placeholder.svg"}
-                      alt={property.name}
-                      className="h-20 w-full rounded-lg object-cover sm:h-16 sm:w-24"
-                      crossOrigin="anonymous"
-                    />
+                    <div className="relative h-20 w-full shrink-0 overflow-hidden rounded-lg sm:h-16 sm:w-24">
+                      <Image
+                        src={property.image || "/placeholder.svg"}
+                        alt={property.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="font-semibold text-foreground">

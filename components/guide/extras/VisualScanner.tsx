@@ -175,7 +175,7 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                                     Una vez guardada, podrás subir fotos para que la IA analice los aparatos y servicios.
                                 </p>
                                 <div className="text-xs text-amber-600 font-medium">
-                                    💡 Guarda la propiedad en la pestaña "Información Básica" y vuelve aquí
+                                    💡 Guarda la propiedad en la pestaña &quot;Información Básica&quot; y vuelve aquí
                                 </div>
                             </div>
                         </div>
@@ -195,7 +195,7 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                         <div className="space-y-0.5">
                             <p className="text-[10px] font-bold flex items-center gap-1.5 text-primary">
                                 <span className="h-1 w-1 rounded-full bg-primary" />
-                                "DNI" del aparato
+                                &quot;DNI&quot; del aparato
                             </p>
                             <p className="text-muted-foreground text-[9px] leading-tight">
                                 Foto a la pegatina del modelo/serie (E-Nr) para instrucciones exactas.

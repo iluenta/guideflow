@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useId } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -429,11 +430,11 @@ export default function LandingEditorPage() {
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                       {landingConfig.gallery.map((image, index) => (
                         <div key={index} className="group relative aspect-video overflow-hidden rounded-lg">
-                          <img
+                          <Image
                             src={image || "/placeholder.svg"}
                             alt={`Foto ${index + 1}`}
-                            className="h-full w-full object-cover"
-                            crossOrigin="anonymous"
+                            fill
+                            className="object-cover"
                           />
                           <div className="absolute inset-0 flex items-center justify-center bg-foreground/50 opacity-0 transition-opacity group-hover:opacity-100">
                             <Button variant="secondary" size="sm">
@@ -632,11 +633,11 @@ function LandingPreview({
     <div className="min-h-full" style={{ backgroundColor: theme.secondary }}>
       {/* Hero */}
       <div className="relative h-48 overflow-hidden">
-        <img
+        <Image
           src={config.gallery[0] || "/placeholder.svg"}
           alt={property.name}
-          className="h-full w-full object-cover"
-          crossOrigin="anonymous"
+          fill
+          className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white">

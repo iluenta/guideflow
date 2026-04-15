@@ -195,6 +195,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     if (profile?.tenant_id) fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.tenant_id, selectedPropertyId]);
 
   const activePropName = selectedPropertyId === "all" 

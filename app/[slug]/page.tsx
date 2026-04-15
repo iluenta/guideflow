@@ -7,6 +7,7 @@ import { GuideViewContainer } from '@/components/guide/GuideViewContainer'
 import { getLayoutTheme } from '@/lib/themes'
 import { headers, cookies } from 'next/headers'
 import { Translator } from '@/lib/ai/services/gemini-i18n'
+import { TranslationService } from '@/lib/ai/services/translation-service'
 import { playfair, oswald, nunito, cormorant, jost } from '@/lib/fonts-themes'
 
 function detectLanguageFromHeader(acceptLanguage: string): string {
@@ -84,6 +85,93 @@ const CRITICAL_UI_STRINGS = [
     '¿Dónde puedo aparcar?',
     '¿Dónde puedo comer cerca?',
 ];
+
+/** Extracts all user-visible translatable strings from guide data (mirrors GuideViewContainer eager prefetch). */
+function extractGuideTexts(
+    sections: any[],
+    faqs: any[],
+    recommendations: any[],
+    manuals: any[],
+    context: any[]
+): string[] {
+    const texts: string[] = [];
+
+    sections?.forEach((s: any) => {
+        if (s.title) texts.push(s.title);
+        const d = s.data;
+        if (!d) return;
+        if (typeof d.content === 'string' && d.content.trim()) texts.push(d.content);
+        if (typeof d.text === 'string' && d.text.trim()) texts.push(d.text);
+        if (typeof d.address === 'string' && d.address.trim()) texts.push(d.address);
+        if (Array.isArray(d.items)) d.items.forEach((item: any) => {
+            if (typeof item === 'string') texts.push(item);
+            if (typeof item?.text === 'string') texts.push(item.text);
+            if (typeof item?.label === 'string') texts.push(item.label);
+        });
+    });
+
+    faqs?.forEach((f: any) => {
+        if (f.question) texts.push(f.question);
+        if (f.answer) texts.push(f.answer);
+    });
+
+    recommendations?.forEach((r: any) => {
+        if (r.name) texts.push(r.name);
+        if (r.description) texts.push(r.description);
+        if (r.category) texts.push(r.category);
+        if (r.personal_note) texts.push(r.personal_note);
+        if (r.metadata?.personal_note) texts.push(r.metadata.personal_note);
+        if (r.metadata?.editorial_summary) texts.push(r.metadata.editorial_summary);
+    });
+
+    manuals?.forEach((m: any) => {
+        if (m.name) texts.push(m.name);
+        if (m.appliance_name) texts.push(m.appliance_name);
+    });
+
+    context?.forEach((entry: any) => {
+        const c = entry?.content;
+        if (!c) return;
+        switch (entry.category) {
+            case 'welcome':
+                if (c.message) texts.push(c.message);
+                if (c.title) texts.push(c.title);
+                break;
+            case 'rules':
+                if (Array.isArray(c.rules_items)) c.rules_items.forEach((item: any) => {
+                    if (item.title) texts.push(item.title);
+                    if (item.text) texts.push(item.text);
+                    if (item.description) texts.push(item.description);
+                });
+                break;
+            case 'checkin':
+                if (Array.isArray(c.steps)) c.steps.forEach((step: any) => {
+                    if (step.title) texts.push(step.title);
+                    if (step.description) texts.push(step.description);
+                });
+                break;
+            case 'tech':
+                if (c.router_notes) texts.push(c.router_notes);
+                break;
+            case 'contacts':
+                if (c.support_name) texts.push(c.support_name);
+                if (Array.isArray(c.emergency_contacts)) c.emergency_contacts.forEach((ec: any) => {
+                    if (ec.name) texts.push(ec.name);
+                    if (ec.distance) texts.push(ec.distance);
+                });
+                if (Array.isArray(c.custom_contacts)) c.custom_contacts.forEach((cc: any) => {
+                    if (cc.name) texts.push(cc.name);
+                });
+                break;
+            case 'access':
+                if (c.parking_info) texts.push(c.parking_info);
+                if (c.parking_instructions) texts.push(c.parking_instructions);
+                break;
+        }
+    });
+
+    return [...new Set(texts.filter(t => t && t.trim().length > 2))];
+}
 
 async function prefetchTranslations(
     strings: string[],
@@ -230,6 +318,27 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
             : Promise.resolve({} as Record<string, string>)
     ]);
 
+    // ── SSR content cache lookup ──────────────────────────────────────────────
+    // Query DB cache for all guide content texts (no Gemini — zero penalty if cold).
+    // On warm cache (second visit): everything arrives translated in the HTML,
+    // client-side eager prefetch finds all hits → zero translate-guide requests.
+    // On cold cache: returns {} instantly, client handles it as before.
+    let allTranslations = initialTranslations;
+    if (initialLanguage !== 'es') {
+        const contentTexts = extractGuideTexts(
+            sections, faqs ?? [], recommendations ?? [], manuals ?? [], context ?? []
+        );
+        if (contentTexts.length > 0) {
+            const contentTranslations = await TranslationService.fetchCachedBatch(
+                contentTexts, 'es', initialLanguage, property.id
+            );
+            if (Object.keys(contentTranslations).length > 0) {
+                allTranslations = { ...initialTranslations, ...contentTranslations };
+                console.log(`[PREFETCH] 📦 +${Object.keys(contentTranslations).length} content strings from DB cache`);
+            }
+        }
+    }
+
     // ── ACCIÓN 3: Key alignment ───────────────────────────────────────────────
     // El hook useLocalizedContent genera keys con este formato:
     //   `${language}:${text}:${propertyId}`
@@ -286,7 +395,7 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
                 accessToken={activeToken}
                 tokenLanguage={tokenLanguage}
                 initialLanguage={initialLanguage}
-                initialTranslations={initialTranslations}
+                initialTranslations={allTranslations}
             />
         </div>
     )

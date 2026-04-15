@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocalizedContent, seedTranslationCache } from '@/hooks/useLocalizedContent';
+import { useLocalizedContent, seedTranslationCache, seedTranslationCacheQuiet } from '@/hooks/useLocalizedContent';
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
@@ -113,7 +113,8 @@ export function GuideViewContainer({
                 formatted[`${initialLanguage}:${original}:${propertyId}`] = translated;
                 formatted[`${initialLanguage}:${original}:global`] = translated;
             });
-            seedTranslationCache(formatted);
+            // Quiet: called during render, must not notify listeners (would setState in render)
+            seedTranslationCacheQuiet(formatted);
         }
     }, [initialTranslations, initialLanguage, property.id]);
 
@@ -175,6 +176,151 @@ export function GuideViewContainer({
             localStorage.setItem(cacheKey, JSON.stringify(dataToCache));
         }
     }, [property, branding, sections, manuals, recommendations, faqs, context, cacheKey]);
+
+    // Eager prefetch: batch-translate all guide content on mount so individual views
+    // find cache hits instead of triggering separate on-demand translation requests.
+    useEffect(() => {
+        if (language === 'es' || !accessToken) return;
+
+        const texts: string[] = [];
+
+        // Custom guide sections (SectionRenderer)
+        sections?.forEach(s => {
+            if (s.title) texts.push(s.title);
+            const d = s.data;
+            if (!d) return;
+            if (typeof d.content === 'string' && d.content.trim()) texts.push(d.content);
+            if (typeof d.text === 'string' && d.text.trim()) texts.push(d.text);
+            if (typeof d.address === 'string' && d.address.trim()) texts.push(d.address);
+            if (Array.isArray(d.items)) d.items.forEach((item: any) => {
+                if (typeof item === 'string') texts.push(item);
+                if (typeof item?.text === 'string') texts.push(item.text);
+                if (typeof item?.label === 'string') texts.push(item.label);
+            });
+        });
+
+        // FAQs (ManualsView → HowToAccordion)
+        faqs?.forEach(f => {
+            if (f.question) texts.push(f.question);
+            if (f.answer) texts.push(f.answer);
+        });
+
+        // Recommendations (RecommendationsView)
+        recommendations?.forEach(r => {
+            if (r.name) texts.push(r.name);
+            if (r.description) texts.push(r.description);
+            if (r.category) texts.push(r.category);
+            if (r.personal_note) texts.push(r.personal_note);
+            if (r.metadata?.personal_note) texts.push(r.metadata.personal_note);
+            if (r.metadata?.editorial_summary) texts.push(r.metadata.editorial_summary);
+        });
+
+        // Manuals — names only; manual_content is long-form markdown translated on-demand
+        manuals?.forEach(m => {
+            if (m.name) texts.push(m.name);
+            if (m.appliance_name) texts.push(m.appliance_name);
+        });
+
+        // Property context (all views that read from displayContext)
+        const ctx = context || [];
+        ctx.forEach((entry: any) => {
+            const c = entry?.content;
+            if (!c) return;
+            switch (entry.category) {
+                case 'welcome':
+                    // HouseInfoView, MenuGrid
+                    if (c.message) texts.push(c.message);
+                    if (c.title) texts.push(c.title);
+                    break;
+                case 'rules':
+                    // RulesView
+                    if (Array.isArray(c.rules_items)) {
+                        c.rules_items.forEach((item: any) => {
+                            if (item.title) texts.push(item.title);
+                            if (item.text) texts.push(item.text);
+                            if (item.description) texts.push(item.description);
+                        });
+                    }
+                    break;
+                case 'checkin':
+                    // CheckInView, RulesView
+                    if (Array.isArray(c.steps)) {
+                        c.steps.forEach((step: any) => {
+                            if (step.title) texts.push(step.title);
+                            if (step.description) texts.push(step.description);
+                        });
+                    }
+                    break;
+                case 'tech':
+                    // WifiView — notes field is user text; ssid/password are not translated
+                    if (c.router_notes) texts.push(c.router_notes);
+                    break;
+                case 'contacts':
+                    // EmergencyView, CheckInView
+                    if (c.support_name) texts.push(c.support_name);
+                    if (Array.isArray(c.emergency_contacts)) {
+                        c.emergency_contacts.forEach((ec: any) => {
+                            if (ec.name) texts.push(ec.name);
+                            if (ec.distance) texts.push(ec.distance);
+                        });
+                    }
+                    if (Array.isArray(c.custom_contacts)) {
+                        c.custom_contacts.forEach((cc: any) => {
+                            if (cc.name) texts.push(cc.name);
+                        });
+                    }
+                    break;
+                case 'access':
+                    // CheckInView, GuideWelcome — parking text fields are user-written
+                    if (c.parking_info) texts.push(c.parking_info);
+                    if (c.parking_instructions) texts.push(c.parking_instructions);
+                    break;
+            }
+        });
+
+        const unique = [...new Set(texts.filter(t => t && t.trim().length > 2))];
+        if (!unique.length) return;
+
+        // Smaller batches sent in parallel: each request is lighter and all fire simultaneously.
+        // Total time = slowest chunk, not sum of all chunks.
+        const BATCH_SIZE = 50;
+        const chunks: string[][] = [];
+        for (let i = 0; i < unique.length; i += BATCH_SIZE) chunks.push(unique.slice(i, i + BATCH_SIZE));
+
+        const translateChunk = async (chunk: string[]) => {
+            try {
+                const res = await fetch('/api/translate-guide', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        batch: chunk,
+                        targetLanguage: language,
+                        sourceLanguage: 'es',
+                        accessToken,
+                        propertyId: property.id,
+                    }),
+                });
+                if (!res.ok) return;
+                const { translations } = await res.json();
+                if (Array.isArray(translations)) {
+                    const toSeed: Record<string, string> = {};
+                    chunk.forEach((original, idx) => {
+                        if (translations[idx]) {
+                            toSeed[`${language}:${original}:${property.id}`] = translations[idx];
+                            toSeed[`${language}:${original}:global`] = translations[idx];
+                        }
+                    });
+                    // Seed as each chunk completes so components update progressively
+                    seedTranslationCache(toSeed);
+                }
+            } catch { /* silent — on-demand system is the fallback */ }
+        };
+
+        // Fire all chunks in parallel
+        Promise.all(chunks.map(translateChunk));
+    // sections/faqs/recommendations/manuals are stable SSR props — intentionally omitted from deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [language, property.id, accessToken]);
 
     const displayContext = context || localData?.context || [];
     const displayManuals = manuals || localData?.manuals || [];

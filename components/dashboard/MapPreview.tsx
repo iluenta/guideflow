@@ -54,7 +54,8 @@ export default function MapPreview({ lat, lng, onPositionChange }: MapPreviewPro
             mapRef.current = null
             markerRef.current = null
         }
-    }, []) // only on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []) // only on mount — second effect handles lat/lng prop updates
 
     // Update marker/center when lat/lng props change from outside
     useEffect(() => {

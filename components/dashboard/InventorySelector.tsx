@@ -253,7 +253,7 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
                                                 )}
                                                 {item.customContext && (
                                                     <span className="text-[10px] text-slate-400 font-medium truncate max-w-[150px] italic">
-                                                        "{item.customContext}"
+                                                        &quot;{item.customContext}&quot;
                                                     </span>
                                                 )}
                                             </div>
@@ -297,7 +297,7 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold text-slate-900">Contexto adicional</DialogTitle>
                         <DialogDescription className="font-medium text-slate-500">
-                            Indica dónde se encuentra o detalles clave para el manual de <span className="text-primary font-bold">"{displayItems.find(i => i.id === editingId)?.name}"</span>.
+                            Indica dónde se encuentra o detalles clave para el manual de <span className="text-primary font-bold">&quot;{displayItems.find(i => i.id === editingId)?.name}&quot;</span>.
                         </DialogDescription>
                     </DialogHeader>
 

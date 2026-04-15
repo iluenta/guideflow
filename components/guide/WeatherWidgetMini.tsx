@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { ChevronRight, RefreshCw } from 'lucide-react';
 import { useWeather, CONDITION_ICONS } from '@/hooks/useWeather';
+import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { cn } from '@/lib/utils';
 import { getGuideTheme } from '@/lib/guide-theme';
 
@@ -12,6 +13,9 @@ interface WeatherWidgetMiniProps {
     locationType?: 'coastal' | 'mountain' | 'urban';
     onClick?: () => void;
     themeId?: string;
+    currentLanguage?: string;
+    accessToken?: string;
+    propertyId?: string;
 }
 
 export function WeatherWidgetMini({
@@ -20,8 +24,12 @@ export function WeatherWidgetMini({
     locationType = 'urban',
     onClick,
     themeId = 'modern_v2',
+    currentLanguage = 'es',
+    accessToken,
+    propertyId,
 }: WeatherWidgetMiniProps) {
     const t = getGuideTheme(themeId);
+    const lang = currentLanguage;
     // Clave que forzará un nuevo fetch al cambiar
     const [refreshKey, setRefreshKey] = useState(0);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -43,6 +51,17 @@ export function WeatherWidgetMini({
         setIsRefreshing(true);
         setRefreshKey(k => k + 1);
     }, []);
+
+    // Dynamic weather strings (generated in Spanish by useWeather, translated here)
+    const primarySource = weather?.contextual.primaryLine ?? '';
+    const secondarySource = weather?.contextual.secondaryLine ?? '';
+    const { content: primaryLine } = useLocalizedContent(primarySource, lang, 'ui', accessToken, propertyId);
+    const { content: secondaryLine } = useLocalizedContent(secondarySource, lang, 'ui', accessToken, propertyId);
+
+    // Static UI strings
+    const { content: labelActualizado } = useLocalizedContent('Actualizado', lang, 'ui', accessToken, propertyId);
+    const { content: labelDatosRealTime } = useLocalizedContent('Datos meteorológicos en tiempo real', lang, 'ui', accessToken, propertyId);
+    const { content: labelActualizar } = useLocalizedContent('Actualizar', lang, 'ui', accessToken, propertyId);
 
     if (!lat || !lng) return null;
 
@@ -93,11 +112,11 @@ export function WeatherWidgetMini({
                             {weather.currentTemp}°
                         </span>
                         <span className={cn("text-xs truncate", t.guideCardSubtitle)}>
-                            {weather.contextual.primaryLine}
+                            {primaryLine}
                         </span>
                     </div>
                     <p className={cn("text-[10px] truncate", t.sectionLabel)}>
-                        {weather.contextual.secondaryLine}
+                        {secondaryLine}
                     </p>
                 </div>
 
@@ -108,8 +127,8 @@ export function WeatherWidgetMini({
             <div className={cn("flex items-center justify-between pt-1 border-t", t.searchBorder)}>
                 <span className={cn("text-[9px] font-medium", t.sectionLabel)}>
                     {updatedStr
-                        ? `Actualizado · ${updatedStr}`
-                        : 'Datos meteorológicos en tiempo real'}
+                        ? `${labelActualizado} · ${updatedStr}`
+                        : labelDatosRealTime}
                 </span>
 
                 <button
@@ -128,7 +147,7 @@ export function WeatherWidgetMini({
                             (isRefreshing || isLoading) && 'animate-spin'
                         )}
                     />
-                    <span>Actualizar</span>
+                    <span>{labelActualizar}</span>
                 </button>
             </div>
         </div>

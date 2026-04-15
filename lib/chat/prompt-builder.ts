@@ -4,13 +4,20 @@
 
 import type { PropertyContext, ChatContextParams } from './types';
 
-// ─── Bloques constantes de módulo ────────────────────────────────────────────
+// ─── Bloques dinámicos de idioma ─────────────────────────────────────────────
 
-const LANGUAGE_HANDLING_BLOCK = `
-# IDIOMA:
-- El historial puede contener mensajes en varios idiomas. Entiéndelos todos.
-- SIEMPRE responde en español. Tu respuesta será traducida automáticamente.
-- No indiques que estás cambiando de idioma.`;
+const LANG_NAMES: Record<string, string> = {
+    es: 'español', en: 'English', fr: 'français', de: 'Deutsch',
+    it: 'italiano', pt: 'português', ca: 'català', gl: 'galego',
+    eu: 'euskara', nl: 'Nederlands',
+};
+
+function buildLanguageBlock(language: string): string {
+    if (language === 'es' || !LANG_NAMES[language]) {
+        return `\n# IDIOMA:\n- Responde siempre en español.`;
+    }
+    return `\n# IDIOMA:\n- Responde SIEMPRE en ${LANG_NAMES[language]}. NO uses el español en ningún caso.`;
+};
 
 const MAP_FORMAT_BLOCK = `
 # FORMATO DE MAPAS:
@@ -186,11 +193,13 @@ ${recsBlock}
 export function buildSystemInstruction(
     ctx: PropertyContext,
     params: ChatContextParams,
-    formattedContext: string
+    formattedContext: string,
+    language: string = 'es'
 ): string {
     const { supportContact, criticalContext, propertyInfo } = ctx;
     const { flags } = params;
     const coreRulesBlock = buildCoreRulesBlock(supportContact);
+    const languageBlock = buildLanguageBlock(language);
 
     if (flags.isEmergency) {
         const accessCtx = criticalContext?.find((c: any) => c.category === 'access');
@@ -201,7 +210,7 @@ export function buildSystemInstruction(
             || 'la dirección del alojamiento';
 
         return `EMERGENCIA DE SEGURIDAD DETECTADA.
-${LANGUAGE_HANDLING_BLOCK}
+${languageBlock}
 ${MAP_FORMAT_BLOCK}
 
 No intentes diagnosticar. Prioridad absoluta: seguridad del huésped.
@@ -214,7 +223,7 @@ ${coreRulesBlock}`;
     if (flags.detectedErrorCode) {
         const code = flags.detectedErrorCode;
         return `El huésped tiene el código de error: ${code}.
-${LANGUAGE_HANDLING_BLOCK}
+${languageBlock}
 ${MAP_FORMAT_BLOCK}
 
 TU MISIÓN: Busca ESTE código EXACTO (${code}) en la tabla de diagnóstico del contexto.
@@ -247,7 +256,7 @@ ${formattedContext}
     const recommendationGuidance   = buildRecommendationGuidance(params, supportContact);
 
     return `Eres el asistente personal del apartamento "${propertyInfo?.name || 'este apartamento'}".
-${LANGUAGE_HANDLING_BLOCK}
+${languageBlock}
 ${MAP_FORMAT_BLOCK}
 ${coreRulesBlock}
 

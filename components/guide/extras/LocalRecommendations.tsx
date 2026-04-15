@@ -183,7 +183,7 @@ export function LocalRecommendations({
                                 </button>
                             </p>
                             <p className="text-xs text-slate-400 font-medium italic">
-                                ¿Quieres italiano, asiático, alta cocina u otras categorías? Selecciónalas en la barra inferior y usa "Sugerir con IA" para cada una por separado.
+                                ¿Quieres italiano, asiático, alta cocina u otras categorías? Selecciónalas en la barra inferior y usa &quot;Sugerir con IA&quot; para cada una por separado.
                             </p>
                         </div>
                     </div>
@@ -507,7 +507,7 @@ export function LocalRecommendations({
                         <div className="p-6 bg-[#f0f9f9] rounded-3xl border border-[#d1e9e9] space-y-4">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">¿Quieres más categorías?</p>
                             <p className="text-[11px] text-slate-500 leading-relaxed font-medium text-left">
-                                Después de generar, selecciona cualquier categoría de la barra y pulsa <span className="text-[#316263] font-bold">"Sugerir con IA"</span> para obtener 6 sugerencias específicas con más detalle.
+                                Después de generar, selecciona cualquier categoría de la barra y pulsa <span className="text-[#316263] font-bold">&quot;Sugerir con IA&quot;</span> para obtener 6 sugerencias específicas con más detalle.
                             </p>
                             <div className="flex flex-wrap gap-2">
                                 {otherCategories.map((cat, i) => (

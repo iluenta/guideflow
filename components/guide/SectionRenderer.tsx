@@ -74,7 +74,7 @@ export function SectionRenderer({ section }: SectionRendererProps) {
                     <div className="rounded-lg bg-primary/5 p-3 border border-primary/10">
                         <p className="text-xs text-primary font-medium mb-1">💡 Sugerencia:</p>
                         <p className="text-sm text-muted-foreground">
-                            Puedes preguntarme cualquier cosa sobre "{title}".
+                            Puedes preguntarme cualquier cosa sobre &quot;{title}&quot;.
                         </p>
                     </div>
                 )}

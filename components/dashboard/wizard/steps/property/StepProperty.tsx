@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useRef, useState } from 'react'
+import Image from 'next/image'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { TabsContent } from '@/components/ui/tabs'
@@ -82,11 +83,12 @@ export default function StepProperty({ value }: { value?: string }) {
                     >
                         {data.property.main_image_url ? (
                             <>
-                                <img
+                                <Image
                                     src={data.property.main_image_url}
                                     alt="Portada"
+                                    fill
                                     className={cn(
-                                        "w-full h-full object-cover transition-all duration-700",
+                                        "object-cover transition-all duration-700",
                                         localUploading && "blur-sm scale-105"
                                     )}
                                 />

@@ -94,6 +94,7 @@ export function useUserProfile() {
       isMounted = false
       // clearInterval(interval)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return { profile, loading, error }

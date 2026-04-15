@@ -133,7 +133,7 @@ export function RecentConversations({ conversations, isLoading }: RecentConversa
                     <div className="flex gap-2">
                        <span className="text-[10px] text-slate-400 shrink-0">H:</span>
                        <p className="text-[12px] font-manrope text-slate-700 leading-snug italic truncate">
-                         "{chat.first_question || 'Inició sesión'}"
+                         &quot;{chat.first_question || 'Inició sesión'}&quot;
                        </p>
                     </div>
                   </div>
