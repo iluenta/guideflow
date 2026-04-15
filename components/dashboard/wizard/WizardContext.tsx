@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase/client'
 import { saveWizardStep } from '@/app/actions/wizard'
-import { getTenantId, updateInventoryStatus, verifyAndFixInventoryStatus } from '@/app/actions/properties'
+import { getTenantId, updateInventoryStatus, verifyAndFixInventoryStatus, getUploadUrl } from '@/app/actions/properties'
 import { processInventoryManuals } from '@/app/actions/ai-ingestion'
 import { geocodeAddress, GeocodingResult } from '@/lib/geocoding'
 import { validateLocation, ValidationResult } from '@/lib/geocoding-validation'
@@ -188,6 +188,7 @@ export function WizardProvider({
         }, 1200)
 
         return () => clearTimeout(timer)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data.access.full_address, activeTab, mounted])
 
     // 2. Auto-generate transport when geocoding result changes
@@ -216,6 +217,7 @@ export function WizardProvider({
         }, 2000)
 
         return () => clearTimeout(timer)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [geocodingResult?.lat, geocodingResult?.lng, activeTab, mounted])
 
     useEffect(() => {
@@ -327,6 +329,7 @@ export function WizardProvider({
         }, 5000)
 
         return () => clearInterval(interval)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [effectivePropertyId, property?.inventory_status, property?.manuals?.length])
 
     // Cargar datos iniciales
@@ -491,6 +494,7 @@ export function WizardProvider({
             dataLoadedRef.current = true
         }
         loadData()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [effectivePropertyId, mounted])
 
     // Sincronizar activeTab con la URL
@@ -608,7 +612,7 @@ export function WizardProvider({
                     setAiLoading('manuals-generation')
                     try {
                         const res = await processInventoryManuals(currentPropId, dataToSave.selected_items)
-                        if (res.success && res.processed > 0) {
+                        if (res.success && typeof res.processed === 'number' && res.processed > 0) {
                             toast({
                                 title: 'IA: Generando manuales',
                                 description: `Estamos creando ${res.processed} guías en segundo plano. Aparecerán pronto.`,
