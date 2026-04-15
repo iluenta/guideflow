@@ -56,7 +56,7 @@ export function ReauthenticationModal({
     setError(null)
     
     startTransition(async () => {
-      const result = await verifyReauthCode(userEmail, code)
+      const result = await verifyReauthCode(userEmail, code, action)
       
       if (result.success && result.token) {
         await onSuccess(result.token)

@@ -1,17 +1,23 @@
 import { createEdgeAdminClient } from '@/lib/supabase/edge';
+import { validateAccessToken } from '@/lib/security';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
     try {
-        const { propertyId, guestSessionId, section } = await req.json();
+        const { propertyId, guestSessionId, section, accessToken } = await req.json();
 
-        if (!propertyId || !section) {
+        if (!propertyId || !section || !accessToken) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
         const supabase = createEdgeAdminClient();
+
+        const authResult = await validateAccessToken(supabase, accessToken, propertyId);
+        if (!authResult.valid) {
+            return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+        }
 
         const { error } = await supabase.from('guide_section_views').insert({
             property_id: propertyId,

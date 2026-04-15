@@ -47,7 +47,10 @@ export async function generateManualFromImage(propertyId: string, imageUrl: stri
         .select()
         .single()
 
-    if (error) throw new Error(error.message)
+    if (error) {
+        console.error('[INGESTION] Error inserting manual:', error.message)
+        throw new Error('Error al guardar el manual generado')
+    }
 
     revalidatePath(`/dashboard/properties/${currentPropId}`)
     return data
@@ -1403,7 +1406,10 @@ export async function regenerateManualAction(manualId: string) {
         })
         .eq('id', manualId)
 
-    if (updateErr) throw new Error(updateErr.message)
+    if (updateErr) {
+        console.error('[INGESTION] Error updating manual content:', updateErr.message)
+        throw new Error('Error al actualizar el contenido del manual')
+    }
 
     await syncManualToRAG(
         manual.property_id,

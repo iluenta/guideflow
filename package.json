@@ -92,6 +92,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
     "@next/bundle-analyzer": "^16.1.7",
     "@tailwindcss/postcss": "^4.1.9",
     "@testing-library/jest-dom": "^6.6.0",
@@ -102,6 +103,8 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.3.0",
     "cross-env": "^7.0.3",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^15.5.15",
     "jsdom": "^25.0.0",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",

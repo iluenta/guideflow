@@ -16,7 +16,8 @@ export async function GET(
     const { valid, access, reason } = await validateAccessToken(supabase, token);
 
     if (!valid || !access) {
-        console.error(`[GUEST_ACTIVATION] Invalid token: ${token}, reason: ${reason}`);
+        const tokenPrefix = token ? `${token.substring(0, 8)}...` : 'undefined';
+        console.error(`[GUEST_ACTIVATION] Invalid token: ${tokenPrefix}, reason: ${reason}`);
         return redirect(`/access-denied?reason=${reason || 'invalid'}`);
     }
 

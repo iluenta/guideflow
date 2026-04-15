@@ -1,24 +1,13 @@
 // ─── app/api/manual-quality/regenerate-v2/route.ts ─────────────────────────
 // Regenera un manual con el pipeline V2 sin guardarlo en DB.
 // Solo devuelve el contenido generado para comparación de calidad.
-// Acepta: (a) service role key (dev scripts) o (b) guest access token válido.
+// Acepta: guest access token válido (Bearer). Los scripts de dev deben generar un token de invitado.
 
 import { createEdgeAdminClient } from '@/lib/supabase/edge';
 import { generateManualForQualityTest } from '@/app/actions/ai-ingestion';
+import { validateAccessToken } from '@/lib/security';
 
 export const runtime = 'nodejs';
-
-async function isAuthorized(token: string, propertyId: string, supabase: any): Promise<boolean> {
-    if (token === process.env.SUPABASE_SERVICE_ROLE_KEY) return true;
-    const { data } = await supabase
-        .from('guest_access_tokens')
-        .select('property_id')
-        .eq('token', token)
-        .eq('property_id', propertyId)
-        .gt('expires_at', new Date().toISOString())
-        .single();
-    return !!data;
-}
 
 export async function POST(req: Request) {
     const authHeader = req.headers.get('Authorization');
@@ -43,7 +32,8 @@ export async function POST(req: Request) {
     try {
         const supabase = createEdgeAdminClient();
 
-        if (!await isAuthorized(token, propertyId, supabase)) {
+        const authResult = await validateAccessToken(supabase, token, propertyId);
+        if (!authResult.valid) {
             return new Response(JSON.stringify({ error: 'Invalid or expired token' }), { status: 403 });
         }
 

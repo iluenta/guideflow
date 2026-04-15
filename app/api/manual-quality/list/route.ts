@@ -1,25 +1,11 @@
 // ─── app/api/manual-quality/list/route.ts ──────────────────────────────────
 // Lista los manuales de una propiedad para el quality test script.
-// Acepta: (a) service role key (dev scripts) o (b) guest access token válido.
+// Acepta: guest access token válido (Bearer). Los scripts de dev deben generar un token de invitado.
 
 import { createEdgeAdminClient } from '@/lib/supabase/edge';
+import { validateAccessToken } from '@/lib/security';
 
 export const runtime = 'nodejs';
-
-async function isAuthorized(token: string, propertyId: string, supabase: any): Promise<boolean> {
-    // Opción A: service role key (para scripts de desarrollo)
-    if (token === process.env.SUPABASE_SERVICE_ROLE_KEY) return true;
-
-    // Opción B: guest access token válido para esta propiedad
-    const { data } = await supabase
-        .from('guest_access_tokens')
-        .select('property_id')
-        .eq('token', token)
-        .eq('property_id', propertyId)
-        .gt('expires_at', new Date().toISOString())
-        .single();
-    return !!data;
-}
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -39,7 +25,8 @@ export async function GET(req: Request) {
     try {
         const supabase = createEdgeAdminClient();
 
-        if (!await isAuthorized(token, propertyId, supabase)) {
+        const authResult = await validateAccessToken(supabase, token, propertyId);
+        if (!authResult.valid) {
             return new Response(JSON.stringify({ error: 'Invalid or expired token' }), { status: 403 });
         }
 

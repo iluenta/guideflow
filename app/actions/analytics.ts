@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/server'
 export async function getGuestChats(propertyId?: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    console.log('[DEBUG] Auth User ID:', user?.id)
     if (!user) throw new Error('No autorizado')
 
     // Fetch tenant_id for the user
@@ -14,8 +13,6 @@ export async function getGuestChats(propertyId?: string) {
         .select('tenant_id')
         .eq('id', user.id)
         .single()
-    
-    console.log('[DEBUG] Profile found:', profile, 'Error:', pError?.message)
 
     if (!profile?.tenant_id) throw new Error('No se encontró el perfil del usuario')
 

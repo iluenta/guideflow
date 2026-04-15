@@ -141,15 +141,17 @@ export function GuideViewContainer({
 
     // Track page views
     useEffect(() => {
-        if (currentPage && property?.id && guestSessionId) {
+        if (currentPage && property?.id && guestSessionId && accessToken) {
             const trackView = async () => {
                 try {
                     await fetch('/api/tracking', {
                         method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             propertyId: property.id,
                             guestSessionId,
-                            section: currentPage
+                            section: currentPage,
+                            accessToken
                         })
                     });
                 } catch (err) {
@@ -158,7 +160,7 @@ export function GuideViewContainer({
             };
             trackView();
         }
-    }, [currentPage, property?.id, guestSessionId]);
+    }, [currentPage, property?.id, guestSessionId, accessToken]);
 
     useEffect(() => {
         const cached = localStorage.getItem(cacheKey);

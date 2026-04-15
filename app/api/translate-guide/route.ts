@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { Translator } from '@/lib/ai/services/gemini-i18n';
 import { validateAccessToken, logSuspiciousActivity } from '@/lib/security';
 import { createClient } from '@/lib/supabase/server';
+import { getTenantId } from '@/app/actions/properties';
 import { RateLimiter } from '@/lib/security/rate-limiter';
 import { z } from 'zod';
 
@@ -68,14 +69,24 @@ export async function POST(req: Request) {
         if (!isAuthenticated || !propertyId) {
             if (hasAuthCookie) {
                 const supabase = await createClient();
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                    isAuthenticated = true;
-                    if (bodyPropertyId) propertyId = bodyPropertyId;
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (user && !userError) {
+                    const tenant_id = await getTenantId(supabase, user);
+                    if (tenant_id && bodyPropertyId) {
+                        // Verify the property belongs to this tenant before allowing translation
+                        const { data: prop } = await supabase
+                            .from('properties')
+                            .select('id')
+                            .eq('id', bodyPropertyId)
+                            .eq('tenant_id', tenant_id)
+                            .single();
+                        if (prop) {
+                            isAuthenticated = true;
+                            propertyId = bodyPropertyId;
+                        }
+                    }
                 }
             }
-
-
         }
 
         if (!isAuthenticated || !propertyId) {
@@ -98,10 +109,10 @@ export async function POST(req: Request) {
             const now = new Date();
             const expires = propStatus.halt_expires_at ? new Date(propStatus.halt_expires_at) : null;
             if (!expires || now < expires) {
+                console.warn('[API_TRANSLATE] Property halted:', propStatus.halt_reason);
                 return NextResponse.json({
                     error: 'Servicio pausado temporalmente',
-                    reason: 'property_halted',
-                    details: propStatus.halt_reason
+                    reason: 'property_halted'
                 }, { status: 403 });
             }
         }
@@ -165,8 +176,7 @@ export async function POST(req: Request) {
             isAuthenticated
         });
         return NextResponse.json({
-            error: 'Error interno del servidor',
-            details: error.message
+            error: 'Error interno del servidor'
         }, { status: 500 });
     }
 }

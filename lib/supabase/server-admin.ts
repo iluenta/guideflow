@@ -43,6 +43,9 @@ function makeInsecureFetch(): typeof fetch {
 }
 
 export function createServerAdminClient() {
+  if (process.env.NODE_ENV === 'production' && process.env.DEV_ALLOW_INSECURE_SSL === '1') {
+    throw new Error('[SERVER-ADMIN] DEV_ALLOW_INSECURE_SSL must not be enabled in production');
+  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error('[SERVER-ADMIN] Missing Supabase URL or SERVICE_ROLE_KEY');

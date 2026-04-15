@@ -2,9 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { generateSecureToken } from '@/lib/security'
+import { getTenantId } from '@/app/actions/properties'
 import { addDays, subDays } from 'date-fns'
 import { revalidatePath } from 'next/cache'
-import { logger } from '@/lib/logger'
 
 /**
  * Creates a unique access token for a guest reservation.
@@ -23,16 +23,18 @@ export async function createGuestAccess(params: {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
 
-    // 1. Verify property ownership (via tenant_id)
-    const tenant_id = user.user_metadata.tenant_id
+    // 1. Verify property ownership (via tenant_id from profile — authoritative source)
+    const tenant_id = await getTenantId(supabase, user)
+    if (!tenant_id) throw new Error('No autorizado')
+
     const { data: property, error: propErr } = await supabase
         .from('properties')
-        .select('id, tenant_id')
+        .select('id')
         .eq('id', propertyId)
+        .eq('tenant_id', tenant_id)
         .single()
 
-    if (propErr || !property) throw new Error('Propiedad no encontrada')
-    if (property.tenant_id !== tenant_id) throw new Error('No tienes permiso sobre esta propiedad')
+    if (propErr || !property) throw new Error('Propiedad no encontrada o sin permiso')
 
     // 2. Generate secure token
     const accessToken = generateSecureToken(12) // Format: a8f3k2m9p1x7 (32 is too long for easy reading, 12 is enough for 36^12)
@@ -65,7 +67,7 @@ export async function createGuestAccess(params: {
         throw new Error('Error al generar el acceso')
     }
 
-    const guideUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/g/${accessToken}`
+    const guideUrl = `${process.env.NEXT_PUBLIC_SITE_URL || ''}/g/${accessToken}`
 
     revalidatePath(`/dashboard/properties/${propertyId}`)
     return {
@@ -87,8 +89,9 @@ export async function revokeGuestAccess(tokenId: string, propertyId: string) {
         .from('guest_access_tokens')
         .update({ is_active: false })
         .eq('id', tokenId)
+        .eq('property_id', propertyId)
 
-    if (error) throw new Error(error.message)
+    if (error) throw new Error('Error al revocar el acceso')
 
     revalidatePath(`/dashboard/properties/${propertyId}`)
 }

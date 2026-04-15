@@ -5,6 +5,7 @@ import { streamGeminiREST } from '@/lib/ai/clients/gemini-rest';
 import { logger } from '@/lib/logger';
 import { RateLimiter } from '@/lib/security/rate-limiter';
 import { logSuspiciousActivity } from '@/lib/security';
+import { getTenantId } from '@/app/actions/properties';
 
 const getGenAI = () => {
   const key = process.env.GOOGLE_AI_API_KEY;
@@ -318,8 +319,7 @@ export async function POST(req: Request) {
     if (!isUuid || propertyId === 'address-only') {
       return new Response(JSON.stringify({
         error: 'ID de propiedad inválido o no guardado',
-        debug: 'ROUTE_UUID_CHECK_FAIL',
-        receivedId: propertyId
+        debug: 'ROUTE_UUID_CHECK_FAIL'
       }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -331,7 +331,12 @@ export async function POST(req: Request) {
     if (!user) {
       const ip = req.headers.get('x-forwarded-for') || 'unknown';
       logger.warn(`[ZONE] Unauthorized attempt blocked`);
-      // Internal logging only for now as we don't have a token here yet
+      return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
+    }
+
+    // ── TENANT AUTHORIZATION CHECK ────────────────────────────────────────────
+    const tenant_id = await getTenantId(supabaseUser, user);
+    if (!tenant_id) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
     }
 
@@ -360,15 +365,14 @@ export async function POST(req: Request) {
       .from('properties')
       .select('name, city, country, country_code, neighborhood, latitude, longitude')
       .eq('id', propertyId)
+      .eq('tenant_id', tenant_id)
       .single();
 
     if (propError || !property) {
       logger.error('[AI-FILL] Property check failed');
       return new Response(JSON.stringify({
         error: 'Propiedad no encontrada en la base de datos',
-        debug: 'PROPERTY_NOT_FOUND',
-        propertyId,
-        supabaseError: propError
+        debug: 'PROPERTY_NOT_FOUND'
       }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 

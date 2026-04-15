@@ -10,8 +10,11 @@ export async function GET(req: Request) {
   try {
     // 1. Simple API Key Security
     const authHeader = req.headers.get('authorization');
-    const adminKey = process.env.ADMIN_API_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
+    const adminKey = process.env.ADMIN_API_KEY;
+    if (!adminKey) {
+      return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
+    }
+
     if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== adminKey) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -5,10 +5,13 @@ export async function updateSession(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
 
     // 1. Definir rutas públicas que NO requieren autenticación
-    const isPublicRoute = 
+    const isPublicRoute =
         pathname === '/' ||
         pathname.startsWith('/auth/') ||
         pathname.startsWith('/api/auth/') ||
+        pathname === '/api/chat' ||           // Auth delegada al handler (validateChatRequest)
+        pathname === '/api/tracking' ||       // Auth delegada al handler (validateAccessToken)
+        pathname === '/api/translate-guide' || // Auth delegada al handler (validateAccessToken)
         pathname.startsWith('/access-denied') ||
         pathname.startsWith('/g/') || // Rutas de tokens de invitado
         // Excluir archivos estáticos y de sistema (Next.js suele manejarlos, pero por seguridad)

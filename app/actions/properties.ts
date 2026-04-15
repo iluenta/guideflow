@@ -248,7 +248,7 @@ export async function createProperty(formData: Partial<Property>) {
             throw new Error('SLUG_ALREADY_EXISTS')
         }
         console.error('Error creating property:', error.message)
-        throw new Error(error.message)
+        throw new Error('Error al crear la propiedad')
     }
 
     revalidatePath('/dashboard/properties')
@@ -303,7 +303,7 @@ export async function updateProperty(id: string, formData: Partial<Property>) {
             throw new Error('SLUG_ALREADY_EXISTS')
         }
         console.error('Error updating property:', error.message)
-        throw new Error(error.message)
+        throw new Error('Error al actualizar la propiedad')
     }
 
     if (!data) {
@@ -358,7 +358,7 @@ export async function deleteProperty(id: string) {
 
     if (error) {
         console.error('Error deleting property:', error.message)
-        throw new Error(error.message)
+        throw new Error('Error al eliminar la propiedad')
     }
 
     revalidatePath('/dashboard/properties')
@@ -470,7 +470,10 @@ export async function deleteManual(manualId: string, propertyId: string) {
         .delete()
         .eq('id', manualId)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+        console.error('[MANUAL] Error deleting:', error.message)
+        throw new Error('Error al eliminar el manual')
+    }
 
     // 2. Delete embeddings from context table
     await supabase.from('context_embeddings').delete().eq('source_id', manualId)
@@ -496,7 +499,10 @@ export async function updateManualContent(manualId: string, propertyId: string, 
         .update({ manual_content: content, updated_at: new Date().toISOString() })
         .eq('id', manualId)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+        console.error('[MANUAL] Error updating content:', error.message)
+        throw new Error('Error al actualizar el manual')
+    }
 
     const tenant_id = await getTenantId(supabase, user)
     if (tenant_id) {
@@ -560,7 +566,10 @@ export async function saveManual(manualId: string, propertyId: string, updates: 
         .update(updateFields)
         .eq('id', manualId)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+        console.error('[MANUAL] Error saving:', error.message)
+        throw new Error('Error al guardar el manual')
+    }
 
     const tenant_id = await getTenantId(supabase, user)
 
@@ -673,7 +682,10 @@ export async function saveGuideSection(propertyId: string, section: Partial<Guid
         .select()
         .single()
 
-    if (error) throw new Error(error.message)
+    if (error) {
+        console.error('[SECTION] Error saving:', error.message)
+        throw new Error('Error al guardar la sección')
+    }
 
     revalidatePath(`/dashboard/properties/${propertyId}`)
     return data as GuideSection
@@ -693,7 +705,10 @@ export async function deleteGuideSection(sectionId: string, propertyId: string) 
         .delete()
         .eq('id', currentSectionId)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+        console.error('[SECTION] Error deleting:', error.message)
+        throw new Error('Error al eliminar la sección')
+    }
 
     revalidatePath(`/dashboard/properties/${propertyId}`)
 }
@@ -717,7 +732,10 @@ export async function updateSectionsOrder(propertyId: string, sectionIds: string
         .from('guide_sections')
         .upsert(updates)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+        console.error('[SECTION] Error updating order:', error.message)
+        throw new Error('Error al actualizar el orden de secciones')
+    }
 
     revalidatePath(`/dashboard/properties/${currentPropId}`)
 }
@@ -756,7 +774,10 @@ export async function syncPropertyApplianceList(propertyId: string, tenantId: st
         }
     }, { onConflict: 'property_id,category' })
 
-    if (error) throw new Error(error.message)
+    if (error) {
+        console.error('[SYNC-LIST] Error upserting context:', error.message)
+        throw new Error('Error al sincronizar lista de aparatos')
+    }
 
     // Sincronizar RAG
     await syncWizardDataToRAG(currentPropId, currentTenantId, 'inventory', { text: applianceIndex }, supabase)
@@ -764,6 +785,24 @@ export async function syncPropertyApplianceList(propertyId: string, tenantId: st
     if (!skipRevalidate) {
         revalidatePath(`/dashboard/properties/${propertyId}`)
     }
+}
+
+/**
+ * Actualiza el estado del inventario para feedback visual
+ */
+export async function updateInventoryStatus(propertyId: string, status: 'idle' | 'generating' | 'completed' | 'failed') {
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) return { success: false, error: 'ID inválido' }
+
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('properties')
+        .update({ inventory_status: status })
+        .eq('id', currentPropId)
+
+    if (error) console.error('[STATUS] Error updating inventory status:', error.message)
+    revalidatePath(`/dashboard/properties/${propertyId}`)
+    return { success: !error }
 }
 
 /**

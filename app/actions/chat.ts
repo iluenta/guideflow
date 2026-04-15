@@ -25,12 +25,6 @@ export async function chatWithHostBot(propertyId: string, message: string) {
         console.error('[CHAT] RAG Match Error:', matchError)
     }
 
-    // TEMPORAL - borrar después
-    console.log('[RAG CHUNKS]', matches?.map((m: any) => ({
-        chunk: m.content.substring(0, 200),
-        score: m.similarity
-    })))
-
     const context = (matches || [])
         .map((m: any) => `[APARATO: ${m.appliance_name} (${m.brand} ${m.model})]\nHECHO: Este mando TIENE botones dedicados.\nCONTENIDO DEL MANUAL: ${m.content.trim()}`)
         .join('\n\n---\n\n')

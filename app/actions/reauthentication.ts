@@ -1,44 +1,20 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createServerAdminClient } from '@/lib/supabase/server-admin'
 import { getUser } from '@/app/actions/auth'
 import { requiresReauthentication } from '@/lib/services/security-policies'
+import { randomInt } from 'node:crypto'
+import { RateLimiter } from '@/lib/security/rate-limiter'
 
-// Store for temporary re-authentication tokens (in production, use Redis or database)
-// Format: { token: string, userId: string, expiresAt: Date, action: string }
-const reauthTokens = new Map<string, { userId: string; expiresAt: Date; action: string }>()
-
-// Generate a 6-digit code
+// Cryptographically secure 6-digit code (node:crypto randomInt is CSPRNG)
 function generateReauthCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
+  return randomInt(100000, 1000000).toString()
 }
-
-// Store for re-authentication codes (in production, use Redis or database)
-// Format: { code: string, userId: string, expiresAt: Date }
-const reauthCodes = new Map<string, { userId: string; expiresAt: Date }>()
-
-// Cleanup expired codes and tokens every 5 minutes
-setInterval(() => {
-  const now = new Date()
-  
-  // Clean expired codes
-  for (const [code, data] of reauthCodes.entries()) {
-    if (data.expiresAt < now) {
-      reauthCodes.delete(code)
-    }
-  }
-  
-  // Clean expired tokens
-  for (const [token, data] of reauthTokens.entries()) {
-    if (data.expiresAt < now) {
-      reauthTokens.delete(token)
-    }
-  }
-}, 5 * 60 * 1000)
 
 export async function sendReauthCode(email: string): Promise<{ success: boolean; error?: string }> {
   const user = await getUser()
-  
+
   if (!user || user.email !== email) {
     return { success: false, error: 'Unauthorized' }
   }
@@ -52,14 +28,24 @@ export async function sendReauthCode(email: string): Promise<{ success: boolean;
   const code = generateReauthCode()
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
-  // Store code
-  reauthCodes.set(code, { userId: user.id, expiresAt })
+  // Lazy cleanup of expired codes for this user before inserting
+  const adminClient = createServerAdminClient()
+  await adminClient
+    .from('reauth_sessions')
+    .delete()
+    .eq('user_id', user.id)
+    .lt('expires_at', new Date().toISOString())
+
+  // Store code in database (serverless-safe: any instance can verify it)
+  await adminClient.from('reauth_sessions').insert({
+    user_id: user.id,
+    code,
+    expires_at: expiresAt.toISOString(),
+  })
 
   // Send email via Supabase Auth (using magic link infrastructure)
   const supabase = await createClient()
-  
-  // Use Supabase's email sending capability
-  // In production, you might want to use a dedicated email service
+
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
@@ -85,39 +71,52 @@ export async function sendReauthCode(email: string): Promise<{ success: boolean;
 
 export async function verifyReauthCode(
   email: string,
-  code: string
+  code: string,
+  action: string = 'sensitive_action'
 ): Promise<{ success: boolean; token?: string; error?: string }> {
   const user = await getUser()
-  
+
   if (!user || user.email !== email) {
     return { success: false, error: 'Unauthorized' }
   }
 
-  // Find code
-  const codeData = reauthCodes.get(code)
-  
+  // Rate limit: max 5 attempts per user per 15 minutes
+  const limit = await RateLimiter.checkLimit(`reauth:verify:${user.id}`, {
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 5,
+    message: 'Demasiados intentos de verificación. Espera unos minutos.'
+  })
+  if (!limit.allowed) {
+    return { success: false, error: 'Too many attempts. Please wait.' }
+  }
+
+  const adminClient = createServerAdminClient()
+
+  // user_id in the filter prevents collision ambiguity when .single() is used
+  const { data: codeData } = await adminClient
+    .from('reauth_sessions')
+    .select('id, expires_at')
+    .eq('code', code)
+    .eq('user_id', user.id)
+    .gt('expires_at', new Date().toISOString())
+    .single()
+
   if (!codeData) {
     return { success: false, error: 'Invalid code' }
   }
 
-  if (codeData.userId !== user.id) {
-    return { success: false, error: 'Code does not match user' }
-  }
-
-  if (codeData.expiresAt < new Date()) {
-    reauthCodes.delete(code)
-    return { success: false, error: 'Code expired' }
-  }
-
   // Generate temporary token for sensitive action
   const token = crypto.randomUUID()
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
+  const tokenExpiresAt = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
 
-  // Store token
-  reauthTokens.set(token, { userId: user.id, expiresAt, action: 'sensitive_action' })
-
-  // Remove used code
-  reauthCodes.delete(code)
+  // Remove used code and store the new token
+  await adminClient.from('reauth_sessions').delete().eq('id', codeData.id)
+  await adminClient.from('reauth_sessions').insert({
+    user_id: user.id,
+    token,
+    action,
+    expires_at: tokenExpiresAt.toISOString(),
+  })
 
   return { success: true, token }
 }
@@ -127,33 +126,35 @@ export async function performSensitiveAction(
   reauthToken: string
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getUser()
-  
+
   if (!user) {
     return { success: false, error: 'Unauthorized' }
   }
 
-  // Verify token
-  const tokenData = reauthTokens.get(reauthToken)
-  
+  const adminClient = createServerAdminClient()
+
+  // Verify token in the database; include action in select for scope validation
+  const { data: tokenData } = await adminClient
+    .from('reauth_sessions')
+    .select('id, user_id, action, expires_at')
+    .eq('token', reauthToken)
+    .gt('expires_at', new Date().toISOString())
+    .single()
+
   if (!tokenData) {
     return { success: false, error: 'Invalid re-authentication token' }
   }
 
-  if (tokenData.userId !== user.id) {
+  if (tokenData.user_id !== user.id) {
     return { success: false, error: 'Token does not match user' }
   }
 
-  if (tokenData.expiresAt < new Date()) {
-    reauthTokens.delete(reauthToken)
-    return { success: false, error: 'Re-authentication token expired' }
+  if (tokenData.action !== action) {
+    return { success: false, error: 'Token not valid for this action' }
   }
 
-  // Token is valid, action can proceed
-  // The actual action logic should be implemented in the specific action handler
-  // This function just validates the re-authentication
-
-  // Remove used token (one-time use)
-  reauthTokens.delete(reauthToken)
+  // Token is valid — remove it (one-time use) before the action proceeds
+  await adminClient.from('reauth_sessions').delete().eq('id', tokenData.id)
 
   return { success: true }
 }

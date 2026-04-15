@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { generateEmbedding } from '@/lib/ai/services/embeddings'
+import { getTenantId } from '@/app/actions/properties'
 import { revalidatePath } from 'next/cache'
 import { geminiREST } from '@/lib/ai/clients/gemini-rest'
 
@@ -13,7 +14,9 @@ export async function ingestManual(propertyId: string, fileUrl: string, name: st
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No autorizado')
 
-    const tenant_id = user.user_metadata.tenant_id
+    // Derive tenant_id from profile (authoritative source, consistent with RLS)
+    const tenant_id = await getTenantId(supabase, user)
+    if (!tenant_id) throw new Error('No autorizado')
 
     // 1. Create the manual record
     const { data: manual, error: manualError } = await supabase
@@ -29,7 +32,10 @@ export async function ingestManual(propertyId: string, fileUrl: string, name: st
         .select()
         .single()
 
-    if (manualError) throw new Error(manualError.message)
+    if (manualError) {
+        console.error('[INGESTION] Error inserting appliance manual:', manualError.message)
+        throw new Error('Error al crear el registro del manual')
+    }
 
     // 2. Process PDF with direct REST call
     const resp = await fetch(fileUrl)
@@ -107,7 +113,10 @@ export async function ingestManual(propertyId: string, fileUrl: string, name: st
         .from('manual_sections')
         .insert(sectionsToInsert)
 
-    if (sectionsError) throw new Error(sectionsError.message)
+    if (sectionsError) {
+        console.error('[INGESTION] Error inserting manual sections:', sectionsError.message)
+        throw new Error('Error al guardar las secciones del manual')
+    }
 
     revalidatePath(`/dashboard/properties/${propertyId}`)
     return manual

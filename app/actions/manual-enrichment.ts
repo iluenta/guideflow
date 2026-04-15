@@ -62,7 +62,10 @@ RESPONDE SOLO CON EL NUEVO CONTENIDO DEL MANUAL EN MARKDOWN.`
         })
         .eq('id', manualId)
 
-    if (updateErr) throw new Error(`Error al actualizar manual: ${updateErr.message}`)
+    if (updateErr) {
+        console.error('[ENRICHMENT] Error updating manual:', updateErr.message)
+        throw new Error('Error al actualizar el manual enriquecido')
+    }
 
     // 4. Actualizar embeddings (Chat RAG)
     await syncManualToRAG(
