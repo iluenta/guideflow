@@ -55,7 +55,14 @@
       "Bash(grep -E \"\\\\.\\(sql|ts\\)$\")",
       "Bash(grep -B 5 -A 30 \"CREATE TABLE.*translation_cache\" /c/Proyectos/guideflow/supabase/migrations/*.sql)",
       "Bash(grep -l \"translation_cache\" /c/Proyectos/guideflow/supabase/migrations/*.sql)",
-      "Bash(grep -r \"translation\" /c/Proyectos/guideflow/supabase/migrations/*.sql)"
+      "Bash(grep -r \"translation\" /c/Proyectos/guideflow/supabase/migrations/*.sql)",
+      "Bash(node -e \"const s = require\\('./scenarios.json'\\); console.log\\('Categories:', s.categories.length\\); console.log\\('Version:', s.meta.version\\); console.log\\('Total declared:', s.meta.total_scenarios\\); const total = s.categories.reduce\\(\\(acc, c\\) => acc + c.scenarios.length, 0\\); console.log\\('Total actual:', total\\);\")",
+      "Bash(npx ts-node:*)",
+      "Bash(node -e \"const d=require\\('/dev/stdin'\\); Object.entries\\(d.scripts||{}\\).forEach\\(\\([k,v]\\)=>console.log\\(k,':',v\\)\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(\" lib/chat/constants.ts | head -20)",
+      "Bash(grep -n \"APPLIANCE_SYMBOLS_REFERENCE\\\\|\\\\\\\\\\\\\\\\`\" lib/chat/constants.ts | head -20)",
+      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('lib/chat/constants.ts','utf8'\\); const block=c.slice\\(c.indexOf\\('APPLIANCE_SYMBOLS_REFERENCE'\\),c.indexOf\\('FOOD_EXPANSION_MAP'\\)\\); const backtickEscapes=\\(block.match\\(/\\\\x60/g\\)||[]\\).length; console.log\\('Backticks remaining in block:', backtickEscapes\\); console.log\\('Block preview:'\\); console.log\\(block.slice\\(0,300\\)\\);\")"
     ]
   }
 }

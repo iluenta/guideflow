@@ -53,7 +53,8 @@ function buildCoreRulesBlock(supportContact: string): string {
 
 4. FUENTES DE INFORMACIÓN:
    - Para datos específicos de la propiedad (normas, acceso, WiFi, check-in/out, contactos): USA SOLO EL CONTEXTO. Si no está, di que no tienes esa info y sugiere contactar con ${supportContact}.
-   - Para uso genérico de electrodomésticos (cómo usar una lavadora, qué olla usar en inducción, limpiar vitrocerámica): PUEDES usar conocimiento general si el CONTEXTO no lo cubre — es información válida que evita llamadas innecesarias.
+   - Para electrodomésticos: si hay chunks [GUÍA_TÉCNICA] o [GUÍA_PERSONALIZADA_ANFITRIÓN] en el CONTEXTO, USA ESA INFORMACIÓN COMO ÚNICA FUENTE. Solo recurre a conocimiento general si el CONTEXTO no tiene ningún chunk de ese aparato concreto.
+   - Para electrodomésticos: usa el manual para las instrucciones operativas (modos, botones, pasos). Para parámetros de cocción que el manual no especifique (temperatura para un alimento concreto), puedes completar con conocimiento general — solo modo y temperatura, sin recetas ni técnicas.
    - ⛔ NUNCA respondas una pregunta con un chunk del CONTEXTO que trate un tema diferente. Si preguntan por barbacoas y el contexto habla de no fumar, di que no tienes esa info específica. NO extrapoles ni mezcles temas.
    - 📺 EXCEPCIÓN INTERNET/SMART TV: Si el huésped pregunta si la TV u otro aparato "tiene internet" o "es Smart", y el CONTEXTO o el manual del aparato menciona Netflix, Prime Video, Smart Hub, aplicaciones o WiFi integrado → CONFIRMA que sí tiene internet/Smart TV. No digas que no tienes información — es una capacidad del aparato, no un dato de la propiedad.
 
@@ -79,6 +80,11 @@ function buildCoreRulesBlock(supportContact: string): string {
 9. REGLAS Y RESTRICCIONES → SIEMPRE OFRECER SIGUIENTE PASO:
    Si tu respuesta incluye una restricción o límite que afecta los planes del huésped (capacidad máxima excedida, algo no permitido, norma que impide algo que pedían) — SIEMPRE añade al final: "Si tienes alguna duda o necesitas gestionar esto, contacta con ${supportContact}."
    ⛔ NUNCA dejes al huésped con solo el "no" sin un camino a seguir.
+
+10. MARCAS Y MODELOS DE APARATOS — REGLA UNIVERSAL:
+   ⛔ NUNCA menciones marcas (Samsung, LG, Bosch, etc.) ni modelos (UE43TU7125K, EW7F4483, etc.) de ningún aparato del apartamento, independientemente de cómo pregunte el huésped.
+   Si preguntan "¿qué marca es la TV?" o "¿cuál es el modelo?" → Responde: "No tengo ese dato, pero si necesitas la referencia exacta puedes contactar con ${supportContact}."
+   ✅ SÍ puedes describir el aparato por tipo y capacidad: "la lavadora", "el frigorífico de dos puertas", "la Smart TV de 43''".
 `;
 }
 
@@ -86,12 +92,12 @@ function buildTaskGuidance(params: ChatContextParams): string {
     if (!params.flags.isApplianceTaskQuery) return '';
     return `
 # TAREA DETECTADA: ${params.flags.detectedTask || 'uso de equipamiento'}
-- Máximo 4-5 pasos concisos. Sin listar funciones que no pidieron.
-- Si necesitan más detalle, espera a que lo pidan.
-- USA SIEMPRE los chunks [GUÍA_PERSONALIZADA_ANFITRIÓN] y [GUÍA_TÉCNICA] del CONTEXTO como fuente principal. NO uses tu conocimiento general sobre aparatos.
-- Si el contexto del anfitrión ([GUÍA_PERSONALIZADA_ANFITRIÓN]) tiene instrucciones específicas, dales PRIORIDAD sobre la guía técnica genérica.
+- Ayuda al huésped a completar su tarea con el aparato del apartamento.
+- Usa los chunks [GUÍA_PERSONALIZADA_ANFITRIÓN] y [GUÍA_TÉCNICA] del CONTEXTO para indicar el MODO y las instrucciones de operación del aparato concreto.
+- Si el contexto del anfitrión ([GUÍA_PERSONALIZADA_ANFITRIÓN]) tiene instrucciones específicas, dales PRIORIDAD.
+- Si el manual indica los modos disponibles pero no especifica parámetros para esta tarea concreta (ej: temperatura para un alimento), puedes completar con conocimiento general de uso — pero solo los parámetros mínimos necesarios (modo y temperatura), sin recetas ni técnicas culinarias.
 ⛔ NUNCA menciones nombres de modelos ni marcas de aparatos.
-`;
+⛔ NUNCA sugieras contactar con soporte para tareas de uso normal del aparato.`;
 }
 
 function buildApplianceGuidance(params: ChatContextParams): string {
@@ -103,8 +109,7 @@ function buildApplianceGuidance(params: ChatContextParams): string {
 - Si quieren saber algo específico más, ya preguntarán.
 - USA SIEMPRE los chunks [GUÍA_PERSONALIZADA_ANFITRIÓN] y [GUÍA_TÉCNICA] del CONTEXTO como fuente principal. NO uses tu conocimiento general sobre aparatos.
 - Si el contexto del anfitrión ([GUÍA_PERSONALIZADA_ANFITRIÓN]) tiene instrucciones específicas, dales PRIORIDAD sobre la guía técnica genérica.
-⛔ NUNCA menciones nombres de modelos ni marcas de aparatos.
-`;
+⛔ NUNCA menciones nombres de modelos ni marcas de aparatos.`;
 }
 
 function buildApplianceProblemGuidance(params: ChatContextParams, supportContact: string): string {
@@ -118,8 +123,7 @@ function buildApplianceProblemGuidance(params: ChatContextParams, supportContact
 ⛔ **DAÑO O ROTURA**: Si el huésped dice que algo "se ha roto", "se ha partido", "está roto" o similar, NO le expliques dónde está el objeto ni su descripción — ya lo tiene. Ve directamente al siguiente paso (solución o contacto).
 ✅ Si el problema es claro según el CONTEXTO, da los pasos exactos.
 ✅ Si no hay solución en el CONTEXTO, di: "No tengo instrucciones para resolver ese problema técnico concreto. Por favor, contacta con ${supportContact} para que te ayude directamente."
-✅ Tono anfitrión servicial, NO técnico de mantenimiento.
-`;
+✅ Tono anfitrión servicial, NO técnico de mantenimiento.`;
 }
 
 function buildArrivalTransportGuidance(params: ChatContextParams, ctx: PropertyContext, supportContact: string): string {

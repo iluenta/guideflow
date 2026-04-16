@@ -14,9 +14,9 @@ export const COMMON_BRANDS = [
 export const createBrandRegex = () =>
     new RegExp(`\\b(${COMMON_BRANDS.join('|')})\\b`, 'gi');
 
-/** Captura modelos tipo "WTE 7611 BWR", "EW7F4483", "NA-148XB3" */
+/** Captura modelos tipo "WTE 7611 BWR", "EW7F4483", "NA-148XB3", "UE43TU7125K", "UE55AU8000" */
 export const createModelNumberRegex = () =>
-    /\b[A-Z]{2,6}[-\s]?\d{3,6}[-\s]?[A-Z0-9]{0,5}\b/g;
+    /\b[A-Z]{2,6}[-\s]?\d{3,6}[-\s]?[A-Z0-9]{0,5}\b|\b[A-Z]{1,4}\d{1,4}[A-Z]{1,6}\d{2,6}[A-Z0-9]{0,4}\b/g;
 
 // ─── Expansión de query RAG por intent ───────────────────────────────────────
 

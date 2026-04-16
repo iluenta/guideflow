@@ -75,15 +75,18 @@ function buildStructuredContextLines(
 }
 
 function buildInventoryLines(
-    criticalContext: Array<{ category: string; content: any }> | null
+    criticalContext: Array<{ category: string; content: any }> | null,
+    brandRegex: RegExp,
+    modelNumberRegex: RegExp
 ): string[] {
     return (criticalContext?.filter((c: any) => c.category === 'inventory').map((c: any) => {
         const items = Array.isArray(c.content) ? c.content : (c.content?.selected_items || []);
         const presentItems = items
             .filter((i: any) => i.isPresent)
             .map((i: any) => {
-                let text = `- ${i.name}`;
-                if (i.customContext) text += `: ${i.customContext}`;
+                const name = String(i.name).replace(brandRegex, '').replace(modelNumberRegex, '');
+                let text = `- ${name}`;
+                if (i.customContext) text += `: ${String(i.customContext).replace(brandRegex, '').replace(modelNumberRegex, '')}`;
                 return text;
             }).join('\n');
         return `[INVENTARIO_Y_EQUIPAMIENTO]:\n${presentItems}`;
@@ -200,7 +203,7 @@ export function buildFormattedContext(
     return [
         ...buildPropertyLine(ctx.propertyInfo),
         ...buildStructuredContextLines(ctx.criticalContext, brandRegex, modelNumberRegex),
-        ...buildInventoryLines(ctx.criticalContext),
+        ...buildInventoryLines(ctx.criticalContext, brandRegex, modelNumberRegex),
         ...buildRecommendationLines(ctx, params),
         ...buildRAGChunkLines(ctx.relevantChunks, params.isGenericFoodSearch, brandRegex, modelNumberRegex),
     ].join('\n\n\n');
