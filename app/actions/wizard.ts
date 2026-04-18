@@ -188,6 +188,17 @@ export async function saveWizardStep(
             }, { onConflict: 'property_id' })
 
         if (error) throw error
+
+        // Revalidate the guide URL so the new theme is served immediately
+        const { data: prop } = await supabase
+            .from('properties')
+            .select('slug')
+            .eq('id', currentPropId)
+            .maybeSingle()
+        if (prop?.slug) {
+            revalidatePath(`/${prop.slug}`)
+        }
+
         return { success: true }
 
     } else {

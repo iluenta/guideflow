@@ -1,0 +1,947 @@
+- generic [active] [ref=e1]:
+  - main [ref=e4]:
+    - generic [ref=e92]:
+      - generic [ref=e93]:
+        - button [ref=e94]:
+          - img [ref=e95]
+        - heading "Dónde Comer" [level=1] [ref=e97]
+      - generic [ref=e98]:
+        - generic [ref=e99]:
+          - heading "Sabores Locales" [level=2] [ref=e100]
+          - paragraph [ref=e101]: Mis recomendaciones personales para disfrutar de la mejor gastronomía de la zona.
+        - generic [ref=e103]:
+          - button "Todo" [ref=e104]
+          - button "Restaurantes" [ref=e105]:
+            - img [ref=e106]
+            - text: Restaurantes
+          - button "Italiano" [ref=e111]:
+            - img [ref=e112]
+            - text: Italiano
+          - button "Mediterráneo" [ref=e118]:
+            - img [ref=e119]
+            - text: Mediterráneo
+          - button "Hamburguesas" [ref=e125]:
+            - img [ref=e126]
+            - text: Hamburguesas
+          - button "Asiático" [ref=e130]:
+            - img [ref=e131]
+            - text: Asiático
+          - button "Alta Cocina" [ref=e136]:
+            - img [ref=e137]
+            - text: Alta Cocina
+          - button "Internacional" [ref=e139]:
+            - img [ref=e140]
+            - text: Internacional
+          - button "Desayunos" [ref=e143]:
+            - img [ref=e144]
+            - text: Desayunos
+        - generic [ref=e146]:
+          - generic [ref=e149] [cursor=pointer]:
+            - generic [ref=e152]:
+              - img [ref=e153]
+              - img [ref=e159]
+            - generic [ref=e164]:
+              - heading "Restaurante Casa Maria" [level=3] [ref=e166]
+              - paragraph [ref=e167]: Restaurante con cocina tradicional española. Disfruta de platos caseros y un ambiente acogedor cerca de Villa Franciscanos.
+              - generic [ref=e169]:
+                - img [ref=e170]
+                - text: 22 MIN andando
+              - generic [ref=e173]:
+                - generic [ref=e174]:
+                  - generic [ref=e175]: "#restaurante"
+                  - generic [ref=e176]: "#español"
+                - link "Maps" [ref=e177]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Restaurante%20Casa%20Maria%20Vera&query_place_id=ChIJrToFtxgrew0RA8KnoTUnVBw
+                  - text: Maps
+                  - img [ref=e178]
+          - generic [ref=e182] [cursor=pointer]:
+            - generic [ref=e185]:
+              - img [ref=e186]
+              - img [ref=e192]
+            - generic [ref=e197]:
+              - heading "La Jovita Playa Tapas - Bar - Restaurante" [level=3] [ref=e199]
+              - paragraph [ref=e200]: Disfruta de deliciosas tapas y platos en este restaurante con vistas al mar. Ideal para una comida relajada.
+              - generic [ref=e202]:
+                - img [ref=e203]
+                - text: 7 MIN en coche
+              - generic [ref=e206]:
+                - generic [ref=e207]:
+                  - generic [ref=e208]: "#restaurante"
+                  - generic [ref=e209]: "#tapas"
+                - link "Maps" [ref=e210]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=La%20Jovita%20Playa%20Tapas%20-%20Bar%20-%20Restaurante%20Vera&query_place_id=ChIJPR7ndUcrew0RwDF8oJXCHrg
+                  - text: Maps
+                  - img [ref=e211]
+          - generic [ref=e215] [cursor=pointer]:
+            - generic [ref=e218]:
+              - img [ref=e219]
+              - img [ref=e225]
+            - generic [ref=e227]:
+              - heading "Oasis café" [level=3] [ref=e229]
+              - paragraph [ref=e230]: Cafetería perfecta para un buen desayuno. Disfruta de café recién hecho y bollería variada.
+              - generic [ref=e232]:
+                - img [ref=e233]
+                - text: 23 MIN andando
+              - generic [ref=e236]:
+                - generic [ref=e237]:
+                  - generic [ref=e238]: "#cafetería"
+                  - generic [ref=e239]: "#desayuno"
+                - link "Maps" [ref=e240]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Oasis%20caf%C3%A9%20Vera&query_place_id=ChIJoVub9tUrew0R1Ro_db91gls
+                  - text: Maps
+                  - img [ref=e241]
+          - generic [ref=e245] [cursor=pointer]:
+            - generic [ref=e248]:
+              - img [ref=e249]
+              - img [ref=e255]
+            - generic [ref=e257]:
+              - heading "Cora Café" [level=3] [ref=e259]
+              - paragraph [ref=e260]: Un lugar encantador para disfrutar de un desayuno delicioso cerca de la playa, con vistas y un ambiente relajado.
+              - generic [ref=e262]:
+                - img [ref=e263]
+                - text: 7 MIN en coche
+              - generic [ref=e266]:
+                - generic [ref=e267]:
+                  - generic [ref=e268]: "#cafetería"
+                  - generic [ref=e269]: "#desayuno"
+                - link "Maps" [ref=e270]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Cora%20Caf%C3%A9%20Vera&query_place_id=ChIJB1-mp_Erew0RYZ9UHiRt_yM
+                  - text: Maps
+                  - img [ref=e271]
+          - generic [ref=e275] [cursor=pointer]:
+            - generic [ref=e278]:
+              - img [ref=e279]
+              - img [ref=e282]
+            - generic [ref=e284]:
+              - heading "Benito's - El Alcabaza" [level=3] [ref=e286]
+              - paragraph [ref=e287]: Bar de tapas con excelente reputación. Disfruta de tapas tradicionales y un ambiente animado.
+              - generic [ref=e289]:
+                - img [ref=e290]
+                - text: 25 MIN andando
+              - generic [ref=e293]:
+                - generic [ref=e294]:
+                  - generic [ref=e295]: "#tapas"
+                  - generic [ref=e296]: "#bar"
+                - link "Maps" [ref=e297]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Benito's%20-%20El%20Alcabaza%20Vera&query_place_id=ChIJ4ywKoborew0RARFR7Td5IAs
+                  - text: Maps
+                  - img [ref=e298]
+          - generic [ref=e302] [cursor=pointer]:
+            - generic [ref=e305]:
+              - img [ref=e306]
+              - img [ref=e309]
+            - generic [ref=e311]:
+              - heading "La taberna cafe bar" [level=3] [ref=e313]
+              - paragraph [ref=e314]: Bar de tapas con gran variedad de opciones y un ambiente acogedor. Perfecto para una cena informal.
+              - generic [ref=e316]:
+                - img [ref=e317]
+                - text: 8 MIN en coche
+              - generic [ref=e320]:
+                - generic [ref=e321]:
+                  - generic [ref=e322]: "#tapas"
+                  - generic [ref=e323]: "#bar"
+                - link "Maps" [ref=e324]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=La%20taberna%20cafe%20bar%20Vera&query_place_id=ChIJF4t2yL_Veg0Rh080N6qzllQ
+                  - text: Maps
+                  - img [ref=e325]
+          - generic [ref=e329] [cursor=pointer]:
+            - generic [ref=e332]:
+              - img [ref=e333]
+              - img [ref=e339]
+            - generic [ref=e344]:
+              - heading "Keoke El Extremeño" [level=3] [ref=e346]
+              - paragraph [ref=e347]: Restaurante especializado en cocina extremeña, con productos de calidad y un sabor auténtico. Perfecto para los amantes de la buena carne.
+              - generic [ref=e349]:
+                - img [ref=e350]
+                - text: 4 MIN en coche
+              - generic [ref=e353]:
+                - generic [ref=e354]:
+                  - generic [ref=e355]: "#carne"
+                  - generic [ref=e356]: "#extremeño"
+                - link "Maps" [ref=e357]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Keoke%20El%20Extreme%C3%B1o%20Vera&query_place_id=ChIJmVluGgoqew0RiisHL3CBB54
+                  - text: Maps
+                  - img [ref=e358]
+          - generic [ref=e362] [cursor=pointer]:
+            - generic [ref=e365]:
+              - img [ref=e366]
+              - img [ref=e373]
+            - generic [ref=e379]:
+              - heading "Pizzería Jardín Vera Playa" [level=3] [ref=e381]
+              - paragraph [ref=e382]: Deliciosa pizzería con un ambiente relajado y un jardín encantador. Ideal para disfrutar de una cena tranquila en familia o con amigos.
+              - generic [ref=e384]:
+                - img [ref=e385]
+                - text: 25 MIN andando
+              - generic [ref=e388]:
+                - generic [ref=e389]:
+                  - generic [ref=e390]: "#pizza"
+                  - generic [ref=e391]: "#familiar"
+                - link "Maps" [ref=e392]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Pizzer%C3%ADa%20Jard%C3%ADn%20Vera%20Playa%20Vera&query_place_id=ChIJGXU5mU8qew0RRmjfX8P14NQ
+                  - text: Maps
+                  - img [ref=e393]
+          - generic [ref=e397] [cursor=pointer]:
+            - generic [ref=e400]:
+              - img [ref=e401]
+              - img [ref=e408]
+            - generic [ref=e414]:
+              - heading "PIZZERIA GARCON PALOMARES" [level=3] [ref=e416]
+              - paragraph [ref=e417]: Pizzería con encanto en Palomares, famosa por sus pizzas artesanales y su ambiente acogedor. Perfecto para una noche informal.
+              - generic [ref=e419]:
+                - img [ref=e420]
+                - text: 5 MIN en coche
+              - generic [ref=e423]:
+                - generic [ref=e424]:
+                  - generic [ref=e425]: "#pizza"
+                  - generic [ref=e426]: "#artesanal"
+                - link "Maps" [ref=e427]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=PIZZERIA%20GARCON%20PALOMARES%20Vera&query_place_id=ChIJm-SgCPQrew0RB5NA0TjK7vw
+                  - text: Maps
+                  - img [ref=e428]
+          - generic [ref=e432] [cursor=pointer]:
+            - generic [ref=e435]:
+              - img [ref=e436]
+              - img [ref=e443]
+            - generic [ref=e449]:
+              - heading "Pizzeria DJANGO" [level=3] [ref=e451]
+              - paragraph [ref=e452]: Pizzería popular en Vera, conocida por su amplia variedad de pizzas y su servicio rápido y eficiente. Ideal para llevar o cenar allí.
+              - generic [ref=e454]:
+                - img [ref=e455]
+                - text: 7 MIN en coche
+              - generic [ref=e458]:
+                - generic [ref=e459]:
+                  - generic [ref=e460]: "#pizza"
+                  - generic [ref=e461]: "#rápido"
+                - link "Maps" [ref=e462]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Pizzeria%20DJANGO%20Vera&query_place_id=ChIJzTzxVxwqew0RHdL19l0FjJk
+                  - text: Maps
+                  - img [ref=e463]
+          - generic [ref=e467] [cursor=pointer]:
+            - generic [ref=e470]:
+              - img [ref=e471]
+              - img [ref=e478]
+            - generic [ref=e484]:
+              - heading "Pizzeria Bar Sicily" [level=3] [ref=e486]
+              - paragraph [ref=e487]: Auténtica pizzería siciliana en Vera que ofrece una experiencia gastronómica inolvidable. Productos frescos y un ambiente muy italiano.
+              - generic [ref=e489]:
+                - img [ref=e490]
+                - text: 7 MIN en coche
+              - generic [ref=e493]:
+                - generic [ref=e494]:
+                  - generic [ref=e495]: "#pizza"
+                  - generic [ref=e496]: "#siciliano"
+                - link "Maps" [ref=e497]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Pizzeria%20Bar%20Sicily%20Vera&query_place_id=ChIJYzIexB0qew0RSYzXhCy2Vmg
+                  - text: Maps
+                  - img [ref=e498]
+          - generic [ref=e502] [cursor=pointer]:
+            - generic [ref=e505]:
+              - img [ref=e506]
+              - img [ref=e513]
+            - generic [ref=e519]:
+              - heading "Telepizza Vera - Pizza y Comida a Domicilio" [level=3] [ref=e521]
+              - paragraph [ref=e522]: La cadena de pizzas más conocida, ideal para pedir a domicilio o recoger. Disfruta de sus promociones y variedad de ingredientes.
+              - generic [ref=e524]:
+                - img [ref=e525]
+                - text: 7 MIN en coche
+              - generic [ref=e528]:
+                - generic [ref=e529]:
+                  - generic [ref=e530]: "#pizza"
+                  - generic [ref=e531]: "#domicilio"
+                - link "Maps" [ref=e532]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Telepizza%20Vera%20-%20Pizza%20y%20Comida%20a%20Domicilio%20Vera&query_place_id=ChIJ-4ToKhArew0RNPXmyd43Hq4
+                  - text: Maps
+                  - img [ref=e533]
+          - generic [ref=e537] [cursor=pointer]:
+            - generic [ref=e540]:
+              - img [ref=e541]
+              - img [ref=e548]
+            - generic [ref=e554]:
+              - heading "Pizzeria Memoli" [level=3] [ref=e556]
+              - paragraph [ref=e557]: Pizzería ubicada en Las Marinas, con una amplia variedad de pizzas y un ambiente agradable. Ideal para disfrutar en familia.
+              - generic [ref=e559]:
+                - img [ref=e560]
+                - text: 7 MIN en coche
+              - generic [ref=e563]:
+                - generic [ref=e564]:
+                  - generic [ref=e565]: "#pizza"
+                  - generic [ref=e566]: "#vistas_al_mar"
+                - link "Maps" [ref=e567]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Pizzeria%20Memoli%20Vera&query_place_id=ChIJq6qeGB0qew0RCRgHKUUXr20
+                  - text: Maps
+                  - img [ref=e568]
+          - generic [ref=e572] [cursor=pointer]:
+            - generic [ref=e575]:
+              - img [ref=e576]
+              - img [ref=e584]
+            - generic [ref=e590]:
+              - heading "Arrocería y paellas ( la golondrina)" [level=3] [ref=e592]
+              - paragraph [ref=e593]: Disfruta de la auténtica paella mediterránea en este acogedor restaurante. Ingredientes frescos y sabor tradicional te esperan.
+              - generic [ref=e595]:
+                - img [ref=e596]
+                - text: 26 MIN andando
+              - generic [ref=e599]:
+                - generic [ref=e600]:
+                  - generic [ref=e601]: "#paella"
+                  - generic [ref=e602]: "#arroz"
+                - link "Maps" [ref=e603]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Arrocer%C3%ADa%20y%20paellas%20(%20la%20golondrina)%20Vera&query_place_id=ChIJK10Ua-Mrew0R7H7bDPAjuwQ
+                  - text: Maps
+                  - img [ref=e604]
+          - generic [ref=e608] [cursor=pointer]:
+            - generic [ref=e611]:
+              - img [ref=e612]
+              - img [ref=e620]
+            - generic [ref=e626]:
+              - heading "Paraíso Km 0" [level=3] [ref=e628]
+              - paragraph [ref=e629]: Restaurante mediterráneo con un ambiente relajado y platos elaborados con productos locales de kilómetro cero.
+              - generic [ref=e631]:
+                - img [ref=e632]
+                - text: 27 MIN andando
+              - generic [ref=e635]:
+                - generic [ref=e636]:
+                  - generic [ref=e637]: "#km0"
+                  - generic [ref=e638]: "#local"
+                - link "Maps" [ref=e639]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Para%C3%ADso%20Km%200%20Vera&query_place_id=ChIJz7e_t4crew0RM_ZMF7g9L6A
+                  - text: Maps
+                  - img [ref=e640]
+          - generic [ref=e644] [cursor=pointer]:
+            - generic [ref=e647]:
+              - img [ref=e648]
+              - img [ref=e656]
+            - generic [ref=e662]:
+              - heading "Chiringuito d'Maruja" [level=3] [ref=e664]
+              - paragraph [ref=e665]: Chiringuito a pie de playa con cocina mediterránea y mariscos frescos. Ideal para disfrutar de una comida con vistas al mar.
+              - generic [ref=e667]:
+                - img [ref=e668]
+                - text: 6 MIN en coche
+              - generic [ref=e671]:
+                - generic [ref=e672]:
+                  - generic [ref=e673]: "#playa"
+                  - generic [ref=e674]: "#marisco"
+                - link "Maps" [ref=e675]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Chiringuito%20d'Maruja%20Vera&query_place_id=ChIJlUHP0Gsrew0RBuCk0Rb1deE
+                  - text: Maps
+                  - img [ref=e676]
+          - generic [ref=e680] [cursor=pointer]:
+            - generic [ref=e683]:
+              - img [ref=e684]
+              - img [ref=e692]
+            - generic [ref=e698]:
+              - heading "Rincón Las Brisas" [level=3] [ref=e700]
+              - paragraph [ref=e701]: Este rincón ofrece una experiencia gastronómica mediterránea con vistas al mar. Disfruta de sus platos y del ambiente relajante.
+              - generic [ref=e703]:
+                - img [ref=e704]
+                - text: 8 MIN en coche
+              - generic [ref=e707]:
+                - generic [ref=e708]:
+                  - generic [ref=e709]: "#vistas"
+                  - generic [ref=e710]: "#relajante"
+                - link "Maps" [ref=e711]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Rinc%C3%B3n%20Las%20Brisas%20Vera&query_place_id=ChIJTaZKzdMpew0RuiDu7o6tf2Y
+                  - text: Maps
+                  - img [ref=e712]
+          - generic [ref=e716] [cursor=pointer]:
+            - generic [ref=e719]:
+              - img [ref=e720]
+              - img [ref=e728]
+            - generic [ref=e734]:
+              - heading "La Balsica" [level=3] [ref=e736]
+              - paragraph [ref=e737]: Restaurante mediterráneo en Villaricos. Cocina tradicional con un toque moderno y ambiente agradable.
+              - generic [ref=e739]:
+                - img [ref=e740]
+                - text: 9 MIN en coche
+              - generic [ref=e743]:
+                - generic [ref=e744]:
+                  - generic [ref=e745]: "#villaricos"
+                  - generic [ref=e746]: "#moderno"
+                - link "Maps" [ref=e747]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=La%20Balsica%20Vera&query_place_id=ChIJEUgpZHMrew0R9sXVGZbeqaY
+                  - text: Maps
+                  - img [ref=e748]
+          - generic [ref=e752] [cursor=pointer]:
+            - generic [ref=e755]:
+              - img [ref=e756]
+              - img [ref=e764]
+            - generic [ref=e770]:
+              - heading "Regio Mediterránea Gastrobar" [level=3] [ref=e772]
+              - paragraph [ref=e773]: Gastrobar con tapas y platos mediterráneos creativos y deliciosos. Ideal para compartir y disfrutar de una buena comida.
+              - generic [ref=e775]:
+                - img [ref=e776]
+                - text: 9 MIN en coche
+              - generic [ref=e779]:
+                - generic [ref=e780]:
+                  - generic [ref=e781]: "#tapas"
+                  - generic [ref=e782]: "#creativo"
+                - link "Maps" [ref=e783]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Regio%20Mediterr%C3%A1nea%20Gastrobar%20Vera&query_place_id=ChIJaQ5X0dXVeg0RbQq1SR3SZY8
+                  - text: Maps
+                  - img [ref=e784]
+          - generic [ref=e788] [cursor=pointer]:
+            - generic [ref=e791]:
+              - img [ref=e792]
+              - img [ref=e797]
+            - generic [ref=e801]:
+              - heading "Burger King" [level=3] [ref=e803]
+              - paragraph [ref=e804]: El clásico Burger King con sus hamburguesas de siempre. Ideal si buscas algo rápido y económico.
+              - generic [ref=e806]:
+                - img [ref=e807]
+                - text: 5 MIN en coche
+              - generic [ref=e810]:
+                - generic [ref=e811]:
+                  - generic [ref=e812]: "#fast food"
+                  - generic [ref=e813]: "#hamburguesas"
+                - link "Maps" [ref=e814]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Burger%20King%20Vera&query_place_id=ChIJXYijJgArew0REaI_Qnv49cg
+                  - text: Maps
+                  - img [ref=e815]
+          - generic [ref=e819] [cursor=pointer]:
+            - generic [ref=e822]:
+              - img [ref=e823]
+              - img [ref=e828]
+            - generic [ref=e832]:
+              - heading "Koko Grill House" [level=3] [ref=e834]
+              - paragraph [ref=e835]: Hamburguesas gourmet y opciones a la parrilla en un ambiente moderno. Excelente opción para una cena informal.
+              - generic [ref=e837]:
+                - img [ref=e838]
+                - text: 25 MIN andando
+              - generic [ref=e841]:
+                - generic [ref=e842]:
+                  - generic [ref=e843]: "#hamburguesas"
+                  - generic [ref=e844]: "#parrilla"
+                - link "Maps" [ref=e845]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Koko%20Grill%20House%20Vera&query_place_id=ChIJG-GFrA4rew0RNuchQ9VEQu8
+                  - text: Maps
+                  - img [ref=e846]
+          - generic [ref=e850] [cursor=pointer]:
+            - generic [ref=e853]:
+              - img [ref=e854]
+              - img [ref=e859]
+            - generic [ref=e863]:
+              - heading "Bombay Tacos Vera" [level=3] [ref=e865]
+              - paragraph [ref=e866]: Aunque se especializan en tacos, también tienen opciones de hamburguesas con toques hindúes interesantes.
+              - generic [ref=e868]:
+                - img [ref=e869]
+                - text: 23 MIN andando
+              - generic [ref=e872]:
+                - generic [ref=e873]:
+                  - generic [ref=e874]: "#hamburguesas"
+                  - generic [ref=e875]: "#tacos"
+                - link "Maps" [ref=e876]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Bombay%20Tacos%20Vera%20Vera&query_place_id=ChIJX_7EYCgrew0R1EIizCeVt8A
+                  - text: Maps
+                  - img [ref=e877]
+          - generic [ref=e881] [cursor=pointer]:
+            - generic [ref=e884]:
+              - img [ref=e885]
+              - img [ref=e891]
+            - generic [ref=e896]:
+              - heading "Restaurante YAHO" [level=3] [ref=e898]
+              - paragraph [ref=e899]: Restaurante asiático con platos deliciosos y vistas al mar. Ideal para una cena especial.
+              - generic [ref=e901]:
+                - img [ref=e902]
+                - text: 6 MIN en coche
+              - generic [ref=e905]:
+                - generic [ref=e906]:
+                  - generic [ref=e907]: "#asiatico"
+                  - generic [ref=e908]: "#vistas al mar"
+                - link "Maps" [ref=e909]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Restaurante%20YAHO%20Vera&query_place_id=ChIJ95b-kRkqew0RQBu6eYrrF_o
+                  - text: Maps
+                  - img [ref=e910]
+          - generic [ref=e914] [cursor=pointer]:
+            - generic [ref=e917]:
+              - img [ref=e918]
+              - img [ref=e924]
+            - generic [ref=e929]:
+              - heading "Dragón II" [level=3] [ref=e931]
+              - paragraph [ref=e932]: Restaurante chino con una amplia carta y precios asequibles. Perfecto para una comida familiar.
+              - generic [ref=e934]:
+                - img [ref=e935]
+                - text: 7 MIN en coche
+              - generic [ref=e938]:
+                - generic [ref=e939]:
+                  - generic [ref=e940]: "#chino"
+                  - generic [ref=e941]: "#familiar"
+                - link "Maps" [ref=e942]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Drag%C3%B3n%20II%20Vera&query_place_id=ChIJAQFlQh0qew0RT5S8fCRCbLw
+                  - text: Maps
+                  - img [ref=e943]
+          - generic [ref=e947] [cursor=pointer]:
+            - generic [ref=e950]:
+              - img [ref=e951]
+              - img [ref=e957]
+            - generic [ref=e962]:
+              - heading "Gran Muralla" [level=3] [ref=e964]
+              - paragraph [ref=e965]: Restaurante chino con platos tradicionales y opciones vegetarianas. Buena relación calidad-precio.
+              - generic [ref=e967]:
+                - img [ref=e968]
+                - text: 7 MIN en coche
+              - generic [ref=e971]:
+                - generic [ref=e972]:
+                  - generic [ref=e973]: "#chino"
+                  - generic [ref=e974]: "#vegetariano"
+                - link "Maps" [ref=e975]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Gran%20Muralla%20Vera&query_place_id=ChIJ8a2T4wnVeg0R0tDQA9hQcng
+                  - text: Maps
+                  - img [ref=e976]
+          - generic [ref=e980] [cursor=pointer]:
+            - generic [ref=e983]:
+              - img [ref=e984]
+              - img [ref=e990]
+            - generic [ref=e995]:
+              - heading "Restaurante Chino Pekin" [level=3] [ref=e997]
+              - paragraph [ref=e998]: Restaurante chino clásico con platos variados. Ideal para pedir para llevar.
+              - generic [ref=e1000]:
+                - img [ref=e1001]
+                - text: 8 MIN en coche
+              - generic [ref=e1004]:
+                - generic [ref=e1005]:
+                  - generic [ref=e1006]: "#chino"
+                  - generic [ref=e1007]: "#para llevar"
+                - link "Maps" [ref=e1008]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Restaurante%20Chino%20Pekin%20Vera&query_place_id=ChIJJZeLnO8pew0R3xLWQlS-TgA
+                  - text: Maps
+                  - img [ref=e1009]
+          - generic [ref=e1013] [cursor=pointer]:
+            - generic [ref=e1016]:
+              - img [ref=e1017]
+              - img [ref=e1023]
+            - generic [ref=e1028]:
+              - heading "Sushi Asahi" [level=3] [ref=e1030]
+              - paragraph [ref=e1031]: Restaurante japonés con sushi fresco y otras especialidades. Ubicado en Garrucha.
+              - generic [ref=e1033]:
+                - img [ref=e1034]
+                - text: 10 MIN en coche
+              - generic [ref=e1037]:
+                - generic [ref=e1038]:
+                  - generic [ref=e1039]: "#japonés"
+                  - generic [ref=e1040]: "#sushi"
+                - link "Maps" [ref=e1041]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Sushi%20Asahi%20Vera&query_place_id=ChIJHXPDLu4pew0R8ZDm6Rp_gxQ
+                  - text: Maps
+                  - img [ref=e1042]
+          - generic [ref=e1046] [cursor=pointer]:
+            - generic [ref=e1049]:
+              - img [ref=e1050]
+              - img [ref=e1056]
+            - generic [ref=e1061]:
+              - heading "Restaurante Thai Fusion Phuket" [level=3] [ref=e1063]
+              - paragraph [ref=e1064]: Restaurante tailandés con platos fusión y sabores exóticos. Una experiencia culinaria única.
+              - generic [ref=e1066]:
+                - img [ref=e1067]
+                - text: 10 MIN en coche
+              - generic [ref=e1070]:
+                - generic [ref=e1071]:
+                  - generic [ref=e1072]: "#tailandés"
+                  - generic [ref=e1073]: "#fusión"
+                - link "Maps" [ref=e1074]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Restaurante%20Thai%20Fusion%20Phuket%20Vera&query_place_id=ChIJM9AQZgTVeg0Rr66jIair6jM
+                  - text: Maps
+                  - img [ref=e1075]
+          - generic [ref=e1079] [cursor=pointer]:
+            - generic [ref=e1082]:
+              - img [ref=e1083]
+              - img [ref=e1086]
+            - generic [ref=e1088]:
+              - heading "Gabbia" [level=3] [ref=e1090]
+              - paragraph [ref=e1091]: Un rincón italiano con toques creativos y una atmósfera íntima. Ideal para una cena especial con ingredientes frescos y platos elaborados con pasión.
+              - generic [ref=e1093]:
+                - img [ref=e1094]
+                - text: 7 MIN en coche
+              - generic [ref=e1097]:
+                - generic [ref=e1098]:
+                  - generic [ref=e1099]: "#italiano"
+                  - generic [ref=e1100]: "#romántico"
+                - link "Maps" [ref=e1101]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Gabbia%20Vera&query_place_id=ChIJr39wwbQrew0RmqIIjirGewE
+                  - text: Maps
+                  - img [ref=e1102]
+          - generic [ref=e1106] [cursor=pointer]:
+            - generic [ref=e1109]:
+              - img [ref=e1110]
+              - img [ref=e1113]
+            - generic [ref=e1115]:
+              - heading "Restaurante Juan Moreno" [level=3] [ref=e1117]
+              - paragraph [ref=e1118]: Cocina de autor con raíces tradicionales, utilizando productos locales de temporada. Un menú degustación que sorprende y deleita.
+              - generic [ref=e1120]:
+                - img [ref=e1121]
+                - text: 7 MIN en coche
+              - generic [ref=e1124]:
+                - generic [ref=e1125]:
+                  - generic [ref=e1126]: "#local"
+                  - generic [ref=e1127]: "#gourmet"
+                - link "Maps" [ref=e1128]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Restaurante%20Juan%20Moreno%20Vera&query_place_id=ChIJNfK43gnVeg0RZ7zMGYS6S4o
+                  - text: Maps
+                  - img [ref=e1129]
+          - generic [ref=e1133] [cursor=pointer]:
+            - generic [ref=e1136]:
+              - img [ref=e1137]
+              - img [ref=e1140]
+            - generic [ref=e1142]:
+              - heading "El Torrente Restaurant" [level=3] [ref=e1144]
+              - paragraph [ref=e1145]: Ubicado en Desert Springs Resort, ofrece una experiencia gastronómica refinada con vistas espectaculares y platos innovadores.
+              - generic [ref=e1147]:
+                - img [ref=e1148]
+                - text: 6 MIN en coche
+              - generic [ref=e1151]:
+                - generic [ref=e1152]:
+                  - generic [ref=e1153]: "#vistas"
+                  - generic [ref=e1154]: "#innovador"
+                - link "Maps" [ref=e1155]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=El%20Torrente%20Restaurant%20Vera&query_place_id=ChIJv76W1Z4qew0RxXn7ayicGOg
+                  - text: Maps
+                  - img [ref=e1156]
+          - generic [ref=e1160] [cursor=pointer]:
+            - generic [ref=e1163]:
+              - img [ref=e1164]
+              - img [ref=e1167]
+            - generic [ref=e1169]:
+              - heading "NHAO Resto-Bar" [level=3] [ref=e1171]
+              - paragraph [ref=e1172]: Ofrece una innovadora fusión de cocina mediterránea y asiática en un ambiente moderno y acogedor.
+              - generic [ref=e1174]:
+                - img [ref=e1175]
+                - text: 7 MIN en coche
+              - generic [ref=e1178]:
+                - generic [ref=e1179]:
+                  - generic [ref=e1180]: "#fusión"
+                  - generic [ref=e1181]: "#asiático"
+                - link "Maps" [ref=e1182]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=NHAO%20Resto-Bar%20Vera&query_place_id=ChIJ3550Qhsrew0Rhxhmx1mU2_8
+                  - text: Maps
+                  - img [ref=e1183]
+          - generic [ref=e1187] [cursor=pointer]:
+            - generic [ref=e1190]:
+              - img [ref=e1191]
+              - img [ref=e1196]
+            - generic [ref=e1199]:
+              - heading "Spice hut" [level=3] [ref=e1201]
+              - paragraph [ref=e1202]: Disfruta de auténticos sabores de la India con platos tradicionales y un ambiente acogedor. Perfecto para una cena exótica.
+              - generic [ref=e1204]:
+                - img [ref=e1205]
+                - text: 22 MIN andando
+              - generic [ref=e1208]:
+                - generic [ref=e1209]:
+                  - generic [ref=e1210]: "#indio"
+                  - generic [ref=e1211]: "#especias"
+                - link "Maps" [ref=e1212]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Spice%20hut%20Vera&query_place_id=ChIJNWbsFRIrew0RLt-BeRXV8Xg
+                  - text: Maps
+                  - img [ref=e1213]
+          - generic [ref=e1217] [cursor=pointer]:
+            - generic [ref=e1220]:
+              - img [ref=e1221]
+              - img [ref=e1226]
+            - generic [ref=e1229]:
+              - heading "Restaurante Gateway to India" [level=3] [ref=e1231]
+              - paragraph [ref=e1232]: Descubre la India en Vera con sus curries aromáticos y especialidades tandoori. Un festín para el paladar.
+              - generic [ref=e1234]:
+                - img [ref=e1235]
+                - text: 5 MIN en coche
+              - generic [ref=e1238]:
+                - generic [ref=e1239]:
+                  - generic [ref=e1240]: "#indio"
+                  - generic [ref=e1241]: "#curry"
+                - link "Maps" [ref=e1242]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Restaurante%20Gateway%20to%20India%20Vera&query_place_id=ChIJ76V38Bkqew0RzC6D7KOLfJQ
+                  - text: Maps
+                  - img [ref=e1243]
+          - generic [ref=e1247] [cursor=pointer]:
+            - generic [ref=e1250]:
+              - img [ref=e1251]
+              - img [ref=e1256]
+            - generic [ref=e1259]:
+              - heading "Restaurante Indio Bombay Choupati" [level=3] [ref=e1261]
+              - paragraph [ref=e1262]: Saborea la cocina india auténtica en un ambiente agradable. Ideal para una comida o cena con amigos.
+              - generic [ref=e1264]:
+                - img [ref=e1265]
+                - text: 7 MIN en coche
+              - generic [ref=e1268]:
+                - generic [ref=e1269]:
+                  - generic [ref=e1270]: "#indio"
+                  - generic [ref=e1271]: "#auténtico"
+                - link "Maps" [ref=e1272]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Restaurante%20Indio%20Bombay%20Choupati%20Vera&query_place_id=ChIJa0QWYU0rew0Ra5Za-JBrQEg
+                  - text: Maps
+                  - img [ref=e1273]
+          - generic [ref=e1277] [cursor=pointer]:
+            - generic [ref=e1280]:
+              - img [ref=e1281]
+              - img [ref=e1286]
+            - generic [ref=e1289]:
+              - heading "Royal Taj" [level=3] [ref=e1291]
+              - paragraph [ref=e1292]: Un restaurante indio con excelente valoración, conocido por sus platos sabrosos y servicio amable.
+              - generic [ref=e1294]:
+                - img [ref=e1295]
+                - text: 7 MIN en coche
+              - generic [ref=e1298]:
+                - generic [ref=e1299]:
+                  - generic [ref=e1300]: "#indio"
+                  - generic [ref=e1301]: "#alta calidad"
+                - link "Maps" [ref=e1302]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Royal%20Taj%20Vera&query_place_id=ChIJ85m_QRwrew0Rl7QsC9IiDTE
+                  - text: Maps
+                  - img [ref=e1303]
+          - generic [ref=e1307] [cursor=pointer]:
+            - generic [ref=e1310]:
+              - img [ref=e1311]
+              - img [ref=e1316]
+            - generic [ref=e1319]:
+              - heading "Restaurante TAJ MAHAL" [level=3] [ref=e1321]
+              - paragraph [ref=e1322]: Disfruta de la diversidad de la cocina india en este restaurante con platos para todos los gustos.
+              - generic [ref=e1324]:
+                - img [ref=e1325]
+                - text: 7 MIN en coche
+              - generic [ref=e1328]:
+                - generic [ref=e1329]:
+                  - generic [ref=e1330]: "#indio"
+                  - generic [ref=e1331]: "#diversidad"
+                - link "Maps" [ref=e1332]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Restaurante%20TAJ%20MAHAL%20Vera&query_place_id=ChIJWyj-KgjVeg0RKNdZrgCgFv4
+                  - text: Maps
+                  - img [ref=e1333]
+          - generic [ref=e1337] [cursor=pointer]:
+            - generic [ref=e1340]:
+              - img [ref=e1341]
+              - img [ref=e1346]
+            - generic [ref=e1349]:
+              - heading "Rodizio Al Punto Vera Playa" [level=3] [ref=e1351]
+              - paragraph [ref=e1352]: Disfruta de una experiencia brasileña con deliciosos cortes de carne servidos al estilo rodizio. Ideal para carnívoros.
+              - generic [ref=e1354]:
+                - img [ref=e1355]
+                - text: 9 MIN en coche
+              - generic [ref=e1358]:
+                - generic [ref=e1359]:
+                  - generic [ref=e1360]: "#brasileño"
+                  - generic [ref=e1361]: "#rodizio"
+                - link "Maps" [ref=e1362]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Rodizio%20Al%20Punto%20Vera%20Playa%20Vera&query_place_id=ChIJi9U8bTQpew0RCBGxjqDergA
+                  - text: Maps
+                  - img [ref=e1363]
+          - generic [ref=e1367] [cursor=pointer]:
+            - generic [ref=e1370]:
+              - img [ref=e1371]
+              - img [ref=e1377]
+            - generic [ref=e1379]:
+              - heading "Café Bar Cositas" [level=3] [ref=e1381]
+              - paragraph [ref=e1382]: Un lugar acogedor a pocos minutos de Villa Franciscanos. Ideal para empezar el día con un buen café y tostadas.
+              - generic [ref=e1384]:
+                - img [ref=e1385]
+                - text: 4 MIN
+              - generic [ref=e1388]:
+                - generic [ref=e1389]:
+                  - generic [ref=e1390]: "#desayuno"
+                  - generic [ref=e1391]: "#cafe"
+                - link "Maps" [ref=e1392]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Caf%C3%A9%20Bar%20Cositas%20Vera&query_place_id=ChIJY05QFG8qew0R5d2VHsdYI1U
+                  - text: Maps
+                  - img [ref=e1393]
+          - generic [ref=e1397] [cursor=pointer]:
+            - generic [ref=e1400]:
+              - img [ref=e1401]
+              - img [ref=e1407]
+            - generic [ref=e1409]:
+              - heading "MAXFLAIK (de Vera, Av. Maricielo, P.º Marítimo, 17, local 4, Las Marinas)" [level=3] [ref=e1411]
+              - paragraph [ref=e1412]: Desayunos deliciosos y variados, perfectos para disfrutar cerca de la playa. Ofrecen opciones dulces y saladas.
+              - generic [ref=e1414]:
+                - img [ref=e1415]
+                - text: 8 MIN
+              - generic [ref=e1418]:
+                - generic [ref=e1419]:
+                  - generic [ref=e1420]: "#desayuno"
+                  - generic [ref=e1421]: "#gofres"
+                - link "Maps" [ref=e1422]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=MAXFLAIK%20(de%20Vera%2C%20Av.%20Maricielo%2C%20P.%C2%BA%20Mar%C3%ADtimo%2C%2017%2C%20local%204%2C%20Las%20Marinas)%20Vera&query_place_id=ChIJ4cNKtOUpew0RqGPEICFZuyw
+                  - text: Maps
+                  - img [ref=e1423]
+          - generic [ref=e1427] [cursor=pointer]:
+            - generic [ref=e1430]:
+              - img [ref=e1431]
+              - img [ref=e1437]
+            - generic [ref=e1439]:
+              - heading "Churreria Chispa" [level=3] [ref=e1441]
+              - paragraph [ref=e1442]: Churros recién hechos para un desayuno tradicional. Un clásico en Vera.
+              - generic [ref=e1444]:
+                - img [ref=e1445]
+                - text: 9 MIN
+              - generic [ref=e1448]:
+                - generic [ref=e1449]:
+                  - generic [ref=e1450]: "#churros"
+                  - generic [ref=e1451]: "#chocolate"
+                - link "Maps" [ref=e1452]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Churreria%20Chispa%20Vera&query_place_id=ChIJ2fG3HgbVeg0R3_wdcMXOzto
+                  - text: Maps
+                  - img [ref=e1453]
+          - generic [ref=e1457] [cursor=pointer]:
+            - generic [ref=e1460]:
+              - img [ref=e1461]
+              - img [ref=e1467]
+            - generic [ref=e1469]:
+              - heading "Cafetería Porteña" [level=3] [ref=e1471]
+              - paragraph [ref=e1472]: Cafetería céntrica con una gran variedad de opciones para desayunar, desde bollería hasta tostadas.
+              - generic [ref=e1474]:
+                - img [ref=e1475]
+                - text: 9 MIN
+              - generic [ref=e1478]:
+                - generic [ref=e1479]:
+                  - generic [ref=e1480]: "#desayuno"
+                  - generic [ref=e1481]: "#cafe"
+                - link "Maps" [ref=e1482]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Cafeter%C3%ADa%20Porte%C3%B1a%20Vera&query_place_id=ChIJq5wzJgTVeg0RHPX--Ex3iYE
+                  - text: Maps
+                  - img [ref=e1483]
+          - generic [ref=e1487] [cursor=pointer]:
+            - generic [ref=e1490]:
+              - img [ref=e1491]
+              - img [ref=e1497]
+            - generic [ref=e1499]:
+              - heading "Churrería Rincón de Maria" [level=3] [ref=e1501]
+              - paragraph [ref=e1502]: Otra excelente opción para disfrutar de churros y porras recién hechos en Vera.
+              - generic [ref=e1504]:
+                - img [ref=e1505]
+                - text: 9 MIN
+              - generic [ref=e1508]:
+                - generic [ref=e1509]:
+                  - generic [ref=e1510]: "#churros"
+                  - generic [ref=e1511]: "#chocolate"
+                - link "Maps" [ref=e1512]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Churrer%C3%ADa%20Rinc%C3%B3n%20de%20Maria%20Vera&query_place_id=ChIJfyu6HrPVeg0RALpBP9lRM2I
+                  - text: Maps
+                  - img [ref=e1513]
+          - generic [ref=e1517] [cursor=pointer]:
+            - generic [ref=e1520]:
+              - img [ref=e1521]
+              - img [ref=e1527]
+            - generic [ref=e1529]:
+              - heading "Dulce Luna" [level=3] [ref=e1531]
+              - paragraph [ref=e1532]: Pastelería con una amplia selección de dulces y bollería para un desayuno delicioso.
+              - generic [ref=e1534]:
+                - img [ref=e1535]
+                - text: 9 MIN
+              - generic [ref=e1538]:
+                - generic [ref=e1539]:
+                  - generic [ref=e1540]: "#desayuno"
+                  - generic [ref=e1541]: "#dulces"
+                - link "Maps" [ref=e1542]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Dulce%20Luna%20Vera&query_place_id=ChIJqbiKbtjVeg0RMG-uf7S5rrE
+                  - text: Maps
+                  - img [ref=e1543]
+          - generic [ref=e1547] [cursor=pointer]:
+            - generic [ref=e1550]:
+              - img [ref=e1551]
+              - img [ref=e1554]
+            - generic [ref=e1556]:
+              - heading "La Bóveda" [level=3] [ref=e1558]
+              - paragraph [ref=e1559]: Un clásico en Vera para disfrutar de unas tapas variadas y de calidad. Ambiente agradable y perfecto para compartir con amigos.
+              - generic [ref=e1561]:
+                - img [ref=e1562]
+                - text: 24 MIN andando
+              - generic [ref=e1565]:
+                - generic [ref=e1566]:
+                  - generic [ref=e1567]: "#tapas"
+                  - generic [ref=e1568]: "#ambiente agradable"
+                - link "Maps" [ref=e1569]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=La%20B%C3%B3veda%20Vera&query_place_id=ChIJjf0pLgArew0RcV5eYHbK4RA
+                  - text: Maps
+                  - img [ref=e1570]
+          - generic [ref=e1574] [cursor=pointer]:
+            - generic [ref=e1577]:
+              - img [ref=e1578]
+              - img [ref=e1581]
+            - generic [ref=e1583]:
+              - heading "Frankies Bar" [level=3] [ref=e1585]
+              - paragraph [ref=e1586]: Bar de tapas con una buena selección de cervezas y vinos. Ideal para una parada rápida y disfrutar del ambiente local.
+              - generic [ref=e1588]:
+                - img [ref=e1589]
+                - text: 22 MIN andando
+              - generic [ref=e1592]:
+                - generic [ref=e1593]:
+                  - generic [ref=e1594]: "#tapas"
+                  - generic [ref=e1595]: "#cerveza"
+                - link "Maps" [ref=e1596]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Frankies%20Bar%20Vera&query_place_id=ChIJrebZcUUqew0RMQIqzXVtkTk
+                  - text: Maps
+                  - img [ref=e1597]
+          - generic [ref=e1601] [cursor=pointer]:
+            - generic [ref=e1604]:
+              - img [ref=e1605]
+              - img [ref=e1608]
+            - generic [ref=e1610]:
+              - heading "OH LA LA RESTAURANTE - CAFE - BAR" [level=3] [ref=e1612]
+              - paragraph [ref=e1613]: Aunque es restaurante, este local ofrece tapas muy ricas y variadas. Perfecto para compartir y probar diferentes sabores.
+              - generic [ref=e1615]:
+                - img [ref=e1616]
+                - text: 23 MIN andando
+              - generic [ref=e1619]:
+                - generic [ref=e1620]:
+                  - generic [ref=e1621]: "#tapas"
+                  - generic [ref=e1622]: "#terraza"
+                - link "Maps" [ref=e1623]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=OH%20LA%20LA%20RESTAURANTE%20-%20CAFE%20-%20BAR%20Vera&query_place_id=ChIJ0Y-jjUYqew0Ri21pskjh5Pk
+                  - text: Maps
+                  - img [ref=e1624]
+          - generic [ref=e1628] [cursor=pointer]:
+            - generic [ref=e1631]:
+              - img [ref=e1632]
+              - img [ref=e1635]
+            - generic [ref=e1637]:
+              - heading "Punto y aparte" [level=3] [ref=e1639]
+              - paragraph [ref=e1640]: Un lugar con vistas a la playa donde picar unas tapas disfrutando del ambiente costero. Ideal al atardecer.
+              - generic [ref=e1642]:
+                - img [ref=e1643]
+                - text: 24 MIN andando
+              - generic [ref=e1646]:
+                - generic [ref=e1647]:
+                  - generic [ref=e1648]: "#tapas"
+                  - generic [ref=e1649]: "#vistas al mar"
+                - link "Maps" [ref=e1650]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Punto%20y%20aparte%20Vera&query_place_id=ChIJw7fpaEYqew0RoGSh77gqALI
+                  - text: Maps
+                  - img [ref=e1651]
+          - generic [ref=e1655] [cursor=pointer]:
+            - generic [ref=e1658]:
+              - img [ref=e1659]
+              - img [ref=e1662]
+            - generic [ref=e1664]:
+              - heading "Bar Valero" [level=3] [ref=e1666]
+              - paragraph [ref=e1667]: Bar de tapas auténtico con excelente relación calidad-precio. A pocos minutos en coche, en Cuevas del Almanzora.
+              - generic [ref=e1669]:
+                - img [ref=e1670]
+                - text: 5 MIN en coche
+              - generic [ref=e1673]:
+                - generic [ref=e1674]:
+                  - generic [ref=e1675]: "#tapas"
+                  - generic [ref=e1676]: "#económico"
+                - link "Maps" [ref=e1677]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Bar%20Valero%20Vera&query_place_id=ChIJhTuFeaMrew0RNQj_eOHxHX4
+                  - text: Maps
+                  - img [ref=e1678]
+      - paragraph [ref=e1681]: Recomendaciones seleccionadas por el anfitrión
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e1687] [cursor=pointer]:
+    - img [ref=e1688]
+  - alert [ref=e1691]
+  - navigation [ref=e1692]:
+    - generic [ref=e1693]:
+      - button "Inicio" [ref=e1694] [cursor=pointer]:
+        - img [ref=e1695]
+        - generic [ref=e1698]: Inicio
+      - button "Info" [ref=e1699] [cursor=pointer]:
+        - img [ref=e1700]
+        - generic [ref=e1702]: Info
+      - button "Guía" [ref=e1703] [cursor=pointer]:
+        - img [ref=e1704]
+        - generic [ref=e1706]: Guía
+      - button "Comer" [ref=e1707] [cursor=pointer]:
+        - img [ref=e1709]
+        - generic [ref=e1714]: Comer
+      - button "SOS" [ref=e1715] [cursor=pointer]:
+        - img [ref=e1716]
+        - generic [ref=e1719]: SOS
+      - button "Contacto" [ref=e1720] [cursor=pointer]:
+        - img [ref=e1721]
+        - generic [ref=e1725]: Contacto
+  - button "Abrir asistente de ayuda" [ref=e1726]:
+    - img [ref=e1728]

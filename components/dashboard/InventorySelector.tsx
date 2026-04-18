@@ -205,9 +205,11 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
             <div className="space-y-8">
                 {filteredCategories.map(cat => (
                     <div key={cat.id} className="space-y-4">
-                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                            <cat.icon className="h-5 w-5 text-primary" />
-                            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">{cat.name}</h3>
+                        <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
+                            <div className="h-7 w-7 rounded-lg bg-[#316263]/10 flex items-center justify-center shrink-0">
+                                <cat.icon className="h-3.5 w-3.5 text-[#316263]" />
+                            </div>
+                            <h3 className="text-sm font-semibold text-slate-700">{cat.name}</h3>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -247,12 +249,12 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
                                             </label>
                                             <div className="flex items-center gap-2">
                                                 {item.isFromScanner && (
-                                                    <span className="text-[9px] font-bold text-amber-600 uppercase tracking-tight opacity-80">
-                                                        Auto-detectado
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">
+                                                        ✦ Auto-detectado
                                                     </span>
                                                 )}
                                                 {item.customContext && (
-                                                    <span className="text-[10px] text-slate-400 font-medium truncate max-w-[150px] italic">
+                                                    <span className="text-xs text-slate-400 truncate max-w-[150px] italic">
                                                         &quot;{item.customContext}&quot;
                                                     </span>
                                                 )}
@@ -265,7 +267,7 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-9 px-3 text-[11px] font-bold transition-all text-slate-400 hover:text-primary rounded-xl"
+                                                className="h-9 px-3 text-xs font-semibold transition-all text-slate-400 hover:text-primary rounded-xl"
                                                 onClick={() => startEditing(item)}
                                             >
                                                 <Edit2 className="h-3.5 w-3.5 mr-1" />
@@ -312,7 +314,7 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
                                 onChange={e => setTempContext(e.target.value)}
                                 autoFocus
                             />
-                            <p className="text-[11px] text-slate-400 italic">
+                            <p className="text-xs text-slate-400 italic">
                                 Esta información personaliza la guía del asistente IA.
                             </p>
                         </div>

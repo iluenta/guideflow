@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { Menu, Bot, MessageSquare } from 'lucide-react';
 import supabaseLoader from '@/lib/image-loader';
+import { getLayoutTheme } from '@/lib/themes';
 
 // ─── Carga estática: SOLO lo visible en el primer render ──────────────────────
 import { GuideHome } from '@/components/guide/GuideHome';
@@ -104,6 +105,23 @@ export function GuideViewContainer({
         branding?.layout_theme_id ||
         (branding?.computed_theme as any)?._layout_theme_id ||
         'modern';
+
+    const layoutTheme = getLayoutTheme(themeId);
+    const palette = layoutTheme.colors;
+    const portalThemeStyle: React.CSSProperties = {
+        '--color-primary':        palette.primary,
+        '--color-secondary':      palette.secondary,
+        '--color-accent':         palette.accent,
+        '--color-background':     palette.background,
+        '--color-surface':        palette.surface,
+        '--color-text-primary':   palette.text.primary,
+        '--color-text-secondary': palette.text.secondary,
+        '--color-muted-foreground': palette.text.muted,
+        '--color-teal':           palette.primary,
+        '--color-ink':            palette.text.primary,
+        '--font-heading':         layoutTheme.fonts.heading,
+        '--font-body':            layoutTheme.fonts.body,
+    } as React.CSSProperties;
 
     useMemo(() => {
         if (Object.keys(initialTranslations).length > 0) {
@@ -453,7 +471,7 @@ export function GuideViewContainer({
                 return <RulesView onBack={handleBack} rulesData={rulesData} checkinData={rulesCheckinData} oldRules={rulesSection?.data?.text} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
             }
             case 'manuals':
-                return <ManualsView onBack={handleBack} manuals={manuals} faqs={faqs} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
+                return <ManualsView onBack={handleBack} manuals={manuals} faqs={faqs} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} themeId={themeId} />;
             case 'check-in':
             case 'checkin': {
                 const checkinData = context?.find((c: any) => c.category === 'checkin')?.content || {};
@@ -471,19 +489,19 @@ export function GuideViewContainer({
             }
             case 'emergency': {
                 const contactsData = context?.find((c: any) => c.category === 'contacts')?.content || {};
-                return <EmergencyView onBack={handleBack} contactsData={contactsData} hostName={welcomeData?.host_name || labelHostNameFallback} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
+                return <EmergencyView onBack={handleBack} contactsData={contactsData} hostName={welcomeData?.host_name || labelHostNameFallback} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} themeId={themeId} />;
             }
             case 'house-info':
-                return <HouseInfoView onBack={handleBack} property={property} welcomeData={welcomeData} contactsData={contactsData} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
+                return <HouseInfoView onBack={handleBack} property={property} welcomeData={welcomeData} contactsData={contactsData} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} themeId={themeId} />;
             case 'eat':
-                return <RecommendationsView onBack={handleBack} recommendations={recommendations} group="eat" currentLanguage={language} onLanguageChange={setLanguage} city={property.city} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} initialRecId={navigationPayload?.recId} />;
+                return <RecommendationsView onBack={handleBack} recommendations={recommendations} group="eat" currentLanguage={language} onLanguageChange={setLanguage} city={property.city} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} initialRecId={navigationPayload?.recId} themeId={themeId} />;
             case 'do':
             case 'leisure':
-                return <RecommendationsView onBack={handleBack} recommendations={recommendations} group="do" currentLanguage={language} onLanguageChange={setLanguage} city={property.city} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} initialRecId={navigationPayload?.recId} />;
+                return <RecommendationsView onBack={handleBack} recommendations={recommendations} group="do" currentLanguage={language} onLanguageChange={setLanguage} city={property.city} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} initialRecId={navigationPayload?.recId} themeId={themeId} />;
             case 'shopping':
             case 'shop':
             case 'compras':
-                return <RecommendationsView onBack={handleBack} recommendations={recommendations} group="shopping" currentLanguage={language} onLanguageChange={setLanguage} city={property.city} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} initialRecId={navigationPayload?.recId} />;
+                return <RecommendationsView onBack={handleBack} recommendations={recommendations} group="shopping" currentLanguage={language} onLanguageChange={setLanguage} city={property.city} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} initialRecId={navigationPayload?.recId} themeId={themeId} />;
             case 'explore':
                 return (
                     <div className="min-h-screen">
@@ -552,7 +570,7 @@ export function GuideViewContainer({
                 </main>
             </div>
             {mounted && createPortal(
-                <>
+                <div data-theme={themeId} style={portalThemeStyle}>
                     <BottomNav
                         activeTab={activeTab}
                         onTabChange={handleTabChange}
@@ -583,6 +601,7 @@ export function GuideViewContainer({
                             initialOpen={true}
                             initialQuery={pendingChatQuery}
                             guestSessionId={guestSessionId || undefined}
+                            themeId={themeId}
                         />
                     ) : (
                         <button
@@ -597,7 +616,7 @@ export function GuideViewContainer({
                             </div>
                         </button>
                     )}
-                </>,
+                </div>,
                 document.body
             )}
         </>

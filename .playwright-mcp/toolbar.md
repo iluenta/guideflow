@@ -1,0 +1,365 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - link "GuideFlow" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img [ref=e6]
+          - generic [ref=e12]: GuideFlow
+        - button [ref=e13]:
+          - img [ref=e14]
+      - navigation [ref=e17]:
+        - list [ref=e18]:
+          - listitem [ref=e1420]:
+            - link "Inicio" [ref=e1421] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e1422]
+              - generic [ref=e1425]: Inicio
+          - listitem [ref=e1426]:
+            - link "Propiedades" [ref=e1427] [cursor=pointer]:
+              - /url: /dashboard/properties
+              - img [ref=e1428]
+              - generic [ref=e1432]: Propiedades
+          - listitem [ref=e1434]:
+            - link "Reservas" [ref=e1435] [cursor=pointer]:
+              - /url: /dashboard/bookings
+              - img [ref=e1436]
+              - generic [ref=e1439]: Reservas
+          - listitem [ref=e1440]:
+            - link "Calendario" [ref=e1441] [cursor=pointer]:
+              - /url: /dashboard/calendar
+              - img [ref=e1442]
+              - generic [ref=e1444]: Calendario
+          - listitem [ref=e1445]:
+            - link "Analiticas" [ref=e1446] [cursor=pointer]:
+              - /url: /dashboard/analytics
+              - img [ref=e1447]
+              - generic [ref=e1449]: Analiticas
+          - listitem [ref=e1450]:
+            - link "Seguridad" [ref=e1451] [cursor=pointer]:
+              - /url: /dashboard/security
+              - img [ref=e1452]
+              - generic [ref=e1455]: Seguridad
+          - listitem [ref=e1456]:
+            - link "Ajustes" [ref=e1457] [cursor=pointer]:
+              - /url: /dashboard/settings
+              - img [ref=e1458]
+              - generic [ref=e1461]: Ajustes
+    - generic [ref=e61]:
+      - banner [ref=e62]:
+        - link "GuideFlow" [ref=e64] [cursor=pointer]:
+          - /url: /
+          - img [ref=e65]
+          - generic [ref=e71]: GuideFlow
+        - generic [ref=e72]:
+          - button [ref=e73]:
+            - img
+          - button [ref=e75]:
+            - generic [ref=e76]:
+              - img
+      - main [ref=e77]:
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - generic [ref=e80]:
+              - heading "Mis Propiedades" [level=1] [ref=e81]
+              - paragraph [ref=e82]: Gestiona tus alojamientos y sus guías digitales.
+            - link "Nueva Propiedad" [ref=e83] [cursor=pointer]:
+              - /url: /dashboard/properties/new
+              - img
+              - text: Nueva Propiedad
+          - generic [ref=e84]:
+            - generic [ref=e85]:
+              - button "Todas 27" [ref=e195]:
+                - text: Todas
+                - generic [ref=e196]: "27"
+              - button "Activas 18" [ref=e197]:
+                - text: Activas
+                - generic [ref=e198]: "18"
+              - button "Borradores 6" [ref=e199]:
+                - text: Borradores
+                - generic [ref=e200]: "6"
+              - button "Archivadas 3" [ref=e201]:
+                - text: Archivadas
+                - generic [ref=e202]: "3"
+            - generic [ref=e90]:
+              - generic [ref=e91]:
+                - img [ref=e92]
+                - textbox "Buscar propiedad..." [ref=e95]
+              - generic [ref=e97]:
+                - button [ref=e98]
+                - button [active] [ref=e104]
+          - generic [ref=e106]:
+            - generic [ref=e1462]:
+              - img "Villa Franciscanos" [ref=e1464]
+              - generic [ref=e1465]:
+                - generic [ref=e1466]
+                - generic [ref=e1470]
+              - generic [ref=e1497]:
+                - link [ref=e1498] [cursor=pointer]:
+                  - /url: /dashboard/properties/ea80d2ce-4085-4020-80a5-10d1cd1f3b02/setup
+                - button [ref=e1499]
+            - generic [ref=e1500]:
+              - img [ref=e1503]
+              - generic [ref=e1506]:
+                - generic [ref=e1507]
+                - generic [ref=e1511]
+              - generic [ref=e1538]:
+                - link [ref=e1539] [cursor=pointer]:
+                  - /url: /dashboard/properties/8638a345-deea-42fd-883c-8d4dba82487d/setup
+                - button [ref=e1540]
+            - generic [ref=e1541]:
+              - img "villa juani" [ref=e1543]
+              - generic [ref=e1544]:
+                - generic [ref=e1545]
+                - generic [ref=e1549]
+              - generic [ref=e1576]:
+                - link [ref=e1577] [cursor=pointer]:
+                  - /url: /dashboard/properties/9faeea40-ac50-48ca-9c19-7917b4d20691/setup
+                - button [ref=e1578]
+            - generic [ref=e1579]:
+              - img "Lavapies Hosting" [ref=e1581]
+              - generic [ref=e1582]:
+                - generic [ref=e1583]
+                - generic [ref=e1587]
+              - generic [ref=e1614]:
+                - link [ref=e1615] [cursor=pointer]:
+                  - /url: /dashboard/properties/b43255cc-7cfa-41ff-a771-b5ab13eec460/setup
+                - button [ref=e1616]
+            - generic [ref=e1617]:
+              - img "Casa Honda" [ref=e1619]
+              - generic [ref=e1620]:
+                - generic [ref=e1621]
+                - generic [ref=e1625]
+              - generic [ref=e1652]:
+                - link [ref=e1653] [cursor=pointer]:
+                  - /url: /dashboard/properties/ae0fbb43-e232-409c-9dd0-14137234f127/setup
+                - button [ref=e1654]
+            - generic [ref=e1655]:
+              - img "dfgdfg" [ref=e1657]
+              - generic [ref=e1658]:
+                - generic [ref=e1659]
+                - generic [ref=e1663]
+              - generic [ref=e1690]:
+                - link [ref=e1691] [cursor=pointer]:
+                  - /url: /dashboard/properties/28088cce-41a6-4bfa-a72e-66c796874fdb/setup
+                - button [ref=e1692]
+            - generic [ref=e1693]:
+              - img "Villa Palmera" [ref=e1695]
+              - generic [ref=e1696]:
+                - generic [ref=e1697]
+                - generic [ref=e1701]
+              - generic [ref=e1728]:
+                - link [ref=e1729] [cursor=pointer]:
+                  - /url: /dashboard/properties/df6d3d75-26f1-4e85-99f0-c9f4f494abf3/setup
+                - button [ref=e1730]
+            - generic [ref=e1731]:
+              - img "Maria Antonia" [ref=e1733]
+              - generic [ref=e1734]:
+                - generic [ref=e1735]
+                - generic [ref=e1739]
+              - generic [ref=e1766]:
+                - link [ref=e1767] [cursor=pointer]:
+                  - /url: /dashboard/properties/06fe9d69-b372-42ec-888c-3c91cf95bbf1/setup
+                - button [ref=e1768]
+            - generic [ref=e1769]:
+              - img "marijuani" [ref=e1771]
+              - generic [ref=e1772]:
+                - generic [ref=e1773]
+                - generic [ref=e1777]
+              - generic [ref=e1804]:
+                - link [ref=e1805] [cursor=pointer]:
+                  - /url: /dashboard/properties/a935818d-24e4-49c4-9edf-5b090586a259/setup
+                - button [ref=e1806]
+            - generic [ref=e1807]:
+              - img "maripepi" [ref=e1809]
+              - generic [ref=e1810]:
+                - generic [ref=e1811]
+                - generic [ref=e1815]
+              - generic [ref=e1842]:
+                - link [ref=e1843] [cursor=pointer]:
+                  - /url: /dashboard/properties/6e02d03f-61f2-4c6f-a119-33bd37b36be3/setup
+                - button [ref=e1844]
+            - generic [ref=e1845]:
+              - img "Villa Enrique" [ref=e1847]
+              - generic [ref=e1848]:
+                - generic [ref=e1849]
+                - generic [ref=e1853]
+              - generic [ref=e1880]:
+                - link [ref=e1881] [cursor=pointer]:
+                  - /url: /dashboard/properties/c77e2c17-7c57-45ab-8abc-79e6b84fa01c/setup
+                - button [ref=e1882]
+            - generic [ref=e1883]:
+              - img [ref=e1886]
+              - generic [ref=e1889]:
+                - generic [ref=e1890]
+                - generic [ref=e1894]
+              - generic [ref=e1921]:
+                - link [ref=e1922] [cursor=pointer]:
+                  - /url: /dashboard/properties/12906399-0000-4943-812e-6eadfa843339/setup
+                - button [ref=e1923]
+            - generic [ref=e1924]:
+              - img [ref=e1927]
+              - generic [ref=e1930]:
+                - generic [ref=e1931]
+                - generic [ref=e1935]
+              - generic [ref=e1962]:
+                - link [ref=e1963] [cursor=pointer]:
+                  - /url: /dashboard/properties/01076d04-b577-473b-a8ef-acf23b54429f/setup
+                - button [ref=e1964]
+            - generic [ref=e1965]:
+              - img [ref=e1968]
+              - generic [ref=e1971]:
+                - generic [ref=e1972]
+                - generic [ref=e1976]
+              - generic [ref=e2003]:
+                - link [ref=e2004] [cursor=pointer]:
+                  - /url: /dashboard/properties/9df727ae-139a-4538-910e-de9cfe46bbc3/setup
+                - button [ref=e2005]
+            - generic [ref=e2006]:
+              - img "KKKKKK" [ref=e2008]
+              - generic [ref=e2009]:
+                - generic [ref=e2010]
+                - generic [ref=e2014]
+              - generic [ref=e2041]:
+                - link [ref=e2042] [cursor=pointer]:
+                  - /url: /dashboard/properties/b79d2694-7c85-4bb0-9f03-d9413ffec6db/setup
+                - button [ref=e2043]
+            - generic [ref=e2044]:
+              - img [ref=e2047]
+              - generic [ref=e2050]:
+                - generic [ref=e2051]
+                - generic [ref=e2055]
+              - generic [ref=e2082]:
+                - link [ref=e2083] [cursor=pointer]:
+                  - /url: /dashboard/properties/805c4670-8b4a-4083-92f1-51e8d1622de5/setup
+                - button [ref=e2084]
+            - generic [ref=e2085]:
+              - img [ref=e2088]
+              - generic [ref=e2091]:
+                - generic [ref=e2092]
+                - generic [ref=e2096]
+              - generic [ref=e2123]:
+                - link [ref=e2124] [cursor=pointer]:
+                  - /url: /dashboard/properties/d63d15f9-593b-4d1d-a3e4-343ea5d54acf/setup
+                - button [ref=e2125]
+            - generic [ref=e2126]:
+              - img "zzzzzz" [ref=e2128]
+              - generic [ref=e2129]:
+                - generic [ref=e2130]
+                - generic [ref=e2134]
+              - generic [ref=e2161]:
+                - link [ref=e2162] [cursor=pointer]:
+                  - /url: /dashboard/properties/125474e6-fa20-46e0-bf03-c37877fceec4/setup
+                - button [ref=e2163]
+            - generic [ref=e2164]:
+              - img "VILLASOL" [ref=e2166]
+              - generic [ref=e2167]:
+                - generic [ref=e2168]
+                - generic [ref=e2172]
+              - generic [ref=e2199]:
+                - link [ref=e2200] [cursor=pointer]:
+                  - /url: /dashboard/properties/d3af5f53-7a16-410b-a84c-0cd20122529a/setup
+                - button [ref=e2201]
+            - generic [ref=e2202]:
+              - img "VillaMACARENA" [ref=e2204]
+              - generic [ref=e2205]:
+                - generic [ref=e2206]
+                - generic [ref=e2210]
+              - generic [ref=e2237]:
+                - link [ref=e2238] [cursor=pointer]:
+                  - /url: /dashboard/properties/cb08f3d7-51f9-4485-8be2-d7ee98b7d6b8/setup
+                - button [ref=e2239]
+            - generic [ref=e2240]:
+              - img "soniamar" [ref=e2242]
+              - generic [ref=e2243]:
+                - generic [ref=e2244]
+                - generic [ref=e2248]
+              - generic [ref=e2275]:
+                - link [ref=e2276] [cursor=pointer]:
+                  - /url: /dashboard/properties/ce9b6177-b54a-4506-9815-577f9db98d7d/setup
+                - button [ref=e2277]
+            - generic [ref=e2278]:
+              - img "FuenteSol" [ref=e2280]
+              - generic [ref=e2281]:
+                - generic [ref=e2282]
+                - generic [ref=e2286]
+              - generic [ref=e2313]:
+                - link [ref=e2314] [cursor=pointer]:
+                  - /url: /dashboard/properties/1a434f7f-102f-440a-9820-5ec07f12a059/setup
+                - button [ref=e2315]
+            - generic [ref=e2316]:
+              - img "Verasol" [ref=e2318]
+              - generic [ref=e2319]:
+                - generic [ref=e2320]
+                - generic [ref=e2324]
+              - generic [ref=e2351]:
+                - link [ref=e2352] [cursor=pointer]:
+                  - /url: /dashboard/properties/b68f1e4a-817a-4172-9f92-26134ddb02a0/setup
+                - button [ref=e2353]
+            - generic [ref=e2354]:
+              - img "villamar" [ref=e2356]
+              - generic [ref=e2357]:
+                - generic [ref=e2358]
+                - generic [ref=e2362]
+              - generic [ref=e2389]:
+                - link [ref=e2390] [cursor=pointer]:
+                  - /url: /dashboard/properties/078c1821-ae3e-4baa-9bf4-06b2eac109b6/setup
+                - button [ref=e2391]
+            - generic [ref=e2392]:
+              - img "jjj" [ref=e2394]
+              - generic [ref=e2395]:
+                - generic [ref=e2396]
+                - generic [ref=e2400]
+              - generic [ref=e2427]:
+                - link [ref=e2428] [cursor=pointer]:
+                  - /url: /dashboard/properties/37159afd-0eb0-498f-a756-38eb487527e7/setup
+                - button [ref=e2429]
+            - generic [ref=e2430]:
+              - img [ref=e2433]
+              - generic [ref=e2436]:
+                - generic [ref=e2437]
+                - generic [ref=e2441]
+              - generic [ref=e2468]:
+                - link [ref=e2469] [cursor=pointer]:
+                  - /url: /dashboard/properties/0fa170d4-7a49-481b-ab08-5eb00aec7b34/setup
+                - button [ref=e2470]
+            - generic [ref=e2471]:
+              - img "veratespera" [ref=e2473]
+              - generic [ref=e2474]:
+                - generic [ref=e2475]
+                - generic [ref=e2479]
+              - generic [ref=e2506]:
+                - link [ref=e2507] [cursor=pointer]:
+                  - /url: /dashboard/properties/8b16ae1d-d061-4b9d-8fe8-06a1b058c580/setup
+                - button [ref=e2508]
+            - link "Añadir Propiedad Configura un nuevo alojamiento" [ref=e1345] [cursor=pointer]:
+              - /url: /dashboard/properties/new
+              - img [ref=e2509]
+              - generic [ref=e1348]:
+                - heading "Añadir Propiedad" [level=3] [ref=e1349]
+                - paragraph [ref=e1350]: Configura un nuevo alojamiento
+      - navigation [ref=e123]:
+        - link "Inicio" [ref=e124] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e126]
+          - generic [ref=e129]: Inicio
+        - link "Propiedades" [ref=e130] [cursor=pointer]:
+          - /url: /dashboard/properties
+          - img [ref=e132]
+          - generic [ref=e136]: Propiedades
+        - link "Reservas" [ref=e137] [cursor=pointer]:
+          - /url: /dashboard/bookings
+          - img [ref=e139]
+          - generic [ref=e142]: Reservas
+        - link "Calendario" [ref=e143] [cursor=pointer]:
+          - /url: /dashboard/calendar
+          - img [ref=e145]
+          - generic [ref=e147]: Calendario
+        - link "Analiticas" [ref=e148] [cursor=pointer]:
+          - /url: /dashboard/analytics
+          - img [ref=e150]
+          - generic [ref=e152]: Analiticas
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e1356] [cursor=pointer]:
+    - img [ref=e1357]
+  - alert [ref=e1360]

@@ -193,6 +193,7 @@ export function GuideHome({
                     onNavigate={onNavigate}
                     accessToken={accessToken}
                     propertyId={propertyId}
+                    themeId={themeId}
                     theme={t}
                 />
 

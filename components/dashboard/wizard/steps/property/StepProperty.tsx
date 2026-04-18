@@ -69,7 +69,7 @@ export default function StepProperty({ value }: { value?: string }) {
 
                 {/* ── Imagen de portada ─────────────────────────── */}
                 <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
+                    <Label className="text-sm font-medium text-slate-600 ml-1">
                         Imagen de Portada
                     </Label>
                     <div
@@ -142,7 +142,7 @@ export default function StepProperty({ value }: { value?: string }) {
                 <div className="space-y-2">
                     <div className="flex items-center justify-between ml-1">
                         <div className="flex items-center gap-2">
-                            <Label className="text-xs font-bold text-slate-700 uppercase tracking-widest">
+                            <Label className="text-sm font-semibold text-slate-700">
                                 Nombre del Alojamiento
                             </Label>
                             <span className="text-[10px] font-bold text-white bg-[#316263] px-2 py-0.5 rounded-full uppercase tracking-wide">
@@ -182,7 +182,7 @@ export default function StepProperty({ value }: { value?: string }) {
                 <div className="space-y-2">
                     <div className="flex items-center justify-between ml-1">
                         <div className="flex items-center gap-2">
-                            <Label className="text-xs font-bold text-slate-700 uppercase tracking-widest">
+                            <Label className="text-sm font-semibold text-slate-700">
                                 Identificador URL
                             </Label>
                             <span className="text-[10px] font-bold text-white bg-[#316263] px-2 py-0.5 rounded-full uppercase tracking-wide">
@@ -252,7 +252,7 @@ export default function StepProperty({ value }: { value?: string }) {
                         { label: 'Planta', key: 'floor', type: 'text' },
                     ].map(({ label, key, type }) => (
                         <div key={key} className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center block">{label}</Label>
+                            <Label className="text-sm font-medium text-slate-500 text-center block">{label}</Label>
                             <Input
                                 type={type}
                                 placeholder={type === 'text' ? 'Bajo' : undefined}
@@ -289,7 +289,7 @@ export default function StepProperty({ value }: { value?: string }) {
 
                     {data.property?.has_parking && (
                         <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Número de Plaza o Ubicación</Label>
+                            <Label className="text-sm font-medium text-slate-600 ml-1">Número de Plaza o Ubicación</Label>
                             <Input
                                 placeholder="Ej: Plaza 42 (Planta -1)"
                                 className="h-11 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-[#316263]/20"

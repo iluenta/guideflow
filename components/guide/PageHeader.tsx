@@ -25,7 +25,7 @@ export function PageHeader({
                 <ChevronLeft className="w-5 h-5 text-primary" />
             </button>
 
-            <h1 className="font-serif text-xl font-bold text-slate-800 tracking-tight max-w-[60%] truncate">
+            <h1 className="text-xl font-bold text-[var(--color-text-primary)] tracking-tight max-w-[60%] truncate" style={{ fontFamily: 'var(--font-heading)' }}>
                 {title.toUpperCase()}
             </h1>
 

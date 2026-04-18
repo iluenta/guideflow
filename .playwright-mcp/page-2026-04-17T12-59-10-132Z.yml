@@ -1,0 +1,159 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - link "GuideFlow" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img [ref=e6]
+        - generic [ref=e12]: GuideFlow
+      - navigation [ref=e13]:
+        - list [ref=e14]:
+          - listitem [ref=e15]:
+            - link "Inicio" [ref=e16] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e17]
+              - generic [ref=e20]: Inicio
+          - listitem [ref=e21]:
+            - link "Propiedades" [ref=e22] [cursor=pointer]:
+              - /url: /dashboard/properties
+              - img [ref=e23]
+              - generic [ref=e27]: Propiedades
+          - listitem [ref=e28]:
+            - link "Reservas" [ref=e29] [cursor=pointer]:
+              - /url: /dashboard/bookings
+              - img [ref=e30]
+              - generic [ref=e33]: Reservas
+          - listitem [ref=e34]:
+            - link "Calendario" [ref=e35] [cursor=pointer]:
+              - /url: /dashboard/calendar
+              - img [ref=e36]
+              - generic [ref=e38]: Calendario
+          - listitem [ref=e39]:
+            - link "Analiticas" [ref=e40] [cursor=pointer]:
+              - /url: /dashboard/analytics
+              - img [ref=e41]
+              - generic [ref=e43]: Analiticas
+          - listitem [ref=e44]:
+            - link "Seguridad" [ref=e45] [cursor=pointer]:
+              - /url: /dashboard/security
+              - img [ref=e46]
+              - generic [ref=e49]: Seguridad
+          - listitem [ref=e50]:
+            - link "Ajustes" [ref=e51] [cursor=pointer]:
+              - /url: /dashboard/settings
+              - img [ref=e52]
+              - generic [ref=e55]: Ajustes
+      - generic [ref=e57]:
+        - img [ref=e59]
+        - generic [ref=e62]:
+          - paragraph [ref=e63]: Juan Garcia
+          - paragraph [ref=e64]: veratespera@gmail.com
+      - button "Colapsar sidebar" [ref=e65]:
+        - img [ref=e66]
+    - generic [ref=e68]:
+      - banner [ref=e69]:
+        - generic [ref=e70]:
+          - button [ref=e71]:
+            - img
+          - button [ref=e73]:
+            - generic [ref=e74]:
+              - img
+      - main [ref=e75]:
+        - generic [ref=e78]:
+          - generic [ref=e81]:
+            - generic [ref=e82]:
+              - button "Abrir menú de secciones" [ref=e83]:
+                - img [ref=e84]
+              - navigation [ref=e85]:
+                - link "Propiedades" [ref=e86] [cursor=pointer]:
+                  - /url: /dashboard/properties
+                - img [ref=e87]
+                - generic [ref=e89]: Nueva Propiedad
+            - generic [ref=e90]:
+              - generic [ref=e91]:
+                - generic [ref=e92]:
+                  - img [ref=e93]
+                  - generic [ref=e96]: 0%
+                - generic [ref=e97]:
+                  - generic [ref=e98]: Configuración
+                  - generic [ref=e99]: Completada al 0%
+              - button "Ver Guía" [ref=e100]:
+                - generic [ref=e101]: Ver Guía
+                - img
+          - generic [ref=e102]:
+            - complementary [ref=e103]:
+              - generic [ref=e104]:
+                - navigation [ref=e105]:
+                  - button "Información General" [ref=e106]:
+                    - generic [ref=e107]:
+                      - img [ref=e109]
+                      - generic [ref=e112]: Información General
+                    - img [ref=e113]
+                  - button "Estética y Diseño" [ref=e115]:
+                    - generic [ref=e116]:
+                      - img [ref=e118]
+                      - generic [ref=e124]: Estética y Diseño
+                    - img [ref=e125]
+                  - button "Ubicación y Transporte" [ref=e127]:
+                    - generic [ref=e128]:
+                      - img [ref=e130]
+                      - generic [ref=e133]: Ubicación y Transporte
+                    - img [ref=e134]
+                  - button "Mensaje de Bienvenida" [ref=e136]:
+                    - generic [ref=e137]:
+                      - img [ref=e139]
+                      - generic [ref=e141]: Mensaje de Bienvenida
+                    - img [ref=e142]
+                  - button "Números de Contacto" [ref=e144]:
+                    - generic [ref=e145]:
+                      - img [ref=e147]
+                      - generic [ref=e149]: Números de Contacto
+                    - img [ref=e150]
+                  - button "Instrucciones de Llegada" [ref=e152]:
+                    - generic [ref=e153]:
+                      - img [ref=e155]
+                      - generic [ref=e159]: Instrucciones de Llegada
+                    - img [ref=e160]
+                  - button "Normas de la Casa" [ref=e162]:
+                    - generic [ref=e163]:
+                      - img [ref=e165]
+                      - generic [ref=e168]: Normas de la Casa
+                    - img [ref=e169]
+                  - button "Tecnología y Conectividad" [ref=e171]:
+                    - generic [ref=e172]:
+                      - img [ref=e174]
+                      - generic [ref=e178]: Tecnología y Conectividad
+                    - img [ref=e179]
+                  - button "Escáner Visual IA" [ref=e181]:
+                    - generic [ref=e182]:
+                      - img [ref=e184]
+                      - generic [ref=e187]: Escáner Visual IA
+                    - img [ref=e188]
+                  - button "Manuales de Aparatos" [ref=e190]:
+                    - generic [ref=e191]:
+                      - img [ref=e193]
+                      - generic [ref=e196]: Manuales de Aparatos
+                    - img [ref=e197]
+                  - button "Inventario de Aparatos" [ref=e199]:
+                    - generic [ref=e200]:
+                      - img [ref=e202]
+                      - generic [ref=e205]: Inventario de Aparatos
+                    - img [ref=e206]
+                  - button "Recomendaciones Locales" [ref=e208]:
+                    - generic [ref=e209]:
+                      - img [ref=e211]
+                      - generic [ref=e214]: Recomendaciones Locales
+                    - img [ref=e215]
+                  - button "Dudas Frecuentes" [ref=e217]:
+                    - generic [ref=e218]:
+                      - img [ref=e220]
+                      - generic [ref=e223]: Dudas Frecuentes
+                    - img [ref=e224]
+                - generic [ref=e228]:
+                  - heading "Plan Premium" [level=4] [ref=e229]
+                  - paragraph [ref=e230]: Guía Ilimitada Activa
+                  - button "Mejorar Plan" [ref=e231]
+            - main [ref=e233]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e240] [cursor=pointer]:
+    - img [ref=e241]
+  - alert [ref=e244]

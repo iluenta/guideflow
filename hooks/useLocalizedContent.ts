@@ -194,6 +194,12 @@ export function useLocalizedContent(
     );
     const [isTranslating, setIsTranslating] = useState(!isSpanish && !translationCache[cacheKey]);
 
+    // Effect 0: keep content in sync when text changes (Spanish never goes through effects 1/2)
+    useEffect(() => {
+        if (isSpanish) setContent(text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [text]);
+
     // Effect 1: listen for eager-prefetch updates that arrive AFTER this component mounts.
     // Stable deps — never re-runs unless cacheKey or language changes.
     useEffect(() => {

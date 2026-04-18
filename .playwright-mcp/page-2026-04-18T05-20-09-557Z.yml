@@ -1,0 +1,203 @@
+- generic [active] [ref=e1]:
+  - main [ref=e4]:
+    - generic [ref=e1732]:
+      - generic [ref=e1733]:
+        - button [ref=e1734]:
+          - img [ref=e1735]
+        - heading "EMERGENCIAS" [level=1] [ref=e1737]
+        - button "es" [ref=e1738]:
+          - generic [ref=e1739]: es
+          - img
+      - generic [ref=e1740]:
+        - generic [ref=e1741]:
+          - img [ref=e1743]
+          - generic [ref=e1745]:
+            - heading "Servicio Nacional" [level=2] [ref=e1746]
+            - paragraph [ref=e1747]: En caso de emergencia, llama al 112
+        - generic [ref=e1748]:
+          - heading "Soporte Directo" [level=3] [ref=e1749]
+          - generic [ref=e1750]:
+            - generic [ref=e1752]:
+              - img [ref=e1754]
+              - generic [ref=e1756]:
+                - generic [ref=e1757]: Maden
+                - generic [ref=e1758]: Atención al huésped
+            - generic [ref=e1759]:
+              - link [ref=e1760] [cursor=pointer]:
+                - /url: https://wa.me/666112233
+                - img [ref=e1761]
+              - link [ref=e1763] [cursor=pointer]:
+                - /url: tel:666112233
+                - img [ref=e1764]
+        - generic [ref=e1766]:
+          - heading "Servicios Locales" [level=3] [ref=e1767]
+          - generic [ref=e1768]:
+            - generic [ref=e1772]:
+              - img [ref=e1774]
+              - generic [ref=e1776]:
+                - generic [ref=e1777]:
+                  - heading "Policía Nacional" [level=3] [ref=e1778]
+                  - link "091" [ref=e1779] [cursor=pointer]:
+                    - /url: tel:091
+                    - img [ref=e1780]
+                    - generic [ref=e1782]: "091"
+                - generic [ref=e1783]:
+                  - img [ref=e1784]
+                  - generic [ref=e1787]: Servicio Nacional
+            - generic [ref=e1791]:
+              - img [ref=e1793]
+              - generic [ref=e1795]:
+                - generic [ref=e1796]:
+                  - heading "Policía Local" [level=3] [ref=e1797]
+                  - link "092" [ref=e1798] [cursor=pointer]:
+                    - /url: tel:092
+                    - img [ref=e1799]
+                    - generic [ref=e1801]: "092"
+                - generic [ref=e1802]:
+                  - img [ref=e1803]
+                  - generic [ref=e1806]: Servicio Local
+            - generic [ref=e1810]:
+              - img [ref=e1812]
+              - generic [ref=e1814]:
+                - generic [ref=e1815]:
+                  - heading "Bomberos" [level=3] [ref=e1816]
+                  - link "080" [ref=e1817] [cursor=pointer]:
+                    - /url: tel:080
+                    - img [ref=e1818]
+                    - generic [ref=e1820]: "080"
+                - generic [ref=e1821]:
+                  - img [ref=e1822]
+                  - generic [ref=e1825]: Servicio Nacional
+            - generic [ref=e1828]:
+              - generic [ref=e1829]:
+                - img [ref=e1831]
+                - generic [ref=e1834]:
+                  - heading "Hospital Público Comarcal la Inmaculada" [level=3] [ref=e1836]
+                  - generic [ref=e1837]:
+                    - img [ref=e1838]
+                    - generic [ref=e1841]: Av. de la Dra. Ana Parra, s/n, Huércal-Overa
+              - generic [ref=e1842]:
+                - link "Cómo llegar" [ref=e1843] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Av.%20de%20la%20Dra.%20Ana%20Parra%2C%20s%2Fn%2C%20Hu%C3%A9rcal-Overa
+                  - img [ref=e1845]
+                  - text: Cómo llegar
+                  - img [ref=e1847]
+                - link "950 02 90 00" [ref=e1849] [cursor=pointer]:
+                  - /url: tel:950029000
+                  - img [ref=e1850]
+                  - generic [ref=e1852]: 950 02 90 00
+            - generic [ref=e1855]:
+              - generic [ref=e1856]:
+                - img [ref=e1858]
+                - generic [ref=e1861]:
+                  - heading "Centro De Salud Vera" [level=3] [ref=e1863]
+                  - generic [ref=e1864]:
+                    - img [ref=e1865]
+                    - generic [ref=e1868]: C. San Cleofas, 13, Vera
+              - generic [ref=e1869]:
+                - link "Cómo llegar" [ref=e1870] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=C.%20San%20Cleofas%2C%2013%2C%20Vera
+                  - img [ref=e1872]
+                  - text: Cómo llegar
+                  - img [ref=e1874]
+                - link "950 45 15 24" [ref=e1876] [cursor=pointer]:
+                  - /url: tel:950451524
+                  - img [ref=e1877]
+                  - generic [ref=e1879]: 950 45 15 24
+            - generic [ref=e1882]:
+              - generic [ref=e1883]:
+                - img [ref=e1885]
+                - generic [ref=e1888]:
+                  - heading "FARMACIA JUANA MARIA SOLER" [level=3] [ref=e1890]
+                  - generic [ref=e1891]:
+                    - img [ref=e1892]
+                    - generic [ref=e1895]: Centro Comercial Hispania, Av. Ciudad de Valencia, 2, Playas de Vera
+              - generic [ref=e1896]:
+                - link "Cómo llegar" [ref=e1897] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Centro%20Comercial%20Hispania%2C%20Av.%20Ciudad%20de%20Valencia%2C%202%2C%20Playas%20de%20Vera
+                  - img [ref=e1899]
+                  - text: Cómo llegar
+                  - img [ref=e1901]
+                - link "950 46 75 91" [ref=e1903] [cursor=pointer]:
+                  - /url: tel:950467591
+                  - img [ref=e1904]
+                  - generic [ref=e1906]: 950 46 75 91
+            - generic [ref=e1909]:
+              - generic [ref=e1910]:
+                - img [ref=e1912]
+                - generic [ref=e1917]:
+                  - heading "Vet Care Vera Plaza" [level=3] [ref=e1919]
+                  - generic [ref=e1920]:
+                    - img [ref=e1921]
+                    - generic [ref=e1924]: Av. Ciudad de Valencia
+              - generic [ref=e1925]:
+                - link "Cómo llegar" [ref=e1926] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Av.%20Ciudad%20de%20Valencia
+                  - img [ref=e1928]
+                  - text: Cómo llegar
+                  - img [ref=e1930]
+                - link "950 77 51 02" [ref=e1932] [cursor=pointer]:
+                  - /url: tel:950775102
+                  - img [ref=e1933]
+                  - generic [ref=e1935]: 950 77 51 02
+            - generic [ref=e1938]:
+              - generic [ref=e1939]:
+                - img [ref=e1941]
+                - generic [ref=e1945]:
+                  - heading "Taxi Vera Playa" [level=3] [ref=e1947]
+                  - generic [ref=e1948]:
+                    - img [ref=e1949]
+                    - generic [ref=e1952]: Av. Ciudad de Castellón, 18, Playas de Vera
+              - generic [ref=e1953]:
+                - link "Cómo llegar" [ref=e1954] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Av.%20Ciudad%20de%20Castell%C3%B3n%2C%2018%2C%20Playas%20de%20Vera
+                  - img [ref=e1956]
+                  - text: Cómo llegar
+                  - img [ref=e1958]
+                - link [ref=e1960] [cursor=pointer]:
+                  - /url: "tel:"
+                  - img [ref=e1961]
+            - generic [ref=e1965]:
+              - generic [ref=e1966]:
+                - img [ref=e1968]
+                - generic [ref=e1970]:
+                  - heading "Consorcio de Extinción de Incendios y Salvamento del Levante Almeriense" [level=3] [ref=e1972]
+                  - generic [ref=e1973]:
+                    - img [ref=e1974]
+                    - generic [ref=e1977]: Paraje Agua Nueva, 11, Turre
+              - generic [ref=e1978]:
+                - link "Cómo llegar" [ref=e1979] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/search/?api=1&query=Paraje%20Agua%20Nueva%2C%2011%2C%20Turre
+                  - img [ref=e1981]
+                  - text: Cómo llegar
+                  - img [ref=e1983]
+                - link "950 47 90 00" [ref=e1985] [cursor=pointer]:
+                  - /url: tel:950479000
+                  - img [ref=e1986]
+                  - generic [ref=e1988]: 950 47 90 00
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e1687] [cursor=pointer]:
+    - img [ref=e1688]
+  - alert [ref=e1691]
+  - navigation [ref=e1692]:
+    - generic [ref=e1693]:
+      - button "Inicio" [ref=e1694] [cursor=pointer]:
+        - img [ref=e1695]
+        - generic [ref=e1698]: Inicio
+      - button "Info" [ref=e1699] [cursor=pointer]:
+        - img [ref=e1700]
+        - generic [ref=e1702]: Info
+      - button "Guía" [ref=e1703] [cursor=pointer]:
+        - img [ref=e1704]
+        - generic [ref=e1706]: Guía
+      - button "Comer" [ref=e1707] [cursor=pointer]:
+        - img [ref=e1709]
+        - generic [ref=e1714]: Comer
+      - button "SOS" [ref=e1715] [cursor=pointer]:
+        - img [ref=e1716]
+        - generic [ref=e1719]: SOS
+      - button "Contacto" [ref=e1720] [cursor=pointer]:
+        - img [ref=e1721]
+        - generic [ref=e1725]: Contacto
+  - button "Abrir asistente de ayuda" [ref=e1726]:
+    - img [ref=e1728]

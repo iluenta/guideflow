@@ -1,0 +1,75 @@
+- generic [active] [ref=e1]:
+  - main [ref=e4]:
+    - generic [ref=e253]:
+      - generic [ref=e254]:
+        - button [ref=e255]:
+          - img [ref=e256]
+        - heading "GUÍA DE USO" [level=1] [ref=e258]
+        - button "es" [ref=e259]:
+          - generic [ref=e260]: es
+          - img
+      - generic [ref=e262]:
+        - paragraph [ref=e263]: GUÍAS DE USO
+        - generic [ref=e264]:
+          - button "¿Qué hago si pierdo las llaves de la casa?" [ref=e266]:
+            - img [ref=e268]
+            - paragraph [ref=e273]: ¿Qué hago si pierdo las llaves de la casa?
+            - img [ref=e275]
+          - button "¿Se ha ido la luz en el apartamento, qué hago?" [ref=e278]:
+            - img [ref=e280]
+            - paragraph [ref=e283]: ¿Se ha ido la luz en el apartamento, qué hago?
+            - img [ref=e285]
+          - button "¿Dónde tiro la basura y reciclaje?" [ref=e288]:
+            - img [ref=e290]
+            - paragraph [ref=e294]: ¿Dónde tiro la basura y reciclaje?
+            - img [ref=e296]
+          - button "¿Cómo es el procedimiento para hacer el check-out?" [ref=e299]:
+            - img [ref=e301]
+            - paragraph [ref=e305]: ¿Cómo es el procedimiento para hacer el check-out?
+            - img [ref=e307]
+          - button "¿Cómo informo cualquier daño?" [ref=e310]:
+            - img [ref=e312]
+            - paragraph [ref=e315]: ¿Cómo informo cualquier daño?
+            - img [ref=e317]
+          - button "Temperatura de la casa" [ref=e320]:
+            - img [ref=e322]
+            - paragraph [ref=e325]: Temperatura de la casa
+            - img [ref=e327]
+          - button "¿ Hay piscina en la urbanización ?" [ref=e330]:
+            - img [ref=e332]
+            - paragraph [ref=e337]: ¿ Hay piscina en la urbanización ?
+            - img [ref=e339]
+          - button "¿ Hay pistas de Padel o Tenis ?" [ref=e342]:
+            - img [ref=e344]
+            - paragraph [ref=e351]: ¿ Hay pistas de Padel o Tenis ?
+            - img [ref=e353]
+          - button "¿ Hay terraza en el apartamento ?" [ref=e356]:
+            - img [ref=e358]
+            - paragraph [ref=e365]: ¿ Hay terraza en el apartamento ?
+            - img [ref=e367]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e208] [cursor=pointer]:
+    - img [ref=e209]
+  - alert [ref=e212]
+  - navigation [ref=e213]:
+    - generic [ref=e214]:
+      - button "Inicio" [ref=e215] [cursor=pointer]:
+        - img [ref=e216]
+        - generic [ref=e219]: Inicio
+      - button "Info" [ref=e220] [cursor=pointer]:
+        - img [ref=e221]
+        - generic [ref=e223]: Info
+      - button "Guía" [ref=e224] [cursor=pointer]:
+        - img [ref=e226]
+        - generic [ref=e228]: Guía
+      - button "Comer" [ref=e229] [cursor=pointer]:
+        - img [ref=e230]
+        - generic [ref=e235]: Comer
+      - button "SOS" [ref=e236] [cursor=pointer]:
+        - img [ref=e237]
+        - generic [ref=e240]: SOS
+      - button "Contacto" [ref=e241] [cursor=pointer]:
+        - img [ref=e242]
+        - generic [ref=e246]: Contacto
+  - button "Abrir asistente de ayuda" [ref=e247]:
+    - img [ref=e249]

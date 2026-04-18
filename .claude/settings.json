@@ -62,7 +62,28 @@
       "Bash(node -e ' *)",
       "Bash(\" lib/chat/constants.ts | head -20)",
       "Bash(grep -n \"APPLIANCE_SYMBOLS_REFERENCE\\\\|\\\\\\\\\\\\\\\\`\" lib/chat/constants.ts | head -20)",
-      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('lib/chat/constants.ts','utf8'\\); const block=c.slice\\(c.indexOf\\('APPLIANCE_SYMBOLS_REFERENCE'\\),c.indexOf\\('FOOD_EXPANSION_MAP'\\)\\); const backtickEscapes=\\(block.match\\(/\\\\x60/g\\)||[]\\).length; console.log\\('Backticks remaining in block:', backtickEscapes\\); console.log\\('Block preview:'\\); console.log\\(block.slice\\(0,300\\)\\);\")"
+      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('lib/chat/constants.ts','utf8'\\); const block=c.slice\\(c.indexOf\\('APPLIANCE_SYMBOLS_REFERENCE'\\),c.indexOf\\('FOOD_EXPANSION_MAP'\\)\\); const backtickEscapes=\\(block.match\\(/\\\\x60/g\\)||[]\\).length; console.log\\('Backticks remaining in block:', backtickEscapes\\); console.log\\('Block preview:'\\); console.log\\(block.slice\\(0,300\\)\\);\")",
+      "Read(//c/Users/pedro.ramirez/.claude/**)",
+      "Bash(claude plugin *)",
+      "Bash(npm show *)",
+      "Bash(npx playwright *)",
+      "Bash(claude mcp *)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_tabs",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(curl -s \"http://localhost:3000\" -c /tmp/cookies.txt)",
+      "Bash(curl -s \"http://localhost:3000/login\" -c /tmp/gf_cookies.txt -w \"%{http_code}\" -o /dev/null)"
+    ],
+    "additionalDirectories": [
+      "C:\\Proyectos\\guideflow\\.claude"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "playwright"
+  ]
 }

@@ -42,7 +42,7 @@ export function WizardNavigation() {
         "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none",
         isLastStep
             ? "bg-emerald-600 hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-200"
-            : "bg-[#111827] hover:bg-[#1f2937] hover:shadow-xl hover:shadow-slate-300/50"
+            : "bg-[#316263] hover:bg-[#316263]/90 hover:shadow-xl hover:shadow-[#316263]/20"
     )
 
     return (

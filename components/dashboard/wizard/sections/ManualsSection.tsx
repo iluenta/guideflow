@@ -4,7 +4,8 @@ import React, { useState } from 'react'
 import {
     FileText, Sparkles, Trash2, Edit2, CheckCircle2,
     Droplets, ChefHat, Wind, Laptop, Lightbulb, Cpu,
-    ChevronDown, ChevronUp, RefreshCcw, Save, X, Loader2
+    ChevronDown, ChevronUp, RefreshCcw, Save, X, Loader2,
+    BookOpen, Clock
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
@@ -138,23 +139,32 @@ export function ManualsSection({
             )}
 
             {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-6 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
-                <div className="flex flex-col items-center justify-center text-center py-2 border-r border-slate-50">
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="text-xl font-black text-slate-900">{stats.total}</span>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">manuales</span>
+            <div className="grid grid-cols-3 gap-3 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center gap-3 px-2 border-r border-slate-100">
+                    <div className="h-9 w-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                        <BookOpen className="h-4 w-4 text-slate-500" />
+                    </div>
+                    <div>
+                        <span className="text-2xl font-black text-slate-900 leading-none block">{stats.total}</span>
+                        <span className="text-xs font-medium text-slate-400 mt-0.5 block">Manuales</span>
                     </div>
                 </div>
-                <div className="flex flex-col items-center justify-center text-center py-2 border-r border-slate-50">
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="text-xl font-black text-slate-900">{stats.edited}</span>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">editados</span>
+                <div className="flex items-center gap-3 px-2 border-r border-slate-100">
+                    <div className="h-9 w-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                        <Edit2 className="h-4 w-4 text-amber-500" />
+                    </div>
+                    <div>
+                        <span className="text-2xl font-black text-slate-900 leading-none block">{stats.edited}</span>
+                        <span className="text-xs font-medium text-slate-400 mt-0.5 block">Editados</span>
                     </div>
                 </div>
-                <div className="flex flex-col items-center justify-center text-center py-2">
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="text-xl font-black text-[#316263]">{stats.pending}</span>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">pendientes</span>
+                <div className="flex items-center gap-3 px-2">
+                    <div className="h-9 w-9 rounded-xl bg-[#316263]/10 flex items-center justify-center shrink-0">
+                        <Clock className="h-4 w-4 text-[#316263]" />
+                    </div>
+                    <div>
+                        <span className="text-2xl font-black text-[#316263] leading-none block">{stats.pending}</span>
+                        <span className="text-xs font-medium text-slate-400 mt-0.5 block">Pendientes</span>
                     </div>
                 </div>
             </div>
@@ -216,9 +226,6 @@ export function ManualsSection({
                                         </div>
                                         <div className="flex items-center gap-2 mt-2">
                                             {getStatusBadge(manual)}
-                                            {!manual.metadata?.is_revised && manual.metadata?.status !== 'reviewed' && (
-                                                <Badge variant="outline" className="bg-rose-50 text-rose-500 border-rose-100 py-1 px-3 rounded-full text-[10px] font-bold uppercase tracking-tight">Pendiente</Badge>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -245,7 +252,7 @@ export function ManualsSection({
                                         >
                                             <div className="space-y-4">
                                                 <div className="flex items-center justify-between">
-                                                    <h5 className="text-xs font-black text-slate-900 uppercase tracking-widest">instrucciones (generadas por ia)</h5>
+                                                    <h5 className="text-sm font-semibold text-slate-700">Instrucciones <span className="text-xs font-normal text-slate-400">(generadas por IA)</span></h5>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
@@ -265,14 +272,14 @@ export function ManualsSection({
                                             </div>
 
                                             <div className="space-y-4">
-                                                <h5 className="text-xs font-black text-slate-900 uppercase tracking-widest">notas del propietario</h5>
+                                                <h5 className="text-sm font-semibold text-slate-700">Notas del propietario</h5>
                                                 <Textarea
                                                     value={editNotes}
                                                     onChange={e => setEditNotes(e.target.value)}
                                                     placeholder="Añade detalles específicos de este aparato en tu casa..."
                                                     className="min-h-[100px] rounded-xl bg-slate-50/50 border-slate-100 focus:ring-2 focus:ring-[#316263]/20 p-5 text-xs font-medium leading-relaxed"
                                                 />
-                                                <p className="text-[10px] text-slate-400 font-medium">Tus notas aparecerán destacadas en la guía del huésped.</p>
+                                                <p className="text-xs text-slate-400">Tus notas aparecerán destacadas en la guía del huésped.</p>
                                             </div>
 
                                             <div className="flex items-center justify-end gap-4 pt-4">
@@ -297,13 +304,13 @@ export function ManualsSection({
                                 </AnimatePresence>
 
                                 {!isExpanded && (
-                                    <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+                                    <div className="flex items-center justify-between pt-4 mt-2 border-t border-slate-50">
                                         <Button
                                             onClick={() => handleExpand(manual)}
-                                            variant="ghost"
-                                            className="text-slate-400 hover:text-slate-900 font-bold flex items-center gap-2 px-0 hover:bg-transparent"
+                                            variant="outline"
+                                            className="h-9 px-4 rounded-xl border-[#316263]/20 text-[#316263] hover:bg-[#316263]/5 hover:border-[#316263]/40 font-semibold text-xs gap-2"
                                         >
-                                            <Edit2 className="w-4 h-4" />
+                                            <Edit2 className="w-3.5 h-3.5" />
                                             Editar manual
                                         </Button>
 
@@ -311,9 +318,9 @@ export function ManualsSection({
                                             variant="ghost"
                                             size="icon"
                                             onClick={() => onDelete?.(manual.id)}
-                                            className="h-10 w-10 rounded-xl text-slate-200 hover:text-red-500 hover:bg-red-50 transition-all"
+                                            className="h-9 w-9 rounded-xl text-slate-200 hover:text-red-500 hover:bg-red-50 transition-all"
                                         >
-                                            <Trash2 className="w-5 h-5" />
+                                            <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </div>
                                 )}

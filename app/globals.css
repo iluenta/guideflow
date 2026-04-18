@@ -11,6 +11,9 @@
   /* Functional Colors mapping */
   --color-background: var(--color-cloud);
   --color-foreground: var(--color-ink);
+  --color-surface: #ffffff;
+  --color-text-primary: var(--color-ink);
+  --color-text-secondary: #525252;
 
   --color-primary: var(--color-teal);
   --color-primary-foreground: var(--color-cloud);
@@ -90,6 +93,9 @@
   color-scheme: dark;
 
   /* Override Tailwind bg/text utilities that read from CSS vars */
+  --color-surface: #18181b;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a1a1aa;
   --color-border: #27272a;
   --color-input: #27272a;
   --color-ring: #00d4ff;

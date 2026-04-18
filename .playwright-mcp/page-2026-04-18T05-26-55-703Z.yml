@@ -1,0 +1,151 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic "Close Magic Patterns Badge" [ref=e3] [cursor=pointer]: ×
+    - link "Magic Patterns Built with Magic Patterns" [ref=e4] [cursor=pointer]:
+      - /url: https://www.magicpatterns.com/c/9clabppjnfgftanmvpo9ko
+      - img "Magic Patterns" [ref=e5]
+      - generic [ref=e6]: Built with Magic Patterns
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - button "Recomendaciones" [ref=e11] [cursor=pointer]
+      - button "Emergencias" [ref=e12] [cursor=pointer]
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - button [ref=e16] [cursor=pointer]:
+          - img [ref=e17]
+        - heading "DÓNDE COMER" [level=1] [ref=e19]
+        - generic [ref=e20]: "N"
+      - generic [ref=e21]:
+        - heading "SABORES LOCALES" [level=2] [ref=e22]
+        - paragraph [ref=e23]: Mis recomendaciones personales para disfrutar de la mejor gastronomía de la zona.
+      - generic [ref=e25]:
+        - button "Todo" [ref=e26] [cursor=pointer]
+        - button "Restaurantes" [ref=e27] [cursor=pointer]
+        - button "Italiano" [ref=e28] [cursor=pointer]
+        - button "Mediterráneo" [ref=e29] [cursor=pointer]
+        - button "Hamburguesas" [ref=e30] [cursor=pointer]
+        - button "Asiático" [ref=e31] [cursor=pointer]
+        - button "Alta Cocina" [ref=e32] [cursor=pointer]
+        - button "Internacional" [ref=e33] [cursor=pointer]
+        - button "Desayunos" [ref=e34] [cursor=pointer]
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - img [ref=e38]
+          - generic [ref=e41]:
+            - heading "OASIS CAFÉ" [level=3] [ref=e42]
+            - paragraph [ref=e43]: Cafetería perfecta para un buen desayuno. Disfruta de café recién hecho y bollería artesanal en un ambiente relajado.
+            - generic [ref=e44]:
+              - img [ref=e45]
+              - generic [ref=e48]: 23 MIN andando
+            - generic [ref=e49]:
+              - generic [ref=e50]:
+                - generic [ref=e51]: "#cafetería"
+                - generic [ref=e52]: "#desayuno"
+              - button "Maps" [ref=e53] [cursor=pointer]:
+                - generic [ref=e54]: Maps
+                - img [ref=e55]
+        - generic [ref=e57]:
+          - img [ref=e59]
+          - generic [ref=e62]:
+            - heading "CORA CAFÉ" [level=3] [ref=e63]
+            - paragraph [ref=e64]: Un lugar encantador para disfrutar de un desayuno delicioso cerca de la playa, con opciones saludables y buen ambiente.
+            - generic [ref=e65]:
+              - img [ref=e66]
+              - generic [ref=e69]: 7 MIN en coche
+            - generic [ref=e70]:
+              - generic [ref=e71]:
+                - generic [ref=e72]: "#cafetería"
+                - generic [ref=e73]: "#desayuno"
+              - button "Maps" [ref=e74] [cursor=pointer]:
+                - generic [ref=e75]: Maps
+                - img [ref=e76]
+        - generic [ref=e78]:
+          - img [ref=e80]
+          - generic [ref=e83]:
+            - heading "CAFÉ BAR COSITAS" [level=3] [ref=e84]
+            - paragraph [ref=e85]: Un lugar acogedor a pocos minutos de Villa Franciscanos. Ideal para empezar el día con energía y buen café.
+            - generic [ref=e86]:
+              - img [ref=e87]
+              - generic [ref=e90]: 4 MIN
+            - generic [ref=e91]:
+              - generic [ref=e92]:
+                - generic [ref=e93]: "#desayuno"
+                - generic [ref=e94]: "#cafe"
+              - button "Maps" [ref=e95] [cursor=pointer]:
+                - generic [ref=e96]: Maps
+                - img [ref=e97]
+        - generic [ref=e99]:
+          - img [ref=e101]
+          - generic [ref=e104]:
+            - heading "MAXFLAIX (DE VERA, AV. MARICIELO, P.º MARÍTIMO, 17,..." [level=3] [ref=e105]
+            - paragraph [ref=e106]: Desayunos deliciosos y variados, perfectos para disfrutar cerca de la playa. Ofrecen gran variedad de opciones dulces y saladas.
+            - generic [ref=e107]:
+              - img [ref=e108]
+              - generic [ref=e111]: 8 MIN
+            - generic [ref=e112]:
+              - generic [ref=e113]:
+                - generic [ref=e114]: "#desayuno"
+                - generic [ref=e115]: "#gofres"
+              - button "Maps" [ref=e116] [cursor=pointer]:
+                - generic [ref=e117]: Maps
+                - img [ref=e118]
+        - generic [ref=e120]:
+          - img [ref=e122]
+          - generic [ref=e125]:
+            - heading "CHURRERIA CHISPA" [level=3] [ref=e126]
+            - paragraph [ref=e127]: Churros recién hechos para un desayuno tradicional. Un clásico en Vera que no te puedes perder.
+            - generic [ref=e128]:
+              - img [ref=e129]
+              - generic [ref=e132]: 9 MIN
+            - generic [ref=e133]:
+              - generic [ref=e134]:
+                - generic [ref=e135]: "#churros"
+                - generic [ref=e136]: "#chocolate"
+              - button "Maps" [ref=e137] [cursor=pointer]:
+                - generic [ref=e138]: Maps
+                - img [ref=e139]
+        - generic [ref=e141]:
+          - img [ref=e143]
+          - generic [ref=e146]:
+            - heading "CAFETERÍA PORTEÑA" [level=3] [ref=e147]
+            - paragraph [ref=e148]: Cafetería céntrica con una gran variedad de opciones para desayunar, desde bollería hasta tostadas especiales.
+            - generic [ref=e149]:
+              - img [ref=e150]
+              - generic [ref=e153]: 9 MIN
+            - generic [ref=e154]:
+              - generic [ref=e155]:
+                - generic [ref=e156]: "#desayuno"
+                - generic [ref=e157]: "#cafe"
+              - button "Maps" [ref=e158] [cursor=pointer]:
+                - generic [ref=e159]: Maps
+                - img [ref=e160]
+        - generic [ref=e162]:
+          - img [ref=e164]
+          - generic [ref=e167]:
+            - heading "CHURRERÍA RINCÓN DE MARIA" [level=3] [ref=e168]
+            - paragraph [ref=e169]: Otra excelente opción para disfrutar de churros y porras recién hechos en Vera. Ideal para familias.
+            - generic [ref=e170]:
+              - img [ref=e171]
+              - generic [ref=e174]: 9 MIN
+            - generic [ref=e175]:
+              - generic [ref=e176]:
+                - generic [ref=e177]: "#churros"
+                - generic [ref=e178]: "#chocolate"
+              - button "Maps" [ref=e179] [cursor=pointer]:
+                - generic [ref=e180]: Maps
+                - img [ref=e181]
+        - generic [ref=e183]:
+          - img [ref=e185]
+          - generic [ref=e188]:
+            - heading "DULCE LUNA" [level=3] [ref=e189]
+            - paragraph [ref=e190]: Pastelería con una amplia selección de dulces y bollería para un desayuno espectacular.
+            - generic [ref=e191]:
+              - img [ref=e192]
+              - generic [ref=e195]: 9 MIN
+            - generic [ref=e196]:
+              - generic [ref=e197]:
+                - generic [ref=e198]: "#desayuno"
+                - generic [ref=e199]: "#dulces"
+              - button "Maps" [ref=e200] [cursor=pointer]:
+                - generic [ref=e201]: Maps
+                - img [ref=e202]

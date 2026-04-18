@@ -281,7 +281,7 @@ export function CheckInView({
                         <div className="grid grid-cols-2 gap-3 max-w-[260px] mx-auto">
                             <button
                                 onClick={handleWhatsApp}
-                                className="flex items-center justify-center gap-2 bg-white border border-primary/10 text-primary h-11 rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition-all"
+                                className="flex items-center justify-center gap-2 bg-surface border border-primary/20 text-primary h-11 rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition-all"
                             >
                                 <MessageSquare className="w-4 h-4" />
                                 {labelWhatsApp || 'WhatsApp'}

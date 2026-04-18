@@ -76,20 +76,37 @@ export default function PropertiesPage() {
 
         {/* Filtros de estado */}
         <div className="flex items-center gap-1 w-full md:w-auto overflow-x-auto">
-          {FILTERS.map(filter => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={cn(
-                "px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
-                activeFilter === filter
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-              )}
-            >
-              {filter}
-            </button>
-          ))}
+          {FILTERS.map(filter => {
+            const count =
+              filter === 'Todas' ? properties.length :
+              filter === 'Activas' ? properties.filter(p => p.status === 'active').length :
+              filter === 'Borradores' ? properties.filter(p => p.status === 'draft').length :
+              properties.filter(p => p.status === 'archived').length
+            return (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2",
+                  activeFilter === filter
+                    ? "bg-[#316263] text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                )}
+              >
+                {filter}
+                {!loading && (
+                  <span className={cn(
+                    "text-[11px] font-semibold rounded-full px-1.5 py-0.5 min-w-[20px] text-center",
+                    activeFilter === filter
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-100 text-slate-500"
+                  )}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
 
         {/* Buscador + toggle vista */}

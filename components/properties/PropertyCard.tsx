@@ -2,7 +2,7 @@
 
 import { Property, updatePropertyStatus } from '@/app/actions/properties'
 import { Button } from '@/components/ui/button'
-import { MapPin, Users, Bed, Bath, Share2, Edit2, MoreHorizontal, FileEdit, Archive, Globe, Loader2, UserPlus } from 'lucide-react'
+import { MapPin, Users, Bed, Bath, Share2, Edit2, MoreHorizontal, FileEdit, Archive, Globe, Loader2, UserPlus, Building2 } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -51,10 +51,10 @@ export function PropertyCard({ property, onStatusChange, priority = false }: Pro
     }
 
     return (
-        <div className="group bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.10)] transition-all duration-300 flex flex-col">
+        <div className="group bg-white rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)] transition-all duration-300 flex flex-col">
 
             {/* ── Imagen ───────────────────────────────────────── */}
-            <div className="relative aspect-video overflow-hidden">
+            <div className="relative aspect-[4/3] overflow-hidden">
                 {property.main_image_url ? (
                     <Image
                         src={property.main_image_url}
@@ -66,10 +66,12 @@ export function PropertyCard({ property, onStatusChange, priority = false }: Pro
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                 ) : (
-                    <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                        <span className="text-slate-400 text-sm">Sin imagen</span>
+                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-50 flex flex-col items-center justify-center gap-2">
+                        <Building2 className="h-10 w-10 text-slate-300" />
+                        <span className="text-slate-400 text-xs font-medium">Sin imagen</span>
                     </div>
                 )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
                 {currentStatus && (
                     <div className="absolute top-3 right-3">
                         <StatusBadge status={currentStatus} />
@@ -78,8 +80,8 @@ export function PropertyCard({ property, onStatusChange, priority = false }: Pro
             </div>
 
             {/* ── Nombre y ubicación ───────────────────────────── */}
-            <div className="px-5 pt-4 pb-0">
-                <h3 className="font-bold text-[17px] line-clamp-1 text-slate-900 group-hover:text-[#316263] transition-colors">
+            <div className="px-4 pt-3.5 pb-0">
+                <h3 className="font-bold text-[16px] line-clamp-1 text-slate-900 group-hover:text-[#316263] transition-colors">
                     {property.name}
                 </h3>
                 <div className="flex items-center gap-1 text-slate-400 text-xs mt-0.5">
@@ -93,28 +95,27 @@ export function PropertyCard({ property, onStatusChange, priority = false }: Pro
             </div>
 
             {/* ── Stats ────────────────────────────────────────── */}
-            <div className="px-5 pt-4">
-                <div className="grid grid-cols-3 gap-0 border-y border-slate-100 py-3">
-                    <div className="flex flex-col items-center gap-0.5">
-                        <Users className="h-4 w-4 text-slate-300 mb-0.5" />
-                        <span className="text-sm font-semibold text-slate-700">{property.guests}</span>
-                        <span className="text-[11px] text-slate-400">Huéspedes</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-0.5 border-x border-slate-100">
-                        <Bed className="h-4 w-4 text-slate-300 mb-0.5" />
-                        <span className="text-sm font-semibold text-slate-700">{property.beds}</span>
-                        <span className="text-[11px] text-slate-400">Habitaciones</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-0.5">
-                        <Bath className="h-4 w-4 text-slate-300 mb-0.5" />
-                        <span className="text-sm font-semibold text-slate-700">{property.baths}</span>
-                        <span className="text-[11px] text-slate-400">Baños</span>
-                    </div>
+            <div className="px-4 pt-3">
+                <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <span className="flex items-center gap-1">
+                        <Users className="h-3.5 w-3.5 text-slate-400" />
+                        <span className="font-semibold text-slate-700">{property.guests}</span> huésp.
+                    </span>
+                    <span className="text-slate-200">·</span>
+                    <span className="flex items-center gap-1">
+                        <Bed className="h-3.5 w-3.5 text-slate-400" />
+                        <span className="font-semibold text-slate-700">{property.beds}</span> hab.
+                    </span>
+                    <span className="text-slate-200">·</span>
+                    <span className="flex items-center gap-1">
+                        <Bath className="h-3.5 w-3.5 text-slate-400" />
+                        <span className="font-semibold text-slate-700">{property.baths}</span> baños
+                    </span>
                 </div>
             </div>
 
             {/* ── Barra de progreso ─────────────────────────────── */}
-            <div className="px-5 pt-4">
+            <div className="px-4 pt-3">
                 <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[11px] font-medium text-slate-400">Guía completada</span>
                     <span className={cn(
@@ -124,11 +125,15 @@ export function PropertyCard({ property, onStatusChange, priority = false }: Pro
                         {completion}%
                     </span>
                 </div>
-                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                     <div
                         className={cn(
                             "h-full rounded-full transition-all duration-700",
-                            completion === 100 ? "bg-emerald-500" : "bg-[#316263]"
+                            completion === 100
+                                ? "bg-gradient-to-r from-emerald-400 to-emerald-500"
+                                : completion >= 60
+                                    ? "bg-gradient-to-r from-[#316263] to-teal-500"
+                                    : "bg-gradient-to-r from-[#316263]/70 to-[#316263]"
                         )}
                         style={{ width: `${completion}%` }}
                     />
@@ -136,9 +141,9 @@ export function PropertyCard({ property, onStatusChange, priority = false }: Pro
             </div>
 
             {/* ── Botones ───────────────────────────────────────── */}
-            <div className="px-5 py-4 mt-auto flex gap-2 border-t border-slate-50">
+            <div className="px-4 py-3.5 mt-auto flex gap-2">
                 <Button
-                    className="flex-1 gap-2 h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-medium"
+                    className="flex-1 gap-2 h-9 bg-[#316263] hover:bg-[#316263]/90 text-white rounded-xl text-sm font-medium shadow-sm shadow-[#316263]/20"
                     asChild
                 >
                     <Link href={`/dashboard/properties/${property.id}/setup`}>
@@ -153,65 +158,75 @@ export function PropertyCard({ property, onStatusChange, priority = false }: Pro
                         <Button
                             variant="outline"
                             size="icon"
-                            className="h-10 w-10 text-slate-500 hover:text-slate-900 rounded-xl border-slate-200 hover:bg-slate-50 shrink-0"
+                            className="h-9 w-9 text-slate-500 hover:text-slate-900 rounded-xl border-slate-200 hover:bg-slate-50 shrink-0"
                             disabled={isUpdating}
                         >
                             {isUpdating ? <Loader2 className="h-5 w-5 animate-spin" /> : <MoreHorizontal className="h-5 w-5" />}
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 rounded-2xl p-1.5 shadow-xl border-slate-100 bg-white" sideOffset={8}>
-                        {/* Compartir solo si es activa */}
+                    <DropdownMenuContent align="end" className="w-52 rounded-2xl p-2 shadow-2xl shadow-slate-200/80 border border-slate-100 bg-white" sideOffset={6}>
                         {currentStatus === 'active' && (
-                            <DropdownMenuItem asChild className="rounded-xl cursor-pointer text-slate-700 py-2.5 px-3 focus:bg-slate-50 hover:bg-slate-50 transition-colors">
-                                <Link href={`/${property.slug || property.id}`} target="_blank" className="flex items-center w-full">
-                                    <Share2 className="mr-2.5 h-4 w-4 text-[#316263]" />
-                                    <span className="font-medium">Ver guía pública</span>
-                                </Link>
-                            </DropdownMenuItem>
-                        )}
-
-                        {currentStatus === 'active' && (
-                            <GuestAccessDialog propertyId={property.id} propertyName={property.name}>
-                                <DropdownMenuItem
-                                    onSelect={(e) => e.preventDefault()}
-                                    className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-slate-50 hover:bg-slate-50 data-[state=open]:bg-slate-50 transition-colors flex items-center text-slate-700 focus:text-slate-900 data-[highlighted]:text-slate-900"
-                                >
-                                    <UserPlus className="mr-2.5 h-4 w-4 text-blue-600" />
-                                    <span className="font-medium">Compartir con huésped</span>
+                            <>
+                                <DropdownMenuItem asChild className="rounded-xl cursor-pointer text-slate-700 py-2.5 px-3 focus:bg-[#316263]/5 focus:text-[#316263] transition-colors">
+                                    <Link href={`/${property.slug || property.id}`} target="_blank" className="flex items-center w-full gap-3">
+                                        <div className="h-7 w-7 rounded-lg bg-[#316263]/10 flex items-center justify-center shrink-0">
+                                            <Share2 className="h-3.5 w-3.5 text-[#316263]" />
+                                        </div>
+                                        <span className="font-medium text-sm">Ver guía pública</span>
+                                    </Link>
                                 </DropdownMenuItem>
-                            </GuestAccessDialog>
+                                <GuestAccessDialog propertyId={property.id} propertyName={property.name}>
+                                    <DropdownMenuItem
+                                        onSelect={(e) => e.preventDefault()}
+                                        className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-blue-50 transition-colors flex items-center gap-3 text-slate-700"
+                                    >
+                                        <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                                            <UserPlus className="h-3.5 w-3.5 text-blue-600" />
+                                        </div>
+                                        <span className="font-medium text-sm">Compartir con huésped</span>
+                                    </DropdownMenuItem>
+                                </GuestAccessDialog>
+                                <DropdownMenuSeparator className="bg-slate-100 my-1.5" />
+                            </>
                         )}
-
-                        <DropdownMenuSeparator className="bg-slate-100 my-1" />
 
                         {currentStatus !== 'active' && (
                             <DropdownMenuItem
                                 onClick={() => handleStatusChange('active')}
-                                className="rounded-xl cursor-pointer text-slate-700 py-2.5 px-3 focus:bg-slate-50 transition-colors flex items-center"
+                                className="rounded-xl cursor-pointer text-slate-700 py-2.5 px-3 focus:bg-emerald-50 focus:text-emerald-700 transition-colors flex items-center gap-3"
                             >
-                                <Globe className="mr-2.5 h-4 w-4 text-emerald-600" />
-                                <span className="font-medium">Activar propiedad</span>
+                                <div className="h-7 w-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                                    <Globe className="h-3.5 w-3.5 text-emerald-600" />
+                                </div>
+                                <span className="font-medium text-sm">Activar propiedad</span>
                             </DropdownMenuItem>
                         )}
 
                         {currentStatus !== 'draft' && (
                             <DropdownMenuItem
                                 onClick={() => handleStatusChange('draft')}
-                                className="rounded-xl cursor-pointer text-slate-700 py-2.5 px-3 focus:bg-slate-50 transition-colors flex items-center"
+                                className="rounded-xl cursor-pointer text-slate-700 py-2.5 px-3 focus:bg-amber-50 focus:text-amber-700 transition-colors flex items-center gap-3"
                             >
-                                <FileEdit className="mr-2.5 h-4 w-4 text-amber-600" />
-                                <span className="font-medium">Pasar a Borrador</span>
+                                <div className="h-7 w-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                                    <FileEdit className="h-3.5 w-3.5 text-amber-600" />
+                                </div>
+                                <span className="font-medium text-sm">Pasar a Borrador</span>
                             </DropdownMenuItem>
                         )}
 
                         {currentStatus !== 'archived' && (
-                            <DropdownMenuItem
-                                onClick={() => handleStatusChange('archived')}
-                                className="rounded-xl cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 py-2.5 px-3 mt-0.5 transition-colors flex items-center"
-                            >
-                                <Archive className="mr-2.5 h-4 w-4" />
-                                <span className="font-medium">Archivar propiedad</span>
-                            </DropdownMenuItem>
+                            <>
+                                <DropdownMenuSeparator className="bg-slate-100 my-1.5" />
+                                <DropdownMenuItem
+                                    onClick={() => handleStatusChange('archived')}
+                                    className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-red-50 transition-colors flex items-center gap-3 text-red-600 focus:text-red-700"
+                                >
+                                    <div className="h-7 w-7 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                                        <Archive className="h-3.5 w-3.5 text-red-500" />
+                                    </div>
+                                    <span className="font-medium text-sm">Archivar propiedad</span>
+                                </DropdownMenuItem>
+                            </>
                         )}
                     </DropdownMenuContent>
                 </DropdownMenu>

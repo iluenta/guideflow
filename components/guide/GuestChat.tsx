@@ -16,6 +16,7 @@ interface GuestChatProps {
     initialOpen?: boolean
     initialQuery?: string
     guestSessionId?: string
+    themeId?: string
 }
 
 function QuickReplyButton({
@@ -36,7 +37,7 @@ function QuickReplyButton({
     return (
         <button
             onClick={() => onClick(localizedReply)}
-            className="w-full text-[12px] bg-white text-primary/80 px-4 py-3 rounded-2xl border border-stone-100 hover:border-primary/20 hover:bg-stone-50 transition-all text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-[0.98] font-bold leading-tight"
+            className="w-full text-[12px] bg-surface text-primary/80 px-4 py-3 rounded-2xl border border-primary/[0.08] hover:border-primary/20 hover:bg-primary/[0.05] transition-all text-left shadow-card active:scale-[0.98] font-bold leading-tight"
         >
             {localizedReply}
         </button>
@@ -123,7 +124,7 @@ function injectWifiMarkers(content: string): string {
     return content;
 }
 
-export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', accessToken, initialOpen = false, initialQuery, guestSessionId: propGuestSessionId }: GuestChatProps) {
+export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', accessToken, initialOpen = false, initialQuery, guestSessionId: propGuestSessionId, themeId = 'modern' }: GuestChatProps) {
     const [isOpen, setIsOpen] = useState(initialOpen);
     const [internalGuestSessionId, setInternalGuestSessionId] = useState('');
 
@@ -246,7 +247,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
             {/* Chat Container */}
             <div
                 className={cn(
-                    "fixed inset-x-0 bottom-[64px] sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[400px] h-[calc(85vh-64px)] sm:h-[680px] bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl z-50 flex flex-col transition-all duration-300 transform overflow-hidden",
+                    "fixed inset-x-0 bottom-[64px] sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[400px] h-[calc(85vh-64px)] sm:h-[680px] bg-surface rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl z-50 flex flex-col transition-all duration-300 transform overflow-hidden",
                     isOpen ? "translate-y-0 opacity-100" : "translate-y-full sm:translate-y-8 sm:scale-95 opacity-0 pointer-events-none"
                 )}
             >
@@ -259,7 +260,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                             </div>
                             <div>
                                 <div className="flex items-center gap-3">
-                                    <h3 className="font-serif text-xl font-bold tracking-tight">
+                                    <h3 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                                         {assistantLabel}
                                     </h3>
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/10 shrink-0 whitespace-nowrap">
@@ -279,7 +280,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                 </div>
 
                 {/* Subheader */}
-                <div className="bg-white px-6 py-3 border-b border-stone-50 flex items-center gap-3 shrink-0 shadow-sm z-10">
+                <div className="bg-surface px-6 py-3 border-b border-primary/[0.06] flex items-center gap-3 shrink-0 z-10">
                     <Bot className="w-4 h-4 text-primary/40" />
                     <span className="text-[10px] font-black text-primary/50 uppercase tracking-[0.25em]">{expertLabel} {propertyName.toUpperCase()}</span>
                 </div>
@@ -287,21 +288,21 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                 {/* Main Content Area */}
                 <div
                     ref={scrollContainerRef}
-                    className="flex-1 overflow-y-auto bg-white relative"
+                    className="flex-1 overflow-y-auto bg-surface relative"
                 >
                     {messages.length === 0 ? (
                         <div className="flex flex-col items-center justify-start pt-4 pb-8 text-center animate-in fade-in slide-in-from-top-4 duration-1000">
                             {/* Empty State Icon */}
-                            <div className="w-16 h-16 bg-stone-50 rounded-full flex items-center justify-center mb-4 relative">
-                                <div className="absolute inset-0 bg-stone-100/50 rounded-full scale-110 animate-pulse" />
+                            <div className="w-16 h-16 bg-primary/[0.06] rounded-full flex items-center justify-center mb-4 relative">
+                                <div className="absolute inset-0 bg-primary/[0.03] rounded-full scale-110 animate-pulse" />
                                 <Bot className="w-8 h-8 text-primary/30 relative" />
                             </div>
 
                             {/* Empty State Text */}
-                            <h4 className="text-[18px] font-bold text-primary mb-2 px-10 leading-tight font-serif tracking-tight">
+                            <h4 className="text-[18px] font-bold text-primary mb-2 px-10 leading-tight tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                                 {emptyTitle}
                             </h4>
-                            <p className="text-[12px] text-slate px-12 leading-relaxed font-medium opacity-70">
+                            <p className="text-[12px] text-[var(--color-text-secondary)] px-12 leading-relaxed font-medium opacity-70">
                                 {emptySubtitle}
                             </p>
 
@@ -360,7 +361,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                         )}>
                                             <div className={cn(
                                                 "w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm",
-                                                m.role === 'user' ? "bg-stone-100 text-primary" : "bg-primary text-white text-[10px]"
+                                                m.role === 'user' ? "bg-primary/10 text-primary" : "bg-primary text-white text-[10px]"
                                             )}>
                                                 {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                                             </div>
@@ -368,7 +369,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                 "px-5 py-3.5 rounded-2xl text-[16px] leading-relaxed break-words [overflow-wrap:anywhere]",
                                                 m.role === 'user'
                                                     ? "bg-primary text-white rounded-br-none shadow-md font-medium"
-                                                    : "bg-stone-50 text-primary/90 rounded-bl-none border border-stone-100"
+                                                    : "bg-primary/[0.05] text-[var(--color-text-primary)] rounded-bl-none border border-primary/[0.08]"
                                             )}>
                                                 <div className="text-[16px] leading-relaxed max-w-full overflow-x-hidden [&_p]:mb-3 [&_p:last-child]:mb-0 [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-800 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-2">
                                                     <ReactMarkdown
@@ -462,7 +463,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                         <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
                                             <Bot className="w-4 h-4" />
                                         </div>
-                                        <div className="bg-stone-50 px-5 py-4 rounded-2xl rounded-bl-none border border-stone-100">
+                                        <div className="bg-primary/[0.05] px-5 py-4 rounded-2xl rounded-bl-none border border-primary/[0.08]">
                                             <div className="flex gap-1.5">
                                                 <div className="w-1.5 h-1.5 bg-primary/20 rounded-full animate-bounce" />
                                                 <div className="w-1.5 h-1.5 bg-primary/20 rounded-full animate-bounce [animation-delay:150ms]" />
@@ -478,13 +479,13 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                 </div>
 
                 {/* Footer Input Area */}
-                <div className="px-6 pb-6 pt-4 bg-white/95 backdrop-blur-sm border-t border-stone-50 shrink-0">
+                <div className="px-6 pb-6 pt-4 bg-surface/95 backdrop-blur-sm border-t border-primary/[0.06] shrink-0">
                     <form onSubmit={handleSubmit} className="relative group">
                         <input
                             value={input}
                             onChange={handleInputChange}
                             placeholder={placeholderLabel}
-                            className="w-full bg-stone-50 border-none rounded-2xl h-14 pl-5 pr-14 focus-visible:ring-2 focus-visible:ring-primary/5 text-[16px] font-medium placeholder:text-slate-400 transition-all focus:bg-white focus:shadow-sm"
+                            className="w-full bg-primary/[0.05] border-none rounded-2xl h-14 pl-5 pr-14 focus-visible:ring-2 focus-visible:ring-primary/10 text-[16px] font-medium placeholder:text-[var(--color-text-secondary)] transition-all focus:bg-primary/[0.08] focus:shadow-sm"
                         />
                         <button
                             type="submit"

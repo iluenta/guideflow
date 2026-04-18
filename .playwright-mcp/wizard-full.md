@@ -1,0 +1,90 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - link "GuideFlow" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img [ref=e6]
+        - generic [ref=e12]: GuideFlow
+      - navigation [ref=e13]:
+        - list [ref=e14]:
+          - listitem [ref=e244]:
+            - link "Inicio" [ref=e245] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e246]
+              - generic [ref=e249]: Inicio
+          - listitem [ref=e250]:
+            - link "Propiedades" [ref=e251] [cursor=pointer]:
+              - /url: /dashboard/properties
+              - img [ref=e252]
+              - generic [ref=e256]: Propiedades
+          - listitem [ref=e257]:
+            - link "Reservas" [ref=e258] [cursor=pointer]:
+              - /url: /dashboard/bookings
+              - img [ref=e259]
+              - generic [ref=e262]: Reservas
+          - listitem [ref=e263]:
+            - link "Calendario" [ref=e264] [cursor=pointer]:
+              - /url: /dashboard/calendar
+              - img [ref=e265]
+              - generic [ref=e267]: Calendario
+          - listitem [ref=e268]:
+            - link "Analiticas" [ref=e269] [cursor=pointer]:
+              - /url: /dashboard/analytics
+              - img [ref=e270]
+              - generic [ref=e272]: Analiticas
+          - listitem [ref=e273]:
+            - link "Seguridad" [ref=e274] [cursor=pointer]:
+              - /url: /dashboard/security
+              - img [ref=e275]
+              - generic [ref=e278]: Seguridad
+          - listitem [ref=e279]:
+            - link "Ajustes" [ref=e280] [cursor=pointer]:
+              - /url: /dashboard/settings
+              - img [ref=e281]
+              - generic [ref=e284]: Ajustes
+      - generic [ref=e57]:
+        - img [ref=e59]
+        - generic [ref=e62]:
+          - paragraph [ref=e63]: Juan Garcia
+          - paragraph [ref=e285]: veratespera@gmail.com
+      - button "Colapsar sidebar" [ref=e64]:
+        - img [ref=e65]
+    - generic [ref=e67]:
+      - banner [ref=e68]:
+        - generic [ref=e69]:
+          - button [ref=e70]:
+            - img
+          - button [ref=e72]:
+            - generic [ref=e73]:
+              - img
+      - main [ref=e74]:
+        - generic [ref=e77]:
+          - generic [ref=e80]:
+            - generic [ref=e81]:
+              - button "Abrir menú de secciones" [ref=e82]:
+                - img [ref=e83]
+              - navigation [ref=e84]:
+                - link "Propiedades" [ref=e85] [cursor=pointer]:
+                  - /url: /dashboard/properties
+                - img [ref=e86]
+                - generic [ref=e88]: Villa Franciscanos
+            - generic [ref=e89]:
+              - generic [ref=e90]:
+                - generic [ref=e91]
+                - generic [ref=e96]
+              - button "Ver Guía" [ref=e99]:
+                - generic [ref=e100]: Ver Guía
+                - img
+          - generic [ref=e101]:
+            - complementary [ref=e102]:
+              - generic [ref=e103]:
+                - navigation [ref=e104]
+                - generic [ref=e227]
+            - main [ref=e232]:
+              - generic [ref=e322]:
+                - generic [ref=e324]
+                - button "Guardar y continuar" [ref=e416]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e239] [cursor=pointer]:
+    - img [ref=e240]
+  - alert [ref=e243]

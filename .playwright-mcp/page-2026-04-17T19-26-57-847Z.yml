@@ -1,0 +1,66 @@
+- generic [active] [ref=e1]:
+  - main [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e9]: Villa Franciscanos
+        - button "es" [ref=e10]:
+          - generic [ref=e11]: es
+          - img
+      - generic [ref=e12]:
+        - img "Villa Franciscanos" [ref=e13]
+        - generic [ref=e14]:
+          - paragraph [ref=e15]: Bienvenido a Villa Franciscanos
+          - heading "Hola" [level=1] [ref=e16]
+          - paragraph [ref=e17]: Villa Franciscanos
+      - button "✨ Tu asistente digital en Vera" [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]: ✨
+          - generic [ref=e22]: Tu asistente digital en Vera
+        - img [ref=e24]
+      - generic [ref=e26]:
+        - button "Wifi" [ref=e27]:
+          - img [ref=e28]
+          - generic [ref=e32]: Wifi
+        - button "Acceso" [ref=e33]:
+          - img [ref=e34]
+          - generic [ref=e38]: Acceso
+        - button "P Parking 285" [ref=e39]:
+          - generic [ref=e40]: P
+          - generic [ref=e41]: Parking
+          - generic [ref=e42]: "285"
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - img [ref=e49]
+            - generic [ref=e52]: 21:26 • BUENAS NOCHES 🌙
+          - generic [ref=e53]: RECOMENDACIÓN
+        - generic [ref=e54]:
+          - heading "Keoke El Extremeño" [level=3] [ref=e55]
+          - generic [ref=e56]: No dejes de probar sus carnes a la brasa y sus quesos artesanos.
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - img [ref=e59]
+            - text: 4 MIN en coche
+          - generic [ref=e62]: "#carne"
+          - generic [ref=e63]: "#extremeño"
+        - button "VER RECOMENDACIONES" [ref=e64]:
+          - text: VER RECOMENDACIONES
+          - img [ref=e65]
+      - generic [ref=e67]:
+        - button "Check-out 11:00" [ref=e68]:
+          - img [ref=e69]
+          - generic [ref=e72]: Check-out 11:00
+        - button "Cómo llegar" [ref=e73]:
+          - img [ref=e74]
+          - generic [ref=e77]: Cómo llegar
+      - generic [ref=e78]:
+        - heading "Descubre Vera" [level=2] [ref=e79]
+        - generic [ref=e80]:
+          - generic [ref=e81] [cursor=pointer]:
+            - img "Dónde comer..." [ref=e82]
+            - generic [ref=e84]: Dónde comer...
+          - generic [ref=e85] [cursor=pointer]:
+            - img "Qué hacer" [ref=e86]
+            - generic [ref=e88]: Qué hacer
+      - paragraph [ref=e90]: Desarrollado por GuideFlow
+  - region "Notifications alt+T"

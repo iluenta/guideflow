@@ -256,7 +256,7 @@ export function MenuGrid({
 
                 {/* Essentials Section */}
                 <div className="mb-10 section-essential-anim">
-                    <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
+                    <h3 className="text-[10px] font-black text-[var(--color-text-secondary)]/60 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
                         {labelEssentials}
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
@@ -282,7 +282,7 @@ export function MenuGrid({
                 {/* Explore Section */}
                 {(eatRecs.length > 0 || doRecs.length > 0 || shopRecs.length > 0) && (
                     <div className="mb-10 section-explore-anim">
-                        <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
+                        <h3 className="text-[10px] font-black text-[var(--color-text-secondary)]/60 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
                             {labelExplore}
                         </h3>
                         <div className="space-y-3">
@@ -316,7 +316,7 @@ export function MenuGrid({
 
                 {/* Apartment Section */}
                 <div className="mb-10 section-apartment-anim">
-                    <h3 className="text-[10px] font-black text-slate/30 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
+                    <h3 className="text-[10px] font-black text-[var(--color-text-secondary)]/60 uppercase tracking-[0.3em] mb-4 px-1 flex items-center gap-2">
                         {labelAccommodation}
                     </h3>
                     <div className="grid grid-cols-3 gap-3">

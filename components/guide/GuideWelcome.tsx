@@ -368,6 +368,7 @@ export function GuideWelcome({
                     onNavigate={onNavigate}
                     accessToken={accessToken}
                     propertyId={propertyId}
+                    themeId={themeId}
                     theme={{
                         cardBg: t.guideCardBg,
                         chipIconColor: t.chipIconColor,

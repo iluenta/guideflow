@@ -9,9 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import {
     Sparkles, Plus, Trash2, MapPin, Clock, Utensils,
     ShoppingBag, Landmark, Trees, Music, Coffee, Star,
-    Search, ChevronLeft, ChevronRight, Check, Loader2,
-    Info, Lightbulb, Pizza, Fish, Beef, Globe, UtensilsCrossed,
-    Store, Sunrise, Sun, Sunset, Moon
+    Search, ChevronRight, Loader2,
+    Lightbulb, Pizza, Fish, Beef, Globe, UtensilsCrossed,
+    Store
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { RecommendationCard, Recommendation } from './RecommendationCard'
@@ -57,29 +57,8 @@ export function LocalRecommendations({
 }: LocalRecommendationsProps) {
     const [selectedCategory, setSelectedCategory] = useState('todos')
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [isEssentialModalOpen, setIsEssentialModalOpen] = useState(false)
     const [editingRec, setEditingRec] = useState<Partial<Recommendation> | null>(null)
     const [tagsInput, setTagsInput] = useState('')
-
-    const essentialCategories = [
-        { id: 'supermercados', label: 'Supermercados', icon: Store, color: 'bg-orange-100 text-orange-700', desc: 'Para la compra del primer día' },
-        { id: 'restaurantes', label: 'Restaurantes', icon: Utensils, color: 'bg-blue-100 text-blue-700', desc: 'Si no quieren cocinar al llegar' },
-        { id: 'desayuno', label: 'Desayunos', icon: Coffee, color: 'bg-yellow-100 text-yellow-700', desc: 'Cafeterías para la primera mañana' },
-        { id: 'tapas', label: 'Tapas & Bares', icon: Pizza, color: 'bg-sky-100 text-sky-700', desc: 'Para salir a tomar algo la primera noche' },
-        { id: 'cultura', label: 'Cultura', icon: Landmark, color: 'bg-amber-100 text-amber-700', desc: 'Qué ver cerca sin planificar mucho' },
-        { id: 'naturaleza', label: 'Naturaleza', icon: Trees, color: 'bg-emerald-100 text-emerald-700', desc: 'Parques y zonas verdes cercanas' },
-        { id: 'ocio', label: 'Ocio nocturno', icon: Music, color: 'bg-purple-100 text-purple-700', desc: 'Bares de copas y música' },
-    ]
-
-    const otherCategories = [
-        { label: 'Italiano', icon: Pizza },
-        { label: 'Asiático', icon: UtensilsCrossed },
-        { label: 'Alta Cocina', icon: Star },
-        { label: 'Internacional', icon: Globe },
-        { label: 'Relax & Spa', icon: Coffee },
-        { label: 'Compras', icon: ShoppingBag },
-        { label: 'Hamburguesas', icon: Beef },
-    ]
 
     const filteredRecommendations = useMemo(() => {
         if (selectedCategory === 'todos') return recommendations
@@ -174,13 +153,7 @@ export function LocalRecommendations({
                         <div className="space-y-2 max-w-2xl">
                             <h4 className="text-lg font-bold text-slate-900">Genera la guía esencial del primer día</h4>
                             <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                                La IA buscará en Google Places los <span className="text-[#316263] font-bold">7 tipos de sitios más útiles</span> para tus huéspedes al llegar: supermercados, restaurantes, desayunos, tapas, cultura, naturaleza y ocio nocturno.{' '}
-                                <button
-                                    onClick={() => setIsEssentialModalOpen(true)}
-                                    className="text-[#316263] font-bold hover:underline inline-flex items-center gap-1"
-                                >
-                                    Ver detalle →
-                                </button>
+                                La IA buscará en Google Places los <span className="text-[#316263] font-bold">7 tipos de sitios más útiles</span> para tus huéspedes al llegar: supermercados, restaurantes, desayunos, tapas, cultura, naturaleza y ocio nocturno.
                             </p>
                             <p className="text-xs text-slate-400 font-medium italic">
                                 ¿Quieres italiano, asiático, alta cocina u otras categorías? Selecciónalas en la barra inferior y usa &quot;Sugerir con IA&quot; para cada una por separado.
@@ -211,8 +184,32 @@ export function LocalRecommendations({
                 <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl" />
             </div>
 
-            {/* Category Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-4 no-scrollbar">
+            {/* Category Filter — select on mobile, pills on desktop */}
+            <div className="md:hidden">
+                {(() => {
+                    const activeCat = categories.find(c => c.id === selectedCategory)
+                    const ActiveIcon = activeCat?.icon || Star
+                    return (
+                        <div className="relative">
+                            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                <ActiveIcon className="w-4 h-4 text-[#316263]" />
+                            </div>
+                            <select
+                                value={selectedCategory}
+                                onChange={e => setSelectedCategory(e.target.value)}
+                                className="w-full h-11 pl-9 pr-10 rounded-xl bg-white border-2 border-slate-100 text-sm font-semibold text-slate-700 appearance-none focus:outline-none focus:border-[#316263]/40 focus:ring-2 focus:ring-[#316263]/10"
+                            >
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.label}</option>
+                                ))}
+                            </select>
+                            <ChevronRight className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90" />
+                        </div>
+                    )
+                })()}
+            </div>
+
+            <div className="hidden md:flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {categories.map((cat) => {
                     const Icon = cat.icon
                     const isActive = selectedCategory === cat.id
@@ -221,14 +218,14 @@ export function LocalRecommendations({
                             key={cat.id}
                             onClick={() => setSelectedCategory(cat.id)}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold transition-all whitespace-nowrap border-2",
+                                "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap border-2",
                                 isActive
                                     ? "bg-[#316263] border-[#316263] text-white shadow-md shadow-teal-900/10 scale-105"
-                                    : "bg-white border-slate-50 text-slate-400 hover:border-slate-200 hover:bg-slate-50"
+                                    : "bg-white border-slate-50 text-slate-500 hover:border-slate-200 hover:bg-slate-50"
                             )}
                         >
                             <Icon className={cn("w-3 h-3 transition-transform", isActive && "scale-110")} />
-                            {cat.label.toUpperCase()}
+                            {cat.label}
                         </button>
                     )
                 })}
@@ -253,10 +250,15 @@ export function LocalRecommendations({
             {/* Add Manual Button - Compact Style */}
             <button
                 onClick={() => openEdit()}
-                className="w-full h-14 rounded-xl border-2 border-dashed border-slate-200 hover:border-[#316263] hover:bg-[#316263]/5 transition-all flex items-center justify-center gap-2 group bg-white/50"
+                className="w-full rounded-xl border border-dashed border-slate-200 hover:border-[#316263]/40 bg-white hover:bg-[#316263]/5 transition-all flex items-center gap-3 px-4 py-3 group"
             >
-                <Plus className="w-4 h-4 text-slate-400 group-hover:text-[#316263]" />
-                <span className="text-xs font-bold text-slate-500 group-hover:text-[#316263] transition-colors uppercase tracking-widest">Añadir otro sitio</span>
+                <div className="h-8 w-8 rounded-lg bg-slate-100 group-hover:bg-[#316263] flex items-center justify-center transition-colors shrink-0">
+                    <Plus className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+                </div>
+                <div className="text-left">
+                    <p className="text-sm font-semibold text-slate-600 group-hover:text-[#316263] transition-colors">Añadir sitio manualmente</p>
+                    <p className="text-xs text-slate-400">Restaurante, tienda, parque...</p>
+                </div>
             </button>
 
             {/* Empty State */}
@@ -274,127 +276,145 @@ export function LocalRecommendations({
 
             {/* Dialog for Manual Add/Edit */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-2xl w-[95vw] h-[85dvh] md:h-auto md:max-h-[90vh] p-0 overflow-hidden border-none shadow-2xl rounded-3xl bg-white flex flex-col">
-                    <DialogHeader className="p-6 md:p-10 pb-2 md:pb-2 text-left border-b border-slate-50 shrink-0">
-                        <DialogTitle className="text-xl font-bold text-slate-900">{editingRec?.id ? 'Editar Sitio' : 'Nueva Recomendación'}</DialogTitle>
-                        <DialogDescription className="text-xs font-medium text-slate-500">
-                            Completa los detalles para que tus huéspedes tengan la mejor información.
-                        </DialogDescription>
-                    </DialogHeader>
+                <DialogContent className="max-w-lg w-[95vw] h-[90dvh] md:h-auto md:max-h-[85vh] p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white flex flex-col">
 
-                    <div className="flex-1 overflow-y-auto px-6 md:px-10 py-6 space-y-6 text-left custom-scrollbar">
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nombre del sitio</Label>
-                                <Input
-                                    id="name"
-                                    placeholder="Ej: Restaurante El Mirador"
-                                    value={editingRec?.name || ''}
-                                    onChange={e => setEditingRec({ ...editingRec, name: e.target.value })}
-                                    className="h-12 rounded-xl bg-slate-50/50 border-slate-100 px-4 font-medium focus:ring-2 focus:ring-[#316263]/20"
-                                />
+                    {/* Header */}
+                    <DialogHeader className="px-5 pt-5 pb-4 border-b border-slate-100 shrink-0 text-left">
+                        <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-[#316263]/10 flex items-center justify-center shrink-0">
+                                <MapPin className="h-4 w-4 text-[#316263]" />
                             </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="address" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Dirección / Ubicación (Para Maps)</Label>
-                                <div className="relative">
-                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                    <Input
-                                        id="address"
-                                        placeholder="Ej: Calle Mayor 1, Madrid"
-                                        value={editingRec?.address || ''}
-                                        onChange={e => setEditingRec({ ...editingRec, address: e.target.value })}
-                                        className="h-12 rounded-xl bg-slate-50/50 border-slate-100 pl-12 pr-4 font-medium focus:ring-2 focus:ring-[#316263]/20"
-                                    />
-                                </div>
-                                <p className="text-[10px] text-slate-400 font-medium italic ml-1">Añadir la dirección ayuda a que Google Maps localice el sitio con precisión.</p>
+                            <div>
+                                <DialogTitle className="text-base font-bold text-slate-900 leading-tight">
+                                    {editingRec?.id ? 'Editar sitio' : 'Nuevo sitio'}
+                                </DialogTitle>
+                                <DialogDescription className="text-xs text-slate-400 mt-0.5">
+                                    Completa los datos para que tus huéspedes tengan la mejor información.
+                                </DialogDescription>
                             </div>
                         </div>
+                    </DialogHeader>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Categoría</Label>
-                                <select
-                                    className="w-full h-12 rounded-xl bg-slate-50/50 border border-slate-100 px-4 font-bold text-[11px] focus:ring-2 focus:ring-[#316263]/20 outline-none uppercase tracking-wider"
-                                    value={editingRec?.category || (selectedCategory !== 'todos' ? selectedCategory : 'restaurantes')}
-                                    onChange={e => setEditingRec({ ...editingRec, category: e.target.value })}
-                                >
-                                    {categories.filter(c => c.id !== 'todos').map(c => (
-                                        <option key={c.id} value={c.id}>{c.label.toUpperCase()}</option>
-                                    ))}
-                                </select>
+                    {/* Scrollable body */}
+                    <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4 text-left">
+
+                        {/* Nombre */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="name" className="text-sm font-medium text-slate-600 ml-1">Nombre del sitio</Label>
+                            <Input
+                                id="name"
+                                placeholder="Ej: Restaurante El Mirador"
+                                value={editingRec?.name || ''}
+                                onChange={e => setEditingRec({ ...editingRec, name: e.target.value })}
+                                className="h-11 rounded-xl bg-slate-50 border-none font-medium focus:ring-2 focus:ring-[#316263]/20"
+                            />
+                        </div>
+
+                        {/* Dirección */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="address" className="text-sm font-medium text-slate-600 ml-1">Dirección</Label>
+                            <div className="relative">
+                                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                                <Input
+                                    id="address"
+                                    placeholder="Ej: Calle Mayor 1, Madrid"
+                                    value={editingRec?.address || ''}
+                                    onChange={e => setEditingRec({ ...editingRec, address: e.target.value })}
+                                    className="h-11 rounded-xl bg-slate-50 border-none pl-10 font-medium focus:ring-2 focus:ring-[#316263]/20"
+                                />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="price" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Precio</Label>
+                            <p className="text-xs text-slate-400 ml-1">Ayuda a Google Maps a localizar el sitio con precisión.</p>
+                        </div>
+
+                        {/* Categoría + Precio */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-sm font-medium text-slate-600 ml-1">Categoría</Label>
+                                <div className="relative">
+                                    <select
+                                        className="w-full h-11 rounded-xl bg-slate-50 border-none px-3 pr-8 font-medium text-sm text-slate-700 appearance-none focus:outline-none focus:ring-2 focus:ring-[#316263]/20"
+                                        value={editingRec?.category || (selectedCategory !== 'todos' ? selectedCategory : 'restaurantes')}
+                                        onChange={e => setEditingRec({ ...editingRec, category: e.target.value })}
+                                    >
+                                        {categories.filter(c => c.id !== 'todos').map(c => (
+                                            <option key={c.id} value={c.id}>{c.label}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronRight className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 rotate-90" />
+                                </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="price" className="text-sm font-medium text-slate-600 ml-1">Precio</Label>
                                 <Input
                                     id="price"
                                     placeholder="Ej: €€"
                                     value={editingRec?.price_range || ''}
                                     onChange={e => setEditingRec({ ...editingRec, price_range: e.target.value })}
-                                    className="h-12 rounded-xl bg-slate-50/50 border-slate-100 px-4 font-medium focus:ring-2 focus:ring-[#316263]/20"
+                                    className="h-11 rounded-xl bg-slate-50 border-none font-medium focus:ring-2 focus:ring-[#316263]/20"
                                 />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="distance" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Distancia</Label>
+                        {/* Distancia + Horario */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="distance" className="text-sm font-medium text-slate-600 ml-1">Distancia</Label>
                                 <div className="relative">
-                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                                     <Input
                                         id="distance"
                                         placeholder="Ej: 500m"
                                         value={(editingRec?.distance && !editingRec.distance.toLowerCase().includes('distance')) ? editingRec.distance : ''}
                                         onChange={e => setEditingRec({ ...editingRec, distance: e.target.value })}
-                                        className="h-12 rounded-xl bg-slate-50/50 border-slate-100 pl-12 pr-4 font-medium focus:ring-2 focus:ring-[#316263]/20"
+                                        className="h-11 rounded-xl bg-slate-50 border-none pl-10 font-medium focus:ring-2 focus:ring-[#316263]/20"
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="time" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Horario</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="time" className="text-sm font-medium text-slate-600 ml-1">Horario</Label>
                                 <div className="relative">
-                                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                                    <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                                     <Input
                                         id="time"
-                                        placeholder="Ej: 09:00 - 20:00"
+                                        placeholder="09:00 - 22:00"
                                         value={editingRec?.time || ''}
                                         onChange={e => setEditingRec({ ...editingRec, time: e.target.value })}
-                                        className="h-12 rounded-xl bg-slate-50/50 border-slate-100 pl-12 pr-4 font-medium focus:ring-2 focus:ring-[#316263]/20"
+                                        className="h-11 rounded-xl bg-slate-50 border-none pl-10 font-medium focus:ring-2 focus:ring-[#316263]/20"
                                     />
                                 </div>
                             </div>
                         </div>
 
                         {editingRec?.opening_hours && (
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Horarios (Google)</Label>
-                                <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 text-[11px] font-medium text-slate-600">
-                                    {editingRec.opening_hours.always_open 
-                                        ? 'Abierto 24 horas' 
+                            <div className="space-y-1.5">
+                                <Label className="text-sm font-medium text-slate-600 ml-1">Horarios (Google)</Label>
+                                <div className="h-11 px-3 bg-slate-50 rounded-xl flex items-center text-sm font-medium text-slate-600">
+                                    {editingRec.opening_hours.always_open
+                                        ? 'Abierto 24 horas'
                                         : `${editingRec.opening_hours.open || '--:--'} – ${editingRec.opening_hours.close || '--:--'}`}
                                 </div>
                             </div>
                         )}
 
-                        <div className="space-y-2">
-                            <Label htmlFor="tags" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Etiquetas (separadas por comas)</Label>
+                        {/* Etiquetas */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="tags" className="text-sm font-medium text-slate-600 ml-1">Etiquetas <span className="text-slate-400 font-normal">(separadas por comas)</span></Label>
                             <Input
                                 id="tags"
                                 placeholder="Ej: Vistas, Romántico, Barato"
                                 value={tagsInput}
                                 onChange={e => {
-                                    const val = e.target.value;
-                                    setTagsInput(val);
-                                    const newTags = val.split(',').map(t => t.trim()).filter(Boolean);
-                                    setEditingRec({ ...editingRec, tags: newTags });
+                                    const val = e.target.value
+                                    setTagsInput(val)
+                                    setEditingRec({ ...editingRec, tags: val.split(',').map(t => t.trim()).filter(Boolean) })
                                 }}
-                                className="h-12 rounded-xl bg-slate-50/50 border-slate-100 px-4 font-medium text-xs focus:ring-2 focus:ring-[#316263]/20"
+                                className="h-11 rounded-xl bg-slate-50 border-none font-medium text-sm focus:ring-2 focus:ring-[#316263]/20"
                             />
                             {(editingRec?.tags && editingRec.tags.length > 0) && (
-                                <div className="flex flex-wrap gap-2 mt-2">
+                                <div className="flex flex-wrap gap-1.5 pt-1">
                                     {editingRec.tags.map((tag: string, i: number) => (
-                                        <Badge key={i} variant="outline" className="bg-slate-50 border-slate-100 text-slate-500 text-[9px] font-bold py-1 px-2 rounded-lg">
-                                            #{tag.toUpperCase()}
+                                        <Badge key={i} variant="outline" className="bg-[#316263]/5 border-[#316263]/15 text-[#316263] text-xs font-medium py-0.5 px-2.5 rounded-lg">
+                                            #{tag}
                                         </Badge>
                                     ))}
                                 </div>
@@ -406,18 +426,13 @@ export function LocalRecommendations({
                             value={editingRec?.category || ''}
                             onChange={(subcat, autoSlots) => {
                                 const currentSlots = editingRec?.metadata?.best_time_slots || []
-                                // Si autoSlots tiene contenido, lo añadimos (sin duplicar)
-                                const newSlots = autoSlots.length > 0 
+                                const newSlots = autoSlots.length > 0
                                     ? Array.from(new Set([...currentSlots, ...autoSlots]))
                                     : currentSlots
-
-                                setEditingRec({ 
-                                    ...editingRec, 
+                                setEditingRec({
+                                    ...editingRec,
                                     category: subcat,
-                                    metadata: {
-                                        ...(editingRec?.metadata || {}),
-                                        best_time_slots: newSlots
-                                    }
+                                    metadata: { ...(editingRec?.metadata || {}), best_time_slots: newSlots }
                                 })
                             }}
                         />
@@ -426,123 +441,55 @@ export function LocalRecommendations({
                             value={editingRec?.metadata?.best_time_slots || []}
                             onChange={(slots) => setEditingRec({
                                 ...editingRec,
-                                metadata: {
-                                    ...(editingRec?.metadata || {}),
-                                    best_time_slots: slots,
-                                }
+                                metadata: { ...(editingRec?.metadata || {}), best_time_slots: slots }
                             })}
                         />
 
-                        <div className="space-y-2">
-                            <Label htmlFor="desc" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Descripción</Label>
+                        {/* Descripción */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="desc" className="text-sm font-medium text-slate-600 ml-1">Descripción</Label>
                             <Textarea
                                 id="desc"
                                 placeholder="Describe qué hace especial este sitio..."
                                 value={editingRec?.description || ''}
                                 onChange={e => setEditingRec({ ...editingRec, description: e.target.value })}
-                                className="min-h-[100px] rounded-xl bg-slate-50/50 border-slate-100 p-4 font-medium text-xs leading-relaxed focus:ring-2 focus:ring-[#316263]/20"
+                                className="min-h-[80px] rounded-xl bg-slate-50 border-none p-3 font-medium text-sm leading-relaxed focus:ring-2 focus:ring-[#316263]/20 resize-none"
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="note" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nota personal (opcional)</Label>
+                        {/* Nota personal */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="note" className="text-sm font-medium text-slate-600 ml-1">Nota personal <span className="text-slate-400 font-normal">(opcional)</span></Label>
                             <Input
                                 id="note"
                                 placeholder="Ej: Pide la tarta de queso, es increíble."
                                 value={editingRec?.personal_note || ''}
                                 onChange={e => setEditingRec({ ...editingRec, personal_note: e.target.value })}
-                                className="h-12 rounded-xl bg-slate-50/50 border-slate-100 px-4 font-medium italic text-xs focus:ring-2 focus:ring-[#316263]/20"
+                                className="h-11 rounded-xl bg-slate-50 border-none font-medium italic text-sm focus:ring-2 focus:ring-[#316263]/20"
                             />
                         </div>
 
                     </div>
 
-                    <DialogFooter className="p-6 md:p-8 bg-slate-50 border-t border-slate-100 flex flex-row gap-3 shrink-0">
-                        <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="flex-1 h-12 rounded-xl font-bold text-slate-500 hover:text-slate-900">
+                    {/* Footer */}
+                    <DialogFooter className="px-5 py-4 border-t border-slate-100 flex flex-row gap-3 shrink-0">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDialogOpen(false)}
+                            className="flex-1 h-11 rounded-xl font-semibold text-slate-600 border-slate-200 hover:bg-slate-50"
+                        >
                             Cancelar
                         </Button>
-                        <Button onClick={handleSaveManual} className="flex-1 bg-[#316263] hover:bg-[#254d4e] text-white font-bold rounded-xl h-12 shadow-lg shadow-teal-900/20 text-sm">
+                        <Button
+                            onClick={handleSaveManual}
+                            className="flex-1 bg-[#316263] hover:bg-[#316263]/90 text-white font-semibold rounded-xl h-11 shadow-sm shadow-[#316263]/20"
+                        >
                             {editingRec?.id ? 'Actualizar' : 'Guardar'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Modal de Guía Esencial */}
-            <Dialog open={isEssentialModalOpen} onOpenChange={setIsEssentialModalOpen}>
-                <DialogContent className="max-w-lg rounded-3xl bg-white p-0 overflow-hidden border-none shadow-2xl">
-                    <div className="p-8 space-y-8">
-                        <div className="flex gap-4 items-center">
-                            <div className="bg-[#316263] p-3 rounded-2xl shadow-lg shadow-teal-900/20">
-                                <Sparkles className="w-6 h-6 text-white" />
-                            </div>
-                            <div className="space-y-1 text-left">
-                                <DialogTitle className="text-xl font-bold text-slate-900">Guía esencial del primer día</DialogTitle>
-                                <DialogDescription className="text-sm text-slate-500 font-medium">
-                                    La IA generará <span className="text-slate-900 font-bold">14 recomendaciones</span> en <span className="text-slate-900 font-bold">7 categorías imprescindibles</span> basándose en tu ubicación real.
-                                </DialogDescription>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Se generará automáticamente</p>
-                            <div className="space-y-2">
-                                {essentialCategories.map((cat) => (
-                                    <div key={cat.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100/50 group hover:border-[#316263]/20 hover:bg-white transition-all">
-                                        <div className="flex items-center gap-3">
-                                            <div className={cn("p-2 rounded-xl scale-90 group-hover:scale-100 transition-transform", cat.color)}>
-                                                <cat.icon className="w-4 h-4" />
-                                            </div>
-                                            <div className="text-left">
-                                                <p className="text-xs font-bold text-slate-800">{cat.label}</p>
-                                                <p className="text-[10px] text-slate-400 font-medium">{cat.desc}</p>
-                                            </div>
-                                        </div>
-                                        <Badge variant="outline" className="bg-white border-slate-200 text-teal-700 text-[10px] font-bold rounded-lg py-1 px-2">2 SITIOS</Badge>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="p-6 bg-[#f0f9f9] rounded-3xl border border-[#d1e9e9] space-y-4">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">¿Quieres más categorías?</p>
-                            <p className="text-[11px] text-slate-500 leading-relaxed font-medium text-left">
-                                Después de generar, selecciona cualquier categoría de la barra y pulsa <span className="text-[#316263] font-bold">&quot;Sugerir con IA&quot;</span> para obtener 6 sugerencias específicas con más detalle.
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {otherCategories.map((cat, i) => (
-                                    <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-100 rounded-full text-[10px] font-bold text-slate-500 shadow-sm">
-                                        <cat.icon className="w-2.5 h-2.5" />
-                                        {cat.label}
-                                    </div>
-                                ))}
-                                <div className="px-3 py-1.5 bg-white border border-slate-100 rounded-full text-[10px] font-bold text-slate-400 shadow-sm">+ más...</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="p-4 bg-slate-50 flex gap-3 border-t border-slate-100">
-                        <Button
-                            variant="ghost"
-                            onClick={() => setIsEssentialModalOpen(false)}
-                            className="flex-1 h-14 rounded-2xl font-bold text-slate-500 hover:text-slate-900"
-                        >
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                setIsEssentialModalOpen(false)
-                                onAISuggest('todos')
-                            }}
-                            disabled={aiLoading}
-                            className="flex-1 bg-[#316263] hover:bg-[#254d4e] text-white h-14 rounded-2xl font-bold shadow-lg shadow-teal-900/20 gap-2"
-                        >
-                            <Sparkles className="w-5 h-5 text-white/50" />
-                            Generar guía esencial
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
         </div>
     )
 }

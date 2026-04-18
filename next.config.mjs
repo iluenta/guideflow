@@ -1,5 +1,8 @@
 import bundleAnalyzer from '@next/bundle-analyzer'
 
+// Allow Next.js to fetch Google Fonts at build time behind corporate SSL proxies
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   compress: true,
@@ -38,7 +41,6 @@ const nextConfig = {
   },
   experimental: {
     turbopackUseSystemTlsCerts: true,
-    after: true,
   },
   env: {
     NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString(),

@@ -1,0 +1,91 @@
+- generic [active] [ref=e1]:
+  - main [ref=e4]:
+    - generic [ref=e92]:
+      - generic [ref=e93]:
+        - button [ref=e94]:
+          - img [ref=e95]
+        - heading "LLEGADA" [level=1] [ref=e97]
+        - button "es" [ref=e98]:
+          - generic [ref=e99]: es
+          - img
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - paragraph [ref=e102]: Check-in disponible
+          - paragraph [ref=e103]: 15:00 - 22:00
+        - generic [ref=e104]:
+          - generic [ref=e107]:
+            - generic [ref=e108]: "1"
+            - generic [ref=e109]:
+              - generic [ref=e110]:
+                - img [ref=e111]
+                - heading "Dirección" [level=3] [ref=e114]
+              - paragraph [ref=e115]: Avenida de la Alcazaba, 115, Vera, Almeria
+              - button "Ver en mapa" [ref=e116]:
+                - img [ref=e117]
+                - text: Ver en mapa
+          - generic [ref=e123]:
+            - generic [ref=e124]: "2"
+            - generic [ref=e125]:
+              - generic [ref=e126]:
+                - img [ref=e127]
+                - heading "Punto de encuentro" [level=3] [ref=e131]
+              - paragraph [ref=e132]: El día del check-in, normalmente quedaréis en la entrada de la urbanización, ya que el acceso no es público. Esta foto muestra la entrada a la urbanización. Para acceder a la urbanización con vehículo, utiliza el mando a distancia. Si lo haces a pie, utiliza el interruptor o la llave. Para entrar, teclea el código 07349 o la llave que se encuentra en tu llavero.
+              - img "Punto de encuentro" [ref=e134]
+          - generic [ref=e137]:
+            - generic [ref=e138]: "3"
+            - generic [ref=e139]:
+              - generic [ref=e140]:
+                - img [ref=e141]
+                - heading "Plaza de parking" [level=3] [ref=e145]
+              - paragraph [ref=e146]: Al acceder a la urbanización, debes girar a la derecha. Continua recto, y verás a la izquierda las plazas de aparcamiento. La plaza es la número 288. Hay un cepo puesto para evitar que la encuentres ocupada cuando llegues. Utiliza la llave que tienes en el llavero.
+              - img "Plaza de parking" [ref=e148]
+          - generic [ref=e151]:
+            - generic [ref=e152]: "4"
+            - generic [ref=e153]:
+              - generic [ref=e154]:
+                - img [ref=e155]
+                - heading "Ir hacia el apartamento" [level=3] [ref=e159]
+              - paragraph [ref=e160]: Justo frente a la plaza de parking, está el camino para llegar al apartamento. Pasa por entre los dos edificios, continua caminando y encontrarás la piscina a tu derecha, sigue caminando de frente y vuelve a pasar entre los dos edificios, y gira a la izquierda.
+          - generic [ref=e163]:
+            - generic [ref=e164]: "5"
+            - generic [ref=e165]:
+              - generic [ref=e166]:
+                - img [ref=e167]
+                - heading "Escaleras de subida" [level=3] [ref=e171]
+              - paragraph [ref=e172]: Continua caminando recto, hay unas escaleras de subida a tu izquierda, deja esas y continua caminando hasta que encuentres las siguientes. Sube por las escaleras y la primera puerta que encuentras es la 1-5. Has llegado.
+              - img "Escaleras de subida" [ref=e174]
+        - generic [ref=e175]:
+          - paragraph [ref=e176]: ¿Problemas para entrar? Contacta con Maden
+          - generic [ref=e177]:
+            - button "WhatsApp" [ref=e178]:
+              - img [ref=e179]
+              - text: WhatsApp
+            - button "Llamar" [ref=e181]:
+              - img [ref=e182]
+              - text: Llamar
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e189] [cursor=pointer]:
+    - img [ref=e190]
+  - alert [ref=e193]
+  - navigation [ref=e194]:
+    - generic [ref=e195]:
+      - button "Inicio" [ref=e196] [cursor=pointer]:
+        - img [ref=e197]
+        - generic [ref=e200]: Inicio
+      - button "Info" [ref=e201] [cursor=pointer]:
+        - img [ref=e202]
+        - generic [ref=e204]: Info
+      - button "Guía" [ref=e205] [cursor=pointer]:
+        - img [ref=e206]
+        - generic [ref=e208]: Guía
+      - button "Comer" [ref=e209] [cursor=pointer]:
+        - img [ref=e210]
+        - generic [ref=e215]: Comer
+      - button "SOS" [ref=e216] [cursor=pointer]:
+        - img [ref=e217]
+        - generic [ref=e220]: SOS
+      - button "Contacto" [ref=e221] [cursor=pointer]:
+        - img [ref=e222]
+        - generic [ref=e226]: Contacto
+  - button "Abrir asistente de ayuda" [ref=e227]:
+    - img [ref=e229]

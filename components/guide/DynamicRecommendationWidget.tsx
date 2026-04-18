@@ -13,6 +13,7 @@ interface DynamicRecommendationWidgetProps {
     onNavigate: (type: string, payload: { recId: string }) => void;
     accessToken?: string;
     propertyId?: string;
+    themeId?: string;
     theme: {
         cardBg: string;
         chipIconColor: string;
@@ -25,6 +26,16 @@ interface DynamicRecommendationWidgetProps {
         chipLayout?: string;
         accentText?: string;
     };
+}
+
+function getThirdAccent(themeId: string) {
+    switch (themeId) {
+        case 'urban':   return { color: '#00E5FF', bg: 'rgba(0,229,255,0.08)', badgeBg: 'rgba(0,229,255,0.08)', badgeColor: '#00E5FF', badgeBorder: '1px solid rgba(0,229,255,0.20)' };
+        case 'coastal': return { color: '#EA580C', bg: '#FFF7ED',               badgeBg: '#FFF7ED',   badgeColor: '#EA580C', badgeBorder: 'none' };
+        case 'warm':    return { color: '#B5533C', bg: '#FEF0EC',               badgeBg: '#B5533C',   badgeColor: '#ffffff', badgeBorder: 'none' };
+        case 'luxury':  return { color: '#1B2A4A', bg: 'rgba(27,42,74,0.07)',   badgeBg: 'rgba(27,42,74,0.08)', badgeColor: '#1B2A4A', badgeBorder: '1px solid rgba(27,42,74,0.18)' };
+        default:        return { color: '#3F3F46', bg: '#F4F4F5',               badgeBg: '#F4F4F5',   badgeColor: '#3F3F46', badgeBorder: '1px solid #E4E4E7' };
+    }
 }
 
 // ─── Categorías que NUNCA aparecen en el slot destacado ──────────────────────
@@ -211,8 +222,10 @@ export function DynamicRecommendationWidget({
     onNavigate,
     accessToken,
     propertyId,
+    themeId = 'modern',
     theme
 }: DynamicRecommendationWidgetProps) {
+    const third = getThirdAccent(themeId);
     const now = new Date();
     const hour = now.getHours();
     const minute = now.getMinutes();
@@ -289,10 +302,10 @@ export function DynamicRecommendationWidget({
                                 {timeStr} • {localizedGreeting} {emoji}
                             </span>
                         </div>
-                        <span className={cn(
-                            "px-2 py-0.5 text-[9px] font-black rounded-full uppercase tracking-wider",
-                            theme.chipLayout === 'stacked' ? 'bg-[#0EA5E9] text-white' : 'bg-[#f59e0b] text-amber-900'
-                        )}>
+                        <span
+                            className="px-2 py-0.5 text-[9px] font-black rounded-full uppercase tracking-wider"
+                            style={{ backgroundColor: third.badgeBg, color: third.badgeColor, border: third.badgeBorder }}
+                        >
                             {labelRecomendacion}
                         </span>
                     </div>
@@ -323,17 +336,20 @@ export function DynamicRecommendationWidget({
                     <div className="flex flex-wrap gap-2 mb-5">
                         {priceRange && <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">{priceRange}</span>}
                         {distanceText && (
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                <MapPin size={10} className="opacity-50" />{distanceText}
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1"
+                                style={{ backgroundColor: third.bg, color: third.color }}>
+                                <MapPin size={10} className="opacity-70" />{distanceText}
                             </span>
                         )}
                         {openingHoursStr && (
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                <Clock size={10} className="opacity-50" />{openingHoursStr}
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1"
+                                style={{ backgroundColor: third.bg, color: third.color }}>
+                                <Clock size={10} className="opacity-70" />{openingHoursStr}
                             </span>
                         )}
                         {tags.slice(0, 2).map((tag: string) => (
-                            <span key={tag} className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md">#{tag}</span>
+                            <span key={tag} className="text-[10px] font-bold px-2 py-0.5 rounded-md"
+                                style={{ backgroundColor: third.bg, color: third.color }}>#{tag}</span>
                         ))}
                     </div>
 
@@ -342,8 +358,9 @@ export function DynamicRecommendationWidget({
                         className={cn(
                             theme.chipLayout === 'stacked'
                                 ? cn('w-full py-3 rounded-full text-sm font-extrabold tracking-widest uppercase flex items-center justify-center gap-2', theme.actionBtn || 'bg-[#0EA5E9] text-white')
-                                : cn('text-xs font-black flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-widest', theme.chipIconColor || 'text-primary')
+                                : 'text-xs font-black flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-widest'
                         )}
+                        style={theme.chipLayout !== 'stacked' ? { color: third.color } : undefined}
                     >
                         {labelVerMas} <ChevronRight size={14} strokeWidth={3} />
                     </button>

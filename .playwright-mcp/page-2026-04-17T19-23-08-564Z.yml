@@ -1,0 +1,87 @@
+- generic [active] [ref=e1]:
+  - main [ref=e4]:
+    - generic [ref=e92]:
+      - generic [ref=e93]:
+        - button [ref=e94]:
+          - img [ref=e95]
+        - heading "NORMAS DE LA CASA" [level=1] [ref=e97]
+        - button "es" [ref=e98]:
+          - generic [ref=e99]: es
+          - img
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - generic [ref=e102]:
+            - img [ref=e104]
+            - generic [ref=e109]:
+              - paragraph [ref=e110]: No fumadores
+              - paragraph [ref=e111]: Por favor, no fume en el interior del alojamiento.
+          - generic [ref=e112]:
+            - img [ref=e114]
+            - generic [ref=e120]:
+              - paragraph [ref=e121]: No eventos
+              - paragraph [ref=e122]: No están permitidas fiestas ni reuniones de más personas de las contratadas.
+          - generic [ref=e123]:
+            - img [ref=e125]
+            - generic [ref=e129]:
+              - paragraph [ref=e130]: Respeta el descanso
+              - paragraph [ref=e131]: Mantén el volumen bajo en el horario de silencio.
+          - generic [ref=e132]:
+            - img [ref=e134]
+            - generic [ref=e137]:
+              - paragraph [ref=e138]: Cuida la casa
+              - paragraph [ref=e139]: Trátala como si fuera tuya. Si algo se rompe, avísanos lo antes posible.
+          - generic [ref=e140]:
+            - img [ref=e142]
+            - generic [ref=e149]:
+              - paragraph [ref=e150]: Deja todo en orden
+              - paragraph [ref=e151]: Por favor, deja el alojamiento como lo encontraste.
+          - generic [ref=e152]:
+            - img [ref=e154]
+            - generic [ref=e159]:
+              - paragraph [ref=e160]: Cuida el aforo
+              - paragraph [ref=e161]: No se permite más personas de las contratadas. La ocupación máxima es de 4 personas.
+        - generic [ref=e162]:
+          - heading "Horarios" [level=3] [ref=e163]
+          - generic [ref=e164]:
+            - generic [ref=e165]:
+              - generic [ref=e166]:
+                - img [ref=e168]
+                - generic [ref=e171]: Silencio
+              - generic [ref=e172]: 22:00 - 08:00
+            - generic [ref=e173]:
+              - generic [ref=e174]:
+                - img [ref=e176]
+                - generic [ref=e180]: Check-in
+              - generic [ref=e181]: 15:00 - 22:00
+            - generic [ref=e182]:
+              - generic [ref=e183]:
+                - img [ref=e185]
+                - generic [ref=e188]: Check-out
+              - generic [ref=e189]: 11:00
+        - paragraph [ref=e191]: Gracias por respetar estas normas 🙏
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e197] [cursor=pointer]:
+    - img [ref=e198]
+  - alert [ref=e201]
+  - navigation [ref=e202]:
+    - generic [ref=e203]:
+      - button "Inicio" [ref=e204] [cursor=pointer]:
+        - img [ref=e205]
+        - generic [ref=e208]: Inicio
+      - button "Info" [ref=e209] [cursor=pointer]:
+        - img [ref=e210]
+        - generic [ref=e212]: Info
+      - button "Guía" [ref=e213] [cursor=pointer]:
+        - img [ref=e214]
+        - generic [ref=e216]: Guía
+      - button "Comer" [ref=e217] [cursor=pointer]:
+        - img [ref=e218]
+        - generic [ref=e223]: Comer
+      - button "SOS" [ref=e224] [cursor=pointer]:
+        - img [ref=e225]
+        - generic [ref=e228]: SOS
+      - button "Contacto" [ref=e229] [cursor=pointer]:
+        - img [ref=e230]
+        - generic [ref=e234]: Contacto
+  - button "Abrir asistente de ayuda" [ref=e235]:
+    - img [ref=e237]

@@ -1,0 +1,1056 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - link "GuideFlow" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img [ref=e6]
+          - generic [ref=e12]: GuideFlow
+        - button [ref=e13]:
+          - img [ref=e14]
+      - navigation [ref=e17]:
+        - list [ref=e18]:
+          - listitem [ref=e153]:
+            - link "Inicio" [ref=e154] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e155]
+              - generic [ref=e158]: Inicio
+          - listitem [ref=e159]:
+            - link "Propiedades" [ref=e160] [cursor=pointer]:
+              - /url: /dashboard/properties
+              - img [ref=e161]
+              - generic [ref=e165]: Propiedades
+          - listitem [ref=e167]:
+            - link "Reservas" [ref=e168] [cursor=pointer]:
+              - /url: /dashboard/bookings
+              - img [ref=e169]
+              - generic [ref=e172]: Reservas
+          - listitem [ref=e173]:
+            - link "Calendario" [ref=e174] [cursor=pointer]:
+              - /url: /dashboard/calendar
+              - img [ref=e175]
+              - generic [ref=e177]: Calendario
+          - listitem [ref=e178]:
+            - link "Analiticas" [ref=e179] [cursor=pointer]:
+              - /url: /dashboard/analytics
+              - img [ref=e180]
+              - generic [ref=e182]: Analiticas
+          - listitem [ref=e183]:
+            - link "Seguridad" [ref=e184] [cursor=pointer]:
+              - /url: /dashboard/security
+              - img [ref=e185]
+              - generic [ref=e188]: Seguridad
+          - listitem [ref=e189]:
+            - link "Ajustes" [ref=e190] [cursor=pointer]:
+              - /url: /dashboard/settings
+              - img [ref=e191]
+              - generic [ref=e194]: Ajustes
+    - generic [ref=e61]:
+      - banner [ref=e62]:
+        - link "GuideFlow" [ref=e64] [cursor=pointer]:
+          - /url: /
+          - img [ref=e65]
+          - generic [ref=e71]: GuideFlow
+        - generic [ref=e72]:
+          - button [ref=e73]:
+            - img
+          - button [ref=e75]:
+            - generic [ref=e76]:
+              - img
+      - main [ref=e77]:
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - generic [ref=e80]:
+              - heading "Mis Propiedades" [level=1] [ref=e81]
+              - paragraph [ref=e82]: Gestiona tus alojamientos y sus guías digitales.
+            - link "Nueva Propiedad" [ref=e83] [cursor=pointer]:
+              - /url: /dashboard/properties/new
+              - img
+              - text: Nueva Propiedad
+          - generic [ref=e84]:
+            - generic [ref=e85]:
+              - button "Todas 27" [ref=e195]:
+                - text: Todas
+                - generic [ref=e196]: "27"
+              - button "Activas 18" [ref=e197]:
+                - text: Activas
+                - generic [ref=e198]: "18"
+              - button "Borradores 6" [ref=e199]:
+                - text: Borradores
+                - generic [ref=e200]: "6"
+              - button "Archivadas 3" [ref=e201]:
+                - text: Archivadas
+                - generic [ref=e202]: "3"
+            - generic [ref=e90]:
+              - generic [ref=e91]:
+                - img [ref=e92]
+                - textbox "Buscar propiedad..." [ref=e95]
+              - generic [ref=e97]:
+                - button [ref=e98]:
+                  - img [ref=e99]
+                - button [ref=e104]:
+                  - img [ref=e105]
+          - generic [ref=e106]:
+            - generic [ref=e203]:
+              - generic [ref=e204]:
+                - img "Villa Franciscanos" [ref=e205]
+                - generic [ref=e207]: Activa
+              - generic [ref=e208]:
+                - heading "Villa Franciscanos" [level=3] [ref=e209]
+                - generic [ref=e210]:
+                  - img [ref=e211]
+                  - generic [ref=e214]: Vera, Spain
+              - generic [ref=e216]:
+                - generic [ref=e217]:
+                  - img [ref=e218]
+                  - generic [ref=e223]: "4"
+                  - text: huésp.
+                - generic [ref=e224]: ·
+                - generic [ref=e225]:
+                  - img [ref=e226]
+                  - generic [ref=e228]: "2"
+                  - text: hab.
+                - generic [ref=e229]: ·
+                - generic [ref=e230]:
+                  - img [ref=e231]
+                  - generic [ref=e234]: "2"
+                  - text: baños
+              - generic [ref=e236]:
+                - generic [ref=e237]: Guía completada
+                - generic [ref=e238]: 100%
+              - generic [ref=e241]:
+                - link "Editar" [ref=e242] [cursor=pointer]:
+                  - /url: /dashboard/properties/ea80d2ce-4085-4020-80a5-10d1cd1f3b02/setup
+                  - img
+                  - text: Editar
+                - button [ref=e243]:
+                  - img
+            - generic [ref=e244]:
+              - generic [ref=e245]:
+                - generic [ref=e246]:
+                  - img [ref=e247]
+                  - generic [ref=e251]: Sin imagen
+                - generic [ref=e253]: Activa
+              - generic [ref=e254]:
+                - heading "pepi" [level=3] [ref=e255]
+                - generic [ref=e256]:
+                  - img [ref=e257]
+                  - generic [ref=e260]: Madrid, Spain
+              - generic [ref=e262]:
+                - generic [ref=e263]:
+                  - img [ref=e264]
+                  - generic [ref=e269]: "2"
+                  - text: huésp.
+                - generic [ref=e270]: ·
+                - generic [ref=e271]:
+                  - img [ref=e272]
+                  - generic [ref=e274]: "1"
+                  - text: hab.
+                - generic [ref=e275]: ·
+                - generic [ref=e276]:
+                  - img [ref=e277]
+                  - generic [ref=e280]: "1"
+                  - text: baños
+              - generic [ref=e282]:
+                - generic [ref=e283]: Guía completada
+                - generic [ref=e284]: 69%
+              - generic [ref=e287]:
+                - link "Editar" [ref=e288] [cursor=pointer]:
+                  - /url: /dashboard/properties/8638a345-deea-42fd-883c-8d4dba82487d/setup
+                  - img
+                  - text: Editar
+                - button [ref=e289]:
+                  - img
+            - generic [ref=e290]:
+              - generic [ref=e291]:
+                - img "villa juani" [ref=e292]
+                - generic [ref=e294]: Activa
+              - generic [ref=e295]:
+                - heading "villa juani" [level=3] [ref=e296]
+                - generic [ref=e297]:
+                  - img [ref=e298]
+                  - generic [ref=e301]: Vera, Spain
+              - generic [ref=e303]:
+                - generic [ref=e304]:
+                  - img [ref=e305]
+                  - generic [ref=e310]: "4"
+                  - text: huésp.
+                - generic [ref=e311]: ·
+                - generic [ref=e312]:
+                  - img [ref=e313]
+                  - generic [ref=e315]: "2"
+                  - text: hab.
+                - generic [ref=e316]: ·
+                - generic [ref=e317]:
+                  - img [ref=e318]
+                  - generic [ref=e321]: "2"
+                  - text: baños
+              - generic [ref=e323]:
+                - generic [ref=e324]: Guía completada
+                - generic [ref=e325]: 100%
+              - generic [ref=e328]:
+                - link "Editar" [ref=e329] [cursor=pointer]:
+                  - /url: /dashboard/properties/9faeea40-ac50-48ca-9c19-7917b4d20691/setup
+                  - img
+                  - text: Editar
+                - button [ref=e330]:
+                  - img
+            - generic [ref=e331]:
+              - generic [ref=e332]:
+                - img "Lavapies Hosting" [ref=e333]
+                - generic [ref=e335]: Activa
+              - generic [ref=e336]:
+                - heading "Lavapies Hosting" [level=3] [ref=e337]
+                - generic [ref=e338]:
+                  - img [ref=e339]
+                  - generic [ref=e342]: Madrid, Spain
+              - generic [ref=e344]:
+                - generic [ref=e345]:
+                  - img [ref=e346]
+                  - generic [ref=e351]: "6"
+                  - text: huésp.
+                - generic [ref=e352]: ·
+                - generic [ref=e353]:
+                  - img [ref=e354]
+                  - generic [ref=e356]: "3"
+                  - text: hab.
+                - generic [ref=e357]: ·
+                - generic [ref=e358]:
+                  - img [ref=e359]
+                  - generic [ref=e362]: "2"
+                  - text: baños
+              - generic [ref=e364]:
+                - generic [ref=e365]: Guía completada
+                - generic [ref=e366]: 100%
+              - generic [ref=e369]:
+                - link "Editar" [ref=e370] [cursor=pointer]:
+                  - /url: /dashboard/properties/b43255cc-7cfa-41ff-a771-b5ab13eec460/setup
+                  - img
+                  - text: Editar
+                - button [ref=e371]:
+                  - img
+            - generic [ref=e372]:
+              - generic [ref=e373]:
+                - img "Casa Honda" [ref=e374]
+                - generic [ref=e376]: Activa
+              - generic [ref=e377]:
+                - heading "Casa Honda" [level=3] [ref=e378]
+                - generic [ref=e379]:
+                  - img [ref=e380]
+                  - generic [ref=e383]: Madrid, Spain
+              - generic [ref=e385]:
+                - generic [ref=e386]:
+                  - img [ref=e387]
+                  - generic [ref=e392]: "4"
+                  - text: huésp.
+                - generic [ref=e393]: ·
+                - generic [ref=e394]:
+                  - img [ref=e395]
+                  - generic [ref=e397]: "2"
+                  - text: hab.
+                - generic [ref=e398]: ·
+                - generic [ref=e399]:
+                  - img [ref=e400]
+                  - generic [ref=e403]: "2"
+                  - text: baños
+              - generic [ref=e405]:
+                - generic [ref=e406]: Guía completada
+                - generic [ref=e407]: 100%
+              - generic [ref=e410]:
+                - link "Editar" [ref=e411] [cursor=pointer]:
+                  - /url: /dashboard/properties/ae0fbb43-e232-409c-9dd0-14137234f127/setup
+                  - img
+                  - text: Editar
+                - button [ref=e412]:
+                  - img
+            - generic [ref=e413]:
+              - generic [ref=e414]:
+                - img "dfgdfg" [ref=e415]
+                - generic [ref=e417]: Borrador
+              - generic [ref=e418]:
+                - heading "dfgdfg" [level=3] [ref=e419]
+                - generic [ref=e420]:
+                  - img [ref=e421]
+                  - generic [ref=e424]: Madrid, Spain
+              - generic [ref=e426]:
+                - generic [ref=e427]:
+                  - img [ref=e428]
+                  - generic [ref=e433]: "2"
+                  - text: huésp.
+                - generic [ref=e434]: ·
+                - generic [ref=e435]:
+                  - img [ref=e436]
+                  - generic [ref=e438]: "3"
+                  - text: hab.
+                - generic [ref=e439]: ·
+                - generic [ref=e440]:
+                  - img [ref=e441]
+                  - generic [ref=e444]: "2"
+                  - text: baños
+              - generic [ref=e446]:
+                - generic [ref=e447]: Guía completada
+                - generic [ref=e448]: 38%
+              - generic [ref=e451]:
+                - link "Editar" [ref=e452] [cursor=pointer]:
+                  - /url: /dashboard/properties/28088cce-41a6-4bfa-a72e-66c796874fdb/setup
+                  - img
+                  - text: Editar
+                - button [ref=e453]:
+                  - img
+            - generic [ref=e454]:
+              - generic [ref=e455]:
+                - img "Villa Palmera" [ref=e456]
+                - generic [ref=e458]: Activa
+              - generic [ref=e459]:
+                - heading "Villa Palmera" [level=3] [ref=e460]
+                - generic [ref=e461]:
+                  - img [ref=e462]
+                  - generic [ref=e465]: Madrid, Spain
+              - generic [ref=e467]:
+                - generic [ref=e468]:
+                  - img [ref=e469]
+                  - generic [ref=e474]: "4"
+                  - text: huésp.
+                - generic [ref=e475]: ·
+                - generic [ref=e476]:
+                  - img [ref=e477]
+                  - generic [ref=e479]: "2"
+                  - text: hab.
+                - generic [ref=e480]: ·
+                - generic [ref=e481]:
+                  - img [ref=e482]
+                  - generic [ref=e485]: "2"
+                  - text: baños
+              - generic [ref=e487]:
+                - generic [ref=e488]: Guía completada
+                - generic [ref=e489]: 100%
+              - generic [ref=e492]:
+                - link "Editar" [ref=e493] [cursor=pointer]:
+                  - /url: /dashboard/properties/df6d3d75-26f1-4e85-99f0-c9f4f494abf3/setup
+                  - img
+                  - text: Editar
+                - button [ref=e494]:
+                  - img
+            - generic [ref=e495]:
+              - generic [ref=e496]:
+                - img "Maria Antonia" [ref=e497]
+                - generic [ref=e499]: Activa
+              - generic [ref=e500]:
+                - heading "Maria Antonia" [level=3] [ref=e501]
+                - generic [ref=e502]:
+                  - img [ref=e503]
+                  - generic [ref=e506]: Vera, Spain
+              - generic [ref=e508]:
+                - generic [ref=e509]:
+                  - img [ref=e510]
+                  - generic [ref=e515]: "2"
+                  - text: huésp.
+                - generic [ref=e516]: ·
+                - generic [ref=e517]:
+                  - img [ref=e518]
+                  - generic [ref=e520]: "2"
+                  - text: hab.
+                - generic [ref=e521]: ·
+                - generic [ref=e522]:
+                  - img [ref=e523]
+                  - generic [ref=e526]: "2"
+                  - text: baños
+              - generic [ref=e528]:
+                - generic [ref=e529]: Guía completada
+                - generic [ref=e530]: 100%
+              - generic [ref=e533]:
+                - link "Editar" [ref=e534] [cursor=pointer]:
+                  - /url: /dashboard/properties/06fe9d69-b372-42ec-888c-3c91cf95bbf1/setup
+                  - img
+                  - text: Editar
+                - button [ref=e535]:
+                  - img
+            - generic [ref=e536]:
+              - generic [ref=e537]:
+                - img "marijuani" [ref=e538]
+                - generic [ref=e540]: Activa
+              - generic [ref=e541]:
+                - heading "marijuani" [level=3] [ref=e542]
+                - generic [ref=e543]:
+                  - img [ref=e544]
+                  - generic [ref=e547]: Vera, Spain
+              - generic [ref=e549]:
+                - generic [ref=e550]:
+                  - img [ref=e551]
+                  - generic [ref=e556]: "2"
+                  - text: huésp.
+                - generic [ref=e557]: ·
+                - generic [ref=e558]:
+                  - img [ref=e559]
+                  - generic [ref=e561]: "2"
+                  - text: hab.
+                - generic [ref=e562]: ·
+                - generic [ref=e563]:
+                  - img [ref=e564]
+                  - generic [ref=e567]: "2"
+                  - text: baños
+              - generic [ref=e569]:
+                - generic [ref=e570]: Guía completada
+                - generic [ref=e571]: 100%
+              - generic [ref=e574]:
+                - link "Editar" [ref=e575] [cursor=pointer]:
+                  - /url: /dashboard/properties/a935818d-24e4-49c4-9edf-5b090586a259/setup
+                  - img
+                  - text: Editar
+                - button [ref=e576]:
+                  - img
+            - generic [ref=e577]:
+              - generic [ref=e578]:
+                - img "maripepi" [ref=e579]
+                - generic [ref=e581]: Activa
+              - generic [ref=e582]:
+                - heading "maripepi" [level=3] [ref=e583]
+                - generic [ref=e584]:
+                  - img [ref=e585]
+                  - generic [ref=e588]: Sin ubicación
+              - generic [ref=e590]:
+                - generic [ref=e591]:
+                  - img [ref=e592]
+                  - generic [ref=e597]: "2"
+                  - text: huésp.
+                - generic [ref=e598]: ·
+                - generic [ref=e599]:
+                  - img [ref=e600]
+                  - generic [ref=e602]: "1"
+                  - text: hab.
+                - generic [ref=e603]: ·
+                - generic [ref=e604]:
+                  - img [ref=e605]
+                  - generic [ref=e608]: "1"
+                  - text: baños
+              - generic [ref=e610]:
+                - generic [ref=e611]: Guía completada
+                - generic [ref=e612]: 8%
+              - generic [ref=e615]:
+                - link "Editar" [ref=e616] [cursor=pointer]:
+                  - /url: /dashboard/properties/6e02d03f-61f2-4c6f-a119-33bd37b36be3/setup
+                  - img
+                  - text: Editar
+                - button [ref=e617]:
+                  - img
+            - generic [ref=e618]:
+              - generic [ref=e619]:
+                - img "Villa Enrique" [ref=e620]
+                - generic [ref=e622]: Activa
+              - generic [ref=e623]:
+                - heading "Villa Enrique" [level=3] [ref=e624]
+                - generic [ref=e625]:
+                  - img [ref=e626]
+                  - generic [ref=e629]: Las Rozas de Madrid, Spain
+              - generic [ref=e631]:
+                - generic [ref=e632]:
+                  - img [ref=e633]
+                  - generic [ref=e638]: "2"
+                  - text: huésp.
+                - generic [ref=e639]: ·
+                - generic [ref=e640]:
+                  - img [ref=e641]
+                  - generic [ref=e643]: "1"
+                  - text: hab.
+                - generic [ref=e644]: ·
+                - generic [ref=e645]:
+                  - img [ref=e646]
+                  - generic [ref=e649]: "1"
+                  - text: baños
+              - generic [ref=e651]:
+                - generic [ref=e652]: Guía completada
+                - generic [ref=e653]: 100%
+              - generic [ref=e656]:
+                - link "Editar" [ref=e657] [cursor=pointer]:
+                  - /url: /dashboard/properties/c77e2c17-7c57-45ab-8abc-79e6b84fa01c/setup
+                  - img
+                  - text: Editar
+                - button [ref=e658]:
+                  - img
+            - generic [ref=e659]:
+              - generic [ref=e660]:
+                - generic [ref=e661]:
+                  - img [ref=e662]
+                  - generic [ref=e666]: Sin imagen
+                - generic [ref=e668]: Archivada
+              - generic [ref=e669]:
+                - heading "fghgfghg" [level=3] [ref=e670]
+                - generic [ref=e671]:
+                  - img [ref=e672]
+                  - generic [ref=e675]: Sin ubicación
+              - generic [ref=e677]:
+                - generic [ref=e678]:
+                  - img [ref=e679]
+                  - generic [ref=e684]: "2"
+                  - text: huésp.
+                - generic [ref=e685]: ·
+                - generic [ref=e686]:
+                  - img [ref=e687]
+                  - generic [ref=e689]: "1"
+                  - text: hab.
+                - generic [ref=e690]: ·
+                - generic [ref=e691]:
+                  - img [ref=e692]
+                  - generic [ref=e695]: "1"
+                  - text: baños
+              - generic [ref=e697]:
+                - generic [ref=e698]: Guía completada
+                - generic [ref=e699]: 8%
+              - generic [ref=e702]:
+                - link "Editar" [ref=e703] [cursor=pointer]:
+                  - /url: /dashboard/properties/12906399-0000-4943-812e-6eadfa843339/setup
+                  - img
+                  - text: Editar
+                - button [ref=e704]:
+                  - img
+            - generic [ref=e705]:
+              - generic [ref=e706]:
+                - generic [ref=e707]:
+                  - img [ref=e708]
+                  - generic [ref=e712]: Sin imagen
+                - generic [ref=e714]: Borrador
+              - generic [ref=e715]:
+                - heading "hhhhhhhhhh" [level=3] [ref=e716]
+                - generic [ref=e717]:
+                  - img [ref=e718]
+                  - generic [ref=e721]: Madrid, Spain
+              - generic [ref=e723]:
+                - generic [ref=e724]:
+                  - img [ref=e725]
+                  - generic [ref=e730]: "2"
+                  - text: huésp.
+                - generic [ref=e731]: ·
+                - generic [ref=e732]:
+                  - img [ref=e733]
+                  - generic [ref=e735]: "1"
+                  - text: hab.
+                - generic [ref=e736]: ·
+                - generic [ref=e737]:
+                  - img [ref=e738]
+                  - generic [ref=e741]: "1"
+                  - text: baños
+              - generic [ref=e743]:
+                - generic [ref=e744]: Guía completada
+                - generic [ref=e745]: 100%
+              - generic [ref=e748]:
+                - link "Editar" [ref=e749] [cursor=pointer]:
+                  - /url: /dashboard/properties/01076d04-b577-473b-a8ef-acf23b54429f/setup
+                  - img
+                  - text: Editar
+                - button [ref=e750]:
+                  - img
+            - generic [ref=e751]:
+              - generic [ref=e752]:
+                - generic [ref=e753]:
+                  - img [ref=e754]
+                  - generic [ref=e758]: Sin imagen
+                - generic [ref=e760]: Borrador
+              - generic [ref=e761]:
+                - heading "jjjjjjjjjjjjjjjjj" [level=3] [ref=e762]
+                - generic [ref=e763]:
+                  - img [ref=e764]
+                  - generic [ref=e767]: Sin ubicación
+              - generic [ref=e769]:
+                - generic [ref=e770]:
+                  - img [ref=e771]
+                  - generic [ref=e776]: "2"
+                  - text: huésp.
+                - generic [ref=e777]: ·
+                - generic [ref=e778]:
+                  - img [ref=e779]
+                  - generic [ref=e781]: "1"
+                  - text: hab.
+                - generic [ref=e782]: ·
+                - generic [ref=e783]:
+                  - img [ref=e784]
+                  - generic [ref=e787]: "1"
+                  - text: baños
+              - generic [ref=e789]:
+                - generic [ref=e790]: Guía completada
+                - generic [ref=e791]: 8%
+              - generic [ref=e794]:
+                - link "Editar" [ref=e795] [cursor=pointer]:
+                  - /url: /dashboard/properties/9df727ae-139a-4538-910e-de9cfe46bbc3/setup
+                  - img
+                  - text: Editar
+                - button [ref=e796]:
+                  - img
+            - generic [ref=e797]:
+              - generic [ref=e798]:
+                - img "KKKKKK" [ref=e799]
+                - generic [ref=e801]: Archivada
+              - generic [ref=e802]:
+                - heading "KKKKKK" [level=3] [ref=e803]
+                - generic [ref=e804]:
+                  - img [ref=e805]
+                  - generic [ref=e808]: Sin ubicación
+              - generic [ref=e810]:
+                - generic [ref=e811]:
+                  - img [ref=e812]
+                  - generic [ref=e817]: "2"
+                  - text: huésp.
+                - generic [ref=e818]: ·
+                - generic [ref=e819]:
+                  - img [ref=e820]
+                  - generic [ref=e822]: "1"
+                  - text: hab.
+                - generic [ref=e823]: ·
+                - generic [ref=e824]:
+                  - img [ref=e825]
+                  - generic [ref=e828]: "1"
+                  - text: baños
+              - generic [ref=e830]:
+                - generic [ref=e831]: Guía completada
+                - generic [ref=e832]: 23%
+              - generic [ref=e835]:
+                - link "Editar" [ref=e836] [cursor=pointer]:
+                  - /url: /dashboard/properties/b79d2694-7c85-4bb0-9f03-d9413ffec6db/setup
+                  - img
+                  - text: Editar
+                - button [ref=e837]:
+                  - img
+            - generic [ref=e838]:
+              - generic [ref=e839]:
+                - generic [ref=e840]:
+                  - img [ref=e841]
+                  - generic [ref=e845]: Sin imagen
+                - generic [ref=e847]: Borrador
+              - generic [ref=e848]:
+                - heading "KKKKKKKKK" [level=3] [ref=e849]
+                - generic [ref=e850]:
+                  - img [ref=e851]
+                  - generic [ref=e854]: Sin ubicación
+              - generic [ref=e856]:
+                - generic [ref=e857]:
+                  - img [ref=e858]
+                  - generic [ref=e863]: "2"
+                  - text: huésp.
+                - generic [ref=e864]: ·
+                - generic [ref=e865]:
+                  - img [ref=e866]
+                  - generic [ref=e868]: "1"
+                  - text: hab.
+                - generic [ref=e869]: ·
+                - generic [ref=e870]:
+                  - img [ref=e871]
+                  - generic [ref=e874]: "1"
+                  - text: baños
+              - generic [ref=e876]:
+                - generic [ref=e877]: Guía completada
+                - generic [ref=e878]: 15%
+              - generic [ref=e881]:
+                - link "Editar" [ref=e882] [cursor=pointer]:
+                  - /url: /dashboard/properties/805c4670-8b4a-4083-92f1-51e8d1622de5/setup
+                  - img
+                  - text: Editar
+                - button [ref=e883]:
+                  - img
+            - generic [ref=e884]:
+              - generic [ref=e885]:
+                - generic [ref=e886]:
+                  - img [ref=e887]
+                  - generic [ref=e891]: Sin imagen
+                - generic [ref=e893]: Borrador
+              - generic [ref=e894]:
+                - heading "KKKKKKKK" [level=3] [ref=e895]
+                - generic [ref=e896]:
+                  - img [ref=e897]
+                  - generic [ref=e900]: Sin ubicación
+              - generic [ref=e902]:
+                - generic [ref=e903]:
+                  - img [ref=e904]
+                  - generic [ref=e909]: "2"
+                  - text: huésp.
+                - generic [ref=e910]: ·
+                - generic [ref=e911]:
+                  - img [ref=e912]
+                  - generic [ref=e914]: "1"
+                  - text: hab.
+                - generic [ref=e915]: ·
+                - generic [ref=e916]:
+                  - img [ref=e917]
+                  - generic [ref=e920]: "1"
+                  - text: baños
+              - generic [ref=e922]:
+                - generic [ref=e923]: Guía completada
+                - generic [ref=e924]: 8%
+              - generic [ref=e927]:
+                - link "Editar" [ref=e928] [cursor=pointer]:
+                  - /url: /dashboard/properties/d63d15f9-593b-4d1d-a3e4-343ea5d54acf/setup
+                  - img
+                  - text: Editar
+                - button [ref=e929]:
+                  - img
+            - generic [ref=e930]:
+              - generic [ref=e931]:
+                - img "zzzzzz" [ref=e932]
+                - generic [ref=e934]: Borrador
+              - generic [ref=e935]:
+                - heading "zzzzzz" [level=3] [ref=e936]
+                - generic [ref=e937]:
+                  - img [ref=e938]
+                  - generic [ref=e941]: Madrid, Spain
+              - generic [ref=e943]:
+                - generic [ref=e944]:
+                  - img [ref=e945]
+                  - generic [ref=e950]: "2"
+                  - text: huésp.
+                - generic [ref=e951]: ·
+                - generic [ref=e952]:
+                  - img [ref=e953]
+                  - generic [ref=e955]: "1"
+                  - text: hab.
+                - generic [ref=e956]: ·
+                - generic [ref=e957]:
+                  - img [ref=e958]
+                  - generic [ref=e961]: "1"
+                  - text: baños
+              - generic [ref=e963]:
+                - generic [ref=e964]: Guía completada
+                - generic [ref=e965]: 100%
+              - generic [ref=e968]:
+                - link "Editar" [ref=e969] [cursor=pointer]:
+                  - /url: /dashboard/properties/125474e6-fa20-46e0-bf03-c37877fceec4/setup
+                  - img
+                  - text: Editar
+                - button [ref=e970]:
+                  - img
+            - generic [ref=e971]:
+              - generic [ref=e972]:
+                - img "VILLASOL" [ref=e973]
+                - generic [ref=e975]: Activa
+              - generic [ref=e976]:
+                - heading "VILLASOL" [level=3] [ref=e977]
+                - generic [ref=e978]:
+                  - img [ref=e979]
+                  - generic [ref=e982]: Madrid, Spain
+              - generic [ref=e984]:
+                - generic [ref=e985]:
+                  - img [ref=e986]
+                  - generic [ref=e991]: "2"
+                  - text: huésp.
+                - generic [ref=e992]: ·
+                - generic [ref=e993]:
+                  - img [ref=e994]
+                  - generic [ref=e996]: "2"
+                  - text: hab.
+                - generic [ref=e997]: ·
+                - generic [ref=e998]:
+                  - img [ref=e999]
+                  - generic [ref=e1002]: "2"
+                  - text: baños
+              - generic [ref=e1004]:
+                - generic [ref=e1005]: Guía completada
+                - generic [ref=e1006]: 85%
+              - generic [ref=e1009]:
+                - link "Editar" [ref=e1010] [cursor=pointer]:
+                  - /url: /dashboard/properties/d3af5f53-7a16-410b-a84c-0cd20122529a/setup
+                  - img
+                  - text: Editar
+                - button [ref=e1011]:
+                  - img
+            - generic [ref=e1012]:
+              - generic [ref=e1013]:
+                - img "VillaMACARENA" [ref=e1014]
+                - generic [ref=e1016]: Activa
+              - generic [ref=e1017]:
+                - heading "VillaMACARENA" [level=3] [ref=e1018]
+                - generic [ref=e1019]:
+                  - img [ref=e1020]
+                  - generic [ref=e1023]: Madrid, Spain
+              - generic [ref=e1025]:
+                - generic [ref=e1026]:
+                  - img [ref=e1027]
+                  - generic [ref=e1032]: "2"
+                  - text: huésp.
+                - generic [ref=e1033]: ·
+                - generic [ref=e1034]:
+                  - img [ref=e1035]
+                  - generic [ref=e1037]: "2"
+                  - text: hab.
+                - generic [ref=e1038]: ·
+                - generic [ref=e1039]:
+                  - img [ref=e1040]
+                  - generic [ref=e1043]: "2"
+                  - text: baños
+              - generic [ref=e1045]:
+                - generic [ref=e1046]: Guía completada
+                - generic [ref=e1047]: 62%
+              - generic [ref=e1050]:
+                - link "Editar" [ref=e1051] [cursor=pointer]:
+                  - /url: /dashboard/properties/cb08f3d7-51f9-4485-8be2-d7ee98b7d6b8/setup
+                  - img
+                  - text: Editar
+                - button [ref=e1052]:
+                  - img
+            - generic [ref=e1053]:
+              - generic [ref=e1054]:
+                - img "soniamar" [ref=e1055]
+                - generic [ref=e1057]: Activa
+              - generic [ref=e1058]:
+                - heading "soniamar" [level=3] [ref=e1059]
+                - generic [ref=e1060]:
+                  - img [ref=e1061]
+                  - generic [ref=e1064]: Madrid, Spain
+              - generic [ref=e1066]:
+                - generic [ref=e1067]:
+                  - img [ref=e1068]
+                  - generic [ref=e1073]: "4"
+                  - text: huésp.
+                - generic [ref=e1074]: ·
+                - generic [ref=e1075]:
+                  - img [ref=e1076]
+                  - generic [ref=e1078]: "2"
+                  - text: hab.
+                - generic [ref=e1079]: ·
+                - generic [ref=e1080]:
+                  - img [ref=e1081]
+                  - generic [ref=e1084]: "2"
+                  - text: baños
+              - generic [ref=e1086]:
+                - generic [ref=e1087]: Guía completada
+                - generic [ref=e1088]: 100%
+              - generic [ref=e1091]:
+                - link "Editar" [ref=e1092] [cursor=pointer]:
+                  - /url: /dashboard/properties/ce9b6177-b54a-4506-9815-577f9db98d7d/setup
+                  - img
+                  - text: Editar
+                - button [ref=e1093]:
+                  - img
+            - generic [ref=e1094]:
+              - generic [ref=e1095]:
+                - img "FuenteSol" [ref=e1096]
+                - generic [ref=e1098]: Activa
+              - generic [ref=e1099]:
+                - heading "FuenteSol" [level=3] [ref=e1100]
+                - generic [ref=e1101]:
+                  - img [ref=e1102]
+                  - generic [ref=e1105]: Vera, Spain
+              - generic [ref=e1107]:
+                - generic [ref=e1108]:
+                  - img [ref=e1109]
+                  - generic [ref=e1114]: "2"
+                  - text: huésp.
+                - generic [ref=e1115]: ·
+                - generic [ref=e1116]:
+                  - img [ref=e1117]
+                  - generic [ref=e1119]: "5"
+                  - text: hab.
+                - generic [ref=e1120]: ·
+                - generic [ref=e1121]:
+                  - img [ref=e1122]
+                  - generic [ref=e1125]: "2"
+                  - text: baños
+              - generic [ref=e1127]:
+                - generic [ref=e1128]: Guía completada
+                - generic [ref=e1129]: 31%
+              - generic [ref=e1132]:
+                - link "Editar" [ref=e1133] [cursor=pointer]:
+                  - /url: /dashboard/properties/1a434f7f-102f-440a-9820-5ec07f12a059/setup
+                  - img
+                  - text: Editar
+                - button [ref=e1134]:
+                  - img
+            - generic [ref=e1135]:
+              - generic [ref=e1136]:
+                - img "Verasol" [ref=e1137]
+                - generic [ref=e1139]: Activa
+              - generic [ref=e1140]:
+                - heading "Verasol" [level=3] [ref=e1141]
+                - generic [ref=e1142]:
+                  - img [ref=e1143]
+                  - generic [ref=e1146]: Vera, Spain
+              - generic [ref=e1148]:
+                - generic [ref=e1149]:
+                  - img [ref=e1150]
+                  - generic [ref=e1155]: "2"
+                  - text: huésp.
+                - generic [ref=e1156]: ·
+                - generic [ref=e1157]:
+                  - img [ref=e1158]
+                  - generic [ref=e1160]: "2"
+                  - text: hab.
+                - generic [ref=e1161]: ·
+                - generic [ref=e1162]:
+                  - img [ref=e1163]
+                  - generic [ref=e1166]: "3"
+                  - text: baños
+              - generic [ref=e1168]:
+                - generic [ref=e1169]: Guía completada
+                - generic [ref=e1170]: 54%
+              - generic [ref=e1173]:
+                - link "Editar" [ref=e1174] [cursor=pointer]:
+                  - /url: /dashboard/properties/b68f1e4a-817a-4172-9f92-26134ddb02a0/setup
+                  - img
+                  - text: Editar
+                - button [ref=e1175]:
+                  - img
+            - generic [ref=e1176]:
+              - generic [ref=e1177]:
+                - img "villamar" [ref=e1178]
+                - generic [ref=e1180]: Activa
+              - generic [ref=e1181]:
+                - heading "villamar" [level=3] [ref=e1182]
+                - generic [ref=e1183]:
+                  - img [ref=e1184]
+                  - generic [ref=e1187]: Vera, Spain
+              - generic [ref=e1189]:
+                - generic [ref=e1190]:
+                  - img [ref=e1191]
+                  - generic [ref=e1196]: "6"
+                  - text: huésp.
+                - generic [ref=e1197]: ·
+                - generic [ref=e1198]:
+                  - img [ref=e1199]
+                  - generic [ref=e1201]: "2"
+                  - text: hab.
+                - generic [ref=e1202]: ·
+                - generic [ref=e1203]:
+                  - img [ref=e1204]
+                  - generic [ref=e1207]: "2"
+                  - text: baños
+              - generic [ref=e1209]:
+                - generic [ref=e1210]: Guía completada
+                - generic [ref=e1211]: 23%
+              - generic [ref=e1214]:
+                - link "Editar" [ref=e1215] [cursor=pointer]:
+                  - /url: /dashboard/properties/078c1821-ae3e-4baa-9bf4-06b2eac109b6/setup
+                  - img
+                  - text: Editar
+                - button [ref=e1216]:
+                  - img
+            - generic [ref=e1217]:
+              - generic [ref=e1218]:
+                - img "jjj" [ref=e1219]
+                - generic [ref=e1221]: Activa
+              - generic [ref=e1222]:
+                - heading "jjj" [level=3] [ref=e1223]
+                - generic [ref=e1224]:
+                  - img [ref=e1225]
+                  - generic [ref=e1228]: Madrid, Spain
+              - generic [ref=e1230]:
+                - generic [ref=e1231]:
+                  - img [ref=e1232]
+                  - generic [ref=e1237]: "2"
+                  - text: huésp.
+                - generic [ref=e1238]: ·
+                - generic [ref=e1239]:
+                  - img [ref=e1240]
+                  - generic [ref=e1242]: "1"
+                  - text: hab.
+                - generic [ref=e1243]: ·
+                - generic [ref=e1244]:
+                  - img [ref=e1245]
+                  - generic [ref=e1248]: "1"
+                  - text: baños
+              - generic [ref=e1250]:
+                - generic [ref=e1251]: Guía completada
+                - generic [ref=e1252]: 100%
+              - generic [ref=e1255]:
+                - link "Editar" [ref=e1256] [cursor=pointer]:
+                  - /url: /dashboard/properties/37159afd-0eb0-498f-a756-38eb487527e7/setup
+                  - img
+                  - text: Editar
+                - button [ref=e1257]:
+                  - img
+            - generic [ref=e1258]:
+              - generic [ref=e1259]:
+                - generic [ref=e1260]:
+                  - img [ref=e1261]
+                  - generic [ref=e1265]: Sin imagen
+                - generic [ref=e1267]: Archivada
+              - generic [ref=e1268]:
+                - heading "aaaaaaa" [level=3] [ref=e1269]
+                - generic [ref=e1270]:
+                  - img [ref=e1271]
+                  - generic [ref=e1274]: Sin ubicación
+              - generic [ref=e1276]:
+                - generic [ref=e1277]:
+                  - img [ref=e1278]
+                  - generic [ref=e1283]: "2"
+                  - text: huésp.
+                - generic [ref=e1284]: ·
+                - generic [ref=e1285]:
+                  - img [ref=e1286]
+                  - generic [ref=e1288]: "1"
+                  - text: hab.
+                - generic [ref=e1289]: ·
+                - generic [ref=e1290]:
+                  - img [ref=e1291]
+                  - generic [ref=e1294]: "1"
+                  - text: baños
+              - generic [ref=e1296]:
+                - generic [ref=e1297]: Guía completada
+                - generic [ref=e1298]: 15%
+              - generic [ref=e1301]:
+                - link "Editar" [ref=e1302] [cursor=pointer]:
+                  - /url: /dashboard/properties/0fa170d4-7a49-481b-ab08-5eb00aec7b34/setup
+                  - img
+                  - text: Editar
+                - button [ref=e1303]:
+                  - img
+            - generic [ref=e1304]:
+              - generic [ref=e1305]:
+                - img "veratespera" [ref=e1306]
+                - generic [ref=e1308]: Activa
+              - generic [ref=e1309]:
+                - heading "veratespera" [level=3] [ref=e1310]
+                - generic [ref=e1311]:
+                  - img [ref=e1312]
+                  - generic [ref=e1315]: Vera, Spain
+              - generic [ref=e1317]:
+                - generic [ref=e1318]:
+                  - img [ref=e1319]
+                  - generic [ref=e1324]: "4"
+                  - text: huésp.
+                - generic [ref=e1325]: ·
+                - generic [ref=e1326]:
+                  - img [ref=e1327]
+                  - generic [ref=e1329]: "2"
+                  - text: hab.
+                - generic [ref=e1330]: ·
+                - generic [ref=e1331]:
+                  - img [ref=e1332]
+                  - generic [ref=e1335]: "2"
+                  - text: baños
+              - generic [ref=e1337]:
+                - generic [ref=e1338]: Guía completada
+                - generic [ref=e1339]: 92%
+              - generic [ref=e1342]:
+                - link "Editar" [ref=e1343] [cursor=pointer]:
+                  - /url: /dashboard/properties/8b16ae1d-d061-4b9d-8fe8-06a1b058c580/setup
+                  - img
+                  - text: Editar
+                - button [ref=e1344]:
+                  - img
+            - link "Añadir Propiedad Configura un nuevo alojamiento" [ref=e1345] [cursor=pointer]:
+              - /url: /dashboard/properties/new
+              - img [ref=e1347]
+              - generic [ref=e1348]:
+                - heading "Añadir Propiedad" [level=3] [ref=e1349]
+                - paragraph [ref=e1350]: Configura un nuevo alojamiento
+      - navigation [ref=e123]:
+        - link "Inicio" [ref=e124] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e126]
+          - generic [ref=e129]: Inicio
+        - link "Propiedades" [ref=e130] [cursor=pointer]:
+          - /url: /dashboard/properties
+          - img [ref=e132]
+          - generic [ref=e136]: Propiedades
+        - link "Reservas" [ref=e137] [cursor=pointer]:
+          - /url: /dashboard/bookings
+          - img [ref=e139]
+          - generic [ref=e142]: Reservas
+        - link "Calendario" [ref=e143] [cursor=pointer]:
+          - /url: /dashboard/calendar
+          - img [ref=e145]
+          - generic [ref=e147]: Calendario
+        - link "Analiticas" [ref=e148] [cursor=pointer]:
+          - /url: /dashboard/analytics
+          - img [ref=e150]
+          - generic [ref=e152]: Analiticas
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e1356] [cursor=pointer]:
+    - img [ref=e1357]
+  - alert [ref=e1360]

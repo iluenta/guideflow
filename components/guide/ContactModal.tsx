@@ -58,10 +58,10 @@ export function ContactModal({
         const waLink = `https://wa.me/${cleanPhone}`;
 
         return (
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100 flex flex-col gap-2">
+            <div className="bg-surface rounded-2xl p-4 shadow-card border border-primary/[0.06] flex flex-col gap-2">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
                         {label}
                     </span>
                     {isPreferred && (
@@ -77,26 +77,26 @@ export function ContactModal({
                 </div>
 
                 {/* Name */}
-                <span className="text-base font-bold text-slate-900 leading-none mt-1">
+                <span className="text-base font-bold text-[var(--color-text-primary)] leading-none mt-1">
                     {name}
                 </span>
 
                 {/* Info */}
                 <div className="flex items-center gap-2.5 mt-0.5">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200/50">
+                    <div className="w-8 h-8 rounded-full bg-primary/[0.06] flex items-center justify-center shrink-0 border border-primary/[0.05]">
                         {name ? (
-                            <span className="text-sm font-bold text-slate-500">
+                            <span className="text-sm font-bold text-[var(--color-text-secondary)]">
                                 {name.charAt(0).toUpperCase()}
                             </span>
                         ) : (
-                            <User className="w-3.5 h-3.5 text-slate-400" />
+                            <User className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
                         )}
                     </div>
                     <div className="flex flex-col justify-center">
-                        <span className="text-[9px] text-slate-400 font-medium">
+                        <span className="text-[9px] text-[var(--color-text-secondary)] font-medium">
                             {labelMobile}
                         </span>
-                        <span className="text-xs font-bold text-slate-800 tracking-tight">
+                        <span className="text-xs font-bold text-[var(--color-text-primary)] tracking-tight">
                             {phone}
                         </span>
                     </div>
@@ -106,7 +106,7 @@ export function ContactModal({
                 <div className="flex flex-col gap-1.5 mt-1.5">
                     <a
                         href={telLink}
-                        className="w-full py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold transition-all active:scale-[0.98] bg-[#111827] text-white hover:bg-slate-800"
+                        className={cn('w-full py-2 px-3 flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]', t.actionBtn)}
                     >
                         <Phone className="w-3.5 h-3.5" />
                         <span className="uppercase tracking-wider text-[10px]">{labelCall} {name.split(' ')[0]}</span>
@@ -115,7 +115,7 @@ export function ContactModal({
                         href={waLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold transition-all active:scale-[0.98] bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm"
+                        className="w-full py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold transition-all active:scale-[0.98] bg-surface text-[var(--color-text-secondary)] border border-primary/[0.08] hover:bg-primary/[0.05] shadow-sm"
                     >
                         <MessageCircle className="w-3.5 h-3.5 text-[#14833D]" />
                         <span className="uppercase tracking-wider text-[10px]">{labelWhatsapp}</span>
@@ -144,21 +144,21 @@ export function ContactModal({
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.95, opacity: 0, y: 10 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="relative bg-stone-50 w-full max-w-[340px] rounded-3xl p-4 shadow-2xl flex flex-col gap-3 overflow-y-auto max-h-[85vh] z-10"
+                    className="relative bg-surface w-full max-w-[340px] rounded-3xl p-4 shadow-2xl flex flex-col gap-3 overflow-y-auto max-h-[85vh] z-10"
                 >
                     {/* Header */}
                     <div className="flex items-start justify-between mb-1 px-1">
                         <div className="flex flex-col">
-                            <h2 className="text-lg font-bold font-sans text-slate-900 tracking-tight">
+                            <h2 className="text-lg font-bold font-sans text-[var(--color-text-primary)] tracking-tight">
                                 {labelTitle}
                             </h2>
-                            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                            <p className="text-[11px] text-[var(--color-text-secondary)] font-medium mt-0.5">
                                 {labelSubtitle}
                             </p>
                         </div>
                         <button
                             onClick={onClose}
-                            className="w-7 h-7 bg-slate-200/50 hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-500 transition-colors"
+                            className="w-7 h-7 bg-primary/[0.06] hover:bg-primary/[0.12] rounded-full flex items-center justify-center text-[var(--color-text-secondary)] transition-colors"
                         >
                             <X className="w-3.5 h-3.5" />
                         </button>

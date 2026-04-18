@@ -180,12 +180,12 @@ export default function StepRules({ value }: { value?: string }) {
 
                     {/* ── Horarios ── */}
                     <div className="space-y-4">
-                        <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Label className="text-sm font-medium text-slate-600 flex items-center gap-2">
                             <Clock className="w-3.5 h-3.5" /> Horarios de Estancia
                         </Label>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2 text-left">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
+                                <Label className="text-sm font-medium text-slate-600 ml-1">
                                     Check-out
                                 </Label>
                                 <div className="relative">
@@ -199,7 +199,7 @@ export default function StepRules({ value }: { value?: string }) {
                                 </div>
                             </div>
                             <div className="space-y-2 text-left">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
+                                <Label className="text-sm font-medium text-slate-600 ml-1">
                                     Silencio nocturno
                                 </Label>
                                 <div className="relative">
@@ -217,7 +217,7 @@ export default function StepRules({ value }: { value?: string }) {
 
                     {/* ── Presets rápidos ── */}
                     <div className="space-y-3">
-                        <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Label className="text-sm font-medium text-slate-600 flex items-center gap-2">
                             <Plus className="w-3.5 h-3.5" /> Añadir rápido
                         </Label>
                         <div className="grid grid-cols-2 gap-2">
@@ -260,7 +260,7 @@ export default function StepRules({ value }: { value?: string }) {
                     {/* ── Normas activas ── */}
                     {rules.length > 0 && (
                         <div className="space-y-3">
-                            <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            <Label className="text-sm font-medium text-slate-600">
                                 Normas activas — {rules.length}
                             </Label>
                             <div className="space-y-2">

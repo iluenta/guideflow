@@ -1,0 +1,110 @@
+- generic [active] [ref=e1]:
+  - main [ref=e4]:
+    - generic [ref=e92]:
+      - generic [ref=e93]:
+        - img "Villa Franciscanos" [ref=e94]
+        - generic [ref=e96]:
+          - button [ref=e97]:
+            - img [ref=e98]
+          - button "es" [ref=e100]:
+            - generic [ref=e101]: es
+            - img
+        - generic [ref=e102]:
+          - paragraph [ref=e103]: Tu Guía
+          - heading "Villa Franciscanos" [level=1] [ref=e104]
+      - generic [ref=e105]:
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - generic [ref=e110]:
+              - img [ref=e111]
+              - generic [ref=e114]: 21:21 • BUENAS NOCHES 🌙
+            - generic [ref=e115]: RECOMENDACIÓN
+          - generic [ref=e116]:
+            - heading "Keoke El Extremeño" [level=3] [ref=e117]
+            - generic [ref=e118]: No dejes de probar sus carnes a la brasa y sus quesos artesanos.
+          - generic [ref=e119]:
+            - generic [ref=e120]:
+              - img [ref=e121]
+              - text: 4 MIN en coche
+            - generic [ref=e124]: "#carne"
+            - generic [ref=e125]: "#extremeño"
+          - button "VER RECOMENDACIONES" [ref=e126]:
+            - text: VER RECOMENDACIONES
+            - img [ref=e127]
+        - generic [ref=e129]:
+          - heading "Lo Indispensable" [level=3] [ref=e130]:
+            - img [ref=e131]
+            - text: Lo Indispensable
+          - generic [ref=e133]:
+            - button "Check In" [ref=e134]:
+              - img [ref=e135]
+              - generic [ref=e139]: Check In
+            - button "WiFi" [ref=e140]:
+              - img [ref=e141]
+              - generic [ref=e145]: WiFi
+            - button "SOS" [ref=e146]:
+              - img [ref=e147]
+              - generic [ref=e149]: SOS
+        - generic [ref=e150]:
+          - heading "Descubre Vera" [level=3] [ref=e151]
+          - generic [ref=e152]:
+            - generic [ref=e153] [cursor=pointer]:
+              - generic [ref=e154]:
+                - img [ref=e156]
+                - generic [ref=e159]:
+                  - paragraph [ref=e160]: Gastronomía
+                  - paragraph [ref=e161]: Restaurantes locales
+              - img [ref=e162]
+            - generic [ref=e164] [cursor=pointer]:
+              - generic [ref=e165]:
+                - img [ref=e167]
+                - generic [ref=e169]:
+                  - paragraph [ref=e170]: Qué Hacer
+                  - paragraph [ref=e171]: Actividades
+              - img [ref=e172]
+            - generic [ref=e174] [cursor=pointer]:
+              - generic [ref=e175]:
+                - img [ref=e177]
+                - generic [ref=e180]:
+                  - paragraph [ref=e181]: Compras
+                  - paragraph [ref=e182]: Tiendas y mercados
+              - img [ref=e183]
+        - generic [ref=e185]:
+          - heading "Sobre la Casa" [level=3] [ref=e186]
+          - generic [ref=e187]:
+            - button "Info" [ref=e188]:
+              - img [ref=e189]
+              - generic [ref=e191]: Info
+            - button "Normas" [ref=e192]:
+              - img [ref=e193]
+              - generic [ref=e196]: Normas
+            - button "Manual" [ref=e197]:
+              - img [ref=e198]
+              - generic [ref=e200]: Manual
+        - paragraph [ref=e202]: Desarrollado por GuideFlow
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e208] [cursor=pointer]:
+    - img [ref=e209]
+  - alert [ref=e212]
+  - navigation [ref=e213]:
+    - generic [ref=e214]:
+      - button "Inicio" [ref=e215] [cursor=pointer]:
+        - img [ref=e216]
+        - generic [ref=e219]: Inicio
+      - button "Info" [ref=e220] [cursor=pointer]:
+        - img [ref=e221]
+        - generic [ref=e223]: Info
+      - button "Guía" [ref=e224] [cursor=pointer]:
+        - img [ref=e226]
+        - generic [ref=e228]: Guía
+      - button "Comer" [ref=e229] [cursor=pointer]:
+        - img [ref=e230]
+        - generic [ref=e235]: Comer
+      - button "SOS" [ref=e236] [cursor=pointer]:
+        - img [ref=e237]
+        - generic [ref=e240]: SOS
+      - button "Contacto" [ref=e241] [cursor=pointer]:
+        - img [ref=e242]
+        - generic [ref=e246]: Contacto
+  - button "Abrir asistente de ayuda" [ref=e247]:
+    - img [ref=e249]

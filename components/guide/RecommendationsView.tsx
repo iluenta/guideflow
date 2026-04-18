@@ -98,6 +98,7 @@ interface RecommendationsViewProps {
     disabledLanguage?: boolean;
     handleNavigate?: (path: string) => void;
     initialRecId?: string;
+    themeId?: string;
 }
 
 function RecommendationCard({
@@ -107,7 +108,11 @@ function RecommendationCard({
     currentLanguage,
     accessToken,
     getMapsUrl,
-    propertyId
+    propertyId,
+    isDark = false,
+    isCoastal = false,
+    isWarm = false,
+    isLuxury = false,
 }: {
     rec: Recommendation,
     isExpanded: boolean,
@@ -115,7 +120,11 @@ function RecommendationCard({
     currentLanguage: string,
     accessToken?: string,
     getMapsUrl: (rec: Recommendation) => string,
-    propertyId?: string
+    propertyId?: string,
+    isDark?: boolean,
+    isCoastal?: boolean,
+    isWarm?: boolean,
+    isLuxury?: boolean,
 }) {
     const { content: localizedName } = useLocalizedContent(rec.name, currentLanguage, 'recommendation_name', accessToken, propertyId);
     const { content: localizedDescription } = useLocalizedContent(rec.description || '', currentLanguage, 'recommendation_description', accessToken, propertyId);
@@ -141,23 +150,224 @@ function RecommendationCard({
     const catStyle = categoryConfigs[catLabel] || categoryConfigs.todos;
     const Icon = catStyle.icon;
 
+    const mapsUrl = getMapsUrl(rec);
+    const openMaps = (e: React.MouseEvent) => {
+        if (mapsUrl.startsWith('http')) { window.open(mapsUrl, '_blank', 'noopener,noreferrer'); e.preventDefault(); }
+    };
+
+    // ── Coastal open layout — circular image, full-width Maps button ────────
+    if (isCoastal) {
+        return (
+            <div className="bg-white border-l-4 border-l-[#0EA5E9] border border-[#E0F2FE] rounded-2xl p-5 flex flex-col gap-4 shadow-sm">
+                <div className="flex gap-4">
+                    <div className="w-14 h-14 rounded-full bg-[#E0F2FE] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        {photoUrl ? (
+                            <Image src={photoUrl} alt={rec.name} width={56} height={56} unoptimized className="object-cover w-full h-full rounded-full" />
+                        ) : (
+                            <Icon className="w-6 h-6 text-[#0EA5E9]" strokeWidth={1.5} />
+                        )}
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <h3 className="text-[#0C4A6E] font-bold text-base leading-tight mb-1 line-clamp-2">{localizedName}</h3>
+                        {distanceText && (
+                            <div className="flex items-center gap-1 text-[#0EA5E9] text-xs font-medium">
+                                <MapPin className="w-3.5 h-3.5" /><span>{distanceText}</span>
+                            </div>
+                        )}
+                        {openNow !== undefined && (
+                            <div className="flex items-center gap-2 text-xs mt-0.5">
+                                <div className={cn("w-1.5 h-1.5 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-400")} />
+                                <span className={cn("font-medium", openNow ? "text-emerald-600" : "text-rose-500")}>
+                                    {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <p className="text-[#64748B] text-sm leading-relaxed">{editorialSummary || localizedDescription}</p>
+                {localizedNote && (
+                    <p className="text-[#0369A1]/70 text-xs italic border-l-2 border-l-[#0EA5E9]/30 pl-3">&quot;{localizedNote}&quot;</p>
+                )}
+                {tags.length > 0 && (
+                    <div className="flex gap-2 flex-wrap">
+                        {tags.slice(0, 3).map(tag => (
+                            <span key={tag} className="bg-[#FFF7ED] text-[#EA580C] px-2 py-1 rounded-md text-[10px] font-medium">#{tag}</span>
+                        ))}
+                    </div>
+                )}
+                <a href={mapsUrl} onClick={openMaps}
+                    className="w-full bg-[#0EA5E9] text-white py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold hover:opacity-90 transition-opacity shadow-sm">
+                    <span>Ver en Maps</span><Navigation className="w-4 h-4" />
+                </a>
+            </div>
+        );
+    }
+
+    // ── Warm compact layout — horizontal, exact hex colors from mockup ──────
+    if (isWarm) {
+        return (
+            <div className="bg-white border-l-[3px] border-l-[#D4A054] border border-[#D4A054]/10 rounded-xl p-4 flex gap-4 shadow-sm">
+                <div className="w-16 h-16 rounded-xl bg-[#FFF8F0] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                    {photoUrl ? (
+                        <Image src={photoUrl} alt={rec.name} width={64} height={64} unoptimized className="object-cover w-full h-full" />
+                    ) : (
+                        <Icon className="w-6 h-6 text-[#D4A054]" strokeWidth={1.5} />
+                    )}
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col">
+                    <h3 className="text-[#431407] font-bold uppercase tracking-wider text-sm mb-1 truncate">
+                        {localizedName}
+                    </h3>
+                    <p className="text-[#8C6B5D] text-xs leading-relaxed mb-2 line-clamp-2">
+                        {editorialSummary || localizedDescription}
+                    </p>
+                    {distanceText && (
+                        <div className="flex items-center gap-1 mb-2">
+                            <span className="flex items-center gap-1 bg-[#FEF0EC] text-[#B5533C] text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                                <MapPin className="w-3 h-3" />{distanceText}
+                            </span>
+                        </div>
+                    )}
+                    {openNow !== undefined && (
+                        <div className="flex items-center gap-1.5 text-[10px] mb-2">
+                            <div className={cn("w-1.5 h-1.5 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-400")} />
+                            <span className={cn("font-medium", openNow ? "text-emerald-600" : "text-rose-500")}>
+                                {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
+                            </span>
+                        </div>
+                    )}
+                    <div className="flex items-center justify-between mt-auto">
+                        <div className="flex gap-1.5 flex-wrap">
+                            {tags.slice(0, 2).map(tag => (
+                                <span key={tag} className="text-[#B5533C] text-[10px] bg-[#FEF0EC] px-1.5 py-0.5 rounded">
+                                    #{tag}
+                                </span>
+                            ))}
+                        </div>
+                        <a href={mapsUrl} onClick={openMaps}
+                            className="flex items-center gap-1 bg-[#FEF0EC] text-[#B5533C] text-[10px] font-bold px-2.5 py-1 rounded-lg hover:opacity-80 transition-opacity flex-shrink-0 ml-2">
+                            <span>MAPS</span><Navigation className="w-3 h-3" />
+                        </a>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Luxury Estate — refined horizontal card, navy+gold palette ───────────
+    if (isLuxury) {
+        return (
+            <div className="bg-white border-l-2 border-l-[#C9A84C] border border-[#D4C5A9] rounded-xl p-4 flex gap-4 shadow-sm">
+                <div className="w-16 h-16 rounded-xl bg-[#F9F7F4] border border-[#D4C5A9] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                    {photoUrl ? (
+                        <Image src={photoUrl} alt={rec.name} width={64} height={64} unoptimized className="object-cover w-full h-full" />
+                    ) : (
+                        <Icon className="w-6 h-6 text-[#C9A84C]" strokeWidth={1.5} />
+                    )}
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col">
+                    <h3 className="text-[#1B2A4A] font-medium uppercase tracking-widest text-sm mb-1 truncate" style={{ fontFamily: 'var(--font-heading)' }}>
+                        {localizedName}
+                    </h3>
+                    <p className="text-[#8A8070] text-xs leading-relaxed mb-2 line-clamp-2">
+                        {editorialSummary || localizedDescription}
+                    </p>
+                    {distanceText && (
+                        <div className="flex items-center gap-1 mb-2">
+                            <span className="flex items-center gap-1 bg-[#F9F7F4] text-[#8A8070] text-[10px] font-medium px-1.5 py-0.5 rounded-md border border-[#D4C5A9]">
+                                <MapPin className="w-3 h-3" />{distanceText}
+                            </span>
+                        </div>
+                    )}
+                    {openNow !== undefined && (
+                        <div className="flex items-center gap-1.5 text-[10px] mb-2">
+                            <div className={cn("w-1.5 h-1.5 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-400")} />
+                            <span className={cn("font-medium", openNow ? "text-emerald-600" : "text-rose-500")}>
+                                {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
+                            </span>
+                        </div>
+                    )}
+                    <div className="flex items-center justify-between mt-auto">
+                        <div className="flex gap-1.5 flex-wrap">
+                            {tags.slice(0, 2).map(tag => (
+                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: '#1B2A4A', backgroundColor: 'rgba(27,42,74,0.07)' }}>
+                                    #{tag}
+                                </span>
+                            ))}
+                        </div>
+                        <a href={mapsUrl} onClick={openMaps}
+                            className="flex items-center gap-1 text-[#8A8070] hover:text-[#1B2A4A] text-[10px] font-medium tracking-wider transition-colors flex-shrink-0 ml-2">
+                            <span>MAPS</span><Navigation className="w-3 h-3" />
+                        </a>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Modern Minimal compact layout — clean gray, no border-l accent ───────
+    if (!isDark) {
+        return (
+            <div className="bg-white border border-[#E4E4E7] rounded-xl p-4 flex gap-4 shadow-sm">
+                <div className="w-16 h-16 rounded-xl bg-[#F4F4F5] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                    {photoUrl ? (
+                        <Image src={photoUrl} alt={rec.name} width={64} height={64} unoptimized className="object-cover w-full h-full" />
+                    ) : (
+                        <Icon className="w-6 h-6 text-[#52525B]" strokeWidth={1.5} />
+                    )}
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col">
+                    <h3 className="text-[#09090B] font-bold uppercase tracking-wider text-sm mb-1 truncate">
+                        {localizedName}
+                    </h3>
+                    <p className="text-[#52525B] text-xs leading-relaxed mb-2 line-clamp-2">
+                        {editorialSummary || localizedDescription}
+                    </p>
+                    {distanceText && (
+                        <div className="flex items-center gap-1 mb-2">
+                            <span className="flex items-center gap-1 bg-[#F4F4F5] text-[#3F3F46] text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-[#E4E4E7]">
+                                <MapPin className="w-3 h-3" />{distanceText}
+                            </span>
+                        </div>
+                    )}
+                    {openNow !== undefined && (
+                        <div className="flex items-center gap-1.5 text-[10px] mb-2">
+                            <div className={cn("w-1.5 h-1.5 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-400")} />
+                            <span className={cn("font-medium", openNow ? "text-emerald-600" : "text-rose-500")}>
+                                {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
+                            </span>
+                        </div>
+                    )}
+                    <div className="flex items-center justify-between mt-auto">
+                        <div className="flex gap-1.5 flex-wrap">
+                            {tags.slice(0, 2).map(tag => (
+                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: '#3F3F46', backgroundColor: '#F4F4F5', border: '1px solid #E4E4E7' }}>
+                                    #{tag}
+                                </span>
+                            ))}
+                        </div>
+                        <a href={mapsUrl} onClick={openMaps}
+                            className="flex items-center gap-1 text-[#71717A] hover:text-[#09090B] text-[10px] font-bold transition-colors flex-shrink-0 ml-2">
+                            <span>MAPS</span><Navigation className="w-3 h-3" />
+                        </a>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Urban Dark card — expandable, black/cyan palette ─────────────────────
     return (
         <div
             onClick={() => toggleExpand(rec.id)}
             className={cn(
-                "bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer border border-navy/5",
-                isExpanded && "ring-1 ring-navy/10 shadow-lg"
+                "bg-[#1C1C1C] rounded-xl overflow-hidden transition-all duration-300 group cursor-pointer border-l-2 border-l-[#00E5FF] border border-[#333]",
+                isExpanded && "ring-1 ring-[#00E5FF]/20 shadow-[0_4px_24px_rgba(0,0,0,0.6)]"
             )}
         >
-            <div className="flex relative items-start p-3 sm:p-4 gap-3">
-                {/* Accent Border (Colored) - Thin Line on the left */}
-                <div 
-                    className="absolute left-0 top-0 bottom-0 w-1" 
-                    style={{ backgroundColor: catStyle.hex }}
-                />
-
-                {/* Left: Small Square Image / Icon Fallback */}
-                <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-xl overflow-hidden shadow-inner border border-navy/5 bg-slate/5">
+            <div className="flex items-start p-3 sm:p-4 gap-3">
+                {/* Left: Square Image / Icon Fallback */}
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-[#333] bg-[#0F0F0F]">
                     {photoUrl ? (
                         <Image
                             src={photoUrl}
@@ -167,83 +377,65 @@ function RecommendationCard({
                             className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                     ) : (
-                        <div 
-                            className="w-full h-full flex items-center justify-center relative overflow-hidden"
-                            style={{ 
-                                background: `linear-gradient(135deg, ${catStyle.hex}15 0%, ${catStyle.hex}30 100%)` 
-                            }}
-                        >
-                            {/* Decorative background icon */}
-                            <Icon 
-                                className="absolute -right-2 -bottom-2 w-16 h-16 opacity-5 rotate-12" 
-                                strokeWidth={1} 
-                            />
-                            {/* Main centered icon */}
-                            <div 
-                                className="relative z-10 p-4 rounded-full bg-white/40 backdrop-blur-sm shadow-sm"
-                                style={{ color: catStyle.hex }}
-                            >
-                                <Icon className="w-8 h-8 sm:w-10 sm:h-10" strokeWidth={1.5} />
-                            </div>
+                        <div className="w-full h-full flex items-center justify-center bg-[#0F0F0F]">
+                            <Icon className="w-8 h-8 text-[#00E5FF]/50" strokeWidth={1.5} />
                         </div>
                     )}
                 </div>
 
-                {/* Right: Content Area (Tighter) */}
+                {/* Right: Content */}
                 <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
-                    {/* Title + Rating Line */}
-                    <div className="flex justify-between items-start gap-2 mb-0.5">
+                    {/* Title + Rating */}
+                    <div className="flex justify-between items-start gap-2 mb-1">
                         <h3 className={cn(
-                            "text-[15px] sm:text-base font-bold text-navy leading-tight min-h-[1.2em]",
-                            !isExpanded && "line-clamp-2",
-                            !localizedName && "h-5 w-3/4 bg-slate/10 animate-pulse rounded-md"
+                            "text-sm font-bold text-white leading-tight tracking-wide uppercase",
+                            !isExpanded && "line-clamp-2"
                         )}>
                             {localizedName}
                         </h3>
                         {rating && (
                             <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                                <Star className="w-3 h-3 text-orange-400 fill-current" />
-                                <span className="text-[13px] font-bold text-navy/80">{rating}</span>
+                                <Star className="w-3 h-3 text-[#00E5FF] fill-current" />
+                                <span className="text-[12px] font-bold text-[#00E5FF]">{rating}</span>
                             </div>
                         )}
                     </div>
 
-                    {/* Subtitle / Description */}
+                    {/* Description */}
                     <p className={cn(
-                        "text-[12px] sm:text-[13px] text-slate/70 leading-snug mb-2 italic",
+                        "text-[11px] text-[#A1A1AA] leading-snug mb-2",
                         !isExpanded && "line-clamp-2"
                     )}>
                         {editorialSummary || localizedDescription}
                     </p>
 
-                    {/* Meta Info: Distance + Status */}
-                    <div className="flex items-center gap-3 text-[11px] font-bold text-slate/50 mb-2">
+                    {/* Meta: Distance + Status */}
+                    <div className="flex items-center gap-3 text-[10px] font-bold text-[#555] mb-2">
                         {distanceText && (
-                            <div className="flex items-center gap-1.5">
-                                <MapPin className="w-3 h-3 opacity-40" />
-                                {distanceText}
+                            <div className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-[#00E5FF]/50" />
+                                <span className="text-[#00E5FF]/70">{distanceText}</span>
                             </div>
                         )}
                         {openNow !== undefined && (
-                            <div className="flex items-center gap-2">
-                                <div className={cn("w-2 h-2 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-500")} />
-                                <span className={cn(openNow ? "text-emerald-600" : "text-rose-600")}>
+                            <div className="flex items-center gap-1.5">
+                                <div className={cn("w-1.5 h-1.5 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-500")} />
+                                <span className={cn(openNow ? "text-emerald-500" : "text-rose-500")}>
                                     {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
                                 </span>
                             </div>
                         )}
                     </div>
 
-                    {/* Tags + Maps Link Footer */}
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex flex-wrap items-center gap-2 overflow-hidden">
+                    {/* Tags + Maps */}
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-1.5 overflow-hidden">
                             {tags.slice(0, 2).map(tag => (
-                                <span key={tag} className="text-[10px] font-bold text-slate/30 lowercase italic">
-                                    #{tag}
+                                <span key={tag} className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ color: '#00E5FF', backgroundColor: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.20)' }}>
+                                    {tag}
                                 </span>
                             ))}
                         </div>
-                        
                         <a
                             href={getMapsUrl(rec)}
                             onClick={(e) => {
@@ -253,40 +445,32 @@ function RecommendationCard({
                                     e.preventDefault();
                                 }
                             }}
-                            className="flex items-center gap-1.5 text-[11px] font-bold text-slate/40 hover:text-navy transition-colors shrink-0"
+                            className="flex items-center gap-1 text-[10px] font-bold text-[#555] hover:text-[#00E5FF] transition-colors shrink-0 uppercase tracking-wider"
                         >
-                            Maps
-                            <Navigation className="w-3 h-3" />
+                            Maps <Navigation className="w-3 h-3" />
                         </a>
                     </div>
 
-                    {/* Expanded Detail Overlay */}
+                    {/* Expanded content */}
                     {isExpanded && (
-                        <div className="mt-4 space-y-4 pt-4 border-t border-navy/5 animate-in fade-in slide-in-from-top-1">
-                            {/* Best Time Slots */}
+                        <div className="mt-4 space-y-3 pt-4 border-t border-[#333] animate-in fade-in slide-in-from-top-1">
                             {metadata.best_time_slots && metadata.best_time_slots.length > 0 && (
                                 <div className="space-y-2">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-navy/30 px-1">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#555]">
                                         Mejor momento para visitar
                                     </p>
                                     <div className="flex flex-wrap gap-2">
                                         {metadata.best_time_slots.map(slot => {
                                             const timeSlotConfigs: any = {
-                                                morning: { label: 'Mañana', icon: Sunrise, color: 'text-amber-600', bg: 'bg-amber-50' },
-                                                midday: { label: 'Mediodía', icon: Sun, color: 'text-orange-600', bg: 'bg-orange-50' },
-                                                afternoon: { label: 'Tarde', icon: Sunset, color: 'text-rose-600', bg: 'bg-rose-50' },
-                                                night: { label: 'Noche', icon: Moon, color: 'text-indigo-600', bg: 'bg-indigo-50' }
+                                                morning: { label: 'Mañana', icon: Sunrise },
+                                                midday: { label: 'Mediodía', icon: Sun },
+                                                afternoon: { label: 'Tarde', icon: Sunset },
+                                                night: { label: 'Noche', icon: Moon }
                                             };
-                                            const cfg = timeSlotConfigs[slot] || { label: slot, icon: Clock, color: 'text-navy/50', bg: 'bg-navy/5' };
+                                            const cfg = timeSlotConfigs[slot] || { label: slot, icon: Clock };
                                             const SlotIcon = cfg.icon;
                                             return (
-                                                <div 
-                                                    key={slot}
-                                                    className={cn(
-                                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold shadow-sm border border-navy/5",
-                                                        cfg.bg, cfg.color
-                                                    )}
-                                                >
+                                                <div key={slot} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-[#0F0F0F] border border-[#333] text-[#00E5FF]">
                                                     <SlotIcon className="w-3.5 h-3.5" strokeWidth={2.5} />
                                                     {cfg.label}
                                                 </div>
@@ -297,37 +481,14 @@ function RecommendationCard({
                             )}
 
                             {localizedNote && (
-                                <div 
-                                    className="p-3 rounded-2xl text-[12px] relative overflow-hidden group/note border border-navy/5 shadow-sm"
-                                    style={{ 
-                                        background: `linear-gradient(to right, ${catStyle.hex}10, transparent)` 
-                                    }}
-                                >
-                                    {/* Decorative subtle left line */}
-                                    <div 
-                                        className="absolute left-0 top-0 bottom-0 w-1 opacity-20"
-                                        style={{ backgroundColor: catStyle.hex }}
-                                    />
-                                    
-                                    <p className="font-serif italic text-navy/70 relative z-10 leading-relaxed pr-8">
+                                <div className="p-3 rounded-xl bg-[#0F0F0F] border border-[#333] relative overflow-hidden">
+                                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#00E5FF]/40" />
+                                    <p className="text-[11px] italic text-[#A1A1AA] leading-relaxed pl-3">
                                         &quot;{localizedNote}&quot;
                                     </p>
-                                    
-                                    <div className="flex items-center gap-2 mt-2 opacity-60">
-                                        <div 
-                                            className="h-[1px] flex-1"
-                                            style={{ backgroundColor: `${catStyle.hex}20` }}
-                                        />
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-navy/40">
-                                            {labelHostTip}
-                                        </span>
-                                    </div>
-
-                                    {/* Small floating icon in background */}
-                                    <Icon 
-                                        className="absolute -right-2 -bottom-2 w-10 h-10 opacity-5 rotate-12" 
-                                        style={{ color: catStyle.hex }}
-                                    />
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#555] mt-2 pl-3">
+                                        {labelHostTip}
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -353,7 +514,7 @@ const categoryConfigs: Record<string, { icon: any, color: string, bgColor: strin
     compras: { icon: ShoppingBag, color: 'text-indigo-600', bgColor: 'bg-indigo-50', activeBg: 'bg-indigo-600', hex: '#4F46E5' },
     supermercados: { icon: Store, color: 'text-blue-600', bgColor: 'bg-blue-50', activeBg: 'bg-blue-600', hex: '#2563EB' },
     desayuno: { icon: Coffee, color: 'text-amber-700', bgColor: 'bg-amber-50', activeBg: 'bg-amber-700', hex: '#B45309' },
-    todos: { icon: Star, color: 'text-navy/40', bgColor: 'bg-white', activeBg: 'bg-navy', hex: '#1E3A5F' }
+    todos: { icon: Star, color: 'text-[var(--color-text-secondary)]/60', bgColor: 'bg-surface', activeBg: 'bg-primary', hex: '#1E3A5F' }
 };
 
 const groupConfigs = {
@@ -419,9 +580,14 @@ export function RecommendationsView({
     accessToken,
     propertyId,
     disabledLanguage = false,
-    handleNavigate, // FASE 17
-    initialRecId // FASE 17
+    handleNavigate,
+    initialRecId,
+    themeId = 'modern_v2',
 }: RecommendationsViewProps) {
+    const isDark = themeId === 'urban';
+    const isCoastal = themeId === 'coastal';
+    const isWarm = themeId === 'warm';
+    const isLuxury = themeId === 'luxury';
     const [selectedCategory, setSelectedCategory] = useState('todos');
     const [expandedId, setExpandedId] = useState<string | null>(initialRecId || null);
     const config = groupConfigs[group];
@@ -574,11 +740,11 @@ export function RecommendationsView({
             <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-md border-b border-navy/5 px-4 h-16 flex items-center">
                 <button
                     onClick={onBack}
-                    className="p-2 -ml-2 text-navy/70 hover:bg-navy/5 rounded-full transition-colors active:scale-90"
+                    className="p-2 -ml-2 text-[var(--color-text-secondary)] hover:bg-primary/[0.05] rounded-full transition-colors active:scale-90"
                 >
                     <ChevronLeft className="w-6 h-6" />
                 </button>
-                <h1 className="absolute left-1/2 -translate-x-1/2 font-serif text-xl text-navy font-semibold tracking-tight">
+                <h1 className="absolute left-1/2 -translate-x-1/2 text-xl text-[var(--color-text-primary)] font-semibold tracking-tight">
                     {localizedGroupTitle}
                 </h1>
             </header>
@@ -586,10 +752,23 @@ export function RecommendationsView({
             <div className="flex-1">
                 {/* Hero section */}
                 <div className="px-6 py-8">
-                    <h2 className="font-serif text-3xl text-navy font-bold leading-tight mb-2">
+                    <h2 className={cn(
+                        "leading-tight mb-2",
+                        isDark ? "text-3xl font-bold text-white"
+                            : isCoastal ? "text-2xl font-black text-[#0C4A6E]"
+                            : isWarm ? "text-2xl font-black uppercase tracking-wider text-[#431407]"
+                            : isLuxury ? "text-2xl font-medium uppercase tracking-[0.15em] text-[#1B2A4A]"
+                            : "text-2xl font-black uppercase tracking-wider text-[#09090B]"
+                    )} style={isLuxury ? { fontFamily: 'var(--font-heading)' } : undefined}>
                         {localizedHeroTitle}
                     </h2>
-                    <p className="text-sm text-slate leading-relaxed max-w-[90%]">
+                    <p className={cn("text-sm leading-relaxed max-w-[90%]",
+                        isDark ? "text-[#A1A1AA]"
+                        : isCoastal ? "text-[#64748B]"
+                        : isWarm ? "text-[#8C6B5D]"
+                        : isLuxury ? "text-[#8A8070]"
+                        : "text-[#52525B]"
+                    )}>
                         {localizedHeroDesc}
                     </p>
                 </div>
@@ -601,19 +780,48 @@ export function RecommendationsView({
                             const catConfig = categoryConfigs[pill.type] || categoryConfigs.todos;
                             const Icon = catConfig.icon;
 
+                            if (isDark) {
+                                return (
+                                    <button
+                                        key={pill.id}
+                                        onClick={() => setSelectedCategory(pill.id)}
+                                        style={isActive ? { backgroundColor: '#00E5FF' } : {}}
+                                        className={cn(
+                                            "flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                                            isActive
+                                                ? "text-black shadow-lg scale-105"
+                                                : "bg-[#1C1C1C] text-[#A1A1AA] hover:bg-[#27272A] border border-[#333]"
+                                        )}
+                                    >
+                                        {Icon && pill.id !== 'todos' && <Icon className="w-3.5 h-3.5" strokeWidth={2.5} />}
+                                        {pillLabels[pill.id] || pill.label}
+                                    </button>
+                                );
+                            }
+
                             return (
                                 <button
                                     key={pill.id}
                                     onClick={() => setSelectedCategory(pill.id)}
-                                    style={isActive ? { backgroundColor: catConfig.hex } : {}}
                                     className={cn(
-                                        "flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
-                                        isActive
-                                            ? "text-white shadow-lg scale-105"
-                                            : "bg-white text-slate hover:bg-white/80 border border-navy/5"
+                                        "px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all",
+                                        isCoastal
+                                            ? isActive
+                                                ? "bg-[#0EA5E9] text-white shadow-md"
+                                                : "bg-white text-[#0369A1] border border-[#E0F2FE] shadow-sm hover:border-[#BAE6FD]"
+                                            : isWarm
+                                                ? isActive
+                                                    ? "bg-[#D4A054] text-white shadow-md"
+                                                    : "bg-white text-[#8C6B5D] border border-[#D4A054]/30 hover:text-[#D4A054] hover:border-[#D4A054]/50"
+                                                : isLuxury
+                                                    ? isActive
+                                                        ? "bg-[#1B2A4A] text-[#C9A84C] shadow-md"
+                                                        : "bg-white text-[#8A8070] border border-[#D4C5A9] hover:text-[#1B2A4A] hover:border-[#C9A84C]/50"
+                                                    : isActive
+                                                        ? "bg-[#09090B] text-white shadow-md"
+                                                        : "bg-white text-[#52525B] border border-[#E4E4E7] hover:text-[#09090B] hover:border-[#A1A1AA]"
                                     )}
                                 >
-                                    {Icon && pill.id !== 'todos' && <Icon className="w-3.5 h-3.5" strokeWidth={2.5} />}
                                     {pillLabels[pill.id] || pill.label}
                                 </button>
                             );
@@ -634,13 +842,17 @@ export function RecommendationsView({
                                     accessToken={accessToken}
                                     propertyId={propertyId}
                                     getMapsUrl={getMapsUrl}
+                                    isDark={isDark}
+                                    isCoastal={isCoastal}
+                                    isWarm={isWarm}
+                                    isLuxury={isLuxury}
                                 />
                             </div>
                         ))
                     ) : (
-                        <div className="py-20 text-center bg-white/30 rounded-3xl border border-dashed border-navy/10">
-                            <Star className="w-8 h-8 text-navy/10 mx-auto mb-3" />
-                            <p className="text-navy/40 text-sm font-bold uppercase tracking-widest">
+                        <div className="py-20 text-center bg-surface/30 rounded-3xl border border-dashed border-primary/[0.15]">
+                            <Star className="w-8 h-8 text-[var(--color-text-secondary)]/30 mx-auto mb-3" />
+                            <p className="text-[var(--color-text-secondary)] text-sm font-bold uppercase tracking-widest">
                                 {labelEmpty}
                             </p>
                         </div>
@@ -649,8 +861,8 @@ export function RecommendationsView({
             </div>
 
             {/* Mockup powered text */}
-            <div className="px-6 mt-8 mb-4 text-center opacity-20">
-                <p className="text-[8px] text-navy uppercase font-black tracking-[0.3em]">
+            <div className="px-6 mt-8 mb-4 text-center opacity-40">
+                <p className="text-[8px] text-[var(--color-text-secondary)] uppercase font-black tracking-[0.3em]">
                     {labelFooter}
                 </p>
             </div>

@@ -1,0 +1,1202 @@
+- generic:
+  - generic:
+    - complementary:
+      - generic:
+        - link:
+          - /url: /
+          - img
+          - generic: GuideFlow
+        - button:
+          - img
+      - navigation:
+        - list:
+          - listitem:
+            - link:
+              - /url: /dashboard
+              - img
+              - generic: Inicio
+          - listitem:
+            - link:
+              - /url: /dashboard/properties
+              - img
+              - generic: Propiedades
+          - listitem:
+            - link:
+              - /url: /dashboard/bookings
+              - img
+              - generic: Reservas
+          - listitem:
+            - link:
+              - /url: /dashboard/calendar
+              - img
+              - generic: Calendario
+          - listitem:
+            - link:
+              - /url: /dashboard/analytics
+              - img
+              - generic: Analiticas
+          - listitem:
+            - link:
+              - /url: /dashboard/security
+              - img
+              - generic: Seguridad
+          - listitem:
+            - link:
+              - /url: /dashboard/settings
+              - img
+              - generic: Ajustes
+    - generic:
+      - banner:
+        - generic:
+          - link:
+            - /url: /
+            - img
+            - generic: GuideFlow
+        - generic:
+          - button:
+            - img
+          - button:
+            - generic:
+              - img
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - heading [level=1]: Mis Propiedades
+              - paragraph: Gestiona tus alojamientos y sus guías digitales.
+            - link:
+              - /url: /dashboard/properties/new
+              - img
+              - text: Nueva Propiedad
+          - generic:
+            - generic:
+              - button:
+                - text: Todas
+                - generic: "27"
+              - button:
+                - text: Activas
+                - generic: "18"
+              - button:
+                - text: Borradores
+                - generic: "6"
+              - button:
+                - text: Archivadas
+                - generic: "3"
+            - generic:
+              - generic:
+                - img
+                - textbox:
+                  - /placeholder: Buscar propiedad...
+              - generic:
+                - button:
+                  - img
+                - button:
+                  - img
+          - generic:
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: Villa Franciscanos
+                - generic:
+                  - img
+                  - generic: Vera, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "4"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/ea80d2ce-4085-4020-80a5-10d1cd1f3b02/setup
+                  - img
+                  - text: Editar
+                - button [expanded]:
+                  - img
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic: Sin imagen
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: pepi
+                - generic:
+                  - img
+                  - generic: Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 69%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/8638a345-deea-42fd-883c-8d4dba82487d/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: villa juani
+                - generic:
+                  - img
+                  - generic: Vera, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "4"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/9faeea40-ac50-48ca-9c19-7917b4d20691/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: Lavapies Hosting
+                - generic:
+                  - img
+                  - generic: Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "6"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "3"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/b43255cc-7cfa-41ff-a771-b5ab13eec460/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: Casa Honda
+                - generic:
+                  - img
+                  - generic: Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "4"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/ae0fbb43-e232-409c-9dd0-14137234f127/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Borrador
+              - generic:
+                - heading [level=3]: dfgdfg
+                - generic:
+                  - img
+                  - generic: Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "3"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 38%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/28088cce-41a6-4bfa-a72e-66c796874fdb/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: Villa Palmera
+                - generic:
+                  - img
+                  - generic: Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "4"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/df6d3d75-26f1-4e85-99f0-c9f4f494abf3/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: Maria Antonia
+                - generic:
+                  - img
+                  - generic: Vera, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/06fe9d69-b372-42ec-888c-3c91cf95bbf1/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: marijuani
+                - generic:
+                  - img
+                  - generic: Vera, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/a935818d-24e4-49c4-9edf-5b090586a259/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: maripepi
+                - generic:
+                  - img
+                  - generic: Sin ubicación
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 8%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/6e02d03f-61f2-4c6f-a119-33bd37b36be3/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: Villa Enrique
+                - generic:
+                  - img
+                  - generic: Las Rozas de Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/c77e2c17-7c57-45ab-8abc-79e6b84fa01c/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic: Sin imagen
+                - generic:
+                  - generic: Archivada
+              - generic:
+                - heading [level=3]: fghgfghg
+                - generic:
+                  - img
+                  - generic: Sin ubicación
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 8%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/12906399-0000-4943-812e-6eadfa843339/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic: Sin imagen
+                - generic:
+                  - generic: Borrador
+              - generic:
+                - heading [level=3]: hhhhhhhhhh
+                - generic:
+                  - img
+                  - generic: Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/01076d04-b577-473b-a8ef-acf23b54429f/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic: Sin imagen
+                - generic:
+                  - generic: Borrador
+              - generic:
+                - heading [level=3]: jjjjjjjjjjjjjjjjj
+                - generic:
+                  - img
+                  - generic: Sin ubicación
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 8%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/9df727ae-139a-4538-910e-de9cfe46bbc3/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Archivada
+              - generic:
+                - heading [level=3]: KKKKKK
+                - generic:
+                  - img
+                  - generic: Sin ubicación
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 23%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/b79d2694-7c85-4bb0-9f03-d9413ffec6db/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic: Sin imagen
+                - generic:
+                  - generic: Borrador
+              - generic:
+                - heading [level=3]: KKKKKKKKK
+                - generic:
+                  - img
+                  - generic: Sin ubicación
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 15%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/805c4670-8b4a-4083-92f1-51e8d1622de5/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic: Sin imagen
+                - generic:
+                  - generic: Borrador
+              - generic:
+                - heading [level=3]: KKKKKKKK
+                - generic:
+                  - img
+                  - generic: Sin ubicación
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 8%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/d63d15f9-593b-4d1d-a3e4-343ea5d54acf/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Borrador
+              - generic:
+                - heading [level=3]: zzzzzz
+                - generic:
+                  - img
+                  - generic: Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/125474e6-fa20-46e0-bf03-c37877fceec4/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: VILLASOL
+                - generic:
+                  - img
+                  - generic: Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 85%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/d3af5f53-7a16-410b-a84c-0cd20122529a/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: VillaMACARENA
+                - generic:
+                  - img
+                  - generic: Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 62%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/cb08f3d7-51f9-4485-8be2-d7ee98b7d6b8/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: soniamar
+                - generic:
+                  - img
+                  - generic: Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "4"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/ce9b6177-b54a-4506-9815-577f9db98d7d/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: FuenteSol
+                - generic:
+                  - img
+                  - generic: Vera, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "5"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 31%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/1a434f7f-102f-440a-9820-5ec07f12a059/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: Verasol
+                - generic:
+                  - img
+                  - generic: Vera, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "3"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 54%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/b68f1e4a-817a-4172-9f92-26134ddb02a0/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: villamar
+                - generic:
+                  - img
+                  - generic: Vera, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "6"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 23%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/078c1821-ae3e-4baa-9bf4-06b2eac109b6/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: jjj
+                - generic:
+                  - img
+                  - generic: Madrid, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 100%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/37159afd-0eb0-498f-a756-38eb487527e7/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic: Sin imagen
+                - generic:
+                  - generic: Archivada
+              - generic:
+                - heading [level=3]: aaaaaaa
+                - generic:
+                  - img
+                  - generic: Sin ubicación
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "1"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 15%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/0fa170d4-7a49-481b-ab08-5eb00aec7b34/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - img
+                - generic:
+                  - generic: Activa
+              - generic:
+                - heading [level=3]: veratespera
+                - generic:
+                  - img
+                  - generic: Vera, Spain
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: "4"
+                    - text: huésp.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: hab.
+                  - generic: ·
+                  - generic:
+                    - img
+                    - generic: "2"
+                    - text: baños
+              - generic:
+                - generic:
+                  - generic: Guía completada
+                  - generic: 92%
+              - generic:
+                - link:
+                  - /url: /dashboard/properties/8b16ae1d-d061-4b9d-8fe8-06a1b058c580/setup
+                  - img
+                  - text: Editar
+                - button:
+                  - img
+            - link:
+              - /url: /dashboard/properties/new
+              - generic:
+                - img
+              - generic:
+                - heading [level=3]: Añadir Propiedad
+                - paragraph: Configura un nuevo alojamiento
+      - navigation:
+        - link:
+          - /url: /dashboard
+          - generic:
+            - img
+          - generic: Inicio
+        - link:
+          - /url: /dashboard/properties
+          - generic:
+            - img
+          - generic: Propiedades
+        - link:
+          - /url: /dashboard/bookings
+          - generic:
+            - img
+          - generic: Reservas
+        - link:
+          - /url: /dashboard/calendar
+          - generic:
+            - img
+          - generic: Calendario
+        - link:
+          - /url: /dashboard/analytics
+          - generic:
+            - img
+          - generic: Analiticas
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e1356] [cursor=pointer]:
+    - img [ref=e1357]
+  - alert
+  - generic:
+    - menu:
+      - menuitem:
+        - generic:
+          - img
+        - generic: Ver guía pública
+      - menuitem [expanded]:
+        - generic:
+          - img
+        - generic: Compartir con huésped
+      - separator
+      - menuitem:
+        - generic:
+          - img
+        - generic: Pasar a Borrador
+      - separator
+      - menuitem:
+        - generic:
+          - img
+        - generic: Archivar propiedad
+  - dialog "Generar Enlace Seguro" [ref=e1419]:
+    - generic [ref=e1420]:
+      - heading "Generar Enlace Seguro" [level=2] [ref=e1421]
+      - paragraph [ref=e1422]: Crea un acceso temporal para tu huésped en Villa Franciscanos.
+    - generic [ref=e1423]:
+      - generic [ref=e1424]:
+        - generic [ref=e1425]:
+          - img [ref=e1426]
+          - text: Nombre del Huésped
+        - 'textbox "Ej: Juan Pérez" [active] [ref=e1429]'
+      - generic [ref=e1430]:
+        - generic [ref=e1431]:
+          - img [ref=e1432]
+          - text: Idioma de la Guía
+        - combobox [ref=e1435]:
+          - generic:
+            - generic: 🇪🇸
+            - text: Español
+          - img
+      - generic [ref=e1436]:
+        - generic [ref=e1437]:
+          - generic [ref=e1438]:
+            - img [ref=e1439]
+            - text: Check-in
+          - textbox [ref=e1441]: 2026-04-17
+        - generic [ref=e1442]:
+          - generic [ref=e1443]:
+            - img [ref=e1444]
+            - text: Check-out
+          - textbox [ref=e1446]: 2026-04-20
+      - paragraph [ref=e1447]: El huésped tendrá acceso desde 2 días antes hasta 2 días después.
+    - button "Generar Enlace de Invitado" [ref=e1449]:
+      - img
+      - text: Generar Enlace de Invitado
+    - button "Cerrar" [ref=e1450]:
+      - img [ref=e1451]
+      - generic [ref=e1454]: Cerrar

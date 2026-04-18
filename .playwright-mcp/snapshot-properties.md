@@ -1,0 +1,600 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - link "GuideFlow" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img [ref=e6]
+          - generic [ref=e12]: GuideFlow
+        - button [ref=e13]:
+          - img [ref=e14]
+      - navigation [ref=e17]:
+        - list [ref=e18]:
+          - listitem [ref=e1394]:
+            - link "Inicio" [ref=e1395] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e1396]
+              - generic [ref=e1399]: Inicio
+          - listitem [ref=e1400]:
+            - link "Propiedades" [ref=e1401] [cursor=pointer]:
+              - /url: /dashboard/properties
+              - img [ref=e1402]
+              - generic [ref=e1406]: Propiedades
+          - listitem [ref=e1408]:
+            - link "Reservas" [ref=e1409] [cursor=pointer]:
+              - /url: /dashboard/bookings
+              - img [ref=e1410]
+              - generic [ref=e1413]: Reservas
+          - listitem [ref=e1414]:
+            - link "Calendario" [ref=e1415] [cursor=pointer]:
+              - /url: /dashboard/calendar
+              - img [ref=e1416]
+              - generic [ref=e1418]: Calendario
+          - listitem [ref=e1419]:
+            - link "Analiticas" [ref=e1420] [cursor=pointer]:
+              - /url: /dashboard/analytics
+              - img [ref=e1421]
+              - generic [ref=e1423]: Analiticas
+          - listitem [ref=e1424]:
+            - link "Seguridad" [ref=e1425] [cursor=pointer]:
+              - /url: /dashboard/security
+              - img [ref=e1426]
+              - generic [ref=e1429]: Seguridad
+          - listitem [ref=e1430]:
+            - link "Ajustes" [ref=e1431] [cursor=pointer]:
+              - /url: /dashboard/settings
+              - img [ref=e1432]
+              - generic [ref=e1435]: Ajustes
+    - generic [ref=e61]:
+      - banner [ref=e62]:
+        - link "GuideFlow" [ref=e64] [cursor=pointer]:
+          - /url: /
+          - img [ref=e65]
+          - generic [ref=e71]: GuideFlow
+        - generic [ref=e72]:
+          - button [ref=e73]:
+            - img
+          - button [ref=e75]:
+            - generic [ref=e76]:
+              - img
+      - main [ref=e77]:
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - generic [ref=e80]:
+              - heading "Mis Propiedades" [level=1] [ref=e81]
+              - paragraph [ref=e82]: Gestiona tus alojamientos y sus guías digitales.
+            - link "Nueva Propiedad" [ref=e83] [cursor=pointer]:
+              - /url: /dashboard/properties/new
+              - img
+              - text: Nueva Propiedad
+          - generic [ref=e84]:
+            - generic [ref=e85]:
+              - button "Todas" [ref=e86]
+              - button "Activas" [ref=e87]
+              - button "Borradores" [ref=e88]
+              - button "Archivadas" [ref=e89]
+            - generic [ref=e90]:
+              - generic [ref=e91]:
+                - img [ref=e92]
+                - textbox "Buscar propiedad..." [ref=e95]
+              - generic [ref=e97]:
+                - button [ref=e98]
+                - button [ref=e104]
+          - generic [ref=e106]:
+            - generic [ref=e195]:
+              - generic [ref=e196]:
+                - img "Villa Franciscanos" [ref=e197]
+                - generic [ref=e199]: Activa
+              - generic [ref=e200]:
+                - heading "Villa Franciscanos" [level=3] [ref=e201]
+                - generic [ref=e202]
+              - generic [ref=e208]:
+                - generic [ref=e209]
+                - generic [ref=e217]
+                - generic [ref=e222]
+              - generic [ref=e229]:
+                - generic [ref=e230]: Guía completada
+                - generic [ref=e231]: 100%
+              - generic [ref=e234]:
+                - link "Editar" [ref=e235] [cursor=pointer]:
+                  - /url: /dashboard/properties/ea80d2ce-4085-4020-80a5-10d1cd1f3b02/setup
+                - button [ref=e236]
+            - generic [ref=e237]:
+              - generic [ref=e238]:
+                - generic [ref=e240]: Sin imagen
+                - generic [ref=e242]: Activa
+              - generic [ref=e243]:
+                - heading "pepi" [level=3] [ref=e244]
+                - generic [ref=e245]
+              - generic [ref=e251]:
+                - generic [ref=e252]
+                - generic [ref=e260]
+                - generic [ref=e265]
+              - generic [ref=e272]:
+                - generic [ref=e273]: Guía completada
+                - generic [ref=e274]: 69%
+              - generic [ref=e277]:
+                - link "Editar" [ref=e278] [cursor=pointer]:
+                  - /url: /dashboard/properties/8638a345-deea-42fd-883c-8d4dba82487d/setup
+                - button [ref=e279]
+            - generic [ref=e280]:
+              - generic [ref=e281]:
+                - img "villa juani" [ref=e282]
+                - generic [ref=e284]: Activa
+              - generic [ref=e285]:
+                - heading "villa juani" [level=3] [ref=e286]
+                - generic [ref=e287]
+              - generic [ref=e293]:
+                - generic [ref=e294]
+                - generic [ref=e302]
+                - generic [ref=e307]
+              - generic [ref=e314]:
+                - generic [ref=e315]: Guía completada
+                - generic [ref=e316]: 100%
+              - generic [ref=e319]:
+                - link "Editar" [ref=e320] [cursor=pointer]:
+                  - /url: /dashboard/properties/9faeea40-ac50-48ca-9c19-7917b4d20691/setup
+                - button [ref=e321]
+            - generic [ref=e322]:
+              - generic [ref=e323]:
+                - img "Lavapies Hosting" [ref=e324]
+                - generic [ref=e326]: Activa
+              - generic [ref=e327]:
+                - heading "Lavapies Hosting" [level=3] [ref=e328]
+                - generic [ref=e329]
+              - generic [ref=e335]:
+                - generic [ref=e336]
+                - generic [ref=e344]
+                - generic [ref=e349]
+              - generic [ref=e356]:
+                - generic [ref=e357]: Guía completada
+                - generic [ref=e358]: 100%
+              - generic [ref=e361]:
+                - link "Editar" [ref=e362] [cursor=pointer]:
+                  - /url: /dashboard/properties/b43255cc-7cfa-41ff-a771-b5ab13eec460/setup
+                - button [ref=e363]
+            - generic [ref=e364]:
+              - generic [ref=e365]:
+                - img "Casa Honda" [ref=e366]
+                - generic [ref=e368]: Activa
+              - generic [ref=e369]:
+                - heading "Casa Honda" [level=3] [ref=e370]
+                - generic [ref=e371]
+              - generic [ref=e377]:
+                - generic [ref=e378]
+                - generic [ref=e386]
+                - generic [ref=e391]
+              - generic [ref=e398]:
+                - generic [ref=e399]: Guía completada
+                - generic [ref=e400]: 100%
+              - generic [ref=e403]:
+                - link "Editar" [ref=e404] [cursor=pointer]:
+                  - /url: /dashboard/properties/ae0fbb43-e232-409c-9dd0-14137234f127/setup
+                - button [ref=e405]
+            - generic [ref=e406]:
+              - generic [ref=e407]:
+                - img "dfgdfg" [ref=e408]
+                - generic [ref=e410]: Borrador
+              - generic [ref=e411]:
+                - heading "dfgdfg" [level=3] [ref=e412]
+                - generic [ref=e413]
+              - generic [ref=e419]:
+                - generic [ref=e420]
+                - generic [ref=e428]
+                - generic [ref=e433]
+              - generic [ref=e440]:
+                - generic [ref=e441]: Guía completada
+                - generic [ref=e442]: 38%
+              - generic [ref=e445]:
+                - link "Editar" [ref=e446] [cursor=pointer]:
+                  - /url: /dashboard/properties/28088cce-41a6-4bfa-a72e-66c796874fdb/setup
+                - button [ref=e447]
+            - generic [ref=e448]:
+              - generic [ref=e449]:
+                - img "Villa Palmera" [ref=e450]
+                - generic [ref=e452]: Activa
+              - generic [ref=e453]:
+                - heading "Villa Palmera" [level=3] [ref=e454]
+                - generic [ref=e455]
+              - generic [ref=e461]:
+                - generic [ref=e462]
+                - generic [ref=e470]
+                - generic [ref=e475]
+              - generic [ref=e482]:
+                - generic [ref=e483]: Guía completada
+                - generic [ref=e484]: 100%
+              - generic [ref=e487]:
+                - link "Editar" [ref=e488] [cursor=pointer]:
+                  - /url: /dashboard/properties/df6d3d75-26f1-4e85-99f0-c9f4f494abf3/setup
+                - button [ref=e489]
+            - generic [ref=e490]:
+              - generic [ref=e491]:
+                - img "Maria Antonia" [ref=e492]
+                - generic [ref=e494]: Activa
+              - generic [ref=e495]:
+                - heading "Maria Antonia" [level=3] [ref=e496]
+                - generic [ref=e497]
+              - generic [ref=e503]:
+                - generic [ref=e504]
+                - generic [ref=e512]
+                - generic [ref=e517]
+              - generic [ref=e524]:
+                - generic [ref=e525]: Guía completada
+                - generic [ref=e526]: 100%
+              - generic [ref=e529]:
+                - link "Editar" [ref=e530] [cursor=pointer]:
+                  - /url: /dashboard/properties/06fe9d69-b372-42ec-888c-3c91cf95bbf1/setup
+                - button [ref=e531]
+            - generic [ref=e532]:
+              - generic [ref=e533]:
+                - img "marijuani" [ref=e534]
+                - generic [ref=e536]: Activa
+              - generic [ref=e537]:
+                - heading "marijuani" [level=3] [ref=e538]
+                - generic [ref=e539]
+              - generic [ref=e545]:
+                - generic [ref=e546]
+                - generic [ref=e554]
+                - generic [ref=e559]
+              - generic [ref=e566]:
+                - generic [ref=e567]: Guía completada
+                - generic [ref=e568]: 100%
+              - generic [ref=e571]:
+                - link "Editar" [ref=e572] [cursor=pointer]:
+                  - /url: /dashboard/properties/a935818d-24e4-49c4-9edf-5b090586a259/setup
+                - button [ref=e573]
+            - generic [ref=e574]:
+              - generic [ref=e575]:
+                - img "maripepi" [ref=e576]
+                - generic [ref=e578]: Activa
+              - generic [ref=e579]:
+                - heading "maripepi" [level=3] [ref=e580]
+                - generic [ref=e581]
+              - generic [ref=e587]:
+                - generic [ref=e588]
+                - generic [ref=e596]
+                - generic [ref=e601]
+              - generic [ref=e608]:
+                - generic [ref=e609]: Guía completada
+                - generic [ref=e610]: 8%
+              - generic [ref=e613]:
+                - link "Editar" [ref=e614] [cursor=pointer]:
+                  - /url: /dashboard/properties/6e02d03f-61f2-4c6f-a119-33bd37b36be3/setup
+                - button [ref=e615]
+            - generic [ref=e616]:
+              - generic [ref=e617]:
+                - img "Villa Enrique" [ref=e618]
+                - generic [ref=e620]: Activa
+              - generic [ref=e621]:
+                - heading "Villa Enrique" [level=3] [ref=e622]
+                - generic [ref=e623]
+              - generic [ref=e629]:
+                - generic [ref=e630]
+                - generic [ref=e638]
+                - generic [ref=e643]
+              - generic [ref=e650]:
+                - generic [ref=e651]: Guía completada
+                - generic [ref=e652]: 100%
+              - generic [ref=e655]:
+                - link "Editar" [ref=e656] [cursor=pointer]:
+                  - /url: /dashboard/properties/c77e2c17-7c57-45ab-8abc-79e6b84fa01c/setup
+                - button [ref=e657]
+            - generic [ref=e658]:
+              - generic [ref=e659]:
+                - generic [ref=e661]: Sin imagen
+                - generic [ref=e663]: Archivada
+              - generic [ref=e664]:
+                - heading "fghgfghg" [level=3] [ref=e665]
+                - generic [ref=e666]
+              - generic [ref=e672]:
+                - generic [ref=e673]
+                - generic [ref=e681]
+                - generic [ref=e686]
+              - generic [ref=e693]:
+                - generic [ref=e694]: Guía completada
+                - generic [ref=e695]: 8%
+              - generic [ref=e698]:
+                - link "Editar" [ref=e699] [cursor=pointer]:
+                  - /url: /dashboard/properties/12906399-0000-4943-812e-6eadfa843339/setup
+                - button [ref=e700]
+            - generic [ref=e701]:
+              - generic [ref=e702]:
+                - generic [ref=e704]: Sin imagen
+                - generic [ref=e706]: Borrador
+              - generic [ref=e707]:
+                - heading "hhhhhhhhhh" [level=3] [ref=e708]
+                - generic [ref=e709]
+              - generic [ref=e715]:
+                - generic [ref=e716]
+                - generic [ref=e724]
+                - generic [ref=e729]
+              - generic [ref=e736]:
+                - generic [ref=e737]: Guía completada
+                - generic [ref=e738]: 100%
+              - generic [ref=e741]:
+                - link "Editar" [ref=e742] [cursor=pointer]:
+                  - /url: /dashboard/properties/01076d04-b577-473b-a8ef-acf23b54429f/setup
+                - button [ref=e743]
+            - generic [ref=e744]:
+              - generic [ref=e745]:
+                - generic [ref=e747]: Sin imagen
+                - generic [ref=e749]: Borrador
+              - generic [ref=e750]:
+                - heading "jjjjjjjjjjjjjjjjj" [level=3] [ref=e751]
+                - generic [ref=e752]
+              - generic [ref=e758]:
+                - generic [ref=e759]
+                - generic [ref=e767]
+                - generic [ref=e772]
+              - generic [ref=e779]:
+                - generic [ref=e780]: Guía completada
+                - generic [ref=e781]: 8%
+              - generic [ref=e784]:
+                - link "Editar" [ref=e785] [cursor=pointer]:
+                  - /url: /dashboard/properties/9df727ae-139a-4538-910e-de9cfe46bbc3/setup
+                - button [ref=e786]
+            - generic [ref=e787]:
+              - generic [ref=e788]:
+                - img "KKKKKK" [ref=e789]
+                - generic [ref=e791]: Archivada
+              - generic [ref=e792]:
+                - heading "KKKKKK" [level=3] [ref=e793]
+                - generic [ref=e794]
+              - generic [ref=e800]:
+                - generic [ref=e801]
+                - generic [ref=e809]
+                - generic [ref=e814]
+              - generic [ref=e821]:
+                - generic [ref=e822]: Guía completada
+                - generic [ref=e823]: 23%
+              - generic [ref=e826]:
+                - link "Editar" [ref=e827] [cursor=pointer]:
+                  - /url: /dashboard/properties/b79d2694-7c85-4bb0-9f03-d9413ffec6db/setup
+                - button [ref=e828]
+            - generic [ref=e829]:
+              - generic [ref=e830]:
+                - generic [ref=e832]: Sin imagen
+                - generic [ref=e834]: Borrador
+              - generic [ref=e835]:
+                - heading "KKKKKKKKK" [level=3] [ref=e836]
+                - generic [ref=e837]
+              - generic [ref=e843]:
+                - generic [ref=e844]
+                - generic [ref=e852]
+                - generic [ref=e857]
+              - generic [ref=e864]:
+                - generic [ref=e865]: Guía completada
+                - generic [ref=e866]: 15%
+              - generic [ref=e869]:
+                - link "Editar" [ref=e870] [cursor=pointer]:
+                  - /url: /dashboard/properties/805c4670-8b4a-4083-92f1-51e8d1622de5/setup
+                - button [ref=e871]
+            - generic [ref=e872]:
+              - generic [ref=e873]:
+                - generic [ref=e875]: Sin imagen
+                - generic [ref=e877]: Borrador
+              - generic [ref=e878]:
+                - heading "KKKKKKKK" [level=3] [ref=e879]
+                - generic [ref=e880]
+              - generic [ref=e886]:
+                - generic [ref=e887]
+                - generic [ref=e895]
+                - generic [ref=e900]
+              - generic [ref=e907]:
+                - generic [ref=e908]: Guía completada
+                - generic [ref=e909]: 8%
+              - generic [ref=e912]:
+                - link "Editar" [ref=e913] [cursor=pointer]:
+                  - /url: /dashboard/properties/d63d15f9-593b-4d1d-a3e4-343ea5d54acf/setup
+                - button [ref=e914]
+            - generic [ref=e915]:
+              - generic [ref=e916]:
+                - img "zzzzzz" [ref=e917]
+                - generic [ref=e919]: Borrador
+              - generic [ref=e920]:
+                - heading "zzzzzz" [level=3] [ref=e921]
+                - generic [ref=e922]
+              - generic [ref=e928]:
+                - generic [ref=e929]
+                - generic [ref=e937]
+                - generic [ref=e942]
+              - generic [ref=e949]:
+                - generic [ref=e950]: Guía completada
+                - generic [ref=e951]: 100%
+              - generic [ref=e954]:
+                - link "Editar" [ref=e955] [cursor=pointer]:
+                  - /url: /dashboard/properties/125474e6-fa20-46e0-bf03-c37877fceec4/setup
+                - button [ref=e956]
+            - generic [ref=e957]:
+              - generic [ref=e958]:
+                - img "VILLASOL" [ref=e959]
+                - generic [ref=e961]: Activa
+              - generic [ref=e962]:
+                - heading "VILLASOL" [level=3] [ref=e963]
+                - generic [ref=e964]
+              - generic [ref=e970]:
+                - generic [ref=e971]
+                - generic [ref=e979]
+                - generic [ref=e984]
+              - generic [ref=e991]:
+                - generic [ref=e992]: Guía completada
+                - generic [ref=e993]: 85%
+              - generic [ref=e996]:
+                - link "Editar" [ref=e997] [cursor=pointer]:
+                  - /url: /dashboard/properties/d3af5f53-7a16-410b-a84c-0cd20122529a/setup
+                - button [ref=e998]
+            - generic [ref=e999]:
+              - generic [ref=e1000]:
+                - img "VillaMACARENA" [ref=e1001]
+                - generic [ref=e1003]: Activa
+              - generic [ref=e1004]:
+                - heading "VillaMACARENA" [level=3] [ref=e1005]
+                - generic [ref=e1006]
+              - generic [ref=e1012]:
+                - generic [ref=e1013]
+                - generic [ref=e1021]
+                - generic [ref=e1026]
+              - generic [ref=e1033]:
+                - generic [ref=e1034]: Guía completada
+                - generic [ref=e1035]: 62%
+              - generic [ref=e1038]:
+                - link "Editar" [ref=e1039] [cursor=pointer]:
+                  - /url: /dashboard/properties/cb08f3d7-51f9-4485-8be2-d7ee98b7d6b8/setup
+                - button [ref=e1040]
+            - generic [ref=e1041]:
+              - generic [ref=e1042]:
+                - img "soniamar" [ref=e1043]
+                - generic [ref=e1045]: Activa
+              - generic [ref=e1046]:
+                - heading "soniamar" [level=3] [ref=e1047]
+                - generic [ref=e1048]
+              - generic [ref=e1054]:
+                - generic [ref=e1055]
+                - generic [ref=e1063]
+                - generic [ref=e1068]
+              - generic [ref=e1075]:
+                - generic [ref=e1076]: Guía completada
+                - generic [ref=e1077]: 100%
+              - generic [ref=e1080]:
+                - link "Editar" [ref=e1081] [cursor=pointer]:
+                  - /url: /dashboard/properties/ce9b6177-b54a-4506-9815-577f9db98d7d/setup
+                - button [ref=e1082]
+            - generic [ref=e1083]:
+              - generic [ref=e1084]:
+                - img "FuenteSol" [ref=e1085]
+                - generic [ref=e1087]: Activa
+              - generic [ref=e1088]:
+                - heading "FuenteSol" [level=3] [ref=e1089]
+                - generic [ref=e1090]
+              - generic [ref=e1096]:
+                - generic [ref=e1097]
+                - generic [ref=e1105]
+                - generic [ref=e1110]
+              - generic [ref=e1117]:
+                - generic [ref=e1118]: Guía completada
+                - generic [ref=e1119]: 31%
+              - generic [ref=e1122]:
+                - link "Editar" [ref=e1123] [cursor=pointer]:
+                  - /url: /dashboard/properties/1a434f7f-102f-440a-9820-5ec07f12a059/setup
+                - button [ref=e1124]
+            - generic [ref=e1125]:
+              - generic [ref=e1126]:
+                - img "Verasol" [ref=e1127]
+                - generic [ref=e1129]: Activa
+              - generic [ref=e1130]:
+                - heading "Verasol" [level=3] [ref=e1131]
+                - generic [ref=e1132]
+              - generic [ref=e1138]:
+                - generic [ref=e1139]
+                - generic [ref=e1147]
+                - generic [ref=e1152]
+              - generic [ref=e1159]:
+                - generic [ref=e1160]: Guía completada
+                - generic [ref=e1161]: 54%
+              - generic [ref=e1164]:
+                - link "Editar" [ref=e1165] [cursor=pointer]:
+                  - /url: /dashboard/properties/b68f1e4a-817a-4172-9f92-26134ddb02a0/setup
+                - button [ref=e1166]
+            - generic [ref=e1167]:
+              - generic [ref=e1168]:
+                - img "villamar" [ref=e1169]
+                - generic [ref=e1171]: Activa
+              - generic [ref=e1172]:
+                - heading "villamar" [level=3] [ref=e1173]
+                - generic [ref=e1174]
+              - generic [ref=e1180]:
+                - generic [ref=e1181]
+                - generic [ref=e1189]
+                - generic [ref=e1194]
+              - generic [ref=e1201]:
+                - generic [ref=e1202]: Guía completada
+                - generic [ref=e1203]: 23%
+              - generic [ref=e1206]:
+                - link "Editar" [ref=e1207] [cursor=pointer]:
+                  - /url: /dashboard/properties/078c1821-ae3e-4baa-9bf4-06b2eac109b6/setup
+                - button [ref=e1208]
+            - generic [ref=e1209]:
+              - generic [ref=e1210]:
+                - img "jjj" [ref=e1211]
+                - generic [ref=e1213]: Activa
+              - generic [ref=e1214]:
+                - heading "jjj" [level=3] [ref=e1215]
+                - generic [ref=e1216]
+              - generic [ref=e1222]:
+                - generic [ref=e1223]
+                - generic [ref=e1231]
+                - generic [ref=e1236]
+              - generic [ref=e1243]:
+                - generic [ref=e1244]: Guía completada
+                - generic [ref=e1245]: 100%
+              - generic [ref=e1248]:
+                - link "Editar" [ref=e1249] [cursor=pointer]:
+                  - /url: /dashboard/properties/37159afd-0eb0-498f-a756-38eb487527e7/setup
+                - button [ref=e1250]
+            - generic [ref=e1251]:
+              - generic [ref=e1252]:
+                - generic [ref=e1254]: Sin imagen
+                - generic [ref=e1256]: Archivada
+              - generic [ref=e1257]:
+                - heading "aaaaaaa" [level=3] [ref=e1258]
+                - generic [ref=e1259]
+              - generic [ref=e1265]:
+                - generic [ref=e1266]
+                - generic [ref=e1274]
+                - generic [ref=e1279]
+              - generic [ref=e1286]:
+                - generic [ref=e1287]: Guía completada
+                - generic [ref=e1288]: 15%
+              - generic [ref=e1291]:
+                - link "Editar" [ref=e1292] [cursor=pointer]:
+                  - /url: /dashboard/properties/0fa170d4-7a49-481b-ab08-5eb00aec7b34/setup
+                - button [ref=e1293]
+            - generic [ref=e1294]:
+              - generic [ref=e1295]:
+                - img "veratespera" [ref=e1296]
+                - generic [ref=e1298]: Activa
+              - generic [ref=e1299]:
+                - heading "veratespera" [level=3] [ref=e1300]
+                - generic [ref=e1301]
+              - generic [ref=e1307]:
+                - generic [ref=e1308]
+                - generic [ref=e1316]
+                - generic [ref=e1321]
+              - generic [ref=e1328]:
+                - generic [ref=e1329]: Guía completada
+                - generic [ref=e1330]: 92%
+              - generic [ref=e1333]:
+                - link "Editar" [ref=e1334] [cursor=pointer]:
+                  - /url: /dashboard/properties/8b16ae1d-d061-4b9d-8fe8-06a1b058c580/setup
+                - button [ref=e1335]
+            - link "Añadir Propiedad Configura un nuevo alojamiento" [ref=e1336] [cursor=pointer]:
+              - /url: /dashboard/properties/new
+              - img [ref=e1338]
+              - generic [ref=e1339]:
+                - heading "Añadir Propiedad" [level=3] [ref=e1340]
+                - paragraph [ref=e1341]: Configura un nuevo alojamiento
+      - navigation [ref=e123]:
+        - link "Inicio" [ref=e124] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e126]
+          - generic [ref=e129]: Inicio
+        - link "Propiedades" [ref=e130] [cursor=pointer]:
+          - /url: /dashboard/properties
+          - img [ref=e132]
+          - generic [ref=e136]: Propiedades
+        - link "Reservas" [ref=e137] [cursor=pointer]:
+          - /url: /dashboard/bookings
+          - img [ref=e139]
+          - generic [ref=e142]: Reservas
+        - link "Calendario" [ref=e143] [cursor=pointer]:
+          - /url: /dashboard/calendar
+          - img [ref=e145]
+          - generic [ref=e147]: Calendario
+        - link "Analiticas" [ref=e148] [cursor=pointer]:
+          - /url: /dashboard/analytics
+          - img [ref=e150]
+          - generic [ref=e152]: Analiticas
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e1347] [cursor=pointer]:
+    - img [ref=e1348]
+  - alert [ref=e1351]

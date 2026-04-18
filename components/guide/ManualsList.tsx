@@ -97,26 +97,26 @@ function ManualItem({ manual, language }: { manual: Manual, language: string }) 
         <Dialog>
             <DialogTrigger asChild>
                 <button className="w-full text-left group">
-                    <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] transition-all duration-500 rounded-[2rem] overflow-hidden group-active:scale-[0.98]">
+                    <Card className="border-none shadow-card bg-surface hover:shadow-[0_20px_40px_rgba(0,0,0,0.12)] transition-all duration-500 rounded-[2rem] overflow-hidden group-active:scale-[0.98]">
                         <div className="flex items-center p-6 gap-5">
-                            <div className="h-14 w-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-500 shrink-0">
+                            <div className="h-14 w-14 rounded-2xl bg-primary/[0.06] flex items-center justify-center text-[var(--color-text-secondary)] group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-500 shrink-0">
                                 <StatusIcon className="h-7 w-7" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h4 className={`font-bold text-slate-900 truncate ${nameLoading ? 'animate-pulse opacity-50' : ''}`}>
+                                <h4 className={`font-bold text-[var(--color-text-primary)] truncate ${nameLoading ? 'animate-pulse opacity-50' : ''}`}>
                                     {localizedName}
                                 </h4>
-                                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                                <p className="text-xs text-[var(--color-text-secondary)] font-bold uppercase tracking-wider">
                                     {manual.brand} {manual.model}
                                 </p>
                             </div>
-                            <ChevronRight className="h-5 w-5 text-slate-300 group-hover:translate-x-1 group-hover:text-primary transition-all" />
+                            <ChevronRight className="h-5 w-5 text-[var(--color-text-secondary)]/50 group-hover:translate-x-1 group-hover:text-primary transition-all" />
                         </div>
                     </Card>
                 </button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2rem] border-none shadow-2xl p-0">
-                <div className="sticky top-0 bg-white/80 backdrop-blur-md z-10 px-6 py-6 border-b border-slate-100">
+                <div className="sticky top-0 bg-surface/80 backdrop-blur-md z-10 px-6 py-6 border-b border-primary/[0.05]">
                     <DialogHeader>
                         <div className="flex items-center gap-3 mb-1">
                             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
@@ -124,12 +124,12 @@ function ManualItem({ manual, language }: { manual: Manual, language: string }) 
                             </div>
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">{officialLabel}</span>
                         </div>
-                        <DialogTitle className={`text-2xl font-black text-slate-900 ${nameLoading ? 'animate-pulse opacity-50' : ''}`}>
+                        <DialogTitle className={`text-2xl font-black text-[var(--color-text-primary)] ${nameLoading ? 'animate-pulse opacity-50' : ''}`}>
                             {localizedName} - {manual.brand} {manual.model}
                         </DialogTitle>
                     </DialogHeader>
                 </div>
-                <div className={`p-8 prose prose-slate prose-sm max-w-none prose-headings:font-black prose-headings:text-slate-900 prose-p:text-slate-600 prose-p:leading-relaxed prose-strong:text-slate-900 prose-strong:font-bold ${contentLoading ? 'animate-pulse opacity-50' : ''}`}>
+                <div className={`p-8 prose prose-slate prose-sm max-w-none prose-headings:font-black prose-headings:text-[var(--color-text-primary)] prose-p:text-[var(--color-text-secondary)] prose-p:leading-relaxed prose-strong:text-[var(--color-text-primary)] prose-strong:font-bold ${contentLoading ? 'animate-pulse opacity-50' : ''}`}>
                     <ReactMarkdown>{localizedContent}</ReactMarkdown>
                 </div>
             </DialogContent>

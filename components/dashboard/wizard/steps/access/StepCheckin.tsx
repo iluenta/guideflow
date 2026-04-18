@@ -97,7 +97,7 @@ export default function StepCheckin({ value }: { value?: string }) {
                     {/* Horario + aviso */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                         <div className="space-y-2 text-left">
-                            <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                            <Label className="text-sm font-medium text-slate-600 ml-1">
                                 Horario de Check-in
                             </Label>
                             <div className="relative">
@@ -120,7 +120,7 @@ export default function StepCheckin({ value }: { value?: string }) {
 
                     {/* Pasos */}
                     <div className="space-y-3">
-                        <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                        <Label className="text-sm font-medium text-slate-600 ml-1 flex items-center gap-2">
                             <Plus className="w-3 h-3" /> Pasos Numerados
                         </Label>
 

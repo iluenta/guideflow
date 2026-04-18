@@ -96,7 +96,7 @@ export default function StepContacts({ value }: { value?: string }) {
                     <div className="space-y-4">
                         <div className="mb-4">
                             <div className="flex items-center gap-3">
-                                <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                                <h3 className="text-sm font-semibold text-slate-600 flex items-center gap-2">
                                     <ShieldAlert className="w-3 h-3 text-slate-400" /> Soporte Oficial
                                 </h3>
                                 {data.contacts.preferred_contact_id === 'support' ? (
@@ -118,7 +118,7 @@ export default function StepContacts({ value }: { value?: string }) {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2 text-left">
-                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Nombre (Soporte)</Label>
+                                <Label className="text-sm font-medium text-slate-600 ml-1">Nombre (Soporte)</Label>
                                 <Input
                                     placeholder="Ej: Atención al Cliente"
                                     value={data.contacts.support_name}
@@ -127,7 +127,7 @@ export default function StepContacts({ value }: { value?: string }) {
                                 />
                             </div>
                             <div className="space-y-2 text-left">
-                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Teléfono Fijo</Label>
+                                <Label className="text-sm font-medium text-slate-600 ml-1">Teléfono Fijo</Label>
                                 <Input
                                     placeholder="Ej: 912 34 56 78"
                                     value={data.contacts.support_phone}
@@ -143,7 +143,7 @@ export default function StepContacts({ value }: { value?: string }) {
                                 />
                             </div>
                             <div className="space-y-2 text-left">
-                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Teléfono Móvil (WhatsApp)</Label>
+                                <Label className="text-sm font-medium text-slate-600 ml-1">Teléfono Móvil (WhatsApp)</Label>
                                 <Input
                                     placeholder="Ej: 666 12 34 56"
                                     value={data.contacts.support_mobile}
@@ -161,7 +161,7 @@ export default function StepContacts({ value }: { value?: string }) {
                     <div className="space-y-4 border-t pt-6">
                         <div className="mb-4 space-y-3">
                             <div className="flex items-center gap-3">
-                                <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                                <h3 className="text-sm font-semibold text-slate-600 flex items-center gap-2">
                                     <Sparkles className="w-3 h-3 text-slate-400" /> Tu Contacto (Anfitrión)
                                 </h3>
                                 {data.contacts.preferred_contact_id === 'host' ? (
@@ -192,7 +192,7 @@ export default function StepContacts({ value }: { value?: string }) {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2 text-left">
-                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Nombre</Label>
+                                <Label className="text-sm font-medium text-slate-600 ml-1">Nombre</Label>
                                 <div className="p-3 rounded-xl bg-slate-50/50 border border-slate-100 flex items-center gap-3 h-12">
                                     <div className="h-7 w-7 rounded-lg bg-white flex items-center justify-center text-[#316263] shadow-sm shrink-0">
                                         <HomeIcon className="w-4 h-4" />
@@ -203,7 +203,7 @@ export default function StepContacts({ value }: { value?: string }) {
                                 </div>
                             </div>
                             <div className="space-y-2 text-left">
-                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Teléfono Principal</Label>
+                                <Label className="text-sm font-medium text-slate-600 ml-1">Teléfono Principal</Label>
                                 <Input
                                     placeholder="Ej: 912 34 56 78"
                                     value={data.contacts.host_phone}
@@ -215,7 +215,7 @@ export default function StepContacts({ value }: { value?: string }) {
                                 />
                             </div>
                             <div className="space-y-2 text-left">
-                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Teléfono Móvil</Label>
+                                <Label className="text-sm font-medium text-slate-600 ml-1">Teléfono Móvil</Label>
                                 <Input
                                     placeholder="Ej: 666 12 34 56"
                                     value={data.contacts.host_mobile}
@@ -262,7 +262,7 @@ export default function StepContacts({ value }: { value?: string }) {
                             className="flex items-center justify-between cursor-pointer group select-none"
                             onClick={() => setShowEmergencies(!showEmergencies)}
                         >
-                            <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-slate-600 flex items-center gap-2">
                                 <AlertTriangle className="w-3 h-3 text-rose-400" /> Emergencias Generales
                                 <span className="text-[9px] font-medium text-slate-300 normal-case ml-2">
                                     (112, Policía, Bomberos...)
@@ -331,7 +331,7 @@ export default function StepContacts({ value }: { value?: string }) {
 
                     {/* BLOQUE 5: SALUD Y SERVICIOS (SIEMPRE VISIBLES) */}
                     <div className="space-y-4 border-t pt-6">
-                        <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-slate-600 flex items-center gap-2">
                             <HeartPulse className="w-3 h-3 text-[#316263]" /> Salud y Servicios de Cercanía
                         </h3>
                         
@@ -417,7 +417,7 @@ export default function StepContacts({ value }: { value?: string }) {
 
                     {/* BLOQUE 6: OTROS CONTACTOS (MANUALES) */}
                     <div className="space-y-4 border-t pt-6">
-                        <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-slate-600 flex items-center gap-2">
                             <Plus className="w-3 h-3" /> Contactos del Guía (Otros)
                         </h3>
                         <div className="space-y-3">
