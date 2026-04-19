@@ -125,22 +125,25 @@ function buildRecommendationLines(
     return Object.entries(grouped).map(([cat, items]) => {
         const catLabel = CATEGORY_LABEL_MAP[cat] || 'RECOMENDACIONES_LOCALES';
         const itemLines = items.map((r: any) => {
+            const placeId = r.google_place_id || r.metadata?.google_place_id;
             let namePart: string;
-            if (r.google_place_id) {
-                // place_id verificado → enlace exacto
-                namePart = `[${r.name}](maps_place:${r.google_place_id})`;
+            if (placeId) {
+                namePart = `[${r.name}](maps_place:${placeId})`;
             } else {
-                // sin place_id → búsqueda nombre + ciudad para acotar geográficamente
-                const searchTerm = r.address || (city ? `${r.name}, ${city}` : r.name);
+                const searchTerm = r.address || r.metadata?.address || (city ? `${r.name}, ${city}` : r.name);
                 const q = encodeURIComponent(searchTerm);
                 namePart = `[${r.name}](maps:${q})`;
             }
             let line = `- ${namePart}`;
-            // Omitir distancia nula o placeholder
             const dist = r.distance;
             if (dist && dist !== 'null' && dist !== 'N/A') line += ` (${dist})`;
             if (r.price_range) line += ` ${r.price_range}`;
-            if (r.description) line += `: ${r.description.substring(0, 150)}`;
+            // Use editorial_summary from metadata if no host description
+            const desc = r.description || r.metadata?.editorial_summary;
+            if (desc) line += `: ${desc.substring(0, 180)}`;
+            // Tags from metadata
+            const tags: string[] = r.metadata?.tags || [];
+            if (tags.length > 0) line += ` [${tags.slice(0, 3).join(', ')}]`;
             if (r.personal_note) line += ` 💬 "${r.personal_note}"`;
             return line;
         }).join('\n');

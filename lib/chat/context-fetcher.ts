@@ -38,6 +38,12 @@ function buildDetectedTypes(intent: ClassifiedIntent): string[] {
                 'desayuno': ['desayuno', 'cafe'],
                 'tapas': ['tapas', 'taberna', 'tapas_bar', 'bar_restaurante'],
                 'restaurante': ['restaurante', 'restaurant', 'food', 'comida'],
+                'asiatico': ['asiatico', 'asiático', 'asian', 'chino', 'japones', 'japonés', 'thai', 'sushi'],
+                'italiano': ['italiano', 'italiana', 'italian'],
+                'mediterraneo': ['mediterraneo', 'mediterráneo', 'mediterranean'],
+                'hamburguesas': ['hamburguesas', 'hamburguesa', 'burger'],
+                'alta_cocina': ['alta_cocina', 'alta cocina', 'gourmet', 'fine_dining'],
+                'internacional': ['internacional', 'international', 'fusion', 'fusión'],
             };
             foodSubcatFromIntent = relatedMap[intent.foodSubtype] || [intent.foodSubtype];
         }
@@ -100,11 +106,11 @@ export async function fetchPropertyContext(
     if (flags.isRecommendationQuery) {
         const recsQuery = supabase
             .from('property_recommendations')
-            .select('name, type, description, distance, personal_note, price_range, google_place_id, address')
+            .select('name, type, description, distance, personal_note, price_range, google_place_id, address, metadata')
             .eq('property_id', propertyId);
 
         if (detectedTypes.length > 0) {
-            recsQuery.in('type', detectedTypes).limit(15);
+            recsQuery.in('type', detectedTypes).limit(50);
         } else {
             recsQuery.order('type').limit(50);
         }
@@ -116,7 +122,7 @@ export async function fetchPropertyContext(
         if (directRecommendations.length === 0 && intent.intent === 'recommendation_food' && !isGenericFoodSearch) {
             const { data: fallbackRecs } = await supabase
                 .from('property_recommendations')
-                .select('name, type, description, distance, personal_note, price_range, google_place_id, address')
+                .select('name, type, description, distance, personal_note, price_range, google_place_id, address, metadata')
                 .eq('property_id', propertyId)
                 .in('type', [...ALL_FOOD_TYPES])
                 .limit(20);

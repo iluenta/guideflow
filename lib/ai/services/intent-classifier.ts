@@ -172,6 +172,9 @@ EJEMPLOS:
 - "iba a hacer pasta pero como no hay agua voy a comer fuera, ¿me recomiendas algún italiano?" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"italiano","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "el horno no funciona, ¿hay algún restaurante cerca?" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"general","detectedErrorCode":null,"isGenericFood":true,"confidence":"high"}
 - "y algún restaurante en general?" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"general","detectedErrorCode":null,"isGenericFood":true,"confidence":"high"}
+- "[CONTEXTO RECIENTE]: ¿Qué te apetece? Tengo: Italiana, Asiática, Tapas / [ÚLTIMO MENSAJE]: asiatica" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"asiatico","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "[CONTEXTO RECIENTE]: ¿Qué te apetece? Tengo: Italiana, Asiática / [ÚLTIMO MENSAJE]: italiano" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"italiano","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "[CONTEXTO RECIENTE]: Tengo recomendaciones de: Tapas, Mediterránea / [ÚLTIMO MENSAJE]: tapas" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"tapas","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 
 Responde SOLO con el JSON. Sin explicaciones, sin markdown, sin backticks.`
 

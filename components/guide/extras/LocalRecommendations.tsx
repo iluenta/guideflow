@@ -153,10 +153,10 @@ export function LocalRecommendations({
                         <div className="space-y-2 max-w-2xl">
                             <h4 className="text-lg font-bold text-slate-900">Genera la guía esencial del primer día</h4>
                             <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                                La IA buscará en Google Places los <span className="text-[#316263] font-bold">7 tipos de sitios más útiles</span> para tus huéspedes al llegar: supermercados, restaurantes, desayunos, tapas, cultura, naturaleza y ocio nocturno.
+                                La IA buscará en Google Places <span className="text-[#316263] font-bold">14 sitios esenciales</span> (2 por categoría) para tus huéspedes al llegar: supermercados, restaurantes, desayunos, tapas, cultura, naturaleza y ocio nocturno.
                             </p>
                             <p className="text-xs text-slate-400 font-medium italic">
-                                ¿Quieres italiano, asiático, alta cocina u otras categorías? Selecciónalas en la barra inferior y usa &quot;Sugerir con IA&quot; para cada una por separado.
+                                ¿Quieres añadir más sitios a las categorías italiano, asiático, alta cocina u otras? Selecciónalas individualmente en la barra inferior y usa &quot;Sugerir con IA&quot; para añadir más sitios a cada una por separado.
                             </p>
                         </div>
                     </div>

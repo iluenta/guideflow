@@ -75,17 +75,29 @@ export const FOOD_TO_APPLIANCE: Record<string, string> = {
 // ─── Categorías de recomendaciones ───────────────────────────────────────────
 
 export const ALL_FOOD_TYPES = [
-    'restaurant', 'restaurante', 'restaurantes', 'italiano', 'mediterraneo',
-    'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno',
-    'cafe', 'tapas', 'taberna', 'tapas_bar', 'bar_restaurante',
+    'restaurant', 'restaurante', 'restaurantes', 'food', 'comida',
+    'italiano', 'italiana', 'italian',
+    'mediterraneo', 'mediterráneo', 'mediterranean',
+    'hamburguesas', 'hamburguesa', 'burger',
+    'asiatico', 'asiático', 'asian', 'chino', 'japonés',
+    'alta_cocina', 'alta cocina', 'gourmet',
+    'internacional', 'international',
+    'desayuno', 'cafe',
+    'tapas', 'taberna', 'tapas_bar', 'bar_restaurante',
 ] as const;
 
 /** Nombre legible de cada categoría para mostrar al huésped */
 export const CATEGORY_LABEL_NAMES: Record<string, string> = {
     'restaurant': 'Restaurantes', 'restaurante': 'Restaurantes', 'restaurantes': 'Restaurantes',
-    'italiano': 'Italiana', 'mediterraneo': 'Mediterránea', 'hamburguesas': 'Hamburguesas',
-    'asiatico': 'Asiática', 'alta_cocina': 'Alta cocina', 'internacional': 'Internacional',
-    'desayuno': 'Desayunos', 'cafe': 'Cafeterías', 'tapas': 'Tapas',
+    'food': 'Restaurantes', 'comida': 'Restaurantes',
+    'italiano': 'Italiana', 'italiana': 'Italiana', 'italian': 'Italiana',
+    'mediterraneo': 'Mediterránea', 'mediterráneo': 'Mediterránea', 'mediterranean': 'Mediterránea',
+    'hamburguesas': 'Hamburguesas', 'hamburguesa': 'Hamburguesas', 'burger': 'Hamburguesas',
+    'asiatico': 'Asiática', 'asiático': 'Asiática', 'asian': 'Asiática', 'chino': 'Asiática', 'japonés': 'Asiática',
+    'alta_cocina': 'Alta cocina', 'alta cocina': 'Alta cocina', 'gourmet': 'Alta cocina',
+    'internacional': 'Internacional', 'international': 'Internacional',
+    'desayuno': 'Desayunos', 'cafe': 'Cafeterías',
+    'tapas': 'Tapas', 'taberna': 'Tapas', 'tapas_bar': 'Tapas', 'bar_restaurante': 'Restaurantes',
 };
 
 /** Etiqueta para el bloque de contexto enviado a Gemini */

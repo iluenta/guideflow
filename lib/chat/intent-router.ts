@@ -166,8 +166,7 @@ export async function classifyAndRoute(
         isApplianceUsageQuery: effectiveIntent.intent === 'appliance_usage',
         isApplianceTaskQuery: effectiveIntent.intent === 'appliance_task',
         isApplianceProblem: effectiveIntent.intent === 'appliance_problem',
-        isArrivalTransportQuery: false, // 'arrival_transport' intent removed — always false
-        isManualRequest: effectiveIntent.intent === 'manual_request',
+isManualRequest: effectiveIntent.intent === 'manual_request',
         isEmergency: effectiveIntent.intent === 'emergency',
         detectedErrorCode: effectiveIntent.detectedErrorCode ?? null,
         detectedTask: effectiveIntent.detectedTask ?? null,

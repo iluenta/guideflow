@@ -34,8 +34,7 @@ export interface IntentFlags {
     isApplianceUsageQuery: boolean;
     isApplianceTaskQuery: boolean;
     isApplianceProblem: boolean;
-    isArrivalTransportQuery: boolean;
-    isManualRequest: boolean;
+isManualRequest: boolean;
     isEmergency: boolean;
     detectedErrorCode: string | null;
     detectedTask: string | null;

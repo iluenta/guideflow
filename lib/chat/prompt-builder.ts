@@ -24,7 +24,8 @@ const MAP_FORMAT_BLOCK = `
 - Para cualquier lugar del contexto que tenga un enlace [Nombre](maps_place:...), ÚSALO EXACTAMENTE IGUAL.
 - **PROPIEDAD**: Para la dirección del alojamiento, úsala SIEMPRE en este formato: [[MAP:Dirección Completa]].
 - **IMPORTANTE**: No olvides copiar la descripción que aparece tras los dos puntos (:) en el contexto.
-- Ejemplo: "- [Nombre del lugar](maps_place:id) (400m) — Aquí va la descripción completa del sitio."`;
+- Ejemplo: "- [Nombre del lugar](maps_place:id) (400m) — Aquí va la descripción completa del sitio."
+- ⛔ DIRECCIÓN DE LOCALES RECOMENDADOS: NUNCA escribas la dirección de un local recomendado aunque la conozcas por tu conocimiento general. En su lugar, di: "Puedes ver la ubicación exacta en el enlace del mapa 📍" usando el enlace maps_place del contexto.`;
 
 // ─── Bloques dinámicos (por intent) ─────────────────────────────────────────
 
@@ -126,31 +127,6 @@ function buildApplianceProblemGuidance(params: ChatContextParams, supportContact
 ✅ Tono anfitrión servicial, NO técnico de mantenimiento.`;
 }
 
-function buildArrivalTransportGuidance(params: ChatContextParams, ctx: PropertyContext, supportContact: string): string {
-    if (!params.flags.isArrivalTransportQuery) return '';
-
-    // Extract address from context for navigation fallback
-    const accessCtx = ctx.criticalContext?.find((c: any) => c.category === 'access');
-    const address = accessCtx?.content?.full_address
-        || accessCtx?.content?.address
-        || ctx.propertyInfo?.full_address
-        || ctx.propertyInfo?.address
-        || null;
-
-    const addressLine = address
-        ? `- La dirección del apartamento es [[MAP:${address}]]. Inclúyela SIEMPRE en tu respuesta para que el huésped pueda navegar con Google Maps o GPS.`
-        : `- Si encuentras una dirección en el CONTEXTO (en cualquier formato), inclúyela en formato [[MAP:dirección]]. Si realmente no aparece en el CONTEXTO, no la inventes.`;
-
-    return `
-# PREGUNTAS DE LLEGADA Y TRANSPORTE:
-${addressLine}
-- Si el CONTEXTO tiene instrucciones específicas de llegada ([INSTRUCCIONES_LLEGADA] o [INFO_ACCESS]), úsalas como respuesta principal.
-- Si NO hay instrucciones específicas de transporte en el CONTEXTO (metro, bus, taxi, etc.):
-  → NUNCA respondas solo "no tengo esa info". Ofrece SIEMPRE la dirección del apartamento (si la tienes) y sugiere: "Puedes usar Google Maps o GPS con la dirección para planificar la ruta."
-  → Para preguntas de transporte general (autopistas, peajes, GPS de coche alquilado): sugiere Google Maps/GPS con la dirección del apartamento como punto de llegada.
-- Para preguntas de check-in tardío, horario de llegada o coordinación: si no está en el CONTEXTO, dirige siempre a ${supportContact} para coordinar.
-`;
-}
 
 function buildRecommendationGuidance(params: ChatContextParams, supportContact: string): string {
     if (!params.flags.isRecommendationQuery) return '';
@@ -173,8 +149,9 @@ ${usedFallbackRecs
         } else {
             recsBlock = `
 - El CONTEXTO ya incluye las recomendaciones del anfitrión con sus enlaces maps_place vinculados al nombre.
-- Da 3-5 opciones siguiendo el formato: "- [Nombre](maps_place:id) ([distancia]) — [Descripción completa que aparece en el contexto]."
-- Usa una lista con guiones (-).`;
+- Lista TODAS las opciones que aparezcan en el CONTEXTO para la categoría pedida, sin omitir ninguna. Usa el formato: "- [Nombre](maps_place:id) ([distancia]) — [Descripción completa que aparece en el contexto]."
+- Usa una lista con guiones (-). No pongas un límite artificial al número de resultados.
+- ⛔ NUNCA digas "no tengo X en mi lista" si el CONTEXTO incluye recomendaciones de esa categoría. Si están en el CONTEXTO, muéstralas todas.`;
         }
     } else {
         recsBlock = `
@@ -188,7 +165,9 @@ ${recsBlock}
 - ⛔ NUNCA sugieras hospitales, clínicas o centros médicos como opciones para comer, ocio o compras. Estos son SOLO para [SOLO_EMERGENCIAS_MEDICAS].
 - ⛔ REGLA DE ORO: Si no hay recomendaciones en el CONTEXTO, NUNCA menciones nombres de locales reales (aunque los conozcas por tus conocimientos generales). Solo di que no tienes una lista guardada.
 - ⛔ No inventes nombres que no estén en el CONTEXTO.
-- ℹ️ HORARIOS, RESERVAS Y DISPONIBILIDAD: Para preguntas sobre horarios de apertura, si admiten reservas, o disponibilidad de locales recomendados → sugiere buscar en Google Maps o llamar directamente al local. Esta información cambia y no está en la guía. NO redirijas al soporte del anfitrión para este tipo de preguntas.
+- ⛔ DESCRIPCIÓN Y DETALLES: Usa SOLO la descripción, tags y nota personal que aparecen en el CONTEXTO. NUNCA inventes platos concretos, especialidades, características del local ni detalles que no estén escritos explícitamente en el CONTEXTO.
+- ⛔ DIRECCIÓN: NUNCA escribas la dirección de un local. Si el huésped pregunta cómo llegar, dile que pulse el enlace del mapa del local.
+- ℹ️ HORARIOS, RESERVAS Y DISPONIBILIDAD: Para preguntas sobre horarios de apertura, si admiten reservas, o disponibilidad → di: "Puedes ver el horario actualizado directamente en [Nombre del local](maps_place:ID) en Google Maps 🕐" usando el enlace del CONTEXTO. NUNCA digas que no tienes información sobre horarios si el local está en el CONTEXTO.
 `;
 }
 
@@ -256,7 +235,6 @@ ${formattedContext}
     const taskGuidance             = buildTaskGuidance(params);
     const applianceGuidance        = buildApplianceGuidance(params);
     const applianceProblemGuidance = buildApplianceProblemGuidance(params, supportContact);
-    const arrivalTransportGuidance = buildArrivalTransportGuidance(params, ctx, supportContact);
     const recommendationGuidance   = buildRecommendationGuidance(params, supportContact);
 
     return `Eres el asistente personal del apartamento "${propertyInfo?.name || 'este apartamento'}".
@@ -271,7 +249,6 @@ ${coreRulesBlock}
 ${applianceGuidance}
 ${applianceProblemGuidance}
 ${taskGuidance}
-${arrivalTransportGuidance}
 ${recommendationGuidance}
 
 # CONTEXTO:

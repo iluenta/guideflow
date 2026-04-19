@@ -77,7 +77,21 @@
       "mcp__playwright__browser_tabs",
       "Bash(curl -s http://localhost:3000)",
       "Bash(curl -s \"http://localhost:3000\" -c /tmp/cookies.txt)",
-      "Bash(curl -s \"http://localhost:3000/login\" -c /tmp/gf_cookies.txt -w \"%{http_code}\" -o /dev/null)"
+      "Bash(curl -s \"http://localhost:3000/login\" -c /tmp/gf_cookies.txt -w \"%{http_code}\" -o /dev/null)",
+      "Bash(cat)",
+      "Bash(bash /tmp/count_tables.sh)",
+      "Bash(bash /tmp/verify_unused.sh)",
+      "Bash(bash /tmp/find_api_calls.sh)",
+      "Bash(bash /tmp/check_components.sh)",
+      "Bash(bash /tmp/final_analysis.sh)",
+      "Bash(xargs -I {} bash -c 'echo \"=== {} ===\"; grep -A 5 -B 5 \"google_place_id\\\\|map_url\\\\|address\" {}')",
+      "Bash(grep -E \"\\\\.sql$\")",
+      "Bash(find . -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" -o -name \"*.js\" -o -name \"*.jsx\" \\\\\\) ! -path \"*/node_modules/*\" ! -path \"*/.next/*\" ! -path \"*/coverage/*\" -exec grep -l \"GuideFlow\\\\|guideflow\\\\|guide-flow\\\\|GUIDEFLOW\" {} \\\\;)",
+      "Bash(find . -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" -o -name \"*.js\" -o -name \"*.json\" -o -name \"*.md\" \\\\\\) ! -path \"*/node_modules/*\" ! -path \"*/.next/*\" ! -path \"*/coverage/*\" ! -path \"*/.playwright-mcp/*\" -exec grep -l \"GuideFlow\\\\|guideflow\\\\|guide-flow\\\\|GUIDEFLOW\" {} \\\\;)",
+      "Bash(grep -rn \"GuideFlow\\\\|guideflow\\\\|guide-flow\\\\|GUIDEFLOW\" . ! -path \"*/node_modules/*\" ! -path \"*/.next/*\" ! -path \"*/coverage/*\" ! -path \"*/.playwright-mcp/*\")",
+      "Bash(Get-Process -Name \"node\")",
+      "Bash(Select-Object Id, CPU, WorkingSet)",
+      "Bash(Format-Table)"
     ],
     "additionalDirectories": [
       "C:\\Proyectos\\guideflow\\.claude"

@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
-import { generateArrivalInstructions } from '../../../lib/arrival/generator-final';
+
 import { streamGeminiREST } from '@/lib/ai/clients/gemini-rest';
 import { logger } from '@/lib/logger';
 import { RateLimiter } from '@/lib/security/rate-limiter';
@@ -65,7 +65,7 @@ async function detectZoneType(lat: number, lng: number, placesKey: string): Prom
 // 7. Cultura         → que ver cerca sin planificar mucho
 // Total: 7 categorias × 2 = 14 recomendaciones, 7 llamadas a Places
 const TODOS_QUOTA: Record<string, { quota: number; placeType: string; keywords: string[] }> = {
-  supermercados: { quota: 2, placeType: 'supermarket', keywords: ['supermercado', 'mercadona', 'carrefour'] },
+  supermercados: { quota: 2, placeType: 'supermarket', keywords: ['supermercado', 'supermarket', 'mercadona', 'consum', 'lidl', 'spar'] },
   restaurantes: { quota: 2, placeType: 'restaurant', keywords: ['restaurante popular', 'cocina local'] },
   desayuno: { quota: 2, placeType: 'cafe', keywords: ['cafetería', 'desayuno', 'brunch'] },
   tapas: { quota: 2, placeType: 'bar', keywords: ['bar tapas', 'pinchos', 'vinos'] },
@@ -104,8 +104,10 @@ const ALL_SLUGS = 'restaurantes, italiano, mediterraneo, hamburguesas, asiatico,
 // QUALITY FILTERS
 // ═══════════════════════════════════════════════════════════════════════════
 function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
-  // 1. Fotos obligatorias (señal de lugar documentado)
-  if (!place.photos || place.photos.length === 0) return false;
+  // 1. Fotos obligatorias (señal de lugar documentado) — excepto supermercados y compras
+  // cuyas entradas en Nearby Search frecuentemente no incluyen fotos aunque existan en el lugar
+  const isUtility = ['supermercados', 'compras'].includes(catLabel.toLowerCase());
+  if (!isUtility && (!place.photos || place.photos.length === 0)) return false;
 
   // 2. Umbrales adaptativos por zona y categoría
   const cat = catLabel.toLowerCase();
@@ -116,20 +118,20 @@ function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
 
   switch (zone.type) {
     case 'metropolis':
-      minReviews = isNatureOrCulture ? 30 : 25;
+      minReviews = isNatureOrCulture ? 60 : 100;
       minRating = 4.0;
       break;
     case 'city':
-      minReviews = isNatureOrCulture ? 20 : 20;
+      minReviews = isNatureOrCulture ? 40 : 60;
       minRating = 3.9;
       break;
     case 'town':
-      minReviews = isNatureOrCulture ? 10 : 12;
+      minReviews = isNatureOrCulture ? 15 : 25;
       minRating = 3.7;
       break;
     case 'rural':
     default:
-      minReviews = isNatureOrCulture ? 5 : 8;
+      minReviews = isNatureOrCulture ? 8 : 12;
       minRating = 3.5;
       break;
   }
@@ -160,6 +162,24 @@ function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
   if (isNatureOrCulture && (place.realDistanceMeters || 0) < 150) return false;
 
   return true;
+}
+
+const KNOWN_CHAINS = new Set([
+  'mercadona', 'lidl', 'aldi', 'carrefour', 'dia', 'eroski', 'consum',
+  'spar', 'eurospar', 'superspar', 'coviran', 'covirán', 'charter',
+  'supercor', 'el corte inglés', 'alcampo', 'hipercor', 'simply',
+  'primark', 'zara', 'mango', 'h&m', 'ikea', 'leroy merlin',
+]);
+
+function scorePlace(place: any, distanceMeters: number): number {
+  const rating = place.rating ?? 0;
+  const reviews = place.user_ratings_total ?? 0;
+  const roadMeters = distanceMeters * 1.6; // road correction for more accurate distance scoring
+  const distScore = Math.max(0, 1 - roadMeters / 5000);
+  const nameNorm = (place.name || '').toLowerCase().trim();
+  const isKnownChain = [...KNOWN_CHAINS].some(c => nameNorm.includes(c));
+  const chainBonus = isKnownChain ? 0.08 : 0;
+  return (0.40 * (rating / 5)) + (0.40 * (Math.log1p(reviews) / Math.log1p(5000))) + (0.20 * distScore) + chainBonus;
 }
 
 async function searchWithFallback(params: {
@@ -195,13 +215,16 @@ async function searchWithFallback(params: {
   // Convierte metros a texto legible
   // NOTA: haversine da distancia en línea recta. Aplicamos factor 1.35 para
   // aproximar la distancia real caminando por calles (validado vs Google Maps en Madrid).
-  const formatDistance = (meters: number, preferCar: boolean): string => {
+  const formatDistance = (meters: number, preferCar: boolean, forceCarIfFar?: boolean): string => {
     const walkingMeters = meters * 1.35; // corrección línea recta → calles
     const walkMin = Math.round(walkingMeters / 80); // 80m/min = 4.8 km/h
-    const carMin = Math.max(1, Math.round(meters / 500));
+    const carRoadMeters = meters * 1.6; // straight-line → road distance for car (~60% longer)
+    const carMin = Math.max(1, Math.round(carRoadMeters / 600)); // 600m/min ≈ 36 km/h avg urban
 
     // Usar formato largo para evitar que la IA invente abreviaturas como "M"
     if (meters <= 200) return `${Math.round(meters)} metros andando`;
+    // Supermercados/compras: mostrar coche si el trayecto a pie supera 15 min
+    if (forceCarIfFar && walkingMeters > 1200) return `${carMin} min en coche`;
     if (walkingMeters <= 2200) return `${walkMin} min andando`;
     if (preferCar) return `${carMin} min en coche`;
     if (walkingMeters <= 4000) return `${walkMin} min andando`;
@@ -210,44 +233,45 @@ async function searchWithFallback(params: {
 
   const addResults = (results: any[], extra: object = {}) => {
     for (const r of results) {
-      if (!seenIds.has(r.place_id)) {
-        seenIds.add(r.place_id);
-        const nameKey = (r.name || '').toLowerCase().trim();
-        if (excludeSet.has(nameKey)) {
-          continue;
-        }
-        const placeLat = r.geometry?.location?.lat;
-        const placeLng = r.geometry?.location?.lng;
-        const realDistanceMeters = (placeLat != null && placeLng != null)
-          ? haversineMeters(lat, lng, Number(placeLat), Number(placeLng))
-          : null;
+      if (seenIds.has(r.place_id)) continue;
+      seenIds.add(r.place_id);
+      const nameKey = (r.name || '').toLowerCase().trim();
+      if (excludeSet.has(nameKey)) continue;
 
-        if (realDistanceMeters === null) {
-          continue;
-        }
+      const placeLat = r.geometry?.location?.lat;
+      const placeLng = r.geometry?.location?.lng;
+      const realDistanceMeters = (placeLat != null && placeLng != null)
+        ? haversineMeters(lat, lng, Number(placeLat), Number(placeLng))
+        : null;
 
-        const realDistance = formatDistance(realDistanceMeters, zone.preferCar);
+      if (realDistanceMeters === null) continue;
 
-        const isEssential = ['desayuno', 'supermercados', 'restaurantes', 'tapas'].includes(catLabel);
-        const catLimit = isEssential ? 1000 : 2500;
+      const isUtility = ['supermercados', 'compras'].includes(catLabel);
+      const realDistance = formatDistance(realDistanceMeters, zone.preferCar, isUtility);
+      const isEssential = ['desayuno', 'restaurantes', 'tapas'].includes(catLabel);
+      const catLimit = isUtility ? 5000 : isEssential ? 1500 : 2500;
 
-        if (realDistanceMeters > catLimit && !zone.preferCar) {
-          continue;
-        }
-
-        // Filtro de calidad adaptativo
-        if (!isQualityPlace(r, zone, catLabel)) {
-          continue;
-        }
-
-        collected.push({ ...r, gfCategory: catLabel, realDistanceMeters, realDistance, ...extra });
+      if (realDistanceMeters > catLimit && !zone.preferCar) {
+        logger.debug(`[FILTER:${catLabel}] SKIP_DIST "${r.name}" ${Math.round(realDistanceMeters)}m > ${catLimit}m`);
+        continue;
       }
+
+      if (!isQualityPlace(r, zone, catLabel)) {
+        logger.debug(`[FILTER:${catLabel}] REJECT "${r.name}" rating=${r.rating} reviews=${r.user_ratings_total} photos=${r.photos?.length ?? 0}`);
+        continue;
+      }
+      logger.debug(`[FILTER:${catLabel}] PASS "${r.name}" rating=${r.rating} reviews=${r.user_ratings_total} dist=${Math.round(realDistanceMeters)}m`);
+
+      collected.push({ ...r, gfCategory: catLabel, realDistanceMeters, realDistance, ...extra });
     }
   };
 
-  // Usar solo el primer keyword que devuelva resultados (evita llamadas innecesarias)
+  // Para supermercados y compras cada keyword es una cadena específica — recorrer todos
+  // Para el resto, parar en cuanto hay suficientes resultados (optimización de coste)
+  const exhaustAllKeywords = ['supermercados', 'compras'].includes(catLabel);
+
   for (const keyword of keywords) {
-    if (collected.length >= neededCount * 2) break;
+    if (!exhaustAllKeywords && collected.length >= neededCount * 2) break;
 
     // Nearby - radio andando
     const isDistanceRank = rankMode === 'distance';
@@ -261,8 +285,8 @@ async function searchWithFallback(params: {
     }
     addResults(walkData.results || [], { searchKeyword: keyword, radiusType: isDistanceRank ? 'distance-rank' : 'walk' });
 
-    // Si ya tenemos suficiente con el radio walk, no hacemos mas llamadas
-    if (collected.length >= neededCount) break;
+    // Si ya tenemos suficiente con el radio walk, no hacemos mas llamadas (salvo exhaustAllKeywords)
+    if (!exhaustAllKeywords && collected.length >= neededCount) break;
 
     // Nearby - radio coche si no tenemos suficiente
     if (zone.driveRadius > zone.walkRadius) {
@@ -291,20 +315,21 @@ async function searchWithFallback(params: {
   // Naturaleza/cultura: siempre limitar a distancia peatonal/ciclable (máx 4km) — no tiene sentido
   // recomendar un embalse a 10km cuando hay parques más cercanos.
   const isNatureOrCultureCat = ['naturaleza', 'cultura'].includes(catLabel.toLowerCase());
+  const isUtilityCat = ['supermercados', 'compras'].includes(catLabel.toLowerCase());
   const distanceLimit = isNatureOrCultureCat
     ? Math.min(zone.walkRadius, 4000)
-    : zone.preferCar ? zone.driveRadius : Math.min(zone.walkRadius, 2000);
+    : isUtilityCat
+      ? (zone.preferCar ? zone.driveRadius : Math.min(zone.driveRadius, 5000))
+      : zone.preferCar ? zone.driveRadius : Math.min(zone.walkRadius, 2000);
 
-  return collected
+  const finalResult = collected
     .filter(r => r.realDistanceMeters != null && r.realDistanceMeters <= distanceLimit)
-    .sort((a, b) => {
-      // Primero los más cercanos, luego por rating
-      const dA = a.realDistanceMeters ?? 99999;
-      const dB = b.realDistanceMeters ?? 99999;
-      if (Math.abs(dA - dB) > 200) return dA - dB;
-      return (b.rating ?? 0) - (a.rating ?? 0);
-    })
+    .sort((a, b) => scorePlace(b, b.realDistanceMeters ?? 9999) - scorePlace(a, a.realDistanceMeters ?? 9999))
     .slice(0, neededCount * 2);
+
+  logger.warn(`[SCORED:${catLabel}] top${finalResult.length}: ${finalResult.slice(0, 5).map((r: any) => `"${r.name}"(${Math.round(r.realDistanceMeters)}m,${r.rating}★,${r.user_ratings_total}rev,score=${scorePlace(r, r.realDistanceMeters).toFixed(3)})`).join(' | ')}`);
+
+  return finalResult;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -395,32 +420,6 @@ export async function POST(req: Request) {
       return undefined;
     };
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 1. ARRIVALS / TRANSPORT
-    // ════════════════════════════════════════════════════════════════════════
-    const transportSections = ['arrival', 'transport', 'plane', 'train', 'road'];
-    if (transportSections.includes(section)) {
-      try {
-        const sectionParam = ['plane', 'train', 'road'].includes(section)
-          ? section as 'plane' | 'train' | 'road'
-          : undefined;
-        const arrivalT0 = Date.now();
-        const result = await generateArrivalInstructions(
-          existingData?.address || fallbackAddress,
-          sectionParam,
-          buildManualGeo(),
-          existingData?.propertyParking
-        );
-        const arrivalT1 = Date.now();
-        logger.debug(`[PERF] Arrival section total time calculated`);
-        return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
-      } catch (err) {
-        console.error('[AI-API] Arrival Error:', err);
-        return new Response(JSON.stringify({ error: 'Error generando instrucciones de llegada' }), {
-          status: 500, headers: { 'Content-Type': 'application/json' }
-        });
-      }
-    }
 
     // ════════════════════════════════════════════════════════════════════════
     // 2. DINING / RECOMMENDATIONS
@@ -511,8 +510,6 @@ export async function POST(req: Request) {
                 rankMode: 'distance'
               });
               groupedPlaces[selectedCat] = results;
-              // Determinismo por distancia: la IA verá los más cercanos arriba
-              groupedPlaces[selectedCat].sort((a: any, b: any) => (a.realDistanceMeters || 9999) - (b.realDistanceMeters || 9999));
               allPlacesResults = groupedPlaces[selectedCat];
             }
 
@@ -532,17 +529,21 @@ export async function POST(req: Request) {
       const placesContext = isTodos
         ? Object.entries(groupedPlaces)
           .map(([cat, places]) => {
+            const quota = TODOS_QUOTA[cat]?.quota ?? 2;
             if (!places.length) {
               return `[${cat.toUpperCase()}]: Sin resultados de Google. Usa conocimiento de ${property.city}.`;
             }
-            const lines = places.slice(0, 6).map(r =>
-              `  - ${r.name} (${r.vicinity ?? r.formatted_address ?? ''}) | Rating: ${r.rating ?? 'N/A'} | ${r.realDistance ?? 'desconocida'} | ID: ${r.place_id}`
+            // Pasar exactamente quota candidatos — ya elegidos por el scorer, Gemini solo genera descripción
+            const selected = places.slice(0, quota);
+            logger.warn(`[GEMINI_SENDS:${cat}] ${selected.map((r: any) => `"${r.name}"(${Math.round(r.realDistanceMeters)}m)`).join(', ')}`);
+            const lines = selected.map((r: any) =>
+              `  - ${r.name} (${r.vicinity ?? r.formatted_address ?? ''}) | Rating: ${r.rating ?? 'N/A'} | ${r.realDistance ?? 'desconocida'} | ID: ${r.place_id} | Tipos: ${(r.types || []).slice(0, 3).join(',')} | Abierto ahora: ${r.opening_hours?.open_now ?? 'desconocido'}`
             ).join('\n');
-            return `[${cat.toUpperCase()}] (${places.length} candidatos):\n${lines}`;
+            return `[${cat.toUpperCase()}] — USA EXACTAMENTE estos ${quota} sitios, en este orden, sin sustituir ninguno:\n${lines}`;
           })
           .join('\n\n')
         : allPlacesResults.slice(0, 18).map(r =>
-          `- ${r.name} (${r.vicinity ?? r.formatted_address ?? ''}) | Rating: ${r.rating ?? 'N/A'} | ${r.realDistance ?? 'desconocida'} | ID: ${r.place_id}`
+          `- ${r.name} (${r.vicinity ?? r.formatted_address ?? ''}) | Rating: ${r.rating ?? 'N/A'} | ${r.realDistance ?? 'desconocida'} | ID: ${r.place_id} | Tipos: ${(r.types || []).slice(0, 3).join(',')} | Abierto ahora: ${r.opening_hours?.open_now ?? 'desconocido'}`
       ).join('\n');
 
       const existingNamesStr = (existingData?.existingNames || []).join(', ');
@@ -575,7 +576,7 @@ ${placesContext || `Sin datos. Usa conocimiento de ${property.city}.`}
 ${todosBlock}${singleCatBlock}
 
 REGLAS CRÍTICAS:
-1. PRIORIDAD: Usa los lugares del contextos Google Places de arriba si están disponibles.
+1. OBLIGATORIO: Los sitios listados bajo cada categoría han sido PRE-SELECCIONADOS por el sistema. Debes incluir TODOS y CADA UNO de ellos en el JSON de salida. NO los sustituyas ni los omitas. Tu única tarea es generar description, personal_note, best_time_slots, atmosphere y tags para cada uno.
 2. REGLA DEL ID Y NOMBRE: Si usas un sitio del listado de Google, COPIA su "ID" exactamente Y usa el nombre EXACTO tal como aparece en el listado (incluyendo barrio o sufijo). NUNCA uses el nombre genérico de una cadena si el listado muestra la sucursal específica. Ejemplo: si el listado dice "Lateral Paseo de Recoletos", escribe ese nombre completo en el JSON, no solo "Lateral". Si el listado está VACÍO, usa tu conocimiento y pon "google_place_id": null.
 3. PROHIBIDO: Inventar IDs. Prohibido añadir "(Inventado)" al nombre.
 4. PROHIBIDO usar la palabra "REALDISTANCE".
@@ -583,7 +584,7 @@ REGLAS CRÍTICAS:
 6. COMPLIANCE: NO generes ratings, niveles de precio ni horarios detallados. Ponlos como null.
 
 JSON con array "recommendations", cada elemento:
-{"name":"nombre real","description":"descripción hospitalaria max 150 chars","personal_note":"CONSEJO CORTITO DEL ANFITRIÓN (ej. 'Ideal para desayunar', 'Pide sus bravas')","distance":"X MIN o METROS o null","type":"slug de: ${ALL_SLUGS}","google_place_id":"ID de Google o null","rating":null,"price_level":null,"price_range":null,"best_time_slots":["mañana"|...|"madrugada"],"atmosphere":"...","tags":["tag1","tag2"],"availability":null}
+{"name":"nombre real","description":"descripción hospitalaria max 150 chars","personal_note":"CONSEJO CORTITO DEL ANFITRIÓN (ej. 'Ideal para desayunar', 'Pide sus bravas') — infiere el mejor momento de visita según los tipos Google (bar/night_club→noche, cafe/bakery→mañana, restaurant→mediodía o noche) y el campo 'Abierto ahora'","distance":"X MIN o METROS o null","type":"slug de: ${ALL_SLUGS}","google_place_id":"ID de Google o null","rating":null,"price_level":null,"price_range":null,"best_time_slots":["mañana"|"mediodía"|"tarde"|"noche"|"madrugada"] — elige 1-2 valores según tipos y horario Google. Si no hay datos suficientes, usa [],"atmosphere":"vibe en 3-4 palabras","tags": SOLO 0-3 valores de esta lista exacta (array vacío si ninguno aplica): ["vistas al mar","vistas a la montaña","terraza","jardín","romántico","familiar","grupos","económico","premium","local auténtico","turístico","rápido","takeaway","reserva recomendada","abierto tarde","24h","parking","accesible","vista al atardecer","rooftop","interior acogedor","exterior"] — PROHIBIDO inventar tags fuera de esta lista,"availability":null}
 SOLO JSON:`;
 
       // ── Llamada a Gemini ───────────────────────────────────────────────

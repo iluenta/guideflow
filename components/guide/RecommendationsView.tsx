@@ -158,7 +158,7 @@ function RecommendationCard({
     // ── Coastal open layout — circular image, full-width Maps button ────────
     if (isCoastal) {
         return (
-            <div className="bg-white border-l-4 border-l-[#0EA5E9] border border-[#E0F2FE] rounded-2xl p-5 flex flex-col gap-4 shadow-sm">
+            <div onClick={() => toggleExpand(rec.id)} className="bg-white border-l-4 border-l-[#0EA5E9] border border-[#E0F2FE] rounded-2xl p-5 flex flex-col gap-4 shadow-sm cursor-pointer active:scale-[0.99] transition-transform">
                 <div className="flex gap-4">
                     <div className="w-14 h-14 rounded-full bg-[#E0F2FE] flex-shrink-0 flex items-center justify-center overflow-hidden">
                         {photoUrl ? (
@@ -168,7 +168,10 @@ function RecommendationCard({
                         )}
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                        <h3 className="text-[#0C4A6E] font-bold text-base leading-tight mb-1 line-clamp-2">{localizedName}</h3>
+                        <div className="flex items-start justify-between gap-2">
+                            <h3 className="text-[#0C4A6E] font-bold text-base leading-tight mb-1 line-clamp-2">{localizedName}</h3>
+                            {isExpanded ? <ChevronUp className="w-4 h-4 text-[#0EA5E9] flex-shrink-0 mt-0.5" /> : <ChevronDown className="w-4 h-4 text-[#BAE6FD] flex-shrink-0 mt-0.5" />}
+                        </div>
                         {distanceText && (
                             <div className="flex items-center gap-1 text-[#0EA5E9] text-xs font-medium">
                                 <MapPin className="w-3.5 h-3.5" /><span>{distanceText}</span>
@@ -184,10 +187,7 @@ function RecommendationCard({
                         )}
                     </div>
                 </div>
-                <p className="text-[#64748B] text-sm leading-relaxed">{editorialSummary || localizedDescription}</p>
-                {localizedNote && (
-                    <p className="text-[#0369A1]/70 text-xs italic border-l-2 border-l-[#0EA5E9]/30 pl-3">&quot;{localizedNote}&quot;</p>
-                )}
+                <p className={cn("text-[#64748B] text-sm leading-relaxed", !isExpanded && "line-clamp-2")}>{editorialSummary || localizedDescription}</p>
                 {tags.length > 0 && (
                     <div className="flex gap-2 flex-wrap">
                         {tags.slice(0, 3).map(tag => (
@@ -195,7 +195,34 @@ function RecommendationCard({
                         ))}
                     </div>
                 )}
-                <a href={mapsUrl} onClick={openMaps}
+                {isExpanded && (
+                    <div className="border-t border-[#E0F2FE] pt-3 space-y-3">
+                        {metadata.best_time_slots && metadata.best_time_slots.length > 0 && (
+                            <div>
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-[#BAE6FD] mb-1.5">Mejor momento</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {metadata.best_time_slots.map((slot: string) => {
+                                        const slotMap: any = { morning: { label: 'Mañana', icon: Sunrise }, midday: { label: 'Mediodía', icon: Sun }, afternoon: { label: 'Tarde', icon: Sunset }, night: { label: 'Noche', icon: Moon }, 'mañana': { label: 'Mañana', icon: Sunrise }, 'mediodía': { label: 'Mediodía', icon: Sun }, 'tarde': { label: 'Tarde', icon: Sunset }, 'noche': { label: 'Noche', icon: Moon }, 'madrugada': { label: 'Madrugada', icon: Moon } };
+                                        const cfg = slotMap[slot] || { label: slot, icon: Clock };
+                                        const SlotIcon = cfg.icon;
+                                        return (
+                                            <div key={slot} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#E0F2FE] text-[#0369A1]">
+                                                <SlotIcon className="w-3 h-3" strokeWidth={2.5} />{cfg.label}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                        {localizedNote && (
+                            <div>
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-[#BAE6FD] mb-1">{labelHostTip}</p>
+                                <p className="text-[#0369A1]/70 text-xs italic border-l-2 border-l-[#0EA5E9]/30 pl-3">&quot;{localizedNote}&quot;</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+                <a href={mapsUrl} onClick={(e) => { e.stopPropagation(); openMaps(e); }}
                     className="w-full bg-[#0EA5E9] text-white py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold hover:opacity-90 transition-opacity shadow-sm">
                     <span>Ver en Maps</span><Navigation className="w-4 h-4" />
                 </a>
@@ -206,50 +233,82 @@ function RecommendationCard({
     // ── Warm compact layout — horizontal, exact hex colors from mockup ──────
     if (isWarm) {
         return (
-            <div className="bg-white border-l-[3px] border-l-[#D4A054] border border-[#D4A054]/10 rounded-xl p-4 flex gap-4 shadow-sm">
-                <div className="w-16 h-16 rounded-xl bg-[#FFF8F0] flex-shrink-0 flex items-center justify-center overflow-hidden">
-                    {photoUrl ? (
-                        <Image src={photoUrl} alt={rec.name} width={64} height={64} unoptimized className="object-cover w-full h-full" />
-                    ) : (
-                        <Icon className="w-6 h-6 text-[#D4A054]" strokeWidth={1.5} />
-                    )}
-                </div>
-                <div className="flex-1 min-w-0 flex flex-col">
-                    <h3 className="text-[#431407] font-bold uppercase tracking-wider text-sm mb-1 truncate">
-                        {localizedName}
-                    </h3>
-                    <p className="text-[#8C6B5D] text-xs leading-relaxed mb-2 line-clamp-2">
-                        {editorialSummary || localizedDescription}
-                    </p>
-                    {distanceText && (
-                        <div className="flex items-center gap-1 mb-2">
-                            <span className="flex items-center gap-1 bg-[#FEF0EC] text-[#B5533C] text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                                <MapPin className="w-3 h-3" />{distanceText}
-                            </span>
-                        </div>
-                    )}
-                    {openNow !== undefined && (
-                        <div className="flex items-center gap-1.5 text-[10px] mb-2">
-                            <div className={cn("w-1.5 h-1.5 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-400")} />
-                            <span className={cn("font-medium", openNow ? "text-emerald-600" : "text-rose-500")}>
-                                {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
-                            </span>
-                        </div>
-                    )}
-                    <div className="flex items-center justify-between mt-auto">
-                        <div className="flex gap-1.5 flex-wrap">
-                            {tags.slice(0, 2).map(tag => (
-                                <span key={tag} className="text-[#B5533C] text-[10px] bg-[#FEF0EC] px-1.5 py-0.5 rounded">
-                                    #{tag}
+            <div onClick={() => toggleExpand(rec.id)} className="bg-white border-l-[3px] border-l-[#D4A054] border border-[#D4A054]/10 rounded-xl p-4 flex flex-col gap-0 shadow-sm cursor-pointer active:scale-[0.99] transition-transform">
+                <div className="flex gap-4">
+                    <div className="w-16 h-16 rounded-xl bg-[#FFF8F0] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        {photoUrl ? (
+                            <Image src={photoUrl} alt={rec.name} width={64} height={64} unoptimized className="object-cover w-full h-full" />
+                        ) : (
+                            <Icon className="w-6 h-6 text-[#D4A054]" strokeWidth={1.5} />
+                        )}
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col">
+                        <h3 className="text-[#431407] font-bold uppercase tracking-wider text-sm mb-1 truncate">
+                            {localizedName}
+                        </h3>
+                        <p className={cn("text-[#8C6B5D] text-xs leading-relaxed mb-2", !isExpanded && "line-clamp-2")}>
+                            {editorialSummary || localizedDescription}
+                        </p>
+                        {distanceText && (
+                            <div className="flex items-center gap-1 mb-2">
+                                <span className="flex items-center gap-1 bg-[#FEF0EC] text-[#B5533C] text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                                    <MapPin className="w-3 h-3" />{distanceText}
                                 </span>
-                            ))}
+                            </div>
+                        )}
+                        {openNow !== undefined && (
+                            <div className="flex items-center gap-1.5 text-[10px] mb-2">
+                                <div className={cn("w-1.5 h-1.5 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-400")} />
+                                <span className={cn("font-medium", openNow ? "text-emerald-600" : "text-rose-500")}>
+                                    {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
+                                </span>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between mt-auto">
+                            <div className="flex gap-1.5 flex-wrap">
+                                {tags.slice(0, 2).map(tag => (
+                                    <span key={tag} className="text-[#B5533C] text-[10px] bg-[#FEF0EC] px-1.5 py-0.5 rounded">
+                                        #{tag}
+                                    </span>
+                                ))}
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                <a href={mapsUrl} onClick={(e) => { e.stopPropagation(); openMaps(e); }}
+                                    className="flex items-center gap-1 bg-[#FEF0EC] text-[#B5533C] text-[10px] font-bold px-2.5 py-1 rounded-lg hover:opacity-80 transition-opacity">
+                                    <span>MAPS</span><Navigation className="w-3 h-3" />
+                                </a>
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-[#D4A054]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#D4A054]/50" />}
+                            </div>
                         </div>
-                        <a href={mapsUrl} onClick={openMaps}
-                            className="flex items-center gap-1 bg-[#FEF0EC] text-[#B5533C] text-[10px] font-bold px-2.5 py-1 rounded-lg hover:opacity-80 transition-opacity flex-shrink-0 ml-2">
-                            <span>MAPS</span><Navigation className="w-3 h-3" />
-                        </a>
                     </div>
                 </div>
+                {isExpanded && (
+                    <div className="border-t border-[#D4A054]/20 pt-3 mt-3 space-y-3">
+                        {metadata.best_time_slots && metadata.best_time_slots.length > 0 && (
+                            <div>
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-[#D4A054]/70 mb-1.5">Mejor momento</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {metadata.best_time_slots.map((slot: string) => {
+                                        const slotMap: any = { morning: { label: 'Mañana', icon: Sunrise }, midday: { label: 'Mediodía', icon: Sun }, afternoon: { label: 'Tarde', icon: Sunset }, night: { label: 'Noche', icon: Moon }, 'mañana': { label: 'Mañana', icon: Sunrise }, 'mediodía': { label: 'Mediodía', icon: Sun }, 'tarde': { label: 'Tarde', icon: Sunset }, 'noche': { label: 'Noche', icon: Moon }, 'madrugada': { label: 'Madrugada', icon: Moon } };
+                                        const cfg = slotMap[slot] || { label: slot, icon: Clock };
+                                        const SlotIcon = cfg.icon;
+                                        return (
+                                            <div key={slot} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#FFF8F0] text-[#B5533C]">
+                                                <SlotIcon className="w-3 h-3" strokeWidth={2.5} />{cfg.label}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                        {localizedNote && (
+                            <div>
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-[#D4A054]/70 mb-1">{labelHostTip}</p>
+                                <p className="text-[#8C6B5D] text-xs italic leading-relaxed">&quot;{localizedNote}&quot;</p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         );
     }
@@ -257,101 +316,164 @@ function RecommendationCard({
     // ── Luxury Estate — refined horizontal card, navy+gold palette ───────────
     if (isLuxury) {
         return (
-            <div className="bg-white border-l-2 border-l-[#C9A84C] border border-[#D4C5A9] rounded-xl p-4 flex gap-4 shadow-sm">
-                <div className="w-16 h-16 rounded-xl bg-[#F9F7F4] border border-[#D4C5A9] flex-shrink-0 flex items-center justify-center overflow-hidden">
-                    {photoUrl ? (
-                        <Image src={photoUrl} alt={rec.name} width={64} height={64} unoptimized className="object-cover w-full h-full" />
-                    ) : (
-                        <Icon className="w-6 h-6 text-[#C9A84C]" strokeWidth={1.5} />
-                    )}
-                </div>
-                <div className="flex-1 min-w-0 flex flex-col">
-                    <h3 className="text-[#1B2A4A] font-medium uppercase tracking-widest text-sm mb-1 truncate" style={{ fontFamily: 'var(--font-heading)' }}>
-                        {localizedName}
-                    </h3>
-                    <p className="text-[#8A8070] text-xs leading-relaxed mb-2 line-clamp-2">
-                        {editorialSummary || localizedDescription}
-                    </p>
-                    {distanceText && (
-                        <div className="flex items-center gap-1 mb-2">
-                            <span className="flex items-center gap-1 bg-[#F9F7F4] text-[#8A8070] text-[10px] font-medium px-1.5 py-0.5 rounded-md border border-[#D4C5A9]">
-                                <MapPin className="w-3 h-3" />{distanceText}
-                            </span>
-                        </div>
-                    )}
-                    {openNow !== undefined && (
-                        <div className="flex items-center gap-1.5 text-[10px] mb-2">
-                            <div className={cn("w-1.5 h-1.5 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-400")} />
-                            <span className={cn("font-medium", openNow ? "text-emerald-600" : "text-rose-500")}>
-                                {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
-                            </span>
-                        </div>
-                    )}
-                    <div className="flex items-center justify-between mt-auto">
-                        <div className="flex gap-1.5 flex-wrap">
-                            {tags.slice(0, 2).map(tag => (
-                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: '#1B2A4A', backgroundColor: 'rgba(27,42,74,0.07)' }}>
-                                    #{tag}
+            <div onClick={() => toggleExpand(rec.id)} className="bg-white border-l-2 border-l-[#C9A84C] border border-[#D4C5A9] rounded-xl p-4 flex flex-col gap-0 shadow-sm cursor-pointer active:scale-[0.99] transition-transform">
+                <div className="flex gap-4">
+                    <div className="w-16 h-16 rounded-xl bg-[#F9F7F4] border border-[#D4C5A9] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        {photoUrl ? (
+                            <Image src={photoUrl} alt={rec.name} width={64} height={64} unoptimized className="object-cover w-full h-full" />
+                        ) : (
+                            <Icon className="w-6 h-6 text-[#C9A84C]" strokeWidth={1.5} />
+                        )}
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col">
+                        <h3 className="text-[#1B2A4A] font-medium uppercase tracking-widest text-sm mb-1 truncate" style={{ fontFamily: 'var(--font-heading)' }}>
+                            {localizedName}
+                        </h3>
+                        <p className={cn("text-[#8A8070] text-xs leading-relaxed mb-2", !isExpanded && "line-clamp-2")}>
+                            {editorialSummary || localizedDescription}
+                        </p>
+                        {distanceText && (
+                            <div className="flex items-center gap-1 mb-2">
+                                <span className="flex items-center gap-1 bg-[#F9F7F4] text-[#8A8070] text-[10px] font-medium px-1.5 py-0.5 rounded-md border border-[#D4C5A9]">
+                                    <MapPin className="w-3 h-3" />{distanceText}
                                 </span>
-                            ))}
+                            </div>
+                        )}
+                        {openNow !== undefined && (
+                            <div className="flex items-center gap-1.5 text-[10px] mb-2">
+                                <div className={cn("w-1.5 h-1.5 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-400")} />
+                                <span className={cn("font-medium", openNow ? "text-emerald-600" : "text-rose-500")}>
+                                    {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
+                                </span>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between mt-auto">
+                            <div className="flex gap-1.5 flex-wrap">
+                                {tags.slice(0, 2).map(tag => (
+                                    <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: '#1B2A4A', backgroundColor: 'rgba(27,42,74,0.07)' }}>
+                                        #{tag}
+                                    </span>
+                                ))}
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                <a href={mapsUrl} onClick={(e) => { e.stopPropagation(); openMaps(e); }}
+                                    className="flex items-center gap-1 text-[#8A8070] hover:text-[#1B2A4A] text-[10px] font-medium tracking-wider transition-colors">
+                                    <span>MAPS</span><Navigation className="w-3 h-3" />
+                                </a>
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-[#C9A84C]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#D4C5A9]" />}
+                            </div>
                         </div>
-                        <a href={mapsUrl} onClick={openMaps}
-                            className="flex items-center gap-1 text-[#8A8070] hover:text-[#1B2A4A] text-[10px] font-medium tracking-wider transition-colors flex-shrink-0 ml-2">
-                            <span>MAPS</span><Navigation className="w-3 h-3" />
-                        </a>
                     </div>
                 </div>
+                {isExpanded && (
+                    <div className="border-t border-[#D4C5A9] pt-3 mt-3 space-y-3">
+                        {metadata.best_time_slots && metadata.best_time_slots.length > 0 && (
+                            <div>
+                                <p className="text-[9px] font-medium uppercase tracking-[0.15em] text-[#C9A84C] mb-1.5" style={{ fontFamily: 'var(--font-heading)' }}>Mejor momento</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {metadata.best_time_slots.map((slot: string) => {
+                                        const slotMap: any = { morning: { label: 'Mañana', icon: Sunrise }, midday: { label: 'Mediodía', icon: Sun }, afternoon: { label: 'Tarde', icon: Sunset }, night: { label: 'Noche', icon: Moon }, 'mañana': { label: 'Mañana', icon: Sunrise }, 'mediodía': { label: 'Mediodía', icon: Sun }, 'tarde': { label: 'Tarde', icon: Sunset }, 'noche': { label: 'Noche', icon: Moon }, 'madrugada': { label: 'Madrugada', icon: Moon } };
+                                        const cfg = slotMap[slot] || { label: slot, icon: Clock };
+                                        const SlotIcon = cfg.icon;
+                                        return (
+                                            <div key={slot} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-[#F9F7F4] border border-[#D4C5A9] text-[#1B2A4A]">
+                                                <SlotIcon className="w-3 h-3 text-[#C9A84C]" strokeWidth={2} />{cfg.label}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                        {localizedNote && (
+                            <div>
+                                <p className="text-[9px] font-medium uppercase tracking-[0.15em] text-[#C9A84C] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>{labelHostTip}</p>
+                                <p className="text-[#8A8070] text-xs italic leading-relaxed">&quot;{localizedNote}&quot;</p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         );
     }
 
-    // ── Modern Minimal compact layout — clean gray, no border-l accent ───────
+    // ── Modern Minimal compact layout — expandable on tap ────────────────────
     if (!isDark) {
         return (
-            <div className="bg-white border border-[#E4E4E7] rounded-xl p-4 flex gap-4 shadow-sm">
-                <div className="w-16 h-16 rounded-xl bg-[#F4F4F5] flex-shrink-0 flex items-center justify-center overflow-hidden">
-                    {photoUrl ? (
-                        <Image src={photoUrl} alt={rec.name} width={64} height={64} unoptimized className="object-cover w-full h-full" />
-                    ) : (
-                        <Icon className="w-6 h-6 text-[#52525B]" strokeWidth={1.5} />
-                    )}
-                </div>
-                <div className="flex-1 min-w-0 flex flex-col">
-                    <h3 className="text-[#09090B] font-bold uppercase tracking-wider text-sm mb-1 truncate">
-                        {localizedName}
-                    </h3>
-                    <p className="text-[#52525B] text-xs leading-relaxed mb-2 line-clamp-2">
-                        {editorialSummary || localizedDescription}
-                    </p>
-                    {distanceText && (
-                        <div className="flex items-center gap-1 mb-2">
-                            <span className="flex items-center gap-1 bg-[#F4F4F5] text-[#3F3F46] text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-[#E4E4E7]">
-                                <MapPin className="w-3 h-3" />{distanceText}
-                            </span>
-                        </div>
-                    )}
-                    {openNow !== undefined && (
-                        <div className="flex items-center gap-1.5 text-[10px] mb-2">
-                            <div className={cn("w-1.5 h-1.5 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-400")} />
-                            <span className={cn("font-medium", openNow ? "text-emerald-600" : "text-rose-500")}>
-                                {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
-                            </span>
-                        </div>
-                    )}
-                    <div className="flex items-center justify-between mt-auto">
-                        <div className="flex gap-1.5 flex-wrap">
-                            {tags.slice(0, 2).map(tag => (
-                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: '#3F3F46', backgroundColor: '#F4F4F5', border: '1px solid #E4E4E7' }}>
-                                    #{tag}
+            <div onClick={() => toggleExpand(rec.id)} className="bg-white border border-[#E4E4E7] rounded-xl p-4 flex flex-col gap-3 shadow-sm cursor-pointer active:scale-[0.99] transition-transform">
+                <div className="flex gap-4">
+                    <div className="w-16 h-16 rounded-xl bg-[#F4F4F5] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        {photoUrl ? (
+                            <Image src={photoUrl} alt={rec.name} width={64} height={64} unoptimized className="object-cover w-full h-full" />
+                        ) : (
+                            <Icon className="w-6 h-6 text-[#52525B]" strokeWidth={1.5} />
+                        )}
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col">
+                        <h3 className="text-[#09090B] font-bold uppercase tracking-wider text-sm mb-1 truncate">
+                            {localizedName}
+                        </h3>
+                        <p className={cn("text-[#52525B] text-xs leading-relaxed mb-2", !isExpanded && "line-clamp-2")}>
+                            {editorialSummary || localizedDescription}
+                        </p>
+                        {distanceText && (
+                            <div className="flex items-center gap-1 mb-2">
+                                <span className="flex items-center gap-1 bg-[#F4F4F5] text-[#3F3F46] text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-[#E4E4E7]">
+                                    <MapPin className="w-3 h-3" />{distanceText}
                                 </span>
-                            ))}
+                            </div>
+                        )}
+                        {openNow !== undefined && (
+                            <div className="flex items-center gap-1.5 text-[10px] mb-2">
+                                <div className={cn("w-1.5 h-1.5 rounded-full", openNow ? "bg-emerald-500" : "bg-rose-400")} />
+                                <span className={cn("font-medium", openNow ? "text-emerald-600" : "text-rose-500")}>
+                                    {openNow ? (labelOpen || 'Abierto') : (labelClosed || 'Cerrado')}
+                                </span>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between mt-auto">
+                            <div className="flex gap-1.5 flex-wrap">
+                                {tags.slice(0, 2).map(tag => (
+                                    <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: '#3F3F46', backgroundColor: '#F4F4F5', border: '1px solid #E4E4E7' }}>
+                                        #{tag}
+                                    </span>
+                                ))}
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                <a href={mapsUrl} onClick={openMaps} className="flex items-center gap-1 text-[#71717A] hover:text-[#09090B] text-[10px] font-bold transition-colors">
+                                    <span>MAPS</span><Navigation className="w-3 h-3" />
+                                </a>
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-[#A1A1AA]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#A1A1AA]" />}
+                            </div>
                         </div>
-                        <a href={mapsUrl} onClick={openMaps}
-                            className="flex items-center gap-1 text-[#71717A] hover:text-[#09090B] text-[10px] font-bold transition-colors flex-shrink-0 ml-2">
-                            <span>MAPS</span><Navigation className="w-3 h-3" />
-                        </a>
                     </div>
                 </div>
+                {isExpanded && (
+                    <div className="border-t border-[#E4E4E7] pt-3 space-y-3">
+                        {metadata.best_time_slots && metadata.best_time_slots.length > 0 && (
+                            <div>
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-[#A1A1AA] mb-1.5">Mejor momento</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {metadata.best_time_slots.map((slot: string) => {
+                                        const slotMap: any = { morning: { label: 'Mañana', icon: Sunrise }, midday: { label: 'Mediodía', icon: Sun }, afternoon: { label: 'Tarde', icon: Sunset }, night: { label: 'Noche', icon: Moon }, 'mañana': { label: 'Mañana', icon: Sunrise }, 'mediodía': { label: 'Mediodía', icon: Sun }, 'tarde': { label: 'Tarde', icon: Sunset }, 'noche': { label: 'Noche', icon: Moon }, 'madrugada': { label: 'Madrugada', icon: Moon } };
+                                        const cfg = slotMap[slot] || { label: slot, icon: Clock };
+                                        const SlotIcon = cfg.icon;
+                                        return (
+                                            <div key={slot} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#F4F4F5] border border-[#E4E4E7] text-[#3F3F46]">
+                                                <SlotIcon className="w-3 h-3" strokeWidth={2.5} />{cfg.label}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                        {localizedNote && (
+                            <div>
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-[#A1A1AA] mb-1">{labelHostTip}</p>
+                                <p className="text-[#52525B] text-xs italic leading-relaxed">&quot;{localizedNote}&quot;</p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         );
     }
@@ -465,7 +587,12 @@ function RecommendationCard({
                                                 morning: { label: 'Mañana', icon: Sunrise },
                                                 midday: { label: 'Mediodía', icon: Sun },
                                                 afternoon: { label: 'Tarde', icon: Sunset },
-                                                night: { label: 'Noche', icon: Moon }
+                                                night: { label: 'Noche', icon: Moon },
+                                                'mañana': { label: 'Mañana', icon: Sunrise },
+                                                'mediodía': { label: 'Mediodía', icon: Sun },
+                                                'tarde': { label: 'Tarde', icon: Sunset },
+                                                'noche': { label: 'Noche', icon: Moon },
+                                                'madrugada': { label: 'Madrugada', icon: Moon },
                                             };
                                             const cfg = timeSlotConfigs[slot] || { label: slot, icon: Clock };
                                             const SlotIcon = cfg.icon;
