@@ -70,6 +70,11 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error('[CHAT ERROR]', error);
-        return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+        const isRateLimit = error.message?.includes('Resource exhausted') || error.message?.includes('429');
+        const status = isRateLimit ? 503 : 500;
+        const userMessage = isRateLimit
+            ? 'El asistente está recibiendo muchas solicitudes en este momento. Por favor, inténtalo de nuevo en unos segundos.'
+            : error.message;
+        return new Response(JSON.stringify({ error: userMessage }), { status, headers: { 'Content-Type': 'application/json' } });
     }
 }

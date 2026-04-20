@@ -91,7 +91,8 @@
       "Bash(grep -rn \"GuideFlow\\\\|guideflow\\\\|guide-flow\\\\|GUIDEFLOW\" . ! -path \"*/node_modules/*\" ! -path \"*/.next/*\" ! -path \"*/coverage/*\" ! -path \"*/.playwright-mcp/*\")",
       "Bash(Get-Process -Name \"node\")",
       "Bash(Select-Object Id, CPU, WorkingSet)",
-      "Bash(Format-Table)"
+      "Bash(Format-Table)",
+      "Bash(cd c:\\\\\\\\Proyectos\\\\\\\\guideflow)"
     ],
     "additionalDirectories": [
       "C:\\Proyectos\\guideflow\\.claude"

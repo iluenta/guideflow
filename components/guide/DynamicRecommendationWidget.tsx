@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, ChevronRight, MapPin } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -226,17 +226,32 @@ export function DynamicRecommendationWidget({
     theme
 }: DynamicRecommendationWidgetProps) {
     const third = getThirdAccent(themeId);
-    const now = new Date();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
-    const slot = getTimeSlot(hour);
-    const today = getDaySlug();
-    const { label, emoji } = getDayGreeting(hour);
 
-    const timeStr = now.toLocaleTimeString(
-        currentLanguage === 'es' ? 'es-ES' : 'en-US',
-        { hour: '2-digit', minute: '2-digit' }
-    );
+    const [clientTime, setClientTime] = useState<{ hour: number; minute: number; timeStr: string; slot: string; today: string; label: string; emoji: string } | null>(null);
+
+    useEffect(() => {
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        setClientTime({
+            hour,
+            minute,
+            timeStr: now.toLocaleTimeString(
+                currentLanguage === 'es' ? 'es-ES' : 'en-US',
+                { hour: '2-digit', minute: '2-digit' }
+            ),
+            slot: getTimeSlot(hour),
+            today: getDaySlug(),
+            ...getDayGreeting(hour),
+        });
+    }, [currentLanguage]);
+
+    const hour = clientTime?.hour ?? 12;
+    const minute = clientTime?.minute ?? 0;
+    const slot = clientTime?.slot ?? getTimeSlot(12);
+    const today = clientTime?.today ?? getDaySlug();
+    const { label, emoji } = clientTime ? { label: clientTime.label, emoji: clientTime.emoji } : getDayGreeting(12);
+    const timeStr = clientTime?.timeStr ?? '';
 
     const { content: labelRecomendacion } = useLocalizedContent('RECOMENDACIÓN', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelVerMas } = useLocalizedContent('VER RECOMENDACIONES', currentLanguage, 'ui_label', accessToken, propertyId);
