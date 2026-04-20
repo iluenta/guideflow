@@ -4,6 +4,7 @@
 
 import { streamGeminiREST } from '@/lib/ai/clients/gemini-rest';
 import type { ClassifiedIntent } from '@/lib/ai/services/intent-classifier';
+import OpenAI from 'openai';
 
 type SupabaseClient = ReturnType<typeof import('@/lib/supabase/edge').createEdgeAdminClient>;
 
@@ -118,56 +119,84 @@ export async function createChatStream(
         temperature: 0.1,
     });
 
-    if (!geminiResponse.ok) {
+    const useOpenAIFallback = !geminiResponse.ok && geminiResponse.status === 429;
+    if (!geminiResponse.ok && !useOpenAIFallback) {
         const error = await geminiResponse.json();
         throw new Error(error.error?.message || 'Error en Gemini API');
     }
 
+    if (useOpenAIFallback) {
+        console.warn('[CHAT] Gemini 429 — switching to OpenAI fallback');
+    }
+
     const stream = new ReadableStream({
         async start(controller) {
-            const reader = geminiResponse.body?.getReader();
-            if (!reader) return;
-
-            const decoder = new TextDecoder();
-            let eventBuffer = '';
+            const encoder = new TextEncoder();
             let mapMarkerBuffer = '';
             let globalAccumulatedText = '';
 
+            const enqueueText = (text: string) => {
+                globalAccumulatedText += text;
+                if (text.includes('[[') || mapMarkerBuffer) {
+                    mapMarkerBuffer += text;
+                    if (mapMarkerBuffer.includes(']]')) {
+                        controller.enqueue(encoder.encode(`0:${JSON.stringify(mapMarkerBuffer)}\n`));
+                        mapMarkerBuffer = '';
+                    }
+                } else {
+                    controller.enqueue(encoder.encode(`0:${JSON.stringify(text)}\n`));
+                }
+            };
+
             try {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
+                if (useOpenAIFallback) {
+                    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+                    const openaiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+                        { role: 'system', content: systemInstruction },
+                        ...geminiMessages.map(m => ({
+                            role: m.role === 'model' ? 'assistant' as const : 'user' as const,
+                            content: m.content,
+                        })),
+                    ];
+                    const openaiStream = await openai.chat.completions.create({
+                        model: 'gpt-4o-mini',
+                        messages: openaiMessages,
+                        temperature: 0.1,
+                        stream: true,
+                    });
+                    for await (const chunk of openaiStream) {
+                        const text = chunk.choices[0]?.delta?.content;
+                        if (text) enqueueText(text);
+                    }
+                } else {
+                    const reader = geminiResponse.body?.getReader();
+                    if (!reader) return;
+                    const decoder = new TextDecoder();
+                    let eventBuffer = '';
 
-                    eventBuffer += decoder.decode(value, { stream: true });
-                    const lines = eventBuffer.split('\n');
-                    eventBuffer = lines.pop() || '';
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
 
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const json = JSON.parse(line.substring(6));
-                                const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-                                if (text) {
-                                    globalAccumulatedText += text;
-                                    // AI responde directamente en el idioma del huésped — stream directo
-                                    if (text.includes('[[') || mapMarkerBuffer) {
-                                        mapMarkerBuffer += text;
-                                        if (mapMarkerBuffer.includes(']]')) {
-                                            controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(mapMarkerBuffer)}\n`));
-                                            mapMarkerBuffer = '';
-                                        }
-                                    } else {
-                                        controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(text)}\n`));
-                                    }
-                                }
-                            } catch (e) { /* ignorar líneas SSE parciales */ }
+                        eventBuffer += decoder.decode(value, { stream: true });
+                        const lines = eventBuffer.split('\n');
+                        eventBuffer = lines.pop() || '';
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const json = JSON.parse(line.substring(6));
+                                    const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                                    if (text) enqueueText(text);
+                                } catch (e) { /* ignorar líneas SSE parciales */ }
+                            }
                         }
                     }
                 }
 
                 // Flush final
                 if (mapMarkerBuffer) {
-                    controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(mapMarkerBuffer)}\n`));
+                    controller.enqueue(encoder.encode(`0:${JSON.stringify(mapMarkerBuffer)}\n`));
                 }
 
                 // Analytics: no bloquea el cierre del stream
