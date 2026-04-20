@@ -6,6 +6,7 @@ import { logger } from '@/lib/logger';
 import { RateLimiter } from '@/lib/security/rate-limiter';
 import { logSuspiciousActivity } from '@/lib/security';
 import { getTenantId } from '@/app/actions/properties';
+import { generateArrivalInstructions } from '@/lib/arrival/generator-final';
 
 const getGenAI = () => {
   const key = process.env.GOOGLE_AI_API_KEY;
@@ -420,6 +421,30 @@ export async function POST(req: Request) {
       return undefined;
     };
 
+
+    // ════════════════════════════════════════════════════════════════════════
+    // 1. ARRIVALS / TRANSPORT
+    // ════════════════════════════════════════════════════════════════════════
+    const transportSections = ['arrival', 'transport', 'plane', 'train', 'road'];
+    if (transportSections.includes(section)) {
+      try {
+        const sectionParam = ['plane', 'train', 'road'].includes(section)
+          ? section as 'plane' | 'train' | 'road'
+          : undefined;
+        const result = await generateArrivalInstructions(
+          existingData?.address || fullAddress,
+          sectionParam,
+          buildManualGeo(),
+          existingData?.propertyParking
+        );
+        return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
+      } catch (err) {
+        logger.error('[AI-API] Arrival Error:', err);
+        return new Response(JSON.stringify({ error: 'Error generando instrucciones de llegada' }), {
+          status: 500, headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
 
     // ════════════════════════════════════════════════════════════════════════
     // 2. DINING / RECOMMENDATIONS

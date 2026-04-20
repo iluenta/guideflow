@@ -92,7 +92,9 @@
       "Bash(Get-Process -Name \"node\")",
       "Bash(Select-Object Id, CPU, WorkingSet)",
       "Bash(Format-Table)",
-      "Bash(cd c:\\\\\\\\Proyectos\\\\\\\\guideflow)"
+      "Bash(cd c:\\\\\\\\Proyectos\\\\\\\\guideflow)",
+      "Bash(mkdir -p c:/Proyectos/guideflow/lib/arrival)",
+      "Bash(git show *)"
     ],
     "additionalDirectories": [
       "C:\\Proyectos\\guideflow\\.claude"
