@@ -139,7 +139,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <Logo size={36} className="rounded-xl shadow-sm" />
               <span className="text-xl font-black text-foreground tracking-tight">
-                GuideFlow
+                Hospyia
               </span>
             </div>
 
@@ -492,7 +492,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <Logo size={28} className="rounded-lg shadow-sm" />
               <span className="text-xl font-black text-foreground tracking-tight">
-                GuideFlow
+                Hospyia
               </span>
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
@@ -508,7 +508,7 @@ export default function LandingPage() {
             </div>
           </div>
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            2026 GuideFlow. Todos los derechos reservados.
+            2026 Hospyia. Todos los derechos reservados.
           </p>
         </div>
       </footer>

@@ -1,4 +1,4 @@
-# GuideFlow
+# Hospyia
 
 Plataforma SaaS multi-tenant para gestión de propiedades de alquiler vacacional.
 

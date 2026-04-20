@@ -129,10 +129,10 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
     const [internalGuestSessionId, setInternalGuestSessionId] = useState('');
 
     useEffect(() => {
-        let sid = localStorage.getItem('guideflow_guest_session_id');
+        let sid = localStorage.getItem('hospyia_guest_session_id');
         if (!sid) {
             sid = crypto.randomUUID();
-            localStorage.setItem('guideflow_guest_session_id', sid);
+            localStorage.setItem('hospyia_guest_session_id', sid);
         }
         setInternalGuestSessionId(sid);
     }, []);

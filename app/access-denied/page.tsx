@@ -75,7 +75,7 @@ export default async function AccessDeniedPage({
                 <div className="flex flex-col items-center gap-4">
                     <div className="h-px w-12 bg-slate-200" />
                     <p className="text-[10px] text-slate-400 uppercase font-black tracking-[0.4em]">
-                        GuideFlow Security
+                        Hospyia Security
                     </p>
                 </div>
             </div>

@@ -177,7 +177,7 @@ describe('CSRF Protection Tests', () => {
     it('debería validar Origin header en requests críticos', () => {
       const allowedOrigins = [
         process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-        'https://guideflow.app',
+        'https://hospyia.com',
       ];
 
       // Verificar que hay una lista de orígenes permitidos

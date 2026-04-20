@@ -112,7 +112,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex h-16 items-center justify-between border-b border-slate-100 px-5">
           <Link href="/" className="flex items-center gap-2.5">
             <Logo size={30} className="rounded-xl shadow-sm" />
-            <span className="text-lg font-black text-slate-900 tracking-tight">GuideFlow</span>
+            <span className="text-lg font-black text-slate-900 tracking-tight">Hospyia</span>
           </Link>
           <button
             onClick={() => setMobileSidebarOpen(false)}
@@ -144,7 +144,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               "text-lg font-black text-slate-900 tracking-tight whitespace-nowrap transition-all duration-300",
               collapsed ? "w-0 opacity-0 overflow-hidden" : "w-auto opacity-100"
             )}>
-              GuideFlow
+              Hospyia
             </span>
           </Link>
         </div>
@@ -209,7 +209,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-3">
             <Link href="/" className="flex lg:hidden items-center gap-2">
               <Logo size={28} className="rounded-xl shadow-sm" />
-              <span className="text-lg font-black text-slate-900 tracking-tight">GuideFlow</span>
+              <span className="text-lg font-black text-slate-900 tracking-tight">Hospyia</span>
             </Link>
           </div>
 

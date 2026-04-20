@@ -1,4 +1,4 @@
-# Documentación Técnica Exhaustiva de GuideFlow (Archivo por Archivo)
+# Documentación Técnica Exhaustiva de Hospyia (Archivo por Archivo)
 
 Este documento detalla la función específica de cada archivo en el repositorio, organizado por directorios.
 

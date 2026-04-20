@@ -147,7 +147,19 @@ export class TranslationService {
         generationConfig: { responseMimeType: "application/json" }
       });
 
-      const result = await batchModel.generateContent(prompt);
+      let result: any;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          result = await batchModel.generateContent(prompt);
+          break;
+        } catch (err: any) {
+          if (err?.status === 429 && attempt < 2) {
+            await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+            continue;
+          }
+          throw err;
+        }
+      }
       const responseText = result.response.text();
       let translatedBatch: any;
 

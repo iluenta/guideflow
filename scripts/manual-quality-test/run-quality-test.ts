@@ -1,5 +1,5 @@
 /**
- * GuideFlow Manual Quality Test
+ * Hospyia Manual Quality Test
  *
  * Evalúa la calidad de los manuales V1 (existentes en DB) vs V2 (generados en este script).
  * Usa Gemini como evaluador con 6 dimensiones de calidad.

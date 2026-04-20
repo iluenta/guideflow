@@ -124,7 +124,7 @@ async function geocodeWithGoogle(address: string, apiKey: string): Promise<Geoco
 async function geocodeWithNominatim(address: string): Promise<GeocodingResult> {
     const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&addressdetails=1&limit=1`,
-        { headers: { 'User-Agent': 'GuideFlowApp/1.0' } }
+        { headers: { 'User-Agent': 'HospyiaApp/1.0' } }
     );
 
     const data = await response.json();

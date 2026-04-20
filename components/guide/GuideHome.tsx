@@ -301,7 +301,7 @@ export function GuideHome({
                 {/* Footer */}
                 <motion.div variants={item} className="mt-8 text-center opacity-30">
                     <p className="text-[9px] font-black text-navy tracking-[0.4em] uppercase">
-                        {poweredByLabel} GuideFlow
+                        {poweredByLabel} Hospyia
                     </p>
                 </motion.div>
             </div>

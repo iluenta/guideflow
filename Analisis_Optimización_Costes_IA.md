@@ -1,7 +1,7 @@
-# Análisis de Optimización de Costes IA - GuideFlow (Actualizado Feb 2026)
+# Análisis de Optimización de Costes IA - Hospyia (Actualizado Feb 2026)
 
 Tras analizar el uso de las APIs y las últimas implementaciones técnicas,
-GuideFlow ha evolucionado hacia un sistema de **coste operativo marginal**,
+Hospyia ha evolucionado hacia un sistema de **coste operativo marginal**,
 optimizando cada llamada a la IA mediante capas de seguridad y eficiencia.
 
 ## Comparativa de Modelos y Estrategia
@@ -59,7 +59,7 @@ El sistema de Recuperación Aumentada (RAG) se ha optimizado en
 
 ### 4. Grounding Basado en Confianza (Hybrid Search)
 
-En lugar de llamar siempre a APIs de búsqueda externa (Brave Search), GuideFlow
+En lugar de llamar siempre a APIs de búsqueda externa (Brave Search), Hospyia
 ahora:
 
 - Evalúa la similitud del RAG. Si la confianza es alta (>0.5), **suprime** la

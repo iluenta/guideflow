@@ -150,10 +150,10 @@ export function GuideViewContainer({
 
     // Initialize guest session
     useEffect(() => {
-        let sid = localStorage.getItem('guideflow_guest_session_id');
+        let sid = localStorage.getItem('hospyia_guest_session_id');
         if (!sid) {
             sid = crypto.randomUUID();
-            localStorage.setItem('guideflow_guest_session_id', sid);
+            localStorage.setItem('hospyia_guest_session_id', sid);
         }
         setGuestSessionId(sid);
     }, []);
@@ -520,7 +520,7 @@ export function GuideViewContainer({
                             <MenuGrid onNavigate={handleNavigate} welcomeData={welcomeData} imageUrl={property.main_image_url} currentLanguage={language} accessToken={accessToken} propertyId={property.id} manuals={displayManuals} recommendations={displayRecommendations} context={displayContext} sections={sections} />
                         </div>
                         <div className="px-6 pb-24 text-center opacity-30">
-                            <p className="text-[9px] text-navy uppercase font-black tracking-[0.4em]">{poweredByLabel} GuideFlow Premium</p>
+                            <p className="text-[9px] text-navy uppercase font-black tracking-[0.4em]">{poweredByLabel} Hospyia</p>
                         </div>
                     </div>
                 );

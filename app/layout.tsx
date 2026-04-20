@@ -7,8 +7,8 @@ import { inter, manrope } from '@/lib/fonts'
 import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
-  title: 'GuideFlow - Gestiona tu Alojamiento Turistico',
-  description: 'Plataforma todo en uno para propietarios de alojamientos turisticos. Landing personalizable, calendario de reservas y guia del huesped con IA.',
+  title: 'Hospyia - Gestiona tu Alojamiento Turístico',
+  description: 'Plataforma todo en uno para propietarios de alojamientos turísticos. Landing personalizable, calendario de reservas y guía del huésped con IA. Solo en Hospyia.',
   manifest: '/manifest.json',
   icons: {
     icon: [

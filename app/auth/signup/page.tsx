@@ -12,7 +12,7 @@ function SignupForm() {
       <div className="w-full max-w-md space-y-6">
         <div className="flex flex-col items-center justify-center gap-3">
           <Logo size={56} className="rounded-2xl shadow-md" />
-          <span className="text-3xl font-black text-slate-900 tracking-tight">GuideFlow</span>
+          <span className="text-3xl font-black text-slate-900 tracking-tight">Hospyia</span>
         </div>
 
         <Card>
@@ -44,7 +44,7 @@ export default function SignupPage() {
         <div className="w-full max-w-md space-y-6">
           <div className="flex flex-col items-center justify-center gap-3">
             <Logo size={56} className="rounded-2xl shadow-md" />
-            <span className="text-3xl font-black text-foreground tracking-tight">GuideFlow</span>
+            <span className="text-3xl font-black text-foreground tracking-tight">Hospyia</span>
           </div>
           <Card>
             <CardContent className="pt-6">

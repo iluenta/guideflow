@@ -2,7 +2,7 @@
 // en cada deploy de Vercel. El valor se inyecta en build time desde next.config.js
 // a través de una variable de entorno NEXT_PUBLIC_BUILD_ID.
 const BUILD_ID = self.__BUILD_ID || Date.now();
-const CACHE_NAME = `guideflow-cache-${BUILD_ID}`;
+const CACHE_NAME = `hospyia-cache-${BUILD_ID}`;
 
 const STATIC_ASSETS = [
     '/favicon.ico',

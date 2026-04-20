@@ -1,4 +1,4 @@
-# Reporte de Auditoría de Seguridad - GuideFlow
+# Reporte de Auditoría de Seguridad - Hospyia
 
 **Fecha Original:** 2024-01-24\
 **Última Actualización (Análisis OWASP Top 10):** 2026-02-13\
@@ -15,7 +15,7 @@
 
 ## Resumen Ejecutivo
 
-Se ha realizado una revisión exhaustiva del estado actual de GuideFlow tras la
+Se ha realizado una revisión exhaustiva del estado actual de Hospyia tras la
 implementación de funcionalidades clave (Traducción, Wizard, RAG Sync, y
 Greetings Personalizados). El análisis se ha estructurado siguiendo el estándar
 **OWASP Top 10 (2021)** para proporcionar una visión clara de los riesgos y su

@@ -1,4 +1,4 @@
-# Inventario Funcional Absoluto de GuideFlow
+# Inventario Funcional Absoluto de Hospyia
 
 Este documento contiene la descripción uno-a-uno de cada archivo presente en el proyecto.
 

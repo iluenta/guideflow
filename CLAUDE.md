@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GuideFlow is a multi-tenant SaaS platform for vacation rental property management built with Next.js 15, React 19, TypeScript, and Supabase.
+Hospyia is a multi-tenant SaaS platform for vacation rental property management built with Next.js 15, React 19, TypeScript, and Supabase.
 
 ## Quick Start
 

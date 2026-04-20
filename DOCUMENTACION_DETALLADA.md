@@ -1,6 +1,6 @@
-# Guía Exhaustiva de la Estructura de GuideFlow
+# Guía Exhaustiva de la Estructura de Hospyia
 
-Este documento proporciona un desglose detallado, archivo por archivo, de todo el proyecto GuideFlow (excluyendo bibliotecas externas y dependencias temporales).
+Este documento proporciona un desglose detallado, archivo por archivo, de todo el proyecto Hospyia (excluyendo bibliotecas externas y dependencias temporales).
 
 ## 📄 Archivos en la Raíz (Configuración y Herramientas)
 
@@ -43,7 +43,7 @@ Este documento proporciona un desglose detallado, archivo por archivo, de todo e
 - **`[slug]/page.tsx`**: Página principal del Huésped. Carga la guía personalizada según el slug de la propiedad.
 - **`access-denied/page.tsx`**: Vista de error 403 para accesos no autorizados.
 - **`app/layout.tsx`**: Proveedor de fuentes, temas y estilos globales de la aplicación.
-- **`app/page.tsx`**: Home comercial de GuideFlow (Landing Page).
+- **`app/page.tsx`**: Home comercial de Hospyia (Landing Page).
 - **`not-found.tsx`**: Página de error 404 personalizada.
 
 ### Acciones de Servidor (`app/actions/`)

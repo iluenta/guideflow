@@ -1,5 +1,5 @@
 // ============================================================
-// GuideFlow — Visual Style Themes
+// Hospyia — Visual Style Themes
 // ============================================================
 // Each theme sets a forced CSS variable palette + font pair.
 // The guide layout/component tree is UNCHANGED across themes.

@@ -431,7 +431,7 @@ export function GuideWelcome({
             )}            {/* ── Footer ── */}
             <motion.div variants={item} className="mt-6 text-center opacity-40 pb-4">
                 <p className={cn("text-[8px] font-black tracking-[0.4em] uppercase", t.chipLabel)}>
-                    {labelPoweredBy} GuideFlow
+                    {labelPoweredBy} Hospyia
                 </p>
             </motion.div>
         </motion.div>

@@ -1,6 +1,6 @@
-# Documentación Funcional del Proyecto: GuideFlow
+# Documentación Funcional del Proyecto: Hospyia
 
-Este documento describe la estructura y el propósito funcional de cada archivo y directorio clave en el proyecto GuideFlow.
+Este documento describe la estructura y el propósito funcional de cada archivo y directorio clave en el proyecto Hospyia.
 
 ## 📁 Arquitectura General (Directorio Raíz)
 

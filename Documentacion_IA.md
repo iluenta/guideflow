@@ -1,6 +1,6 @@
-# Documentación de Suministro de IA - GuideFlow
+# Documentación de Suministro de IA - Hospyia
 
-Este documento detalla el uso de las diferentes APIs de Inteligencia Artificial integradas en el proyecto GuideFlow, sus modelos y su propósito específico.
+Este documento detalla el uso de las diferentes APIs de Inteligencia Artificial integradas en el proyecto Hospyia, sus modelos y su propósito específico.
 
 ## 1. Google Gemini (Primary Engine)
 Utilizado para el procesamiento de imágenes, documentos complejos y generación de texto optimizada. Reemplaza a Anthropic Claude para reducir latencia y costes.
