@@ -114,12 +114,12 @@ export async function createChatStream(
     messages: Array<{ role: string; content: string }>,
     lastMessage: string
 ): Promise<Response> {
-    const geminiResponse = await streamGeminiREST('gemini-2.0-flash', geminiMessages, {
+    const geminiResponse = await streamGeminiREST('gemini-2.5-flash', geminiMessages, {
         systemInstruction,
         temperature: 0.1,
     });
 
-    const useOpenAIFallback = !geminiResponse.ok && geminiResponse.status === 429;
+    const useOpenAIFallback = !geminiResponse.ok && (geminiResponse.status === 429 || geminiResponse.status === 404);
     if (!geminiResponse.ok && !useOpenAIFallback) {
         const error = await geminiResponse.json();
         throw new Error(error.error?.message || 'Error en Gemini API');

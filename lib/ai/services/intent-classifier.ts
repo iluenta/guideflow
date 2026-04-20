@@ -206,7 +206,7 @@ export async function classifyIntent(
         : lastMessage
 
     try {
-        const { data, error } = await geminiREST('gemini-2.0-flash', inputForClassifier, {
+        const { data, error } = await geminiREST('gemini-2.5-flash', inputForClassifier, {
             temperature: 0,
             responseMimeType: 'application/json',
             systemInstruction: CLASSIFIER_SYSTEM_PROMPT,

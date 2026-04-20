@@ -51,7 +51,7 @@ PREGUNTA DEL HUÉSPED: ${message}
 
 Respuesta técnica sin fechas:`
 
-    const { data: responseText } = await geminiREST('gemini-2.0-flash', fullPrompt, {
+    const { data: responseText } = await geminiREST('gemini-2.5-flash', fullPrompt, {
         temperature: 0.0, // Fuerza al modelo a ser literal y no inventar datos de tiempo
         responseMimeType: 'text/plain'
     })

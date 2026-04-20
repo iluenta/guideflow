@@ -1,6 +1,27 @@
 import { geocodeAddress, GeocodingResult } from '../geocoding';
 import { geminiREST } from '../ai/clients/gemini-rest';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
+import OpenAI from 'openai';
+
+async function callAI(prompt: string): Promise<any> {
+    const { data, error } = await geminiREST('gemini-2.5-flash', prompt, {
+        responseMimeType: 'application/json',
+        temperature: 0.2
+    });
+    if (data) return data;
+
+    // Fallback to OpenAI when Gemini is rate-limited
+    console.warn('[ARRIVAL] Gemini failed, falling back to OpenAI:', error);
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const res = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
+    });
+    const text = res.choices[0]?.message?.content || '{}';
+    try { return JSON.parse(text); } catch { return { access_info: null }; }
+}
 
 function getSupabase() {
     return createSupabaseAdmin(
@@ -87,16 +108,14 @@ async function findNearestAirports(lat: number, lng: number, placesKey: string) 
 
 async function findAirportsViaGemini(lat: number, lng: number) {
     try {
-        const { data } = await geminiREST('gemini-2.0-flash',
-            `Cuáles son los aeropuertos comerciales (con vuelos regulares nacionales o internacionales) más cercanos a las coordenadas ${lat}, ${lng} en España?
+        const prompt = `Cuáles son los aeropuertos comerciales (con vuelos regulares nacionales o internacionales) más cercanos a las coordenadas ${lat}, ${lng} en España?
 Devuelve SOLO JSON con los 3 más cercanos:
 {
   "airports": [
     { "name": "Nombre oficial del aeropuerto", "code": "IATA", "city": "Ciudad", "distance_km": 90 }
   ]
-}`,
-            { responseMimeType: 'application/json', temperature: 0 }
-        );
+}`;
+        const data = await callAI(prompt);
         const airports = data?.airports || [];
         console.log(`[GEMINI] Found ${airports.length} airports: ${airports.map((a: any) => `${a.code} (${a.distance_km}km)`).join(', ')}`);
         return airports;
@@ -479,10 +498,7 @@ RESPONDE SOLO CON ESTE JSON:
     };
 
     try {
-        const { data } = await geminiREST('gemini-2.0-flash', sectionPrompts[section], {
-            responseMimeType: 'application/json',
-            temperature: 0.2
-        });
+        const data = await callAI(sectionPrompts[section]);
         console.log(`[ARRIVAL] Fast section "${section}" generated`);
         return data || { access_info: null };
     } catch (error: any) {
@@ -580,12 +596,7 @@ JSON OBLIGATORIO (sin texto adicional):
   }
 }`;
 
-    const { data } = await geminiREST('gemini-2.0-flash', prompt, {
-        responseMimeType: 'application/json',
-        temperature: 0.1
-        // No useGrounding — context already injected above
-    });
-
+    const data = await callAI(prompt);
     return data || { access_info: null };
 }
 

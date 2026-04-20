@@ -143,7 +143,7 @@ export class TranslationService {
       Input: ${JSON.stringify(denseTexts)}`;
 
       const batchModel = TranslationService.genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
         generationConfig: { responseMimeType: "application/json" }
       });
 

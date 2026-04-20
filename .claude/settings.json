@@ -94,7 +94,10 @@
       "Bash(Format-Table)",
       "Bash(cd c:\\\\\\\\Proyectos\\\\\\\\guideflow)",
       "Bash(mkdir -p c:/Proyectos/guideflow/lib/arrival)",
-      "Bash(git show *)"
+      "Bash(git show *)",
+      "Read(//c/Proximectos/guideflow/lib/arrival/**)",
+      "Bash(grep -v \"^.*import\\\\|//\")",
+      "Bash(grep -v \"^.*//.*gemini\")"
     ],
     "additionalDirectories": [
       "C:\\Proyectos\\guideflow\\.claude"

@@ -135,7 +135,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                     status: 'identified',
                     analysis_started_at: startTime,
                     analysis_finished_at: new Date().toISOString(),
-                    ai_model: 'gemini-2.0-flash',
+                    ai_model: 'gemini-2.5-flash',
                     tokens_prompt: geminiResponse?.usage?.prompt_tokens,
                     tokens_completion: geminiResponse?.usage?.candidates_tokens
                 }).select().single()
@@ -419,7 +419,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
         
                         RESPONDE SOLO CON EL TEXTO DEL MANUAL.`
 
-                        const genResponse = await geminiREST('gemini-2.0-flash', prompt, {
+                        const genResponse = await geminiREST('gemini-2.5-flash', prompt, {
                             responseMimeType: 'text/plain',
                             temperature: 0.7
                         })
@@ -868,7 +868,7 @@ ${displayData.adjacent_buttons?.map((b: any) => `- **${b.icon}:** ${b.likely_fun
         prompt
     ] : [prompt]
 
-    const response = await geminiREST('gemini-2.0-flash', input as any, {
+    const response = await geminiREST('gemini-2.5-flash', input as any, {
         responseMimeType: 'text/plain',
         temperature: 0.1,
         maxOutputTokens: 2000
@@ -942,7 +942,7 @@ ${hasReliableSource ? `📄 DOCUMENTACIÓN TÉCNICA:\n${baseContext.substring(0,
         prompt
     ] : [prompt]
 
-    const response = await geminiREST('gemini-2.0-flash', input as any, {
+    const response = await geminiREST('gemini-2.5-flash', input as any, {
         responseMimeType: 'text/plain',
         temperature: 0.15,
         maxOutputTokens: 1500 as any,
@@ -982,7 +982,7 @@ Si tu modelo incluye Aquálisis:
         prompt
     ] : [prompt]
 
-    const response = await geminiREST('gemini-2.0-flash', input as any, {
+    const response = await geminiREST('gemini-2.5-flash', input as any, {
         responseMimeType: 'text/plain',
         temperature: 0.1,
         maxOutputTokens: 1500
@@ -1012,7 +1012,7 @@ async function fetchGroundingData(brand: string, model: string, type: string): P
     TODO DEBE ESTAR EN ESPAÑOL.
     IMPORTANTE: Dame solo los datos crudos, sin formato de manual aún.`
 
-    const { data: groundingData, error } = await geminiREST('gemini-2.0-flash', query, {
+    const { data: groundingData, error } = await geminiREST('gemini-2.5-flash', query, {
         temperature: 0.1,
         maxOutputTokens: 2000,
         responseMimeType: 'text/plain',
@@ -1053,7 +1053,7 @@ TODO EN ESPAÑOL.`
     try {
         logT(`[ERROR-CODES] Searching error codes for ${brand} ${model || type}...`)
 
-        const { data, error } = await geminiREST('gemini-2.0-flash', query, {
+        const { data, error } = await geminiREST('gemini-2.5-flash', query, {
             temperature: 0.1,
             maxOutputTokens: 3000,
             responseMimeType: 'text/plain',
@@ -1090,7 +1090,7 @@ async function fetchErrorCodesFromBrave(brand: string, model: string, type: stri
 
         if (braveFormatted.length < 100) return ''
 
-        const { data: consolidated } = await geminiREST('gemini-2.0-flash',
+        const { data: consolidated } = await geminiREST('gemini-2.5-flash',
             `Extrae y organiza SOLO los códigos de error y soluciones de estos resultados para ${brand} ${type}.
 
 Formato:
@@ -1313,11 +1313,11 @@ RECUERDA: Máximo 600 palabras. Calidad > cantidad.`;
         // Usar visión si hay imagen válida, fallback a texto si la imagen fue eliminada
         let result = imageUrl && isValidExternalUrl(imageUrl)
             ? await geminiVision(imageUrl, userPrompt, opts)
-            : await geminiREST('gemini-2.0-flash', userPrompt, opts);
+            : await geminiREST('gemini-2.5-flash', userPrompt, opts);
 
         if (result.error && imageUrl) {
             logT(`[GEN] Image unavailable (${result.error}), retrying without image...`);
-            result = await geminiREST('gemini-2.0-flash', userPrompt, opts);
+            result = await geminiREST('gemini-2.5-flash', userPrompt, opts);
         }
 
         const { data: manual, error } = result;

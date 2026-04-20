@@ -614,7 +614,7 @@ SOLO JSON:`;
 
       // ── Llamada a Gemini ───────────────────────────────────────────────
       const genAI = getGenAI();
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 
       let recommendations: any[] = [];
@@ -839,7 +839,7 @@ SOLO JSON:`;
     // ════════════════════════════════════════════════════════════════════════
     if (section === 'tech' || section === 'faqs') {
       const genAI = getGenAI();
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       let prompt = '';
 
       if (section === 'tech') {
@@ -952,7 +952,7 @@ JSON:`;
 
         const genAI = getGenAI();
         const model = genAI.getGenerativeModel({ 
-          model: 'gemini-2.0-flash',
+          model: 'gemini-2.5-flash',
           generationConfig: { temperature: 0 } 
         });
 

@@ -194,7 +194,7 @@ export async function analyzeImageWithGemini(imageUrl: string, prompt: string, o
             prompt
         ];
 
-        const { data, usage, error } = await geminiREST('gemini-2.0-flash', input, {
+        const { data, usage, error } = await geminiREST('gemini-2.5-flash', input, {
             temperature: options.temperature ?? 0.1,
             responseMimeType: options.responseMimeType ?? 'application/json'
         });
@@ -222,7 +222,7 @@ export async function geminiVision(
 ) {
     const { mimeType, data } = await fetchImageAsBase64(imageUrl);
 
-    return geminiREST('gemini-2.0-flash', [
+    return geminiREST('gemini-2.5-flash', [
         { inlineData: { mimeType, data } },
         prompt
     ], options);

@@ -883,17 +883,7 @@ export function WizardProvider({
                     const incoming = result.access_info || {};
 
                     Object.entries(incoming).forEach(([key, val]) => {
-                        if (val && typeof val === 'object') {
-                            // Support both legacy (instructions/info) and new (train_ld/bus_interurban/last_mile) formats
-                            const hasContent =
-                                (val as any).instructions?.length > 10 ||
-                                (val as any).info?.length > 10 ||
-                                (val as any).train_ld?.length > 10 ||   // ← nuevo formato tren
-                                (val as any).bus_interurban?.length > 10;
-                            if (hasContent) {
-                                mergedAccess[key] = val;
-                            }
-                        } else if (val !== null && val !== undefined) {
+                        if (val !== null && val !== undefined) {
                             mergedAccess[key] = val;
                         }
                     });
