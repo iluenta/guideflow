@@ -99,14 +99,14 @@ export async function geminiREST(
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-    const maxRetries = 2;
+    const maxRetries = 1;
     let lastError: any = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
             if (attempt > 0) {
-                // Flat 1.5s retry — exponential backoff exceeds Vercel 10s function timeout
-                const waitTime = 1500;
+                // Single retry with short wait before falling back to OpenAI
+                const waitTime = 800;
                 console.log(`[GEMINI-REST] Retrying in ${waitTime}ms (Attempt ${attempt}/${maxRetries})...`);
                 await new Promise(resolve => setTimeout(resolve, waitTime));
             }

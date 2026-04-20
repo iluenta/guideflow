@@ -1,6 +1,7 @@
 import { geminiREST } from '@/lib/ai/clients/gemini-rest'
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { logger } from "@/lib/logger";
+import OpenAI from 'openai';
 
 // ═══════════════════════════════════════════════════════
 // TIPOS
@@ -213,6 +214,27 @@ export async function classifyIntent(
         })
 
         if (error || !data) {
+            const isRateLimit = error?.includes('Resource exhausted') || error?.includes('429');
+            if (isRateLimit && process.env.OPENAI_API_KEY) {
+                console.warn('[INTENT] Gemini 429 — falling back to OpenAI for classification');
+                try {
+                    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+                    const res = await openai.chat.completions.create({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: CLASSIFIER_SYSTEM_PROMPT },
+                            { role: 'user', content: inputForClassifier },
+                        ],
+                        temperature: 0,
+                        response_format: { type: 'json_object' },
+                        max_tokens: 150,
+                    });
+                    const parsed = JSON.parse(res.choices[0]?.message?.content || '{}');
+                    if (parsed.intent) return parsed as ClassifiedIntent;
+                } catch (oaiErr: any) {
+                    console.warn('[INTENT] OpenAI fallback also failed:', oaiErr.message);
+                }
+            }
             console.warn('[INTENT] Classifier failed, using fallback:', error)
             return DEFAULT_INTENT
         }

@@ -137,7 +137,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
         setInternalGuestSessionId(sid);
     }, []);
 
-    const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
+    const { messages, input, handleInputChange, handleSubmit, isLoading, error: chatError, append } = useChat({
         api: '/api/chat',
         body: {
             propertyId,
