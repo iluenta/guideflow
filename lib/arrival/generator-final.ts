@@ -1,6 +1,13 @@
 import { geocodeAddress, GeocodingResult } from '../geocoding';
 import { geminiREST } from '../ai/clients/gemini-rest';
-import { createClient } from '../supabase/server';
+import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
+
+function getSupabase() {
+    return createSupabaseAdmin(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+}
 
 /**
  * Arrival instructions generator — v4 (fully dynamic, no static lists)
@@ -614,7 +621,7 @@ function buildResponseFromCache(cached: any, section: string): any {
 
 async function getCachedTransport(city: string, countryCode: string, airportCode?: string) {
     try {
-        const supabase = await createClient();
+        const supabase = getSupabase();
         const { data } = await supabase
             .from('city_transport_cache')
             .select('*')
@@ -631,7 +638,7 @@ async function getCachedTransport(city: string, countryCode: string, airportCode
 
 async function saveToCache(city: string, countryCode: string, airportCode: string, transport: any, highway: any) {
     try {
-        const supabase = await createClient();
+        const supabase = getSupabase();
         const update: any = {
             city_name: city,
             country_code: countryCode,
