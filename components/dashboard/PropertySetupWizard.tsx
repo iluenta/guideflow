@@ -42,8 +42,8 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                 <StepRules value="rules" />
                 <StepTech value="tech" />
                 <StepVisualScanner value="visual-scanner" />
-                <StepApplianceManuals value="appliance-manuals" />
                 <StepInventory value="inventory" />
+                <StepApplianceManuals value="appliance-manuals" />
                 <StepDining value="dining" />
                 <StepFaqs value="faqs" />
             </WizardLayout>

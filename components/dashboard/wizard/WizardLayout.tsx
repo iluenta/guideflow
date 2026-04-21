@@ -91,15 +91,15 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
             description: 'Sube fotos de tus aparatos para que la IA genere manuales automáticamente.',
             icon: Camera
         },
-        'appliance-manuals': {
-            title: 'Manuales de Aparatos',
-            description: 'Genera manuales detallados para tus electrodomésticos.',
-            icon: FileText
-        },
         'inventory': {
             title: 'Inventario de Aparatos',
             description: 'Selecciona qué electrodomésticos tienes para generar sus guías técnicas.',
             icon: ListChecks
+        },
+        'appliance-manuals': {
+            title: 'Manuales de Aparatos',
+            description: 'Genera manuales detallados para tus electrodomésticos.',
+            icon: FileText
         },
         'dining': {
             title: 'Recomendaciones Locales',

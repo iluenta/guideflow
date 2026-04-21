@@ -52,6 +52,7 @@ export async function geminiREST(
         responseSchema?: any;
         systemInstruction?: string;
         stopSequences?: string[];
+        thinkingBudget?: number | null;
     } = {}
 ) {
     const apiKey = process.env.GOOGLE_AI_API_KEY;
@@ -80,6 +81,7 @@ export async function geminiREST(
             temperature: options.temperature ?? 0.1,
             responseMimeType: isJsonMode ? 'application/json' : 'text/plain',
             maxOutputTokens: options.maxOutputTokens ?? 8192,
+            ...(options.thinkingBudget !== null ? { thinkingConfig: { thinkingBudget: options.thinkingBudget ?? 0 } } : {}),
             ...(options.responseSchema && isJsonMode ? { response_schema: options.responseSchema } : {}),
             ...(options.stopSequences && options.stopSequences.length > 0 ? { stopSequences: options.stopSequences } : {})
         },
@@ -94,6 +96,8 @@ export async function geminiREST(
     }
 
     if (options.useGrounding) {
+        // thinkingConfig is incompatible with grounding — remove it
+        delete payload.generationConfig.thinkingConfig;
         payload.tools = [{ google_search: {} }];
     }
 

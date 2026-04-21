@@ -614,8 +614,7 @@ SOLO JSON:`;
 
       // ── Llamada a Gemini ───────────────────────────────────────────────
       const genAI = getGenAI();
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { responseMimeType: 'application/json' } });
 
       let recommendations: any[] = [];
 
@@ -839,7 +838,7 @@ SOLO JSON:`;
     // ════════════════════════════════════════════════════════════════════════
     if (section === 'tech' || section === 'faqs') {
       const genAI = getGenAI();
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { responseMimeType: 'application/json' } });
       let prompt = '';
 
       if (section === 'tech') {
@@ -951,9 +950,9 @@ JSON:`;
           .sort((a, b) => a.distanceValue - b.distanceValue);
 
         const genAI = getGenAI();
-        const model = genAI.getGenerativeModel({ 
+        const model = genAI.getGenerativeModel({
           model: 'gemini-2.5-flash',
-          generationConfig: { temperature: 0 } 
+          generationConfig: { temperature: 0, responseMimeType: 'application/json' }
         });
 
         const contactPrompt = `Eres un experto en hospitalidad y seguridad. Criba estos contactos para ${property.city} (España).
@@ -993,7 +992,8 @@ JSON:`;
           return new Response(JSON.stringify({ emergency_contacts: finalContacts }), {
             headers: { 'Content-Type': 'application/json' }
           });
-        } catch {
+        } catch (err: any) {
+          logger.error('[AI-API] Contacts AI error:', err.message);
           return new Response(JSON.stringify({ emergency_contacts: emergencyContacts }), {
             headers: { 'Content-Type': 'application/json' }
           });

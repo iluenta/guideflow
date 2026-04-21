@@ -825,10 +825,22 @@ export async function verifyAndFixInventoryStatus(propertyId: string) {
     if (prop.inventory_status === 'generating' || prop.inventory_status === 'identifying') {
         const lastUpdate = new Date(prop.updated_at).getTime()
         const now = Date.now()
-        const threshold = 60 * 1000 // 1 minute of silence is suspicious for generating status update
+        const silenceSecs = (now - lastUpdate) / 1000
+
+        // Check if there are already manuals in DB
+        const { count: manualCount } = await supabase
+            .from('property_manuals')
+            .select('id', { count: 'exact', head: true })
+            .eq('property_id', currentPropId)
+
+        const hasManuals = (manualCount ?? 0) > 0
+
+        // If there are manuals and no DB activity for 5+ min → Phase 2 finished (or failed silently)
+        // If no manuals yet, wait up to 15 min before giving up
+        const threshold = hasManuals ? 5 * 60 * 1000 : 15 * 60 * 1000
 
         if (now - lastUpdate > threshold) {
-            console.warn(`[SILENT-RECOVERY] Property ${currentPropId} seems stuck. Fixing.`)
+            console.warn(`[SILENT-RECOVERY] Property ${currentPropId} seems stuck (${Math.round(silenceSecs)}s silence, ${manualCount} manuals). Fixing.`)
             await supabase.from('properties').update({ inventory_status: 'completed' }).eq('id', currentPropId)
             revalidatePath(`/dashboard/properties/${propertyId}`)
             return { success: true, fixed: true, status: 'completed' }

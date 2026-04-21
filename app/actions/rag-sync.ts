@@ -227,9 +227,10 @@ export async function syncManualToRAG(
     manualContent: string,
     applianceName: string,
     brand: string,
-    model?: string
+    model?: string,
+    supabaseClient?: Awaited<ReturnType<typeof createClient>>
 ) {
-    const supabase = await createClient()
+    const supabase = supabaseClient ?? await createClient()
 
     const currentPropId = sanitizeUUID(propertyId)
     const currentTenantId = sanitizeUUID(tenantId)

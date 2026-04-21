@@ -14,7 +14,7 @@ import { harmonizeThemeFromPrimary } from '@/lib/color-harmonizer'
 import { DEFAULT_ITEMS, matchesInventoryItem } from '@/components/dashboard/InventorySelector'
 import { isValidUUID } from '@/lib/utils'
 
-export const steps = ['property', 'appearance', 'access', 'welcome', 'contacts', 'checkin', 'rules', 'tech', 'visual-scanner', 'appliance-manuals', 'inventory', 'dining', 'faqs']
+export const steps = ['property', 'appearance', 'access', 'welcome', 'contacts', 'checkin', 'rules', 'tech', 'visual-scanner', 'inventory', 'appliance-manuals', 'dining', 'faqs']
 
 interface WizardContextType {
     // State
@@ -319,11 +319,25 @@ export function WizardProvider({
                 }
 
                 if (prop.inventory_status === 'completed') {
+                    clearInterval(interval)
+                    // Carga definitiva para garantizar que tenemos TODOS los manuales del estado final de la DB
+                    const { data: finalProp } = await supabase
+                        .from('properties')
+                        .select('*, property_manuals(*)')
+                        .eq('id', effectivePropertyId)
+                        .single()
+                    const allManuals = finalProp?.property_manuals || prop.property_manuals || []
+                    setProperty((prev: any) => ({
+                        ...prev,
+                        inventory_status: 'completed',
+                        manuals: allManuals
+                    }))
                     setCompletedSteps(prev => Array.from(new Set([...prev, 'visual-scanner', 'inventory'])))
                     toast({
                         title: "¡Manuales generados!",
                         description: "Los manuales técnicos ya están disponibles en tu guía.",
                     })
+                    return
                 }
             }
         }, 5000)
@@ -452,17 +466,16 @@ export function WizardProvider({
                         )
                         trulyDetected.forEach((m: any) => {
                             const manualName = (m.appliance_name || '').trim()
-                            if (manualName.length < 3) return
+                            if (manualName.length < 2) return
                             const matchedItem = DEFAULT_ITEMS.find(di => matchesInventoryItem(manualName, di))
                             if (!matchedItem) return
                             const idx = updatedSelected.findIndex(i => i.id === matchedItem.id)
                             if (idx === -1) {
                                 updatedSelected.push({ ...matchedItem, isPresent: true, isFromScanner: true, customContext: '' })
-                            } else if (!updatedSelected[idx].isFromScanner) {
-                                // Newly detected (wasn't previously a scanner item) → mark present
+                            } else if (!updatedSelected[idx].isFromScanner || !updatedSelected[idx].isPresent) {
+                                // Newly detected or was unchecked but now confirmed by manual → mark present
                                 updatedSelected[idx] = { ...updatedSelected[idx], isPresent: true, isFromScanner: true }
                             }
-                            // If already isFromScanner: respect stored isPresent (user may have unchecked)
                         })
                         newData.inventory = { ...(newData.inventory || {}), selected_items: updatedSelected }
                     }

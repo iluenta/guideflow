@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useWizard } from '../../WizardContext'
 import { ManualsSection } from '../../sections/ManualsSection'
+import { matchesInventoryItem } from '@/components/dashboard/InventorySelector'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -14,11 +15,12 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { deleteManual, saveManual } from '@/app/actions/properties'
+import { saveWizardStep } from '@/app/actions/wizard'
 import { regenerateManualAction } from '@/app/actions/ai-ingestion'
 import { toast } from 'sonner'
 
 export function StepApplianceManuals({ value }: { value?: string }) {
-    const { property, setProperty } = useWizard()
+    const { property, setProperty, data, setData } = useWizard()
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
     if (!property) return null
@@ -28,17 +30,65 @@ export function StepApplianceManuals({ value }: { value?: string }) {
 
     const handleDelete = async () => {
         if (!confirmDeleteId) return
-        try {
-            await deleteManual(confirmDeleteId, property.id)
-            setProperty({
-                ...property,
-                manuals: manuals.filter((m: any) => m.id !== confirmDeleteId)
+        
+        const idToDelete = confirmDeleteId
+        const previousManuals = [...manuals]
+        const previousInventory = data.inventory?.selected_items || []
+        
+        // Find the manual to delete to get its name for inventory sync
+        const manualToDelete = manuals.find((m: any) => m.id === idToDelete)
+        const manualName = manualToDelete?.appliance_name
+        
+        // Optimistic update: remove from UI immediately
+        setProperty({
+            ...property,
+            manuals: manuals.filter((m: any) => m.id !== idToDelete)
+        })
+
+        // SYNC: If deleting a manual, update the inventory selection to keep it consistent
+        if (manualName) {
+            const updatedInventory = previousInventory.map((item: any) => {
+                // If it matches the manual being deleted and was marked present, uncheck it
+                // ONLY if the manual being deleted is what likely prompted its presence
+                if (item.isPresent && matchesInventoryItem(manualName, item)) {
+                    return { ...item, isPresent: false }
+                }
+                return item
             })
+            
+            // Only update and persist if changes were made
+            if (JSON.stringify(updatedInventory) !== JSON.stringify(previousInventory)) {
+                setData((prev: any) => ({
+                    ...prev,
+                    inventory: { ...prev.inventory, selected_items: updatedInventory }
+                }))
+
+                // PERSIST: Save the inventory change to the database immediately
+                try {
+                    await saveWizardStep('inventory', { selected_items: updatedInventory }, property.id, property.tenant_id)
+                } catch (err) {
+                    console.error('[SYNC] Failed to persist inventory update:', err)
+                    // We don't revert here because the manual itself is already being deleted
+                }
+            }
+        }
+
+        setConfirmDeleteId(null)
+
+        try {
+            await deleteManual(idToDelete, property.id)
             toast.success('Manual eliminado')
         } catch (error) {
+            // Revert state if server call fails
+            setProperty({
+                ...property,
+                manuals: previousManuals
+            })
+            setData((prev: any) => ({
+                ...prev,
+                inventory: { ...prev.inventory, selected_items: previousInventory }
+            }))
             toast.error('Error al eliminar manual')
-        } finally {
-            setConfirmDeleteId(null)
         }
     }
 
@@ -77,21 +127,18 @@ export function StepApplianceManuals({ value }: { value?: string }) {
         }
     }
 
-    const handleRegenerate = async (manual: any) => {
+    const handleRegenerate = async (manual: any): Promise<string | void> => {
         if (!property) return
         const toastId = toast.loading('Regenerando manual con IA...')
         try {
             const result = await regenerateManualAction(manual.id)
             if (result.success) {
-                // Update local state
-                const updatedManuals = manuals.map((m: any) => {
-                    if (m.id === manual.id) {
-                        return { ...m, manual_content: result.content }
-                    }
-                    return m
-                })
+                const updatedManuals = manuals.map((m: any) =>
+                    m.id === manual.id ? { ...m, manual_content: result.content } : m
+                )
                 setProperty({ ...property, manuals: updatedManuals })
                 toast.success('Manual regenerado correctamente', { id: toastId })
+                return result.content
             }
         } catch (error) {
             console.error('Error regenerating manual:', error)

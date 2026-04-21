@@ -52,8 +52,29 @@ export interface InventoryItem {
 export function matchesInventoryItem(manualName: string, item: Pick<InventoryItem, 'id' | 'name' | 'aliases'>): boolean {
     const norm = manualName.toLowerCase().trim()
     if (norm.length < 2) return false
+    
     const terms = [item.id, item.name, ...(item.aliases || [])].map(t => t.toLowerCase())
-    return terms.some(t => norm.includes(t) || t.includes(norm))
+    
+    // Check for exact word match to avoid "Horno" matching "Fuentes de horno"
+    return terms.some(t => {
+        if (t === norm) return true
+        
+        // Exact word boundary matching
+        const normWords = norm.split(/[\s,.-]+/).filter(w => w.length > 2)
+        const termWords = t.split(/[\s,.-]+/).filter(w => w.length > 2)
+        
+        // If the manual name (norm) is a single important word that is exactly one of the words in the item term
+        // BUT the item term has other important words, it's a weak match.
+        // Example: manual "HORNO" vs item "FUENTES DE HORNO". 
+        // termWords = ["fuentes", "horno"], normWords = ["horno"]. 
+        // We only match if the manual name is the *primary* thing.
+        
+        // Better: Check if the norm contains the term as a whole word OR vice-versa
+        const regexTerm = new RegExp(`\\b${t}\\b`, 'i')
+        const regexNorm = new RegExp(`\\b${norm}\\b`, 'i')
+        
+        return regexTerm.test(norm) || regexNorm.test(t)
+    })
 }
 
 interface InventorySelectorProps {
@@ -82,11 +103,16 @@ export const DEFAULT_ITEMS: Omit<InventoryItem, 'isPresent'>[] = [
     { id: 'hervidor', name: 'Hervidor eléctrico', category: 'small-appliances', icon: Wind, aliases: ['hervidor', 'kettle'] },
 
     // Cocina
+    { id: 'horno', name: 'Horno', category: 'kitchen', icon: Utensils, aliases: ['horno', 'oven'] },
+    { id: 'microondas', name: 'Microondas', category: 'kitchen', icon: Microwave, aliases: ['microondas', 'microwave', 'micro'] },
+    { id: 'placa-cocina', name: 'Placa / Vitrocerámica', category: 'kitchen', icon: Flame, aliases: ['placa', 'vitro', 'vitrocerámica', 'vitroceramica', 'induccion', 'induction', 'hob', 'stove'] },
+    { id: 'campana', name: 'Campana extractora', category: 'kitchen', icon: Wind, aliases: ['campana', 'extractor', 'hood'] },
+    { id: 'frigorifico', name: 'Frigorífico / Nevera', category: 'kitchen', icon: Refrigerator, aliases: ['frigorifico', 'frigorífico', 'nevera', 'refrigeradora', 'fridge'] },
     { id: 'utensilios', name: 'Utensilios de cocina básicos', category: 'kitchen', icon: Utensils },
     { id: 'tuppers', name: 'Tuppers / Recipientes', category: 'kitchen', icon: Utensils },
-    { id: 'fuente-horno', name: 'Fuentes de horno', category: 'kitchen', icon: Utensils },
+    { id: 'fuente-horno', name: 'Fuentes de horno', category: 'kitchen', icon: Utensils, aliases: ['fuentes', 'bandeja horno'] },
     { id: 'sartenes', name: 'Sartenes y Ollas', category: 'kitchen', icon: Utensils, aliases: ['sarten', 'olla', 'cacerola', 'frying', 'pan'] },
-    { id: 'vajilla', name: 'Vajilla completa', category: 'kitchen', icon: Utensils },
+    { id: 'vajilla', name: 'Vajilla completa', category: 'kitchen', icon: Utensils, aliases: ['platos', 'vasos', 'cubiertos'] },
     { id: 'copas-vino', name: 'Copas de vino', category: 'kitchen', icon: Utensils },
     { id: 'cafetera-capsulas', name: 'Cafetera de cápsulas', category: 'kitchen', icon: Coffee, aliases: ['capsulas', 'cápsulas', 'nespresso', 'dolce gusto', 'dolce', 'espresso', 'capsule'] },
 
@@ -140,10 +166,10 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
         })
 
         // isPresent logic:
-        // - If newly detected by scanner (existingItem didn't know about scanner): force present
-        // - If user had previously unchecked a scanner-detected item (existingItem.isFromScanner=true, isPresent=false): respect that
-        // - Otherwise: use stored state or false
-        const isNewlyDetectedByScanner = isFromScanner && !existingItem?.isFromScanner
+        // - If newly detected by scanner: force present
+        // - If user had previously unchecked a scanner-detected item: respect that
+        // - Otherwise: use stored state or detection status
+        const isNewlyDetectedByScanner = isFromScanner && (existingItem?.isFromScanner === false || existingItem?.isFromScanner === undefined)
         const isPresent = isNewlyDetectedByScanner
             ? true
             : (existingItem ? existingItem.isPresent : isFromScanner)
@@ -263,7 +289,7 @@ export function InventorySelector({ items = [], onChange, existingManuals = [] }
                                     </div>
 
                                     <div className="flex items-center gap-2 shrink-0">
-                                        {item.isPresent && !item.isFromScanner && (
+                                        {item.isPresent && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
