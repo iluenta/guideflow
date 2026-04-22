@@ -587,6 +587,7 @@ export function GuideViewContainer({
                         isOpen={isContactModalOpen}
                         onClose={() => setIsContactModalOpen(false)}
                         contactsData={contactsData}
+                        hostName={welcomeData?.host_name || property.host_name}
                         currentLanguage={language}
                         accessToken={accessToken}
                         propertyId={property.id}

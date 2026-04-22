@@ -50,22 +50,22 @@ export function WizardSidebar({
             {/* Mobile Backdrop */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden"
+                    className="fixed inset-0 bg-landing-navy/20 backdrop-blur-sm z-40 lg:hidden"
                     onClick={onClose}
                 />
             )}
 
             {/* Sidebar Container */}
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 w-80 bg-white border-r border-slate-100 transform transition-transform duration-300 ease-in-out lg:relative lg:transform-none lg:z-0",
-                isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+                "fixed inset-y-0 left-0 z-50 w-[300px] bg-white border-r border-landing-rule-soft transform transition-transform duration-300 ease-in-out lg:relative lg:transform-none lg:z-0 lg:rounded-[32px] lg:h-[calc(100vh-140px)] lg:sticky lg:top-[100px]",
+                isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 shadow-2xl lg:shadow-none"
             )}>
                 <div className="flex flex-col h-full">
                     {/* Header with Close Button (Mobile Only) */}
                     <div className="flex items-center justify-between p-6 lg:hidden">
-                        <span className="text-xl font-bold text-slate-900">Menú</span>
-                        <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
-                            <X className="h-6 w-6 text-slate-400" />
+                        <span className="text-xl font-bold text-landing-navy">Secciones</span>
+                        <button onClick={onClose} className="p-2 hover:bg-landing-bg-deep rounded-xl transition-colors">
+                            <X className="h-6 w-6 text-landing-ink-mute" />
                         </button>
                     </div>
 
@@ -84,36 +84,33 @@ export function WizardSidebar({
                                         onClose()
                                     }}
                                     className={cn(
-                                        "w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group",
+                                        "w-full flex items-center justify-between p-3.5 rounded-2xl transition-all duration-300 group",
                                         isActive
-                                            ? "bg-[#316263]/5 text-[#316263] border border-[#316263]/10"
-                                            : "text-slate-500 hover:bg-slate-50 border border-transparent",
+                                            ? "bg-landing-navy text-white shadow-lg shadow-landing-navy/20"
+                                            : "text-landing-ink-soft hover:bg-landing-bg-deep",
                                         disabled && "opacity-50 cursor-not-allowed grayscale pointer-events-auto"
                                     )}
                                 >
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-3.5">
                                         <div className={cn(
-                                            "h-10 w-10 rounded-xl flex items-center justify-center transition-colors shadow-sm",
-                                            isActive ? "bg-[#316263] text-white" : "bg-white text-slate-400 group-hover:bg-white group-hover:text-slate-600 border border-slate-100"
+                                            "h-9 w-9 rounded-xl flex items-center justify-center transition-colors shadow-sm",
+                                            isActive ? "bg-white/20 text-white" : "bg-landing-bg-deep text-landing-ink-mute group-hover:bg-white group-hover:text-landing-navy"
                                         )}>
-                                            <Icon className="h-5 w-5" />
+                                            <Icon className="h-[18px] w-[18px] stroke-[1.75]" />
                                         </div>
                                         <span className={cn(
-                                            "font-bold text-sm tracking-tight",
-                                            isActive ? "text-[#316263]" : "text-slate-600"
+                                            "font-bold text-xs uppercase tracking-wider",
+                                            isActive ? "text-white" : "text-landing-ink"
                                         )}>
                                             {item.title}
                                         </span>
                                     </div>
 
                                     {item.status === 'complete' && (
-                                        <CheckCircle2 className="h-4.5 w-4.5 text-[#316263]" />
+                                        <CheckCircle2 className={cn("h-4 w-4", isActive ? "text-landing-mint" : "text-landing-mint-deep")} />
                                     )}
-                                    {item.status === 'partial' && (
-                                        <AlertCircle className="h-4.5 w-4.5 text-amber-500" />
-                                    )}
-                                    {item.status === 'incomplete' && (
-                                        <Circle className="h-4.5 w-4.5 text-slate-200" />
+                                    {item.status === 'incomplete' && !isActive && (
+                                        <div className="w-1.5 h-1.5 rounded-full bg-landing-bg-deep" />
                                     )}
                                 </button>
                             )
@@ -121,18 +118,19 @@ export function WizardSidebar({
                     </nav>
 
                     {/* Footer / Pro Plan Info */}
-                    <div className="p-6 border-t border-slate-50">
-                        <div className="bg-[#316263] rounded-3xl p-6 text-white overflow-hidden relative shadow-sm">
+                    <div className="p-4 border-t border-landing-rule-soft mt-auto">
+                        <div className="bg-gradient-to-br from-landing-navy to-landing-navy-soft rounded-[20px] p-5 text-white overflow-hidden relative shadow-md">
                             <div className="relative z-10">
-                                <h4 className="font-serif italic text-lg mb-1">Plan Premium</h4>
-                                <p className="text-[11px] text-teal-100 font-bold uppercase tracking-widest opacity-80">
-                                    Guía Ilimitada Activa
-                                </p>
-                                <button className="mt-4 w-full bg-white text-[#316263] py-2.5 rounded-xl text-xs font-bold hover:bg-teal-50 transition-colors shadow-lg">
-                                    Mejorar Plan
+                                <div className="font-jetbrains text-[9px] tracking-widest uppercase opacity-70 mb-1">Plan Actual</div>
+                                <h4 className="font-bold text-sm mb-3">Hospyia Pro</h4>
+                                <div className="h-1 bg-white/20 rounded-full overflow-hidden mb-4">
+                                    <div className="h-full bg-landing-mint w-full"></div>
+                                </div>
+                                <button className="w-full bg-white text-landing-navy py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-landing-mint transition-colors">
+                                    Gestionar Plan
                                 </button>
                             </div>
-                            <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+                            <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-white/5 rounded-full blur-2xl" />
                         </div>
                     </div>
                 </div>

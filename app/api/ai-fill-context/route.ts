@@ -36,8 +36,12 @@ async function detectZoneType(lat: number, lng: number, placesKey: string): Prom
     const res = await fetch(url);
     const data = await res.json();
     
+    logger.debug(`[ZONE] detectZoneType status: ${data.status}, results: ${data.results?.length ?? 0}`);
+
     if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
       logger.error(`[ZONE] ❌ Error de Google detectZoneType: ${data.status} - ${data.error_message || 'N/A'}`);
+      // Fallback to city instead of proceeding with count=0 (which would lead to 'rural')
+      return { type: 'city', walkRadius: 2000, driveRadius: 8000, label: 'ciudad', preferCar: false };
     }
     
     const count: number = data.results?.length ?? 0;
@@ -105,9 +109,9 @@ const ALL_SLUGS = 'restaurantes, italiano, mediterraneo, hamburguesas, asiatico,
 // QUALITY FILTERS
 // ═══════════════════════════════════════════════════════════════════════════
 function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
-  // 1. Fotos obligatorias (señal de lugar documentado) — excepto supermercados y compras
-  // cuyas entradas en Nearby Search frecuentemente no incluyen fotos aunque existan en el lugar
-  const isUtility = ['supermercados', 'compras'].includes(catLabel.toLowerCase());
+  // 1. Fotos obligatorias (señal de lugar documentado) 
+  // Excepto utilidades, cultura y naturaleza (muchos monumentos/parques no traen foto en Nearby Search)
+  const isUtility = ['supermercados', 'compras', 'cultura', 'naturaleza'].includes(catLabel.toLowerCase());
   if (!isUtility && (!place.photos || place.photos.length === 0)) return false;
 
   // 2. Umbrales adaptativos por zona y categoría
@@ -142,21 +146,21 @@ function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
 
   // 3. Blacklist de tipos genéricos o no experienciales
   const blacklist = [
-    'lodging',           // excluido intencionalmente — no es una experiencia para el huésped
-    'point_of_interest', // genérico
-    'establishment',     // genérico
-    'transit_station',   // transporte
-    'bus_station',       // transporte
-    'subway_station',    // transporte
-    'parking',           // transporte
-    'car_parking',       // transporte
-    'atm',               // financiero
-    'bank'               // financiero
+    'lodging',           
+    'establishment',     
+    'transit_station',   
+    'bus_station',       
+    'subway_station',    
+    'parking',           
+    'car_parking',       
+    'atm',               
+    'bank'               
   ];
 
   // Si solo tiene tipos de la blacklist, descartar
+  // Nota: point_of_interest se permite para cultura/naturaleza porque muchos monumentos solo tienen ese tipo
   const types = place.types || [];
-  const hasRealType = types.some((t: string) => !blacklist.includes(t));
+  const hasRealType = types.some((t: string) => !blacklist.includes(t) && (isNatureOrCulture || t !== 'point_of_interest'));
   if (!hasRealType) return false;
 
   // 4. Distancia mínima para parques/naturaleza (evita jardines del propio edificio)
@@ -183,6 +187,36 @@ function scorePlace(place: any, distanceMeters: number): number {
   return (0.40 * (rating / 5)) + (0.40 * (Math.log1p(reviews) / Math.log1p(5000))) + (0.20 * distScore) + chainBonus;
 }
 
+// ── UTILS ───────────────────────────────────────────────────────────────────
+
+/**
+ * Distancia real en metros entre dos coordenadas (Haversine)
+ */
+const haversineMeters = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+/**
+ * Convierte metros a texto legible con corrección de caminata/coche
+ */
+const formatDistance = (meters: number, preferCar: boolean, forceCarIfFar?: boolean): string => {
+  const walkingMeters = meters * 1.35; 
+  const walkMin = Math.round(walkingMeters / 80); 
+  const carRoadMeters = meters * 1.6; 
+  const carMin = Math.max(1, Math.round(carRoadMeters / 600)); 
+
+  if (meters <= 200) return `${Math.round(meters)} metros andando`;
+  if (forceCarIfFar && walkingMeters > 1200) return `${carMin} min en coche`;
+  if (walkingMeters <= 2200) return `${walkMin} min andando`;
+  if (preferCar) return `${carMin} min en coche`;
+  if (walkingMeters <= 4000) return `${walkMin} min andando`;
+  return `${carMin} min en coche`;
+};
+
 async function searchWithFallback(params: {
   placesKey: string;
   lat: number;
@@ -193,44 +227,17 @@ async function searchWithFallback(params: {
   catLabel: string;
   neededCount: number;
   cityName: string;
+  neighborhood?: string;
   excludeNames?: string[];
   rankMode?: 'prominence' | 'distance';
 }): Promise<any[]> {
   const {
     lat, lng, zone, placeType, keywords, catLabel, neededCount,
-    placesKey, cityName, excludeNames = [], rankMode = 'prominence'
+    placesKey, cityName, neighborhood, excludeNames = [], rankMode = 'prominence'
   } = params;
   const collected: any[] = [];
   const seenIds = new Set<string>();
   const excludeSet = new Set(excludeNames.map(n => n.toLowerCase().trim()));
-
-  // Distancia real en metros entre dos coordenadas
-  const haversineMeters = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371000;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  };
-
-  // Convierte metros a texto legible
-  // NOTA: haversine da distancia en línea recta. Aplicamos factor 1.35 para
-  // aproximar la distancia real caminando por calles (validado vs Google Maps en Madrid).
-  const formatDistance = (meters: number, preferCar: boolean, forceCarIfFar?: boolean): string => {
-    const walkingMeters = meters * 1.35; // corrección línea recta → calles
-    const walkMin = Math.round(walkingMeters / 80); // 80m/min = 4.8 km/h
-    const carRoadMeters = meters * 1.6; // straight-line → road distance for car (~60% longer)
-    const carMin = Math.max(1, Math.round(carRoadMeters / 600)); // 600m/min ≈ 36 km/h avg urban
-
-    // Usar formato largo para evitar que la IA invente abreviaturas como "M"
-    if (meters <= 200) return `${Math.round(meters)} metros andando`;
-    // Supermercados/compras: mostrar coche si el trayecto a pie supera 15 min
-    if (forceCarIfFar && walkingMeters > 1200) return `${carMin} min en coche`;
-    if (walkingMeters <= 2200) return `${walkMin} min andando`;
-    if (preferCar) return `${carMin} min en coche`;
-    if (walkingMeters <= 4000) return `${walkMin} min andando`;
-    return `${carMin} min en coche`;
-  };
 
   const addResults = (results: any[], extra: object = {}) => {
     for (const r of results) {
@@ -258,10 +265,29 @@ async function searchWithFallback(params: {
       }
 
       if (!isQualityPlace(r, zone, catLabel)) {
-        logger.debug(`[FILTER:${catLabel}] REJECT "${r.name}" rating=${r.rating} reviews=${r.user_ratings_total} photos=${r.photos?.length ?? 0}`);
+        logger.debug(`[FILTER:${catLabel}] REJECT "${r.name}" quality check failed`);
         continue;
       }
-      logger.debug(`[FILTER:${catLabel}] PASS "${r.name}" rating=${r.rating} reviews=${r.user_ratings_total} dist=${Math.round(realDistanceMeters)}m`);
+
+      // ── CITY/NEIGHBORHOOD FILTER ──────────────────────────────────────────
+      const rAddress = (r.vicinity || r.formatted_address || '').toLowerCase();
+      const cityLower = cityName.toLowerCase();
+      
+      // Blacklist of nearby cities to avoid "bleeding" when radius is large
+      const MADRID_SURROUNDINGS = ['alcorcon', 'mostoles', 'leganes', 'getafe', 'fuenlabrada', 'alcobendas', 'pozuelo', 'majadahonda', 'coslada', 'las rozas', 'rivas'];
+      
+      // Si la ciudad es Madrid, ser muy estricto con los satélites
+      const isIncorrectCity = MADRID_SURROUNDINGS.some(other => {
+        const regex = new RegExp(`\\b${other}\\b`, 'i');
+        return regex.test(rAddress) && other !== cityLower && !rAddress.includes(cityLower);
+      });
+
+      if (isIncorrectCity) {
+        logger.debug(`[FILTER:${catLabel}] REJECT "${r.name}" wrong city: ${rAddress}`);
+        continue;
+      }
+
+      logger.debug(`[FILTER:${catLabel}] PASS "${r.name}" rating=${r.rating} dist=${Math.round(realDistanceMeters)}m`);
 
       collected.push({ ...r, gfCategory: catLabel, realDistanceMeters, realDistance, ...extra });
     }
@@ -284,6 +310,7 @@ async function searchWithFallback(params: {
     if (walkData.status !== 'OK' && walkData.status !== 'ZERO_RESULTS') {
       logger.error(`[PLACES] ❌ Error Nearby(Walk) para "${keyword}": ${walkData.status} - ${walkData.error_message || 'N/A'}`);
     }
+    logger.debug(`[PLACES] Keyword "${keyword}" (Walk) found ${walkData.results?.length ?? 0} results`);
     addResults(walkData.results || [], { searchKeyword: keyword, radiusType: isDistanceRank ? 'distance-rank' : 'walk' });
 
     // Si ya tenemos suficiente con el radio walk, no hacemos mas llamadas (salvo exhaustAllKeywords)
@@ -303,7 +330,9 @@ async function searchWithFallback(params: {
 
     // TextSearch - solo si absolutamente vacio tras todas las keywords
     if (collected.length === 0 && keyword === keywords[keywords.length - 1]) {
-      const textQuery = `${keyword} en ${cityName}`;
+      const textQuery = neighborhood 
+        ? `${keyword} en ${neighborhood}, ${cityName}`
+        : `${keyword} en ${cityName}`;
       const textUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json` +
         `?query=${encodeURIComponent(textQuery)}&location=${lat},${lng}` +
         `&radius=${zone.driveRadius}&language=es&key=${placesKey}`;
@@ -389,7 +418,7 @@ export async function POST(req: Request) {
 
     const { data: property, error: propError } = await supabase
       .from('properties')
-      .select('name, city, country, country_code, neighborhood, latitude, longitude')
+      .select('name, city, country, country_code, neighborhood, latitude, longitude, full_address')
       .eq('id', propertyId)
       .eq('tenant_id', tenant_id)
       .single();
@@ -399,8 +428,10 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({
         error: 'Propiedad no encontrada en la base de datos',
         debug: 'PROPERTY_NOT_FOUND'
-      }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+      }), { status: 404 });
     }
+
+    logger.debug(`[AI-FILL] DB Property Check: ${property.name} | Lat: ${property.latitude}, Lng: ${property.longitude} | City: ${property.city}`);
 
     const fallbackAddress = [property.city, property.neighborhood, property.country]
       .filter(Boolean).join(', ') || 'Dirección no disponible';
@@ -450,13 +481,49 @@ export async function POST(req: Request) {
     // 2. DINING / RECOMMENDATIONS
     // ════════════════════════════════════════════════════════════════════════
     if (section === 'dining' || section === 'recommendations') {
+      logger.debug(`[AI-FILL] Dining/Recs requested for property: ${propertyId}, city: ${property.city}`);
       const placesKey = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_AI_API_KEY || '';
       const selectedCat: string = existingData?.category || 'restaurantes';
       const isTodos = selectedCat === 'todos';
 
-      // Coordenadas: prioridad existingData > propiedad guardada
-      let lat: number | null = existingData?.coordinates?.lat ?? property.latitude ?? null;
-      let lng: number | null = existingData?.coordinates?.lng ?? property.longitude ?? null;
+      // Coordenadas: Prioridad DB, pero permitir cambio si el front manda algo nuevo
+      let lat: number | null = property.latitude ? Number(property.latitude) : null;
+      let lng: number | null = property.longitude ? Number(property.longitude) : null;
+
+      // Geocodificar si el usuario cambió la dirección en el Wizard
+      const addressToGeo = existingData?.address || property.full_address || fallbackAddress;
+      const addressChanged = existingData?.address && property.full_address && 
+                           existingData.address.toLowerCase().trim() !== property.full_address.toLowerCase().trim();
+
+      if (placesKey && (!lat || !lng || addressChanged)) {
+        try {
+          logger.debug(`[AI-FILL] Geocoding address: "${addressToGeo}" (Changed: ${addressChanged})`);
+          
+          // Reforzar con ciudad/país para evitar "leaks" a otras ciudades
+          let biasedAddress = addressToGeo;
+          if (property.city && !biasedAddress.toLowerCase().includes(property.city.toLowerCase())) {
+            biasedAddress += `, ${property.city}`;
+          }
+          if (property.country && !biasedAddress.toLowerCase().includes(property.country.toLowerCase())) {
+            biasedAddress += `, ${property.country}`;
+          }
+
+          const countryFilter = property.country_code ? `&components=country:${property.country_code}` : '';
+          const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json` +
+            `?address=${encodeURIComponent(biasedAddress)}${countryFilter}&key=${placesKey}`;
+          
+          const geoData = await fetch(geoUrl).then(r => r.json());
+          if (geoData.status === 'OK') {
+            lat = geoData.results[0].geometry.location.lat;
+            lng = geoData.results[0].geometry.location.lng;
+            logger.debug(`[AI-FILL] New coords: ${lat}, ${lng} (from: ${geoData.results[0].formatted_address})`);
+          }
+        } catch (e) {
+          logger.error('[AI-FILL] Geocoding error:', e);
+        }
+      } else {
+        logger.debug(`[PLACES] Using stable coordinates: ${lat}, ${lng}`);
+      }
 
       // Agrupación de resultados por categoría
       const groupedPlaces: Record<string, any[]> = {};
@@ -466,24 +533,41 @@ export async function POST(req: Request) {
       if (placesKey) {
         try {
           const t0 = Date.now();
-          // Geocodificar si no hay coords o si el usuario cambió la dirección
-          const addressChanged = existingData?.address && existingData.address !== fallbackAddress;
+          // Geocodificar si no hay coords o si el usuario cambió la dirección sustancialmente
+          const addressToGeo = existingData?.address || property.full_address || fallbackAddress;
+          const addressChanged = existingData?.address && property.full_address && 
+                               existingData.address.toLowerCase().trim() !== property.full_address.toLowerCase().trim();
+          
           if (!lat || !lng || addressChanged) {
-            const addressToGeo = existingData?.address || fullAddress;
+            logger.debug(`[AI-FILL] Geocoding required. Address: "${addressToGeo}" | Changed: ${addressChanged}`);
+            
+            // Reforzar la dirección con la ciudad/país para evitar falsos positivos (ej. Alcorcón)
+            let biasedAddress = addressToGeo;
+            if (property.city && !biasedAddress.toLowerCase().includes(property.city.toLowerCase())) {
+              biasedAddress += `, ${property.city}`;
+            }
+            if (property.country && !biasedAddress.toLowerCase().includes(property.country.toLowerCase())) {
+              biasedAddress += `, ${property.country}`;
+            }
+
+            const countryFilter = property.country_code ? `&components=country:${property.country_code}` : '';
             const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json` +
-              `?address=${encodeURIComponent(addressToGeo)}&key=${placesKey}`;
+              `?address=${encodeURIComponent(biasedAddress)}${countryFilter}&key=${placesKey}`;
+            
             const geoData = await fetch(geoUrl).then(r => r.json());
             if (geoData.status === 'OK') {
               lat = geoData.results[0].geometry.location.lat;
               lng = geoData.results[0].geometry.location.lng;
+              logger.debug(`[AI-FILL] Geocoding success: ${lat}, ${lng} (Source: ${geoData.results[0].formatted_address})`);
             } else {
-              console.warn(`[PLACES] Geocoding failed for "${addressToGeo}": ${geoData.status}`);
+              console.warn(`[PLACES] Geocoding failed for "${biasedAddress}": ${geoData.status}`);
             }
           } else {
-            logger.debug(`[PLACES] Using coordinates from DB/State: ${lat}, ${lng}`);
+            logger.debug(`[PLACES] Using coordinates from DB: ${lat}, ${lng}`);
           }
 
           if (lat && lng) {
+            logger.debug(`[PLACES] SEARCH CENTER: ${lat}, ${lng} (City: ${property.city}, Neighborhood: ${property.neighborhood})`);
             // Zona + búsquedas en paralelo — detectZoneType y las búsquedas
             // arrancan a la vez. Las búsquedas usan zona por defecto (city)
             // y si la zona real difiere, es un impacto mínimo en radio.
@@ -502,6 +586,7 @@ export async function POST(req: Request) {
                   neededCount: Math.max(8, config.quota * 3), // Oversampling para asegurar candidatos tras filtrado
                   placesKey,
                   cityName: property.city || '',
+                  neighborhood: property.neighborhood || '',
                   excludeNames: existingData?.existingNames || []
                 });
                 groupedPlaces[cat] = results;
@@ -531,6 +616,7 @@ export async function POST(req: Request) {
                 neededCount,
                 placesKey,
                 cityName: property.city || '',
+                neighborhood: property.neighborhood || '',
                 excludeNames: existingData?.existingNames || [],
                 rankMode: 'distance'
               });
@@ -545,7 +631,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // ── Contexto agrupado para Gemini ──────────────────────────────────
       // ── Contexto agrupado para Gemini ──────────────────────────────────
       const numRequested = isTodos
         ? Object.values(TODOS_QUOTA).reduce((s, c) => s + c.quota, 0)
@@ -609,7 +694,7 @@ REGLAS CRÍTICAS:
 6. COMPLIANCE: NO generes ratings, niveles de precio ni horarios detallados. Ponlos como null.
 
 JSON con array "recommendations", cada elemento:
-{"name":"nombre real","description":"descripción hospitalaria max 150 chars","personal_note":"CONSEJO CORTITO DEL ANFITRIÓN (ej. 'Ideal para desayunar', 'Pide sus bravas') — infiere el mejor momento de visita según los tipos Google (bar/night_club→noche, cafe/bakery→mañana, restaurant→mediodía o noche) y el campo 'Abierto ahora'","distance":"X MIN o METROS o null","type":"slug de: ${ALL_SLUGS}","google_place_id":"ID de Google o null","rating":null,"price_level":null,"price_range":null,"best_time_slots":["mañana"|"mediodía"|"tarde"|"noche"|"madrugada"] — elige 1-2 valores según tipos y horario Google. Si no hay datos suficientes, usa [],"atmosphere":"vibe en 3-4 palabras","tags": SOLO 0-3 valores de esta lista exacta (array vacío si ninguno aplica): ["vistas al mar","vistas a la montaña","terraza","jardín","romántico","familiar","grupos","económico","premium","local auténtico","turístico","rápido","takeaway","reserva recomendada","abierto tarde","24h","parking","accesible","vista al atardecer","rooftop","interior acogedor","exterior"] — PROHIBIDO inventar tags fuera de esta lista,"availability":null}
+{"name":"nombre real","description":"descripción hospitalaria max 150 chars. NUNCA menciones platos que no conozcas.","personal_note":"CONSEJO CORTITO (ej. 'Ideal para una cena tranquila', 'Perfecto para un café rápido'). PROHIBIDO inventar platos/bebidas.","distance":"X MIN o METROS o null","type":"slug de: ${ALL_SLUGS}","google_place_id":"ID de Google o null","rating":null,"price_level":null,"price_range":null,"best_time_slots":["mañana"|"mediodía"|"tarde"|"noche"|"madrugada"],"atmosphere":"vibe en 3-4 palabras","tags": SOLO 0-3 valores de: ["vistas al mar","vistas a la montaña","terraza","jardín","romántico","familiar","grupos","económico","premium","local auténtico","turístico","rápido","takeaway","reserva recomendada","abierto tarde","24h","parking","accesible","vista al atardecer","rooftop","interior acogedor","exterior"],"availability":null}
 SOLO JSON:`;
 
       // ── Llamada a Gemini ───────────────────────────────────────────────

@@ -11,6 +11,7 @@ interface ContactModalProps {
     isOpen: boolean;
     onClose: () => void;
     contactsData: any;
+    hostName?: string;
     currentLanguage?: string;
     accessToken?: string;
     propertyId?: string;
@@ -21,6 +22,7 @@ export function ContactModal({
     isOpen,
     onClose,
     contactsData = {},
+    hostName,
     currentLanguage = 'es',
     accessToken,
     propertyId,
@@ -46,7 +48,7 @@ export function ContactModal({
 
     const renderContactCard = (type: 'host' | 'support') => {
         const isHost = type === 'host';
-        const name = isHost ? (contactsData.host_name || 'Anfitrión') : (contactsData.support_name || 'Soporte');
+        const name = isHost ? (hostName || contactsData.host_name || 'Anfitrión') : (contactsData.support_name || 'Soporte');
         const phone = isHost ? hostPhone : supportPhone;
         const isPreferred = preferredId === type;
         const label = isHost ? labelHost : labelSupport;

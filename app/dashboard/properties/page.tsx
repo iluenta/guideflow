@@ -5,7 +5,7 @@ import { getProperties, Property } from '@/app/actions/properties'
 import { PropertyCard } from '@/components/properties/PropertyCard'
 import { PropertyListItem } from '@/components/properties/PropertyListItem'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, LayoutGrid, List, Building2, PlusCircle } from 'lucide-react'
+import { Plus, Search, LayoutGrid, List, Building2, PlusCircle, ArrowRight } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
@@ -55,130 +55,128 @@ export default function PropertiesPage() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Mis Propiedades</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Gestiona tus alojamientos y sus guías digitales.</p>
+          <div className="flex items-center gap-2.5 mb-2.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-landing-mint-deep shadow-[0_0_0_4px_rgba(45,212,191,0.2)]"></div>
+            <span className="font-jetbrains text-[11px] tracking-[0.15em] uppercase text-landing-ink-mute">Propiedades</span>
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight text-landing-navy sm:text-5xl">
+            Gestionar <span className="text-landing-mint-deep">Alojamientos</span>
+          </h1>
+          <p className="mt-2 text-landing-ink-soft max-w-[520px]">
+            Organiza tus propiedades, edita guías digitales y controla el acceso de tus huéspedes.
+          </p>
         </div>
-        <Button asChild className="h-10 px-5 gap-2 bg-[#316263] hover:bg-[#316263]/90 text-white shadow-md shadow-[#316263]/20 rounded-xl">
-          <Link href="/dashboard/properties/new">
-            <Plus className="h-4 w-4" />
-            Nueva Propiedad
-          </Link>
-        </Button>
+        <Link href="/dashboard/properties/new">
+          <Button className="bg-landing-navy text-white rounded-full h-12 px-8 hover:bg-landing-navy-deep transition-all shadow-lg shadow-landing-navy/20 active:scale-95">
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva propiedad
+          </Button>
+        </Link>
       </div>
 
-      {/* Filters toolbar */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-2 flex flex-col md:flex-row items-center justify-between gap-3">
-
-        {/* Filtros de estado */}
-        <div className="flex items-center gap-1 w-full md:w-auto overflow-x-auto">
+      {/* Toolbar */}
+      <div className="bg-white border border-landing-rule-soft rounded-[24px] p-2 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+        
+        {/* Tabs */}
+        <div className="flex items-center gap-1 w-full md:w-auto p-1 overflow-x-auto scrollbar-hide">
           {FILTERS.map(filter => {
             const count =
               filter === 'Todas' ? properties.length :
               filter === 'Activas' ? properties.filter(p => p.status === 'active').length :
               filter === 'Borradores' ? properties.filter(p => p.status === 'draft').length :
               properties.filter(p => p.status === 'archived').length
+            
+            const isActive = activeFilter === filter
+
             return (
               <button
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
                 className={cn(
-                  "px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2",
-                  activeFilter === filter
-                    ? "bg-[#316263] text-white shadow-sm"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  "px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2.5",
+                  isActive
+                    ? "bg-landing-navy text-white shadow-xl shadow-landing-navy/20"
+                    : "text-landing-ink-soft hover:bg-landing-bg-deep hover:text-landing-ink"
                 )}
               >
                 {filter}
-                {!loading && (
-                  <span className={cn(
-                    "text-[11px] font-semibold rounded-full px-1.5 py-0.5 min-w-[20px] text-center",
-                    activeFilter === filter
-                      ? "bg-white/20 text-white"
-                      : "bg-slate-100 text-slate-500"
-                  )}>
-                    {count}
-                  </span>
-                )}
+                <span className={cn(
+                  "font-jetbrains text-[10px] rounded-full px-2 py-0.5 min-w-[20px] transition-colors",
+                  isActive ? "bg-white/20 text-white" : "bg-landing-bg-deep text-landing-ink-soft"
+                )}>
+                  {count}
+                </span>
               </button>
             )
           })}
         </div>
 
-        {/* Buscador + toggle vista */}
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+        {/* Tools */}
+        <div className="flex items-center gap-3 w-full md:w-auto px-2">
+          <div className="relative flex-1 md:w-72">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-landing-ink-mute h-4 w-4" />
             <Input
-              placeholder="Buscar propiedad..."
-              className="pl-9 h-9 bg-slate-50 border-slate-200 rounded-xl text-sm focus:ring-[#316263]/20"
+              placeholder="Buscar por nombre o dirección..."
+              className="pl-11 h-11 bg-landing-bg-deep border-transparent rounded-full text-sm placeholder:text-landing-ink-mute focus:bg-white focus:ring-landing-navy-soft/20 focus:border-landing-navy-soft transition-all"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
 
-          <div className="hidden md:block h-6 w-px bg-slate-200" />
+          <div className="hidden md:block h-6 w-px bg-landing-rule-soft" />
 
-          {/* Toggle grid / lista */}
-          <div className="flex items-center bg-slate-50 rounded-xl p-1 border border-slate-200 gap-0.5">
+          {/* View Toggle */}
+          <div className="flex items-center bg-landing-bg-deep rounded-full p-1 gap-1">
             <button
               onClick={() => setViewMode('grid')}
               className={cn(
-                "p-1.5 rounded-lg transition-all",
+                "p-2 rounded-full transition-all",
                 viewMode === 'grid'
-                  ? "bg-white shadow-sm text-[#316263]"
-                  : "text-slate-400 hover:text-slate-600"
+                  ? "bg-white shadow-md text-landing-navy"
+                  : "text-landing-ink-mute hover:text-landing-ink-soft"
               )}
             >
-              <LayoutGrid className="h-4 w-4" />
+              <LayoutGrid className="h-4.5 w-4.5 stroke-[2]" />
             </button>
             <button
               onClick={() => setViewMode('list')}
               className={cn(
-                "p-1.5 rounded-lg transition-all",
+                "p-2 rounded-full transition-all",
                 viewMode === 'list'
-                  ? "bg-white shadow-sm text-[#316263]"
-                  : "text-slate-400 hover:text-slate-600"
+                  ? "bg-white shadow-md text-landing-navy"
+                  : "text-landing-ink-mute hover:text-landing-ink-soft"
               )}
             >
-              <List className="h-4 w-4" />
+              <List className="h-4.5 w-4.5 stroke-[2]" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Grid / Lista */}
+      {/* Content */}
       {loading ? (
         <div className={cn(
-          "grid gap-6",
+          "grid gap-8",
           viewMode === 'grid' ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
         )}>
-          {[1, 2, 3, 4].map(i => (
-            viewMode === 'grid' ? (
-              <div key={i} className="space-y-3">
-                <Skeleton className="aspect-video w-full rounded-2xl" />
-                <Skeleton className="h-5 w-2/3" />
-                <Skeleton className="h-4 w-1/2" />
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="bg-white border border-landing-rule-soft rounded-[28px] p-4 space-y-4 shadow-sm animate-pulse">
+              <div className="aspect-[16/10] bg-landing-bg-deep rounded-[20px]" />
+              <div className="space-y-2 px-2">
+                <div className="h-5 bg-landing-bg-deep rounded w-2/3" />
+                <div className="h-4 bg-landing-bg-deep rounded w-1/2" />
               </div>
-            ) : (
-              <div key={i} className="flex items-center p-4 gap-4 bg-white rounded-xl border border-slate-100">
-                <Skeleton className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-5 w-1/3" />
-                  <Skeleton className="h-4 w-1/2" />
-                </div>
-                <Skeleton className="h-9 w-9 rounded-lg" />
-              </div>
-            )
+            </div>
           ))}
         </div>
       ) : filtered.length > 0 ? (
         <div className={cn(
-          "grid gap-6",
+          "grid gap-8",
           viewMode === 'grid'
             ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
             : "grid-cols-1"
@@ -200,43 +198,40 @@ export default function PropertiesPage() {
             )
           ))}
 
-          {/* Card añadir nueva propiedad */}
+          {/* Add New Property CTA */}
           <Link
             href="/dashboard/properties/new"
             className={cn(
-              "group border-2 border-dashed border-slate-200 hover:border-[#316263]/40 hover:bg-[#316263]/5 transition-all flex items-center justify-center",
+              "group border-2 border-dashed border-landing-rule-soft hover:border-landing-navy-soft/40 hover:bg-landing-navy-tint/30 transition-all flex items-center justify-center relative overflow-hidden",
               viewMode === 'grid' 
-                ? "flex-col rounded-2xl min-h-[280px]" 
-                : "flex-row rounded-xl p-4 gap-4 h-24"
+                ? "flex-col rounded-[28px] min-h-[340px]" 
+                : "flex-row rounded-[20px] p-6 gap-6 h-28"
             )}
           >
             <div className={cn(
-              "rounded-full bg-slate-100 group-hover:bg-[#316263]/10 flex items-center justify-center transition-colors",
-              viewMode === 'grid' ? "h-14 w-14 mb-3" : "h-12 w-12"
+              "rounded-2xl bg-landing-bg-deep group-hover:bg-landing-navy-tint flex items-center justify-center transition-all group-hover:scale-110",
+              viewMode === 'grid' ? "h-20 w-20 mb-6" : "h-16 w-16"
             )}>
-              {viewMode === 'grid' ? (
-                <Plus className="h-7 w-7 text-slate-400 group-hover:text-[#316263]" />
-              ) : (
-                <PlusCircle className="h-6 w-6 text-slate-400 group-hover:text-[#316263]" />
-              )}
+              <Plus className="h-8 w-8 text-landing-ink-mute group-hover:text-landing-navy" />
             </div>
-            <div className={cn(viewMode === 'list' && "flex-1")}>
-              <h3 className="text-base font-bold text-slate-700 group-hover:text-[#316263]">Añadir Propiedad</h3>
-              <p className="text-sm text-slate-400 mt-1">Configura un nuevo alojamiento</p>
+            <div className={cn(viewMode === 'grid' ? "text-center" : "flex-1")}>
+              <h3 className="text-lg font-bold text-landing-navy">Añadir propiedad</h3>
+              <p className="text-sm text-landing-ink-soft mt-1">Configura un nuevo alojamiento en minutos</p>
             </div>
+            <ArrowRight className="absolute bottom-6 right-6 h-5 w-5 text-landing-navy opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
-          <div className="h-16 w-16 bg-[#316263]/10 rounded-full flex items-center justify-center mb-4">
-            <Building2 className="h-8 w-8 text-[#316263]" />
+        <div className="flex flex-col items-center justify-center py-24 px-6 text-center rounded-[32px] border-2 border-dashed border-landing-rule-soft bg-landing-bg/30">
+          <div className="h-20 w-20 bg-landing-navy-tint rounded-3xl flex items-center justify-center mb-6 shadow-sm">
+            <Building2 className="h-10 w-10 text-landing-navy" />
           </div>
-          <h2 className="text-lg font-semibold text-slate-900">No se encontraron propiedades</h2>
-          <p className="text-slate-400 text-sm mt-1.5 max-w-xs">
-            {search ? 'Intenta con otros términos.' : 'Aún no has añadido ninguna propiedad.'}
+          <h2 className="text-2xl font-bold text-landing-navy">No encontramos nada</h2>
+          <p className="text-landing-ink-soft text-base mt-2 max-w-sm">
+            {search ? 'Intenta con otros términos de búsqueda.' : 'Aún no has configurado ninguna propiedad en Hospyia.'}
           </p>
           {!search && (
-            <Button asChild className="mt-5 bg-[#316263] hover:bg-[#316263]/90 text-white rounded-xl">
+            <Button asChild className="mt-8 h-12 px-8 bg-landing-navy text-white rounded-full hover:bg-landing-navy-deep shadow-xl shadow-landing-navy/20">
               <Link href="/dashboard/properties/new">Añadir mi primera propiedad</Link>
             </Button>
           )}

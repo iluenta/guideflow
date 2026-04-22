@@ -23,79 +23,71 @@ export function WizardProgressHeader({
     const strokeDashoffset = circumference - (progress / 100) * circumference
 
     return (
-        <header className="bg-white border-b border-slate-100 sticky top-0 z-40 h-16">
-            <div className="max-w-[1600px] mx-auto px-4 md:px-6 lg:px-10 h-full">
-                <div className="flex items-center justify-between h-full gap-3">
+        <header className="bg-white/80 backdrop-blur-xl border-b border-landing-rule-soft sticky top-0 z-40 h-[72px]">
+            <div className="max-w-[1600px] mx-auto px-6 h-full">
+                <div className="flex items-center justify-between h-full gap-4">
 
-                    {/* ── IZQUIERDA ──────────────────────────────────── */}
-                    <div className="flex items-center gap-2 min-w-0">
-
-                        {/* Hamburguesa — siempre visible */}
+                    {/* Left: Breadcrumbs */}
+                    <div className="flex items-center gap-3 min-w-0">
                         <button
                             onClick={onMenuClick}
-                            className="p-2.5 hover:bg-slate-50 rounded-xl transition-colors text-slate-500 shrink-0"
+                            className="p-2 rounded-xl hover:bg-landing-bg-deep transition-colors text-landing-ink-soft shrink-0"
                             aria-label="Abrir menú de secciones"
                         >
                             <Menu className="h-5 w-5" />
                         </button>
 
-                        {/* Móvil: solo nombre de la propiedad */}
-                        <span className="lg:hidden text-sm font-semibold text-slate-800 italic font-serif truncate">
-                            {propertyName}
-                        </span>
-
-                        {/* Desktop: breadcrumb completo */}
-                        <nav className="hidden lg:flex items-center gap-3 text-sm font-medium">
+                        <nav className="flex items-center gap-2.5 font-jetbrains text-[11px] tracking-[0.1em] uppercase text-landing-ink-mute whitespace-nowrap overflow-hidden">
                             <Link
                                 href="/dashboard/properties"
-                                className="text-slate-400 hover:text-slate-900 hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 rounded px-1 -mx-1"
+                                className="hover:text-landing-navy transition-colors"
                             >
                                 Propiedades
                             </Link>
-                            <ChevronRight className="h-4 w-4 text-slate-300" />
-                            <span className="text-slate-900 bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100 italic font-serif truncate max-w-[200px]">
+                            <span className="opacity-50">/</span>
+                            <span className="text-landing-ink truncate">
                                 {propertyName}
                             </span>
                         </nav>
                     </div>
 
-                    {/* ── DERECHA ────────────────────────────────────── */}
-                    <div className="flex items-center gap-3 md:gap-6 shrink-0">
-
-                        {/* Progreso circular */}
+                    {/* Right: Progress & View */}
+                    <div className="flex items-center gap-4 shrink-0">
+                        {/* Circular Progress */}
                         <div className="flex items-center gap-3">
-                            <div className="relative h-10 w-10 md:h-12 md:w-12 flex items-center justify-center">
+                            <div className="relative h-11 w-11 flex items-center justify-center">
                                 <svg className="h-full w-full transform -rotate-90" viewBox="0 0 48 48">
-                                    <circle cx="24" cy="24" r={radius} stroke="currentColor" strokeWidth="3.5" fill="transparent" className="text-slate-100" />
+                                    <circle cx="24" cy="24" r={radius} stroke="currentColor" strokeWidth="3.5" fill="transparent" className="text-landing-bg-deep" />
                                     <circle
                                         cx="24" cy="24" r={radius}
                                         stroke="currentColor" strokeWidth="3.5"
                                         fill="transparent"
                                         strokeDasharray={circumference}
-                                        style={{ strokeDashoffset, transition: 'stroke-dashoffset 0.5s ease' }}
-                                        className="text-[#316263]"
+                                        style={{ strokeDashoffset, transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                                        className="text-landing-mint-deep"
+                                        strokeLinecap="round"
                                     />
                                 </svg>
-                                <span className="absolute text-[10px] md:text-[11px] font-bold text-slate-900 tracking-tighter">
+                                <span className="absolute font-jetbrains text-[10px] font-bold text-landing-navy">
                                     {Math.round(progress)}%
                                 </span>
                             </div>
                             <div className="hidden sm:block">
-                                <div className="text-sm font-bold text-slate-900">Configuración</div>
-                                <div className="text-[11px] font-bold text-[#316263] uppercase tracking-wider tabular-nums">
-                                    Completada al {Math.round(progress)}%
+                                <div className="text-xs font-bold text-landing-navy">Progreso</div>
+                                <div className="text-[10px] font-bold text-landing-mint-deep uppercase tracking-wider tabular-nums">
+                                    {Math.round(progress)}% completado
                                 </div>
                             </div>
                         </div>
 
-                        {/* Botón Ver Guía */}
+                        <div className="h-8 w-px bg-landing-rule-soft mx-1"></div>
+
                         <Button
                             onClick={onViewGuide}
-                            className="bg-[#316263] text-white px-3 sm:px-4 h-9 md:h-10 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-teal-900/10 flex items-center gap-1.5 text-sm"
+                            className="bg-landing-navy text-white h-10 px-5 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-landing-navy-deep transition-all shadow-lg shadow-landing-navy/10 flex items-center gap-2 active:scale-95"
                         >
-                            <span className="hidden sm:inline">Ver Guía</span>
-                            <span className="sm:hidden">Guía</span>
-                            <ExternalLink className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                            <span>Ver Guía</span>
+                            <ExternalLink className="h-3.5 w-3.5" />
                         </Button>
                     </div>
 

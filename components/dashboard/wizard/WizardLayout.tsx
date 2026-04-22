@@ -123,7 +123,7 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
     const progressValue = (completedSteps.length / filteredSteps.length) * 100
 
     return (
-        <div className="min-h-screen bg-[#F5F2ED] flex flex-col font-sans text-slate-900">
+        <div className="min-h-screen bg-landing-bg flex flex-col font-sans text-landing-ink">
             <WizardProgressHeader
                 propertyName={property?.name || 'Nueva Propiedad'}
                 progress={progressValue}
@@ -131,18 +131,16 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
                 onViewGuide={() => window.open(`/${property?.slug}`, '_blank')}
             />
 
-            <div className="flex-1 flex max-w-[1600px] mx-auto w-full lg:px-6 py-8 gap-8 overflow-hidden">
+            <div className="flex-1 flex max-w-[1600px] mx-auto w-full lg:px-8 py-10 gap-10 overflow-hidden">
                 <WizardSidebar
                     items={sidebarItems}
                     activeId={activeTab}
                     onItemClick={handleTabChange}
                     isOpen={isSidebarOpen}
                     onClose={() => setIsSidebarOpen(false)}
-                    // Unblock sidebar navigation as soon as the property is created (resolvedPropertyId exists).
-                    // Only block if we are in the very first step before saving the property.
                     disabled={loading || (!!aiLoading && !resolvedPropertyId)}
                 />
-                <main className="flex-1 px-4 lg:px-0 overflow-y-auto custom-scrollbar pb-24">
+                <main className="flex-1 px-4 lg:px-0 overflow-y-auto custom-scrollbar pb-32">
                     {mounted ? (
                         <AnimatePresence mode="wait" custom={direction}>
                             <motion.div
@@ -151,8 +149,8 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
                                 initial={{ y: 20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 exit={{ y: -20, opacity: 0 }}
-                                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                                className="w-full max-w-4xl"
+                                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                                className="w-full max-w-4xl mx-auto"
                             >
                                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                                     <SectionView
@@ -175,7 +173,7 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
                             </motion.div>
                         </AnimatePresence>
                     ) : (
-                        <div className="w-full max-w-4xl h-[600px] bg-white/50 backdrop-blur-sm rounded-[3rem] animate-pulse border border-white/20" />
+                        <div className="w-full max-w-4xl mx-auto h-[600px] bg-white border border-landing-rule-soft rounded-[3rem] animate-pulse shadow-sm" />
                     )}
                 </main>
             </div>

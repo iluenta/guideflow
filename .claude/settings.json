@@ -97,7 +97,8 @@
       "Bash(git show *)",
       "Read(//c/Proximectos/guideflow/lib/arrival/**)",
       "Bash(grep -v \"^.*import\\\\|//\")",
-      "Bash(grep -v \"^.*//.*gemini\")"
+      "Bash(grep -v \"^.*//.*gemini\")",
+      "WebFetch(domain:api.anthropic.com)"
     ],
     "additionalDirectories": [
       "C:\\Proyectos\\guideflow\\.claude"
