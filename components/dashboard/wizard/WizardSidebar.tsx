@@ -57,7 +57,7 @@ export function WizardSidebar({
 
             {/* Sidebar Container */}
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 w-[300px] bg-white border-r border-landing-rule-soft transform transition-transform duration-300 ease-in-out lg:relative lg:transform-none lg:z-0 lg:rounded-[32px] lg:h-[calc(100vh-140px)] lg:sticky lg:top-[100px]",
+                "fixed inset-y-0 left-0 z-50 w-[300px] bg-white border-r border-landing-rule-soft transform transition-transform duration-300 ease-in-out lg:relative lg:transform-none lg:z-0 lg:rounded-[32px] lg:sticky lg:top-[100px]",
                 isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 shadow-2xl lg:shadow-none"
             )}>
                 <div className="flex flex-col h-full">
@@ -70,7 +70,7 @@ export function WizardSidebar({
                     </div>
 
                     {/* Navigation Items */}
-                    <nav className="flex-1 overflow-y-auto p-4 space-y-1.5 scrollbar-hide no-scrollbar">
+                    <nav className="flex-1 p-4 space-y-1.5">
                         {items.map((item) => {
                             const Icon = item.icon
                             const isActive = activeId === item.id

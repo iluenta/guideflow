@@ -131,7 +131,7 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
                 onViewGuide={() => window.open(`/${property?.slug}`, '_blank')}
             />
 
-            <div className="flex-1 flex max-w-[1600px] mx-auto w-full lg:px-8 py-10 gap-10 overflow-hidden">
+            <div className="flex-1 flex max-w-[1600px] mx-auto w-full lg:px-8 py-10 gap-10">
                 <WizardSidebar
                     items={sidebarItems}
                     activeId={activeTab}
@@ -140,7 +140,7 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
                     onClose={() => setIsSidebarOpen(false)}
                     disabled={loading || (!!aiLoading && !resolvedPropertyId)}
                 />
-                <main className="flex-1 px-4 lg:px-0 overflow-y-auto custom-scrollbar pb-32">
+                <main className="flex-1 px-4 lg:px-0 pb-32">
                     {mounted ? (
                         <AnimatePresence mode="wait" custom={direction}>
                             <motion.div
