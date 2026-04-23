@@ -1,163 +1,142 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-@theme {
-  /* Brand Colors */
-  --color-teal: #316263;
-  --color-clay: #C36A4A;
-  --color-cloud: #F0EEE9;
-  --color-ink: #101417;
-
-  /* Functional Colors mapping */
-  --color-background: var(--color-cloud);
-  --color-foreground: var(--color-ink);
-  --color-surface: #ffffff;
-  --color-text-primary: var(--color-ink);
-  --color-text-secondary: #525252;
-
-  --color-primary: var(--color-teal);
-  --color-primary-foreground: var(--color-cloud);
-
-  --color-secondary: var(--color-clay);
-  --color-secondary-foreground: var(--color-cloud);
-
-  --color-muted: #E5E2DA;
-  --color-muted-foreground: #525252;
-
-  --color-accent: var(--color-clay);
-  --color-accent-foreground: var(--color-cloud);
-
-  --color-border: #E5E2DA;
-  --color-input: #E5E2DA;
-  --color-ring: var(--color-teal);
-
-  /* Legacy aliases to avoid breaking existing code */
-  --color-beige: var(--color-cloud);
-  --color-navy: var(--color-ink);
-  --color-slate: #525252;
-  --color-cream: #FFFDF9;
-
-  /* Digital Curator / Stitch Design System Tokens */
-  --color-curator-primary: #124340;
-  --color-curator-teal: #2D5A57;
-  --color-curator-mint: #F8FAF9;
-  --color-curator-surface: #F2F4F3;
-  --color-curator-on-surface: #191C1C;
-  --color-curator-outline: #C0C8C7;
-
-  /* Fonts */
-  --font-sans: var(--font-inter), 'Geist', 'Geist Fallback', system-ui, sans-serif;
-  --font-manrope: var(--font-manrope), sans-serif;
-  --font-serif: var(--font-playfair), serif;
-  --font-cormorant: var(--font-cormorant), serif;
-  --font-jost: var(--font-jost), sans-serif;
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
-
-  /* Radii */
-  --radius-sm: 0.75rem;
-  --radius-md: 1rem;
-  --radius-lg: 1.25rem;
-  --radius-xl: 1.5rem;
-
-  /* Shadows */
-  --shadow-card: 0 4px 20px -2px rgba(16, 20, 23, 0.08);
-  --shadow-card-hover: 0 8px 30px -4px rgba(16, 20, 23, 0.12);
-  --shadow-curator: 0px 12px 32px rgba(18, 67, 64, 0.06);
-
-  /* Hospyia Landing - clean tech with warmth: navy + mint */
-  --color-landing-bg: #fafbfc;
-  --color-landing-bg-deep: #f1f4f8;
-  --color-landing-bg-card: #ffffff;
-  --color-landing-navy: #1e3a8a;
-  --color-landing-navy-deep: #15296b;
-  --color-landing-navy-soft: #3b5bbd;
-  --color-landing-mint: #5eead4;
-  --color-landing-mint-deep: #2dd4bf;
-  --color-landing-ink: #0f172a;
-  --color-landing-ink-soft: #475569;
-  --color-landing-ink-mute: #94a3b8;
-  --color-landing-rule: #e2e8f0;
-  --color-landing-rule-soft: #eef2f7;
-  --color-landing-amber: #d97706;
-  --color-landing-amber-tint: #fef3c7;
-  --color-landing-rose: #e11d48;
-  --color-landing-rose-tint: #ffe4e6;
-
-  /* Additional Landing Fonts */
-  --font-poppins: var(--font-poppins), sans-serif;
-  --font-jetbrains: var(--font-jetbrains), monospace;
+:root {
+  /* Hospyia — clean tech with warmth: navy + mint */
+  --bg: #fafbfc;
+  --bg-deep: #f1f4f8;
+  --bg-card: #ffffff;
+  --navy: #1e3a8a;          /* primary brand */
+  --navy-deep: #15296b;
+  --navy-soft: #3b5bbd;
+  --mint: #5eead4;           /* secondary accent */
+  --mint-deep: #2dd4bf;
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --ink-mute: #94a3b8;
+  --rule: #e2e8f0;
+  --rule-soft: #eef2f7;
+  --accent: var(--navy);
+  --accent-deep: var(--navy-deep);
+  --gold: var(--mint);
+  --serif: "Fraunces", "Georgia", serif;
+  --sans: "Poppins", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --display: "Poppins", "Helvetica Neue", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-@layer utilities {
-  .glass-curator {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-  }
+@theme {
+  --color-landing-bg: var(--bg);
+  --color-landing-navy: var(--navy);
+  --color-landing-mint: var(--mint);
+  --color-landing-ink: var(--ink);
+  --color-landing-rule: var(--rule);
+  
+  --font-poppins: var(--sans);
+  --font-jetbrains: var(--mono);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-
   body {
-    @apply bg-background text-foreground;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
   }
 }
 
-/* ── Guest Guide Theme Overrides ────────────────────────────────────────────
- * Applied via the data-theme attribute on the guide wrapper div in
- * app/[slug]/page.tsx. Only affects the guest guide — does not touch
- * the dashboard UI.
- * ─────────────────────────────────────────────────────────────────────── */
-
-/* Urban Dark — dark mode, Oswald headings */
-[data-theme="urban"] {
-  color-scheme: dark;
-
-  /* Override Tailwind bg/text utilities that read from CSS vars */
-  --color-surface: #18181b;
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #a1a1aa;
-  --color-border: #27272a;
-  --color-input: #27272a;
-  --color-ring: #00d4ff;
-  --color-muted: #18181b;
-  --color-muted-foreground: #a1a1aa;
-  --color-accent: #f59e0b;
-  --color-accent-foreground: #09090b;
-
-  /* Headings use Oswald */
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-oswald), ui-sans-serif, system-ui, sans-serif;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
+/* Custom styles from Landing.html that are easier to keep as raw CSS */
+.wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
 }
 
-/* Coastal Breeze — Nunito font, rounded elements */
-[data-theme="coastal"] {
-  /* Boost border-radius for a friendlier feel */
-  --radius-sm: 1rem;
-  --radius-md: 1.25rem;
-  --radius-lg: 1.5rem;
-  --radius-xl: 2rem;
-
-  --color-ring: #0ea5e9;
-  --color-border: #bae6fd;
-  --color-muted: #e0f2fe;
-  --color-muted-foreground: #0369a1;
-
-  /* All text uses Nunito */
-  h1, h2, h3, h4, h5, h6, body, p, span, button, input {
-    font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
-  }
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding: 6px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--bg-card);
 }
 
-/* Modern Minimal — no special overrides needed (uses default Inter) */
-[data-theme="modern"] {
-  --color-ring: #3b82f6;
-  --color-border: #e4e4e7;
-  --color-muted: #f4f4f5;
-  --color-muted-foreground: #71717a;
+.eyebrow-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--mint-deep);
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 0 4px rgba(45,212,191,0.18);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.3); }
+}
+
+.phone-stage {
+  position: relative;
+  perspective: 2000px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 680px;
+}
+
+.float-chip {
+  position: absolute;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 12px;
+  box-shadow: 0 8px 24px -8px rgba(0,0,0,0.15);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.marquee-track {
+  display: flex;
+  gap: 48px;
+  animation: scroll 40s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.feat {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+}
+
+.feat:hover {
+  border-color: var(--navy-soft);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px -12px rgba(30,58,138,0.18);
+}
+
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
 }

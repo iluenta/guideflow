@@ -1,61 +1,66 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/link';
 
 export const LandingFooter = () => {
   return (
-    <footer className="py-20 bg-landing-navy text-white">
-      <div className="max-w-[1200px] mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-          <div className="col-span-1 md:col-span-1">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8">
-                <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M32 6 C19 6 9 16 9 28 C9 41 22 53 32 60 C42 53 55 41 55 28 C55 16 45 6 32 6 Z" stroke="white" strokeWidth="4" fill="none"/>
-                  <path d="M22 34 L29 41 L46 26" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <span className="font-poppins font-bold text-xl tracking-tight">Hospyia</span>
-            </div>
-            <p className="font-poppins text-white/60 text-sm leading-relaxed">
-              La nueva generación de guías digitales para alojamientos turísticos. Gestión inteligente, huéspedes felices.
-            </p>
-          </div>
-          
-          <div>
-            <h4 className="font-poppins font-bold text-sm uppercase tracking-widest text-white/40 mb-6">Producto</h4>
-            <ul className="space-y-4 font-poppins text-sm text-white/70">
-              <li><Link href="#features" className="hover:text-landing-mint transition-colors">Funcionalidades</Link></li>
-              <li><Link href="#themes" className="hover:text-landing-mint transition-colors">Temas</Link></li>
-              <li><Link href="#beta" className="hover:text-landing-mint transition-colors">Beta Privada</Link></li>
-            </ul>
+    <footer className="py-20 bg-white border-t border-landing-rule">
+      <div className="wrap">
+        <div className="flex flex-col md:flex-row justify-between items-start gap-12">
+          <div className="max-w-[300px]">
+             <div className="flex items-center gap-[10px] font-poppins text-2xl font-bold tracking-tighter text-landing-navy mb-6">
+                <div className="w-8 h-8 flex items-center justify-center">
+                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M32 6 C19 6 9 16 9 28 C9 41 22 53 32 60 C42 53 55 41 55 28 C55 16 45 6 32 6 Z" stroke="#1e3a8a" strokeWidth="4.5" strokeLinejoin="round" fill="none"/>
+                    <path d="M19 22 Q23 19 27 22" stroke="#1e3a8a" strokeWidth="3" strokeLinecap="round" fill="none"/>
+                    <path d="M16 18 Q23 13 30 18" stroke="#1e3a8a" strokeWidth="3" strokeLinecap="round" fill="none"/>
+                    <path d="M22 34 L29 41 L46 26" stroke="#1e3a8a" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    <circle cx="48" cy="20" r="3" fill="#2dd4bf"/>
+                  </svg>
+                </div>
+                <span>Hospyia</span>
+             </div>
+             <p className="text-landing-ink/50 text-[14px] leading-relaxed">
+               Redefiniendo la hospitalidad con inteligencia artificial. Creado con cariño para anfitriones que cuidan cada detalle.
+             </p>
           </div>
 
-          <div>
-            <h4 className="font-poppins font-bold text-sm uppercase tracking-widest text-white/40 mb-6">Compañía</h4>
-            <ul className="space-y-4 font-poppins text-sm text-white/70">
-              <li><Link href="/about" className="hover:text-landing-mint transition-colors">Sobre nosotros</Link></li>
-              <li><Link href="/privacy" className="hover:text-landing-mint transition-colors">Privacidad</Link></li>
-              <li><Link href="/terms" className="hover:text-landing-mint transition-colors">Términos</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-poppins font-bold text-sm uppercase tracking-widest text-white/40 mb-6">Contacto</h4>
-            <ul className="space-y-4 font-poppins text-sm text-white/70">
-              <li><Link href="mailto:hola@hospyia.com" className="hover:text-landing-mint transition-colors">hola@hospyia.com</Link></li>
-              <li className="flex gap-4 pt-2">
-                <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">𝕏</a>
-                <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">📸</a>
-              </li>
-            </ul>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-12 lg:gap-24">
+             <div>
+                <h4 className="font-poppins font-bold text-landing-navy text-[14px] mb-6 uppercase tracking-widest">Producto</h4>
+                <ul className="space-y-4 text-[14px] text-landing-ink/60">
+                   <li><a href="#features" className="hover:text-landing-navy transition-colors">Características</a></li>
+                   <li><a href="#themes" className="hover:text-landing-navy transition-colors">Temas</a></li>
+                   <li><a href="#how" className="hover:text-landing-navy transition-colors">Proceso</a></li>
+                </ul>
+             </div>
+             <div>
+                <h4 className="font-poppins font-bold text-landing-navy text-[14px] mb-6 uppercase tracking-widest">Legal</h4>
+                <ul className="space-y-4 text-[14px] text-landing-ink/60">
+                   <li><a href="#" className="hover:text-landing-navy transition-colors">Privacidad</a></li>
+                   <li><a href="#" className="hover:text-landing-navy transition-colors">Términos</a></li>
+                   <li><a href="#" className="hover:text-landing-navy transition-colors">Cookies</a></li>
+                </ul>
+             </div>
+             <div>
+                <h4 className="font-poppins font-bold text-landing-navy text-[14px] mb-6 uppercase tracking-widest">Contacto</h4>
+                <ul className="space-y-4 text-[14px] text-landing-ink/60">
+                   <li><a href="mailto:hola@hospyia.com" className="hover:text-landing-navy transition-colors">hola@hospyia.com</a></li>
+                   <li><a href="#" className="hover:text-landing-navy transition-colors">LinkedIn</a></li>
+                   <li><a href="#" className="hover:text-landing-navy transition-colors">X (Twitter)</a></li>
+                </ul>
+             </div>
           </div>
         </div>
-        
-        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6 font-poppins text-xs text-white/40 uppercase tracking-widest">
-          <p>© 2026 Hospyia. Todos los derechos reservados.</p>
-          <p>Hecho con ♥️ en Madrid</p>
+
+        <div className="mt-20 pt-8 border-t border-landing-rule flex flex-col sm:flex-row justify-between items-center gap-4">
+           <div className="font-jetbrains text-[11px] text-landing-ink/30 uppercase tracking-widest">
+              © {new Date().getFullYear()} HOSPYIA LABS S.L. · HECHO EN MADRID
+           </div>
+           <div className="flex items-center gap-2 text-[11px] font-jetbrains text-landing-ink/30 uppercase tracking-widest">
+              <span className="w-2 h-2 rounded-full bg-landing-mint"></span>
+              Sistemas operativos
+           </div>
         </div>
       </div>
     </footer>

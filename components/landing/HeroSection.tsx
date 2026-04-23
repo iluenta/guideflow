@@ -5,56 +5,49 @@ import { PhoneMockup } from './PhoneMockup';
 
 export const HeroSection = () => {
   return (
-    <section className="pt-32 pb-20 overflow-hidden bg-white">
-      <div className="max-w-[1200px] mx-auto px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-16 items-center">
-          <div className="flex flex-col">
-            <span className="flex items-center gap-2 font-jetbrains text-[11px] font-medium uppercase tracking-[0.15em] text-landing-ink/50 mb-6">
-              <span className="w-2 h-2 rounded-full bg-landing-mint shadow-[0_0_10px_rgba(45,212,191,0.5)]"></span>
+    <section className="pt-24 pb-12 overflow-hidden bg-landing-bg">
+      <div className="wrap">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1.1fr] gap-12 lg:gap-24 items-center">
+          <div>
+            <span className="eyebrow mb-8">
+              <span className="eyebrow-dot"></span>
               Beta privada · primavera 2026
             </span>
             
-            <h1 className="font-poppins font-bold text-5xl md:text-7xl text-landing-navy leading-[1.1] tracking-tight mb-8">
-              Tu guía digital, gestionada por <em className="not-italic text-landing-mint drop-shadow-sm">IA</em> para tu tranquilidad.
+            <h1 className="font-poppins font-bold text-[clamp(44px,6vw,72px)] leading-[1.02] tracking-[-0.04em] text-landing-navy mb-8">
+              Tu guía digital, gestionada por <em className="not-italic text-landing-mint">IA</em> para tu tranquilidad.
             </h1>
             
-            <p className="font-poppins text-lg md:text-xl text-landing-ink/70 leading-relaxed max-w-[600px] mb-10">
-              Hospyia convierte cada apartamento turístico en una guía interactiva con IA: check-in, WiFi, manuales de electrodomésticos, recomendaciones locales y un asistente 24/7. Sin apps. Sin descargas. Sin más mensajes a las tres de la mañana.
+            <p className="font-poppins text-[20px] leading-[1.5] text-landing-ink/60 max-w-[540px] mb-12">
+              Redefine la experiencia de tus huéspedes con una guía interactiva inteligente. Ahorra tiempo, mejora tus reseñas y ofrece un servicio premium 24/7.
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <div className="flex-1 max-w-[400px] relative">
-                <input 
-                  type="email" 
-                  placeholder="tu@email.com" 
-                  className="w-full h-14 pl-6 pr-4 bg-gray-50 border border-gray-200 rounded-2xl font-poppins text-landing-ink focus:outline-none focus:border-landing-mint transition-colors"
-                />
-              </div>
-              <button 
-                onClick={() => document.getElementById('beta')?.scrollIntoView({ behavior: 'smooth' })}
-                className="h-14 px-8 bg-landing-navy text-white font-poppins font-semibold rounded-2xl hover:shadow-xl hover:shadow-landing-navy/20 transition-all active:scale-95 whitespace-nowrap"
-              >
-                Reservar plaza →
-              </button>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-16">
+              <a href="#beta" className="w-full sm:w-auto bg-landing-navy text-white px-10 py-4 rounded-full font-poppins font-bold text-[16px] hover:bg-landing-navy-soft transition-all text-center shadow-lg shadow-landing-navy/20">
+                Reservar plaza
+              </a>
+              <a href="#features" className="w-full sm:w-auto px-10 py-4 rounded-full font-poppins font-bold text-[16px] text-landing-navy border border-landing-rule hover:bg-white transition-all text-center">
+                Ver funciones
+              </a>
             </div>
-            
-            <div className="flex flex-wrap gap-12">
-              <div className="flex flex-col">
-                <strong className="font-poppins text-2xl font-bold text-landing-navy">30 min</strong>
-                <span className="font-jetbrains text-[10px] font-medium uppercase tracking-wider text-landing-ink/40">Configuración con IA</span>
+
+            <div className="flex gap-10 pt-10 border-t border-landing-rule/50 font-jetbrains text-[11px] text-landing-ink/30 uppercase tracking-[0.15em]">
+              <div className="flex flex-col gap-1">
+                <strong className="font-poppins font-bold text-[28px] text-landing-navy leading-none tracking-tighter lowercase">30 min</strong>
+                Configuración
               </div>
-              <div className="flex flex-col">
-                <strong className="font-poppins text-2xl font-bold text-landing-navy">24/7</strong>
-                <span className="font-jetbrains text-[10px] font-medium uppercase tracking-wider text-landing-ink/40">Asistente multiidioma</span>
+              <div className="flex flex-col gap-1">
+                <strong className="font-poppins font-bold text-[28px] text-landing-navy leading-none tracking-tighter">24/7</strong>
+                Asistente
               </div>
-              <div className="flex flex-col">
-                <strong className="font-poppins text-2xl font-bold text-landing-navy">0 apps</strong>
-                <span className="font-jetbrains text-[10px] font-medium uppercase tracking-wider text-landing-ink/40">Solo una URL</span>
+              <div className="flex flex-col gap-1">
+                <strong className="font-poppins font-bold text-[28px] text-landing-navy leading-none tracking-tighter lowercase">0 apps</strong>
+                Instalación
               </div>
             </div>
           </div>
-          
-          <div className="relative">
+
+          <div className="flex justify-center items-center h-[720px] relative">
             <PhoneMockup />
           </div>
         </div>
