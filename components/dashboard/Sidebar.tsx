@@ -70,7 +70,7 @@ export const DashboardSidebar = ({ collapsed, profile, onSignOut }: SidebarProps
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative",
                     isActive 
-                      ? "bg-landing-navy text-white shadow-lg shadow-landing-navy/20" 
+                      ? "bg-landing-navy text-white shadow-[0_4px_12px_-4px_rgba(30,58,138,0.35)]" 
                       : "text-landing-ink-soft hover:bg-landing-bg-deep hover:text-landing-ink"
                   )}
                 >
@@ -101,14 +101,14 @@ export const DashboardSidebar = ({ collapsed, profile, onSignOut }: SidebarProps
       {/* Footer / Upgrade Card */}
       {!collapsed && (
         <div className="p-4 border-t border-landing-rule-soft">
-          <div className="bg-gradient-to-br from-landing-navy to-landing-navy-soft text-white p-4 rounded-2xl relative overflow-hidden group cursor-pointer transition-transform hover:-translate-y-1">
-            <div className="absolute -top-5 -right-5 w-20 h-20 bg-landing-mint/20 rounded-full blur-2xl"></div>
-            <div className="font-jetbrains text-[10px] tracking-widest uppercase opacity-70 mb-1">Plan Pro</div>
-            <h4 className="font-bold text-sm leading-tight mb-3 text-white">Sube de nivel tu gestión</h4>
+          <div className="bg-gradient-to-br from-landing-navy to-landing-navy-soft text-white p-4 rounded-[14px] relative overflow-hidden group cursor-pointer transition-transform hover:-translate-y-1">
+            <div className="absolute -top-5 -right-5 w-20 h-20 bg-landing-mint/40 rounded-full blur-2xl opacity-50"></div>
+            <div className="font-jetbrains text-[10px] tracking-widest uppercase opacity-75 mb-1">Plan Pro</div>
+            <h4 className="font-bold text-[15px] leading-tight mb-3 text-white">Sube de nivel tu gestión</h4>
             <div className="h-1 bg-white/20 rounded-full overflow-hidden mb-1.5">
-              <div className="h-full bg-landing-mint w-2/3"></div>
+              <div className="h-full bg-landing-mint w-2/3 rounded-full"></div>
             </div>
-            <div className="flex justify-between font-jetbrains text-[9px] opacity-80">
+            <div className="flex justify-between font-jetbrains text-[10px] opacity-80">
               <span>2/3 Propiedades</span>
               <span>67%</span>
             </div>

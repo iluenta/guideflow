@@ -608,7 +608,7 @@ export function GuideViewContainer({
                         <button
                             onClick={handleChatOpen}
                             style={{ position: 'fixed', bottom: '88px', right: '20px', width: '56px', height: '56px', zIndex: 10000 }}
-                            className="bg-gradient-to-tr from-primary to-primary/80 text-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-4 ring-primary/20 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95"
+                            className="bg-gradient-to-tr from-primary to-primary/90 text-white rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.15)] ring-4 ring-primary/20 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95"
                             aria-label="Abrir asistente de ayuda"
                         >
                             <div className="relative">

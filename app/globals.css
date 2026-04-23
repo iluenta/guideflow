@@ -9,8 +9,14 @@
   --navy: #1e3a8a;          /* primary brand */
   --navy-deep: #15296b;
   --navy-soft: #3b5bbd;
+  --navy-tint: #eef2fb;
   --mint: #5eead4;           /* secondary accent */
   --mint-deep: #2dd4bf;
+  --mint-tint: #ecfdf9;
+  --amber: #d97706;
+  --amber-tint: #fef3c7;
+  --rose: #e11d48;
+  --rose-tint: #ffe4e6;
   --ink: #0f172a;
   --ink-soft: #475569;
   --ink-mute: #94a3b8;
@@ -27,13 +33,40 @@
 
 @theme {
   --color-landing-bg: var(--bg);
+  --color-landing-bg-deep: var(--bg-deep);
+  --color-landing-bg-card: var(--bg-card);
   --color-landing-navy: var(--navy);
+  --color-landing-navy-deep: var(--navy-deep);
+  --color-landing-navy-soft: var(--navy-soft);
+  --color-landing-navy-tint: var(--navy-tint);
   --color-landing-mint: var(--mint);
+  --color-landing-mint-deep: var(--mint-deep);
+  --color-landing-mint-tint: var(--mint-tint);
+  --color-landing-amber: var(--amber);
+  --color-landing-amber-tint: var(--amber-tint);
+  --color-landing-rose: var(--rose);
+  --color-landing-rose-tint: var(--rose-tint);
   --color-landing-ink: var(--ink);
+  --color-landing-ink-soft: var(--ink-soft);
+  --color-landing-ink-mute: var(--ink-mute);
   --color-landing-rule: var(--rule);
+  --color-landing-rule-soft: var(--rule-soft);
+  
+  /* Guide Dynamic Theme Variables */
+  --color-primary: var(--color-primary);
+  --color-primary-foreground: var(--color-primary-foreground);
+  --color-secondary: var(--color-secondary);
+  --color-accent: var(--color-accent);
+  --color-surface: var(--color-surface);
+  --color-background: var(--color-background);
+  --color-ink: var(--color-text-primary);
+  --color-ink-soft: var(--color-text-secondary);
   
   --font-poppins: var(--sans);
   --font-jetbrains: var(--mono);
+
+  --radius-card: 18px;
+  --radius-btn: 999px;
 }
 
 @layer base {

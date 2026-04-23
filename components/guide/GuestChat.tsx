@@ -225,7 +225,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                             window.navigator.vibrate([50, 30, 50]);
                         }
                     }}
-                    className="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-tr from-primary to-primary/80 text-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-4 ring-primary/20 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50"
+                    className="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-tr from-primary to-primary/90 text-white rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.15)] ring-4 ring-primary/20 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50"
                     aria-label={triggerAriaLabel}
                 >
                     <div className="relative">
@@ -247,7 +247,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
             {/* Chat Container */}
             <div
                 className={cn(
-                    "fixed inset-x-0 bottom-[64px] sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[400px] h-[calc(85vh-64px)] sm:h-[680px] bg-surface rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl z-50 flex flex-col transition-all duration-300 transform overflow-hidden",
+                    "fixed inset-x-0 bottom-[64px] sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[400px] h-[calc(85vh-64px)] sm:h-[680px] bg-surface/85 backdrop-blur-2xl rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl z-50 flex flex-col transition-all duration-300 transform overflow-hidden border border-white/20",
                     isOpen ? "translate-y-0 opacity-100" : "translate-y-full sm:translate-y-8 sm:scale-95 opacity-0 pointer-events-none"
                 )}
             >
@@ -255,7 +255,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                 <div className="bg-primary text-white px-6 py-5 shrink-0">
                     <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
+                            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center border border-white/30 shadow-inner backdrop-blur-md">
                                 <Bot className="w-6 h-6 text-white" />
                             </div>
                             <div>
@@ -280,7 +280,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                 </div>
 
                 {/* Subheader */}
-                <div className="bg-surface px-6 py-3 border-b border-primary/[0.06] flex items-center gap-3 shrink-0 z-10">
+                <div className="bg-surface/50 backdrop-blur-md px-6 py-3 border-b border-primary/[0.06] flex items-center gap-3 shrink-0 z-10">
                     <Bot className="w-4 h-4 text-primary/40" />
                     <span className="text-[10px] font-black text-primary/50 uppercase tracking-[0.25em]">{expertLabel} {propertyName.toUpperCase()}</span>
                 </div>
@@ -288,7 +288,7 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                 {/* Main Content Area */}
                 <div
                     ref={scrollContainerRef}
-                    className="flex-1 overflow-y-auto bg-surface relative"
+                    className="flex-1 overflow-y-auto bg-transparent relative"
                 >
                     {messages.length === 0 ? (
                         <div className="flex flex-col items-center justify-start pt-4 pb-8 text-center animate-in fade-in slide-in-from-top-4 duration-1000">

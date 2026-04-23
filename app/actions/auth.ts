@@ -20,7 +20,7 @@ export async function signInWithMagicLink(formData: FormData) {
   const supabase = await createClient()
   
   // Get the site URL from environment or construct it
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
   const redirectUrl = `${siteUrl}/auth/callback`
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -90,7 +90,7 @@ export async function signUpWithMagicLink(formData: FormData) {
     .join('')
 
   // Get the site URL from environment or construct it
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
   const redirectUrl = `${siteUrl}/auth/callback`
 
   const { error } = await supabase.auth.signUp({
