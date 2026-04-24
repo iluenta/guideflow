@@ -687,50 +687,61 @@
     transition: transform 0.3s;
   }
   .theme-swatch:hover { transform: translateY(-4px); }
+  /* Modern Minimal — bg real #f4f4f5, ink #09090b, accent blue #3b82f6 */
   .theme-swatch.t1 {
-    background: #ffffff;
-    color: #0a0a0a;
-    border: 1px solid #e5e5e5;
-    font-family: 'Inter', sans-serif;
+    background: #f4f4f5;
+    color: #09090b;
+    border: 1px solid #e4e4e7;
+    font-family: 'Inter', 'Helvetica Neue', sans-serif;
   }
+  /* Urban Dark — bg real #09090b, ink #fafafa, accent cyan #00d4ff */
   .theme-swatch.t2 {
-    background: #0a0a0a;
-    color: #00e5ff;
+    background: #09090b;
+    color: #fafafa;
     font-family: 'Oswald', sans-serif;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
+  /* Coastal Breeze — bg real #f0f9ff, ink #0c4a6e, accent orange #f97316 */
   .theme-swatch.t3 {
-    background: linear-gradient(160deg, #4fc3f7, #0288d1);
-    color: white;
+    background: #f0f9ff;
+    color: #0c4a6e;
+    border: 1px solid #bae6fd;
     font-family: 'Nunito', sans-serif;
-    border-radius: 14px;
+    border-radius: 10px;
   }
+  /* Warm Boutique — bg real #fdfaf6, ink #292524, accent amber #f59e0b */
   .theme-swatch.t4 {
-    background: #f5ede0;
-    color: #4a2d1a;
-    font-family: 'Playfair Display', serif;
+    background: #fdfaf6;
+    color: #292524;
+    border: 1px solid #e7d9c5;
+    font-family: 'Playfair Display', Georgia, serif;
     font-style: italic;
   }
+  /* Luxury Estate — bg real #fafaf9, ink #1c1917, accent gold #fbbf24 */
   .theme-swatch.t5 {
-    background: #f8f4e8;
-    color: #7a5c2e;
-    font-family: 'Cormorant Garamond', serif;
-    border: 1px solid #d4c08a;
+    background: #fafaf9;
+    color: #1c1917;
+    border: 1px solid #d6c99a;
+    font-family: 'Cormorant Garamond', Georgia, serif;
   }
   .theme-swatch .th-title {
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1;
     letter-spacing: -0.02em;
+    font-weight: 600;
   }
-  .theme-swatch.t2 .th-title,
+  .theme-swatch.t2 .th-title { font-weight: 700; color: #fafafa; }
   .theme-swatch.t3 .th-title { font-weight: 700; }
   .theme-swatch .th-name {
     font-family: var(--mono);
-    font-size: 8px;
-    letter-spacing: 0.1em;
+    font-size: 7px;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    opacity: 0.7;
+    opacity: 0.55;
+    margin-top: 3px;
   }
+  .theme-swatch.t2 .th-name { opacity: 0.5; color: #fafafa; }
   .theme-swatch.t4 .th-name,
   .theme-swatch.t5 .th-name { font-style: normal; }
 
@@ -1533,25 +1544,45 @@
         <p class="feat-desc">Cada apartamento elige su personalidad. Los temas reorganizan tipografía, color y forma en toda la guía y el chat.</p>
 
         <div class="theme-strip">
+          <!-- Modern Minimal: bg #f4f4f5, ink #09090b, accent #3b82f6, Inter -->
           <div class="theme-swatch t1">
-            <div class="th-title">Aa</div>
-            <div class="th-name">Modern</div>
+            <div class="th-accent" style="width:18px;height:3px;border-radius:2px;background:#3b82f6;margin-bottom:auto;"></div>
+            <div>
+              <div class="th-title">Aa</div>
+              <div class="th-name">Modern</div>
+            </div>
           </div>
+          <!-- Urban Dark: bg #09090b, ink #fafafa, accent #00d4ff, Oswald -->
           <div class="theme-swatch t2">
-            <div class="th-title">AA</div>
-            <div class="th-name">Urban</div>
+            <div class="th-accent" style="width:18px;height:3px;border-radius:2px;background:#00d4ff;margin-bottom:auto;"></div>
+            <div>
+              <div class="th-title">AA</div>
+              <div class="th-name">Urban</div>
+            </div>
           </div>
+          <!-- Coastal Breeze: bg #f0f9ff, ink #0c4a6e, accent #f97316, Nunito -->
           <div class="theme-swatch t3">
-            <div class="th-title">Aa</div>
-            <div class="th-name">Coastal</div>
+            <div class="th-accent" style="width:18px;height:3px;border-radius:2px;background:#f97316;margin-bottom:auto;"></div>
+            <div>
+              <div class="th-title">Aa</div>
+              <div class="th-name">Coastal</div>
+            </div>
           </div>
+          <!-- Warm Boutique: bg #fdfaf6, ink #292524, accent #f59e0b, Playfair -->
           <div class="theme-swatch t4">
-            <div class="th-title">Aa</div>
-            <div class="th-name">Warm</div>
+            <div class="th-accent" style="width:18px;height:3px;border-radius:2px;background:#f59e0b;margin-bottom:auto;"></div>
+            <div>
+              <div class="th-title">Aa</div>
+              <div class="th-name">Warm</div>
+            </div>
           </div>
+          <!-- Luxury Estate: bg #fafaf9, ink #1c1917, accent #fbbf24, Cormorant -->
           <div class="theme-swatch t5">
-            <div class="th-title">Aa</div>
-            <div class="th-name">Luxury</div>
+            <div class="th-accent" style="width:18px;height:3px;border-radius:2px;background:#fbbf24;margin-bottom:auto;"></div>
+            <div>
+              <div class="th-title">Aa</div>
+              <div class="th-name">Luxury</div>
+            </div>
           </div>
         </div>
       </div>

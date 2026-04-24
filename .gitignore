@@ -74,3 +74,6 @@ scripts/chat-stress-test/
 debug_db_v2.js
 proxy.ts
 run_git.ps1
+
+# MCP / Playwright logs
+.playwright-mcp/

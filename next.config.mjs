@@ -42,6 +42,10 @@ const nextConfig = {
   experimental: {
     turbopackUseSystemTlsCerts: true,
   },
+  watchOptions: {
+    // Ignorar directorios que no son código fuente para evitar rebuilds fantasma
+    ignored: ['**/.playwright-mcp/**', '**/themes-check.png', '**/themes-real.png', '**/*.output'],
+  },
   env: {
     NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString(),
   },

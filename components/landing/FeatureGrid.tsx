@@ -57,16 +57,26 @@ export const FeatureGrid = () => {
 
             <div className="mt-auto grid grid-cols-5 gap-2.5">
               {[
-                { name: 'Warm', color: 'bg-[#fbf8f2]' },
-                { name: 'Urban', color: 'bg-[#0a0a0a]' },
-                { name: 'Ocean', color: 'bg-[#1e40af]' },
-                { name: 'Sand', color: 'bg-[#f3ede0]' },
-                { name: 'Luxury', color: 'bg-[#1a1c1e]' }
+                { name: 'Modern',  bg: '#f4f4f5', accent: '#3b82f6', border: '#e4e4e7', label: '#09090b', font: 'Inter, sans-serif' },
+                { name: 'Urban',   bg: '#09090b', accent: '#00d4ff', border: '#27272a', label: '#fafafa',  font: 'Oswald, sans-serif' },
+                { name: 'Coastal', bg: '#f0f9ff', accent: '#f97316', border: '#bae6fd', label: '#0c4a6e', font: 'Nunito, sans-serif' },
+                { name: 'Warm',    bg: '#fdfaf6', accent: '#f59e0b', border: '#e7d9c5', label: '#292524', font: 'Playfair Display, serif' },
+                { name: 'Luxury',  bg: '#fafaf9', accent: '#fbbf24', border: '#d6c99a', label: '#1c1917', font: 'Cormorant Garamond, serif' },
               ].map((t, i) => (
-                <div key={i} className={cn("aspect-[2/3] rounded-lg border border-gray-100 p-2 flex flex-col justify-end transition-transform group-hover:-translate-y-2", t.color)} style={{ transitionDelay: `${i * 100}ms` }}>
-                  <span className={cn("text-[9px] font-bold uppercase tracking-tighter", t.name === 'Urban' || t.name === 'Ocean' || t.name === 'Luxury' ? 'text-white' : 'text-landing-navy')}>
-                    {t.name}
-                  </span>
+                <div
+                  key={i}
+                  className="aspect-[2/3] rounded-lg p-2 flex flex-col justify-between transition-transform group-hover:-translate-y-2"
+                  style={{ background: t.bg, border: `1px solid ${t.border}`, transitionDelay: `${i * 80}ms` }}
+                >
+                  {/* Barra de acento */}
+                  <div style={{ width: 20, height: 3, borderRadius: 2, background: t.accent }} />
+                  {/* Tipografía + label */}
+                  <div>
+                    <div className="text-[13px] font-semibold leading-none mb-1" style={{ color: t.label, fontFamily: t.font }}>Aa</div>
+                    <span className="text-[7px] font-bold uppercase tracking-widest" style={{ color: t.label, opacity: 0.45, fontFamily: 'JetBrains Mono, monospace' }}>
+                      {t.name}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

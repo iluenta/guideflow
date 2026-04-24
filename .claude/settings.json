@@ -99,10 +99,15 @@
       "Bash(grep -v \"^.*import\\\\|//\")",
       "Bash(grep -v \"^.*//.*gemini\")",
       "WebFetch(domain:api.anthropic.com)",
-      "Read(//c/Users/PEDRO~1.RAM/AppData/Local/Temp/claude/c--Proyectos-guideflow/96813e04-b795-402e-a382-5957959e6f8d/tasks/**)"
+      "Read(//c/Users/PEDRO~1.RAM/AppData/Local/Temp/claude/c--Proyectos-guideflow/96813e04-b795-402e-a382-5957959e6f8d/tasks/**)",
+      "Bash(npx --yes serve . -p 4444)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4444/Landing.html)",
+      "Bash(pkill -f \"serve \\\\.\")",
+      "Bash(pkill -f \"npx.*serve\")"
     ],
     "additionalDirectories": [
-      "C:\\Proyectos\\guideflow\\.claude"
+      "C:\\Proyectos\\guideflow\\.claude",
+      "c:\\tmp"
     ]
   },
   "enabledMcpjsonServers": [
