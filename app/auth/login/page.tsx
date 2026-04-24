@@ -3,7 +3,6 @@
 import React, { Suspense, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { MagicLinkForm } from '@/components/auth/magic-link-form'
 import { Logo } from '@/components/ui/logo'
 
@@ -11,10 +10,7 @@ function LoginForm() {
   const router = useRouter()
   const [processingHash, setProcessingHash] = React.useState(false)
 
-  // Manejar tokens en hash si Supabase redirige directamente a login
-  // IMPORTANTE: Ejecutar inmediatamente, antes de renderizar
   useEffect(() => {
-    // Usar window.location directamente para asegurar que leemos el hash actual
     const fullHash = window.location.hash
     if (!fullHash || fullHash.length <= 1) return
 
@@ -23,23 +19,14 @@ function LoginForm() {
     const accessToken = hashParams.get('access_token')
     const refreshToken = hashParams.get('refresh_token')
 
-    // Si hay tokens en el hash, procesarlos inmediatamente
     if (accessToken && refreshToken) {
       setProcessingHash(true)
-
-      // Limpiar el hash y query params de la URL para evitar loops
       window.history.replaceState(null, '', window.location.pathname)
 
-      // Enviar tokens directamente al servidor
       fetch('/api/auth/callback', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken }),
         credentials: 'include',
       })
         .then(async (response) => {
@@ -49,7 +36,6 @@ function LoginForm() {
             router.push(`/auth/login?error=${encodeURIComponent(errorData.error || 'Error al iniciar sesión')}`)
             return
           }
-          // Redirigir al dashboard
           router.push('/dashboard')
         })
         .catch((err) => {
@@ -60,42 +46,115 @@ function LoginForm() {
     }
   }, [router])
 
-  // Mostrar loading mientras procesamos el hash
   if (processingHash) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="flex min-h-screen items-center justify-center bg-[#f1f4f8]">
         <div className="text-center">
-          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
-          <p className="text-muted-foreground">Procesando autenticación...</p>
+          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#1e3a8a] border-r-transparent" />
+          <p className="text-[#475569] font-['Helvetica_Neue',Helvetica,Arial,sans-serif]">Procesando autenticación...</p>
         </div>
       </div>
     )
   }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="flex flex-col items-center justify-center gap-3">
-          <Logo size={56} className="rounded-2xl shadow-md" />
-          <span className="text-3xl font-black text-foreground tracking-tight">Hospyia</span>
+    <div className="flex min-h-screen bg-[#fafbfc]">
+
+      {/* ── Columna izquierda — navy brand panel ── */}
+      <div className="hidden lg:flex lg:w-[52%] flex-col justify-between bg-[#1e3a8a] p-12 relative overflow-hidden">
+
+        {/* Glow decorativo */}
+        <div className="absolute top-[-200px] right-[-200px] w-[500px] h-[500px] rounded-full pointer-events-none"
+             style={{ background: 'radial-gradient(circle, rgba(94,234,212,0.25), transparent 70%)' }} />
+        <div className="absolute bottom-[-150px] left-[-100px] w-[400px] h-[400px] rounded-full pointer-events-none"
+             style={{ background: 'radial-gradient(circle, rgba(94,234,212,0.12), transparent 70%)' }} />
+
+        {/* Logo + wordmark */}
+        <div className="flex items-center gap-3 relative z-10">
+          <Logo size={32} variant="dark" />
+          <span className="text-white text-xl font-bold tracking-tight" style={{ fontFamily: "'Helvetica Neue',Helvetica,Arial,sans-serif" }}>
+            Hospyia
+          </span>
         </div>
 
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl">Iniciar sesión</CardTitle>
-            <CardDescription>
-              Ingresa tu correo electrónico para recibir un enlace mágico
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {/* Claim central */}
+        <div className="relative z-10 space-y-6">
+          <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-[#2dd4bf]">
+            ● Plataforma de gestión
+          </p>
+          <h1 className="text-white font-bold leading-[1.05] tracking-tight"
+              style={{ fontFamily: "'Helvetica Neue',Helvetica,Arial,sans-serif", fontSize: 'clamp(36px,4vw,52px)', letterSpacing: '-0.03em' }}>
+            Tu guía digital,<br />
+            gestionada por <span className="text-[#2dd4bf]">IA.</span>
+          </h1>
+          <p className="text-white/70 text-[17px] leading-relaxed max-w-sm"
+             style={{ fontFamily: "'Helvetica Neue',Helvetica,Arial,sans-serif" }}>
+            Convierte cada apartamento en una experiencia premium para tus huéspedes. Sin apps. Sin descargas.
+          </p>
+
+          {/* Stats */}
+          <div className="flex gap-8 pt-2 border-t border-white/10">
+            {[
+              { value: '30 min', label: 'Configuración con IA' },
+              { value: '24/7', label: 'Asistente multiidioma' },
+              { value: '0 apps', label: 'Solo una URL' },
+            ].map(({ value, label }) => (
+              <div key={value}>
+                <div className="text-white font-bold text-2xl tracking-tight"
+                     style={{ fontFamily: "'Helvetica Neue',Helvetica,Arial,sans-serif" }}>{value}</div>
+                <div className="text-white/50 font-mono text-[10px] tracking-wider uppercase mt-0.5">{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer lateral */}
+        <p className="relative z-10 font-mono text-[10px] tracking-widest uppercase text-white/30">
+          © 2026 Hospyia · Beta privada
+        </p>
+      </div>
+
+      {/* ── Columna derecha — formulario ── */}
+      <div className="flex flex-1 flex-col items-center justify-center p-8 lg:p-16">
+
+        {/* Logo mobile */}
+        <div className="lg:hidden flex items-center gap-2 mb-10">
+          <Logo size={28} />
+          <span className="text-[#1e3a8a] text-lg font-bold tracking-tight"
+                style={{ fontFamily: "'Helvetica Neue',Helvetica,Arial,sans-serif" }}>Hospyia</span>
+        </div>
+
+        <div className="w-full max-w-[400px]">
+
+          {/* Eyebrow */}
+          <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-[#94a3b8] mb-5">
+            Acceso seguro · Magic link
+          </p>
+
+          <h2 className="font-bold text-[#0f172a] mb-2 leading-tight"
+              style={{ fontFamily: "'Helvetica Neue',Helvetica,Arial,sans-serif", fontSize: '26px', letterSpacing: '-0.4px' }}>
+            Iniciar sesión
+          </h2>
+          <p className="text-[#475569] text-[15px] leading-relaxed mb-8"
+             style={{ fontFamily: "'Helvetica Neue',Helvetica,Arial,sans-serif" }}>
+            Introduce tu correo y te enviamos un enlace mágico. Sin contraseña.
+          </p>
+
+          {/* Form card */}
+          <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm p-8">
             <MagicLinkForm mode="login" hideError={processingHash} />
-            <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">¿No tienes una cuenta? </span>
-              <Link href="/auth/signup" className="font-medium text-primary hover:underline">
-                Regístrate aquí
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <p className="text-center text-[14px] text-[#94a3b8] mt-6"
+             style={{ fontFamily: "'Helvetica Neue',Helvetica,Arial,sans-serif" }}>
+            ¿No tienes cuenta?{' '}
+            <Link href="/auth/signup"
+                  className="text-[#1e3a8a] font-semibold hover:underline underline-offset-2">
+              Regístrate aquí
+            </Link>
+          </p>
+
+        </div>
       </div>
     </div>
   )
@@ -104,17 +163,10 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md space-y-6">
-          <div className="flex flex-col items-center justify-center gap-3">
-            <Logo size={56} className="rounded-2xl shadow-md" />
-            <span className="text-3xl font-black text-foreground tracking-tight">Hospyia</span>
-          </div>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center text-muted-foreground">Cargando...</div>
-            </CardContent>
-          </Card>
+      <div className="flex min-h-screen items-center justify-center bg-[#f1f4f8]">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#1e3a8a] border-r-transparent" />
+          <p className="text-[#475569]">Cargando...</p>
         </div>
       </div>
     }>

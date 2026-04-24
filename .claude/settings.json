@@ -98,7 +98,8 @@
       "Read(//c/Proximectos/guideflow/lib/arrival/**)",
       "Bash(grep -v \"^.*import\\\\|//\")",
       "Bash(grep -v \"^.*//.*gemini\")",
-      "WebFetch(domain:api.anthropic.com)"
+      "WebFetch(domain:api.anthropic.com)",
+      "Read(//c/Users/PEDRO~1.RAM/AppData/Local/Temp/claude/c--Proyectos-guideflow/96813e04-b795-402e-a382-5957959e6f8d/tasks/**)"
     ],
     "additionalDirectories": [
       "C:\\Proyectos\\guideflow\\.claude"
