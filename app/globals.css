@@ -53,14 +53,16 @@
   --color-landing-rule-soft: var(--rule-soft);
   
   /* Guide Dynamic Theme Variables */
-  --color-primary: var(--color-primary);
-  --color-primary-foreground: var(--color-primary-foreground);
-  --color-secondary: var(--color-secondary);
-  --color-accent: var(--color-accent);
-  --color-surface: var(--color-surface);
-  --color-background: var(--color-background);
-  --color-ink: var(--color-text-primary);
-  --color-ink-soft: var(--color-text-secondary);
+  --color-primary: var(--navy);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--mint);
+  --color-secondary-foreground: var(--navy);
+  --color-accent: var(--mint-deep);
+  --color-accent-foreground: #ffffff;
+  --color-surface: var(--bg-card);
+  --color-background: var(--bg);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
   
   --font-poppins: var(--sans);
   --font-jetbrains: var(--mono);

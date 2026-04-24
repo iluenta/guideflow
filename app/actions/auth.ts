@@ -37,22 +37,15 @@ export async function signInWithMagicLink(formData: FormData) {
     }
     
     let errorMessage = 'No se pudo enviar el enlace mágico'
-    
-    // Handle specific error codes
-    const supportEmail = process.env.SUPPORT_EMAIL || 'soporte@hostguide.app'
-    if (error.status === 429 || error.code === 'over_email_send_rate_limit') {
-      errorMessage = `Límite de envío de emails alcanzado. Esto puede durar hasta 1 hora. Soluciones: 1) Espera 30-60 minutos, 2) Usa otro email, 3) Configura SMTP externo en Supabase Dashboard > Settings > Auth > SMTP Settings. Si el problema persiste, contacta a ${supportEmail}`
-    } else if (error.status === 500 && (error.code === 'unexpected_failure' || error.message.includes('Error sending confirmation email'))) {
-      errorMessage = `Error al enviar el email de confirmación. Verifica la configuración de SMTP en Supabase Dashboard > Settings > Auth > SMTP Settings. Asegúrate de que: 1) El email del remitente esté verificado en Resend, 2) El API Key sea correcto, 3) El puerto sea 465 (SSL) o 587 (TLS). Si el problema persiste, contacta a ${supportEmail}`
-    } else if (error.message.includes('rate limit') || error.message.includes('too many')) {
-      errorMessage = `Límite de envío de emails alcanzado. Espera 30-60 minutos o usa otro email. Si necesitas ayuda, contacta a ${supportEmail}`
+
+    if (error.status === 429 || error.code === 'over_email_send_rate_limit' || error.message.includes('rate limit') || error.message.includes('too many')) {
+      errorMessage = `Demasiados intentos. Espera unos minutos y vuelve a intentarlo.`
     } else if (error.message.includes('invalid')) {
       errorMessage = 'Email inválido. Por favor, verifica tu dirección de correo.'
     } else {
-      // Para otros errores, mostrar el mensaje de Supabase
-      errorMessage = error.message || 'Error desconocido. Por favor, intenta de nuevo.'
+      errorMessage = 'No se pudo enviar el enlace. Por favor, inténtalo de nuevo.'
     }
-    
+
     redirect('/auth/login?error=' + encodeURIComponent(errorMessage))
     return
   }
@@ -113,24 +106,18 @@ export async function signUpWithMagicLink(formData: FormData) {
     }
     
     let errorMessage = 'No se pudo crear la cuenta'
-    
-    // Handle specific error codes
-    const supportEmail = process.env.SUPPORT_EMAIL || 'soporte@hostguide.app'
-    if (error.status === 429 || error.code === 'over_email_send_rate_limit') {
-      errorMessage = `Límite de envío de emails alcanzado. Esto puede durar hasta 1 hora. Soluciones: 1) Espera 30-60 minutos, 2) Usa otro email, 3) Configura SMTP externo en Supabase Dashboard > Settings > Auth > SMTP Settings. Si el problema persiste, contacta a ${supportEmail}`
-    } else if (error.status === 500 && (error.code === 'unexpected_failure' || error.message.includes('Error sending confirmation email'))) {
-      errorMessage = `Error al enviar el email de confirmación. Verifica la configuración de SMTP en Supabase Dashboard > Settings > Auth > SMTP Settings. Asegúrate de que: 1) El email del remitente esté verificado en Resend, 2) El API Key sea correcto, 3) El puerto sea 465 (SSL) o 587 (TLS). Si el problema persiste, contacta a ${supportEmail}`
+
+    if (error.status === 429 || error.code === 'over_email_send_rate_limit' || error.message.includes('rate limit') || error.message.includes('too many')) {
+      errorMessage = 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.'
     } else if (error.message.includes('already registered') || error.message.includes('already exists')) {
-      errorMessage = 'Este email ya está registrado. Por favor, inicia sesión en su lugar.'
-    } else if (error.message.includes('rate limit') || error.message.includes('too many')) {
-      errorMessage = `Límite de envío de emails alcanzado. Espera 30-60 minutos o usa otro email. Si necesitas ayuda, contacta a ${supportEmail}`
+      // No revelar si el email existe — mismo mensaje genérico
+      errorMessage = 'No se pudo completar el registro. Por favor, inténtalo de nuevo.'
     } else if (error.message.includes('invalid')) {
       errorMessage = 'Email inválido. Por favor, verifica tu dirección de correo.'
     } else {
-      // Para otros errores, mostrar el mensaje de Supabase
-      errorMessage = error.message || 'Error desconocido. Por favor, intenta de nuevo.'
+      errorMessage = 'No se pudo crear la cuenta. Por favor, inténtalo de nuevo.'
     }
-    
+
     redirect('/auth/signup?error=' + encodeURIComponent(errorMessage))
     return
   }

@@ -145,14 +145,7 @@ function LoginForm() {
             <MagicLinkForm mode="login" hideError={processingHash} />
           </div>
 
-          <p className="text-center text-[14px] text-[#94a3b8] mt-6"
-             style={{ fontFamily: "'Helvetica Neue',Helvetica,Arial,sans-serif" }}>
-            ¿No tienes cuenta?{' '}
-            <Link href="/auth/signup"
-                  className="text-[#1e3a8a] font-semibold hover:underline underline-offset-2">
-              Regístrate aquí
-            </Link>
-          </p>
+
 
         </div>
       </div>

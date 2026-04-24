@@ -16,6 +16,11 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Hospyia — Tu guía digital, gestionada por IA",
   description: "Redefiniendo la hospitalidad con inteligencia artificial. Crea guías interactivas para tus huéspedes en minutos.",
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
