@@ -1,6 +1,7 @@
 import { geminiREST } from '@/lib/ai/clients/gemini-rest'
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { logger } from "@/lib/logger";
+import { logAiUsage } from '@/lib/services/ai-usage-logger';
 import OpenAI from 'openai';
 
 // ═══════════════════════════════════════════════════════
@@ -206,12 +207,14 @@ export async function classifyIntent(
         : lastMessage
 
     try {
-        const { data, error } = await geminiREST('gemini-2.5-flash', inputForClassifier, {
+        const t0 = Date.now()
+        const { data, error, usage } = await geminiREST('gemini-2.5-flash', inputForClassifier, {
             temperature: 0,
             responseMimeType: 'application/json',
             systemInstruction: CLASSIFIER_SYSTEM_PROMPT,
             maxOutputTokens: 150
         })
+        logAiUsage({ operation: 'intent', model: 'gemini-2.5-flash', usage, durationMs: Date.now() - t0, isError: !!error })
 
         if (error || !data) {
             const isRateLimit = error?.includes('Resource exhausted') || error?.includes('429');

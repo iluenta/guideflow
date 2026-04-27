@@ -276,16 +276,20 @@ export default function StepContacts({ value }: { value?: string }) {
                         {showEmergencies && (
                             <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                                 {data.contacts.emergency_contacts
-                                    .filter((c: any) => !['salud', 'farmacia', 'taxi', 'veterinario'].includes(c.type))
+                                    .filter((c: any) => !['salud', 'farmacia', 'taxi', 'veterinario'].includes(c.type) || c.phone === '112' || c.name?.includes('112'))
                                     .map((contact: any) => (
                                     <div key={contact.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/30 group transition-all hover:bg-white hover:shadow-md">
                                         <div className="flex items-center gap-3 mb-3">
                                             <div className="h-10 w-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                                                {contact.type === 'policia' && <Shield className="w-5 h-5" />}
-                                                {contact.type === 'guardia' && <ShieldAlert className="w-5 h-5" />}
-                                                {contact.type === 'bomberos' && <Flame className="w-5 h-5" />}
-                                                {contact.type === 'telefono' && <Phone className="w-5 h-5" />}
-                                                {(!contact.type || !['policia', 'guardia', 'bomberos', 'telefono'].includes(contact.type)) && <AlertTriangle className="w-5 h-5" />}
+                                                {contact.phone === '112' ? <Phone className="w-5 h-5 text-rose-500" /> : (
+                                                    <>
+                                                        {contact.type === 'policia' && <Shield className="w-5 h-5" />}
+                                                        {contact.type === 'guardia' && <ShieldAlert className="w-5 h-5" />}
+                                                        {contact.type === 'bomberos' && <Flame className="w-5 h-5" />}
+                                                        {contact.type === 'telefono' && <Phone className="w-5 h-5" />}
+                                                        {(!contact.type || !['policia', 'guardia', 'bomberos', 'telefono'].includes(contact.type)) && <AlertTriangle className="w-5 h-5" />}
+                                                    </>
+                                                )}
                                             </div>
                                             <div className="flex-1 text-left">
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Emergencia Local</p>
@@ -337,7 +341,7 @@ export default function StepContacts({ value }: { value?: string }) {
                         
                         <div className="grid grid-cols-1 gap-3">
                             {data.contacts.emergency_contacts
-                                .filter((c: any) => ['salud', 'farmacia', 'taxi', 'veterinario'].includes(c.type))
+                                .filter((c: any) => ['salud', 'farmacia', 'taxi', 'veterinario'].includes(c.type) && c.phone !== '112' && !c.name?.includes('112'))
                                 .map((contact: any) => (
                                     <div key={contact.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/30 group transition-all hover:bg-white hover:shadow-md">
                                         <div className="flex items-center gap-3 mb-3">

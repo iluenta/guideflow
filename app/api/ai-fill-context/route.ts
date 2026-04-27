@@ -7,6 +7,8 @@ import { RateLimiter } from '@/lib/security/rate-limiter';
 import { logSuspiciousActivity } from '@/lib/security';
 import { getTenantId } from '@/app/actions/properties';
 import { generateArrivalInstructions } from '@/lib/arrival/generator-final';
+import { logAiUsage } from '@/lib/services/ai-usage-logger';
+import { after } from 'next/server';
 
 const getGenAI = () => {
   const key = process.env.GOOGLE_AI_API_KEY;
@@ -466,7 +468,8 @@ export async function POST(req: Request) {
           existingData?.address || fullAddress,
           sectionParam,
           buildManualGeo(),
-          existingData?.propertyParking
+          existingData?.propertyParking,
+          { propertyId, tenantId: tenant_id }
         );
         return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
       } catch (err) {
@@ -732,9 +735,37 @@ SOLO JSON:`;
       if (isTodos) {
         // Usar prompt completo (definido en linea 459) que ya gestiona todas las categorías
         const result = await generateWithRetry(prompt);
+
+        // Log tokens and cost
+        after(logAiUsage({
+            operation: 'dining',
+            model: 'gemini-2.5-flash',
+            usage: result?.response?.usageMetadata ? {
+                prompt_tokens: result.response.usageMetadata.promptTokenCount,
+                candidates_tokens: result.response.usageMetadata.candidatesTokenCount,
+                total_tokens: result.response.usageMetadata.totalTokenCount
+            } : undefined,
+            propertyId,
+            tenantId: tenant_id
+        }));
+
         recommendations = parseRecs(result);
       } else {
         const result = await generateWithRetry(prompt);
+
+        // Log tokens and cost
+        after(logAiUsage({
+            operation: 'dining',
+            model: 'gemini-2.5-flash',
+            usage: result?.response?.usageMetadata ? {
+                prompt_tokens: result.response.usageMetadata.promptTokenCount,
+                candidates_tokens: result.response.usageMetadata.candidatesTokenCount,
+                total_tokens: result.response.usageMetadata.totalTokenCount
+            } : undefined,
+            propertyId,
+            tenantId: tenant_id
+        }));
+
         recommendations = parseRecs(result);
 
         // Descartar cualquier recomendación que no sea del tipo solicitado (Gemini puede colarse)
@@ -954,6 +985,20 @@ JSON:`;
       }
 
       const result = await model.generateContent(prompt);
+
+      // Log tokens and cost
+      after(logAiUsage({
+          operation: section === 'tech' ? 'tech_info' : 'faqs',
+          model: 'gemini-2.5-flash',
+          usage: result?.response?.usageMetadata ? {
+              prompt_tokens: result.response.usageMetadata.promptTokenCount,
+              candidates_tokens: result.response.usageMetadata.candidatesTokenCount,
+              total_tokens: result.response.usageMetadata.totalTokenCount
+          } : undefined,
+          propertyId,
+          tenantId: tenant_id
+      }));
+
       const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
       return new Response(text, { headers: { 'Content-Type': 'application/json' } });
     }
@@ -1065,6 +1110,20 @@ JSON:`;
 
         try {
           const result = await model.generateContent(contactPrompt);
+
+          // Log tokens and cost
+          after(logAiUsage({
+              operation: 'contacts',
+              model: 'gemini-2.5-flash',
+              usage: result?.response?.usageMetadata ? {
+                  prompt_tokens: result.response.usageMetadata.promptTokenCount,
+                  candidates_tokens: result.response.usageMetadata.candidatesTokenCount,
+                  total_tokens: result.response.usageMetadata.totalTokenCount
+              } : undefined,
+              propertyId,
+              tenantId: tenant_id
+          }));
+
           const rawText = result.response.text();
           const text = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
           const aiContacts = (JSON.parse(text).emergency_contacts || []).map((c: any) => ({ ...c, id: uuid() }));

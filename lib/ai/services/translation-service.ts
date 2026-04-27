@@ -1,5 +1,7 @@
 import { createEdgeAdminClient } from '@/lib/supabase/edge';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { after } from 'next/server';
+import { logAiUsage } from '@/lib/services/ai-usage-logger';
 
 const MAX_MEMORY_CACHE = 500;
 const memoryCache = new Map<string, string>();
@@ -151,6 +153,20 @@ export class TranslationService {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           result = await batchModel.generateContent(prompt);
+
+          if (propertyId) {
+            after(logAiUsage({
+              operation: 'translation',
+              model: 'gemini-2.5-flash',
+              usage: result?.response?.usageMetadata ? {
+                prompt_tokens: result.response.usageMetadata.promptTokenCount,
+                candidates_tokens: result.response.usageMetadata.candidatesTokenCount,
+                total_tokens: result.response.usageMetadata.totalTokenCount
+              } : undefined,
+              propertyId
+            }));
+          }
+
           break;
         } catch (err: any) {
           if (err?.status === 429 && attempt < 2) {

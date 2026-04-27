@@ -81,7 +81,7 @@ export async function geminiREST(
             temperature: options.temperature ?? 0.1,
             responseMimeType: isJsonMode ? 'application/json' : 'text/plain',
             maxOutputTokens: options.maxOutputTokens ?? 8192,
-            ...(options.thinkingBudget !== null ? { thinkingConfig: { thinkingBudget: options.thinkingBudget ?? 0 } } : {}),
+            ...(typeof options.thinkingBudget === 'number' && options.thinkingBudget > 0 ? { thinkingConfig: { thinkingBudget: options.thinkingBudget } } : {}),
             ...(options.responseSchema && isJsonMode ? { response_schema: options.responseSchema } : {}),
             ...(options.stopSequences && options.stopSequences.length > 0 ? { stopSequences: options.stopSequences } : {})
         },

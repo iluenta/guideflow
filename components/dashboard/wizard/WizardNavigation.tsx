@@ -41,16 +41,16 @@ export function WizardNavigation() {
         "flex items-center justify-center gap-3 font-bold text-white transition-all duration-200 active:scale-[0.98] px-6",
         "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none",
         isLastStep
-            ? "bg-emerald-600 hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-200"
-            : "bg-[#316263] hover:bg-[#316263]/90 hover:shadow-xl hover:shadow-[#316263]/20"
+            ? "bg-landing-navy hover:bg-landing-navy-soft hover:shadow-xl hover:shadow-landing-navy/20"
+            : "bg-landing-navy hover:bg-landing-navy-soft hover:shadow-xl hover:shadow-landing-navy/20"
     )
 
     return (
         <div className="sticky bottom-0 left-0 right-0 z-10 mt-8">
             {/* Fade superior */}
-            <div className="h-8 bg-gradient-to-t from-[#f5f4f0] to-transparent pointer-events-none" />
+            <div className="h-8 bg-gradient-to-t from-landing-bg to-transparent pointer-events-none" />
 
-            <div className="bg-[#f5f4f0] px-4 pb-5 pt-1 md:px-6 md:pb-6">
+            <div className="bg-landing-bg px-4 pb-5 pt-1 md:px-6 md:pb-6">
 
                 {/* ── MÓVIL ──────────────────────────────────────────────────── */}
                 <div className="flex flex-col gap-3 md:hidden">
@@ -76,7 +76,7 @@ export function WizardNavigation() {
                     {/* Barra de progreso fina */}
                     <div className="h-1 w-full rounded-full bg-slate-200 overflow-hidden">
                         <div
-                            className="h-full rounded-full bg-[#316263] transition-all duration-500"
+                            className="h-full rounded-full bg-landing-navy transition-all duration-500"
                             style={{ width: `${((currentIndex + 1) / filteredSteps.length) * 100}%` }}
                         />
                     </div>
@@ -125,9 +125,9 @@ export function WizardNavigation() {
                                 className={cn(
                                     "rounded-full transition-all duration-300",
                                     idx === currentIndex
-                                        ? "w-6 h-2 bg-[#316263]"
+                                        ? "w-6 h-2 bg-landing-navy"
                                         : idx < currentIndex
-                                            ? "w-2 h-2 bg-[#316263]/40"
+                                            ? "w-2 h-2 bg-landing-navy/40"
                                             : "w-2 h-2 bg-slate-200"
                                 )}
                             />

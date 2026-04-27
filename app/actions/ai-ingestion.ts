@@ -11,6 +11,7 @@ import { syncWizardDataToRAG, syncManualToRAG } from './rag-sync'
 import { searchBrave, formatBraveResults } from '@/lib/ai/clients/brave'
 import { sanitizeUUID } from '@/lib/utils'
 import { matchesInventoryItem } from '@/lib/inventory-utils'
+import { logAiUsage } from '@/lib/services/ai-usage-logger'
 
 function logT(msg: string) {
     const time = new Date().toLocaleTimeString('es-ES', { hour12: false });
@@ -34,6 +35,16 @@ export async function generateManualFromImage(propertyId: string, imageUrl: stri
 
     const response = await analyzeImageWithGemini(imageUrl, prompt, { responseMimeType: 'text/plain' })
     const manualText = response?.data
+
+    // Log tokens and cost
+    after(logAiUsage({
+        operation: 'manual_vision',
+        model: 'gemini-2.5-flash',
+        usage: response?.usage,
+        propertyId: currentPropId,
+        tenantId: tenant_id,
+        isError: !!response?.error
+    }));
 
     const { data, error } = await supabase
         .from('property_manuals')
@@ -112,6 +123,16 @@ FORMATO DE SALIDA (JSON ESTRICTO):
 }`
                 const geminiResponse = await analyzeImageWithGemini(url, analysisPrompt)
                 const analysisText = geminiResponse?.data
+
+                // Log tokens and cost
+                after(logAiUsage({
+                    operation: 'manual_vision',
+                    model: 'gemini-2.5-flash',
+                    usage: geminiResponse?.usage,
+                    propertyId: currentPropId,
+                    tenantId: tenant_id,
+                    isError: !!geminiResponse?.error
+                }));
 
                 let analysis: any;
                 if (typeof analysisText === 'object' && analysisText !== null) {
@@ -226,7 +247,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                             ? errorCodesResult.value : '';
                         logT(`[PHASE2] [${index + 1}] Context: ${groundingData?.length || 0} chars technical + ${errorCodesData?.length || 0} chars errors`)
 
-                        const manualContent = await generateManualSinglePass(url, analysis, groundingData, errorCodesData)
+                        const manualContent = await generateManualSinglePass(url, analysis, groundingData, errorCodesData, { propertyId: currentPropId, tenantId: tenant_id })
 
                         if (!manualContent || manualContent.length < 300) {
                             throw new Error('Generated manual too short/empty')
@@ -396,15 +417,23 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
 
         const { data: existingManuals } = await supabase
             .from('property_manuals')
-            .select('appliance_name, brand, model')
+            .select('appliance_name, brand, model, metadata')
             .eq('property_id', currentPropId)
 
         const itemsToProcess = items.filter(item => {
             if (!item.isPresent) return false
-            const exists = existingManuals?.some(m =>
+            
+            // 1. Prioridad: Matching por item_id en metadata
+            const hasExplicitId = existingManuals?.some(m => 
+                m.metadata?.item_id === item.id || m.metadata?.id === item.id
+            )
+            if (hasExplicitId) return false
+
+            // 2. Fallback: Matching por nombre (robusto con word boundaries)
+            const existsByName = existingManuals?.some(m =>
                 matchesInventoryItem(m.appliance_name || '', item)
             )
-            return !exists
+            return !existsByName
         })
 
         if (itemsToProcess.length === 0) {
@@ -438,6 +467,16 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
                             responseMimeType: 'text/plain',
                             temperature: 0.7
                         })
+
+                        // Log tokens and cost
+                        after(logAiUsage({
+                            operation: 'manual_enrichment',
+                            model: 'gemini-2.5-flash',
+                            usage: genResponse?.usage,
+                            propertyId: currentPropId,
+                            tenantId: tenant_id,
+                            isError: !!genResponse?.error
+                        }));
 
                         const manualContent = genResponse?.data
                         if (!manualContent) continue
@@ -1254,7 +1293,8 @@ async function generateManualSinglePass(
     imageUrl: string,
     basicAnalysis: any,
     groundingData: string = '',
-    errorCodesData: string = ''
+    errorCodesData: string = '',
+    loggingContext?: { propertyId?: string | null, tenantId?: string | null }
 ): Promise<string> {
     const applianceType = basicAnalysis.appliance_type || 'Electrodoméstico';
     const specificInstructions = getApplianceSpecificInstructions(applianceType);
@@ -1319,6 +1359,17 @@ RECUERDA: Solo 3 secciones (Primeros Pasos / Programas y Funciones / Consejos Ú
             ? await geminiVision(imageUrl, userPrompt, opts)
             : await geminiREST('gemini-2.5-flash', userPrompt, opts);
 
+        if (loggingContext) {
+            after(logAiUsage({
+                operation: 'manual_vision',
+                model: 'gemini-2.5-flash',
+                usage: result?.usage,
+                propertyId: loggingContext.propertyId,
+                tenantId: loggingContext.tenantId,
+                isError: !!result?.error
+            }));
+        }
+
         if (result.error && imageUrl) {
             logT(`[GEN] Image unavailable (${result.error}), retrying without image...`);
             result = await geminiREST('gemini-2.5-flash', userPrompt, opts);
@@ -1361,11 +1412,24 @@ FORMATO OBLIGATORIO:
 
 Si el problema persiste, contacta con el soporte del alojamiento.`;
 
-        const { data: diagData } = await geminiREST('gemini-2.5-flash', diagPrompt, {
+        const diagResponse = await geminiREST('gemini-2.5-flash', diagPrompt, {
             responseMimeType: 'text/plain',
             temperature: 0.1,
             maxOutputTokens: 2048,
         });
+
+        if (loggingContext) {
+            after(logAiUsage({
+                operation: 'manual_enrichment',
+                model: 'gemini-2.5-flash',
+                usage: diagResponse?.usage,
+                propertyId: loggingContext.propertyId,
+                tenantId: loggingContext.tenantId,
+                isError: !!diagResponse?.error
+            }));
+        }
+
+        const diagData = diagResponse?.data;
 
         const diagSection = (diagData as string || '').trim();
         logT(`[GEN] Diagnostic section: ${diagSection.length} chars | tableRows: ${(diagSection.match(/\|[^|]+\|[^|]+\|[^|]+\|/g) || []).length - 1}`);
@@ -1381,8 +1445,8 @@ Si el problema persiste, contacta con el soporte del alojamiento.`;
 }
 
 // Exportada para uso en endpoints de quality test (no guarda en DB)
-export async function generateManualForQualityTest(imageUrl: string, basicAnalysis: any): Promise<string> {
-    return generateManualSinglePass(imageUrl, basicAnalysis, '', '');
+export async function generateManualForQualityTest(imageUrl: string, basicAnalysis: any, loggingContext?: { propertyId?: string | null, tenantId?: string | null }): Promise<string> {
+    return generateManualSinglePass(imageUrl, basicAnalysis, '', '', loggingContext);
 }
 
 export async function regenerateManualAction(manualId: string) {
@@ -1412,7 +1476,7 @@ export async function regenerateManualAction(manualId: string) {
         appliance_type: manual.appliance_name,
         brand: manual.brand,
         model: manual.model
-    }, groundingData, errorCodesData)
+    }, groundingData, errorCodesData, { propertyId: manual.property_id, tenantId: manual.tenant_id })
 
     logT(`[REGENERATE] Generated manual length: ${manualContent?.length ?? 0} chars`)
     logT(`[REGENERATE] Manual preview (last 500): ${(manualContent || '').slice(-500)}`)

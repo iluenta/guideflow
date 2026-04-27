@@ -16,8 +16,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, BarChart } from "lucide-react";
+import { RefreshCw, BarChart, Zap } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 
 export default function AnalyticsPage() {
   const { profile } = useUserProfile();
@@ -245,6 +246,13 @@ export default function AnalyticsPage() {
             </SelectContent>
           </Select>
 
+          <Link href="/dashboard/analytics/ai-costs">
+            <Button variant="ghost" size="sm"
+              className="w-full sm:w-auto rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-800 h-10 px-4 font-bold text-[10px] uppercase tracking-widest gap-2">
+              <Zap className="w-3.5 h-3.5" />
+              Consumo IA
+            </Button>
+          </Link>
           <Button
             variant="ghost"
             size="sm"

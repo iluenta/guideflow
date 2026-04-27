@@ -2,6 +2,7 @@
 
 import { geminiREST } from './ai/clients/gemini-rest';
 import { GeocodingResult } from './geocoding';
+import { logAiUsage } from './services/ai-usage-logger';
 
 export interface ValidationResult {
     isValid: boolean;
@@ -75,10 +76,12 @@ RESPONDE SOLO EN JSON:
   "explanation": "explicación muy breve en español"
 }`;
 
-    const { data } = await geminiREST('gemini-2.5-flash', prompt, {
+    const t0 = Date.now()
+    const { data, usage } = await geminiREST('gemini-2.5-flash', prompt, {
         temperature: 0.1,
         responseMimeType: 'application/json'
     });
+    logAiUsage({ operation: 'geocoding_validation', model: 'gemini-2.5-flash', usage, durationMs: Date.now() - t0 })
 
     if (!data) {
         return { is_valid: true, warnings: [], explanation: '' };

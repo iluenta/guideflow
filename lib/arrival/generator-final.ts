@@ -2,13 +2,18 @@ import { geocodeAddress, GeocodingResult } from '../geocoding';
 import { geminiREST } from '../ai/clients/gemini-rest';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import OpenAI from 'openai';
+import { logAiUsage } from '../services/ai-usage-logger';
 
-async function callAI(prompt: string): Promise<any> {
-    const { data, error } = await geminiREST('gemini-2.5-flash', prompt, {
+async function callAI(prompt: string, propertyId?: string): Promise<any> {
+    const t0 = Date.now()
+    const { data, error, usage } = await geminiREST('gemini-2.5-flash', prompt, {
         responseMimeType: 'application/json',
         temperature: 0.2
     });
-    if (data) return data;
+    if (data) {
+        logAiUsage({ operation: 'arrival', model: 'gemini-2.5-flash', usage, durationMs: Date.now() - t0, propertyId })
+        return data;
+    }
 
     // Fallback to OpenAI when Gemini is rate-limited
     console.warn('[ARRIVAL] Gemini failed, falling back to OpenAI:', error);
@@ -19,6 +24,11 @@ async function callAI(prompt: string): Promise<any> {
         temperature: 0.2,
         response_format: { type: 'json_object' },
     });
+    logAiUsage({
+        operation: 'arrival', model: 'gpt-4o-mini',
+        usage: { prompt_tokens: res.usage?.prompt_tokens, candidates_tokens: res.usage?.completion_tokens, total_tokens: res.usage?.total_tokens },
+        durationMs: Date.now() - t0, propertyId
+    })
     const text = res.choices[0]?.message?.content || '{}';
     try { return JSON.parse(text); } catch { return { access_info: null }; }
 }
@@ -284,7 +294,8 @@ export async function generateArrivalInstructions(
     address: string,
     section?: 'plane' | 'train' | 'road',
     manualGeo?: GeocodingResult,
-    propertyParking?: { has_parking: boolean; parking_number?: string }
+    propertyParking?: { has_parking: boolean; parking_number?: string },
+    loggingContext?: { propertyId?: string; tenantId?: string }
 ) {
     console.log('[ARRIVAL] Starting generation for:', address, section ? `(Section: ${section})` : '');
 
@@ -333,7 +344,7 @@ export async function generateArrivalInstructions(
         const geminiT0 = Date.now();
         const result = await generateSectionFast({
             address, city, mainAirport, airports, section, trainStations, busStations, parkingSpots, propertyParking
-        });
+        }, loggingContext?.propertyId);
         console.log(`[PERF][generator] Fast path Gemini: ${Date.now() - geminiT0}ms`);
 
         if (mainAirport) {
@@ -374,7 +385,7 @@ export async function generateArrivalInstructions(
         busStations,
         parkingSpots: parkingResult,
         propertyParking,
-    });
+    }, loggingContext?.propertyId);
     console.log(`[PERF][generator] Final JSON generation: ${Date.now() - finalT0}ms`);
     console.log(`[ARRIVAL] Done: ${JSON.stringify(finalResult).substring(0, 100)}...`);
 
@@ -392,7 +403,7 @@ async function generateSectionFast(ctx: {
     busStations: any[];
     parkingSpots: any[];
     propertyParking?: { has_parking: boolean; parking_number?: string };
-}): Promise<any> {
+}, propertyId?: string): Promise<any> {
     const { address, city, mainAirport, airports, section, trainStations, busStations, parkingSpots, propertyParking } = ctx;
 
     // Build parking context string for the prompt
@@ -498,7 +509,7 @@ RESPONDE SOLO CON ESTE JSON:
     };
 
     try {
-        const data = await callAI(sectionPrompts[section]);
+        const data = await callAI(sectionPrompts[section], propertyId);
         console.log(`[ARRIVAL] Fast section "${section}" generated`);
         return data || { access_info: null };
     } catch (error: any) {
@@ -516,7 +527,7 @@ async function generateArrivalJSON(ctx: {
     busStations: any[];
     parkingSpots: any[];
     propertyParking?: { has_parking: boolean; parking_number?: string };
-}) {
+}, propertyId?: string) {
     const { address, city, airports, trainStations, busStations, parkingSpots, propertyParking } = ctx;
     const parkingContext = buildParkingContext(propertyParking, parkingSpots);
 
@@ -596,7 +607,7 @@ JSON OBLIGATORIO (sin texto adicional):
   }
 }`;
 
-    const data = await callAI(prompt);
+    const data = await callAI(prompt, propertyId);
     return data || { access_info: null };
 }
 

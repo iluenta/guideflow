@@ -139,6 +139,9 @@ export const DEFAULT_ITEMS: Omit<InventoryItem, 'isPresent'>[] = [
     { id: 'calefaccion', name: 'Calefacción', category: 'comfort', icon: Flame, aliases: ['calefaccion', 'calefacción', 'radiador', 'caldera', 'termostato', 'heating'] },
     { id: 'lavadora', name: 'Lavadora', category: 'comfort', icon: WashingMachine, aliases: ['lavadora', 'washing', 'washer', 'lavasecadora'] },
     { id: 'lavavajillas', name: 'Lavavajillas', category: 'comfort', icon: Utensils, aliases: ['lavavajillas', 'lavaplatos', 'dishwasher'] },
+    { id: 'aspiradora', name: 'Aspiradora', category: 'comfort', icon: Wind, aliases: ['aspiradora', 'vacuum', 'conga', 'roomba'] },
+    { id: 'ventilador', name: 'Ventilador', category: 'comfort', icon: Wind, aliases: ['ventilador', 'fan'] },
+    { id: 'caja-fuerte', name: 'Caja fuerte', category: 'comfort', icon: ShieldCheck, aliases: ['caja fuerte', 'safe', 'box'] },
     { id: 'extintor', name: 'Extintor', category: 'comfort', icon: ShieldCheck, aliases: ['extintor', 'fuego', 'fire'] },
     { id: 'botiquin', name: 'Botiquín de primeros auxilios', category: 'comfort', icon: ShieldCheck, aliases: ['botiquin', 'botiquín', 'primeros auxilios', 'first aid'] },
 ]

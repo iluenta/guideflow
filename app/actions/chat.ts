@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { generateOpenAIEmbedding } from '@/lib/ai/clients/openai'
 import { geminiREST } from '@/lib/ai/clients/gemini-rest'
+import { logAiUsage } from '@/lib/services/ai-usage-logger'
 
 /**
  * RAG-enabled chat for guests using Gemini 2.0 Flash and OpenAI Embeddings
@@ -51,10 +52,12 @@ PREGUNTA DEL HUÉSPED: ${message}
 
 Respuesta técnica sin fechas:`
 
-    const { data: responseText } = await geminiREST('gemini-2.5-flash', fullPrompt, {
-        temperature: 0.0, // Fuerza al modelo a ser literal y no inventar datos de tiempo
+    const t0 = Date.now()
+    const { data: responseText, usage } = await geminiREST('gemini-2.5-flash', fullPrompt, {
+        temperature: 0.0,
         responseMimeType: 'text/plain'
     })
+    logAiUsage({ operation: 'chat', model: 'gemini-2.5-flash', usage, durationMs: Date.now() - t0, propertyId })
 
     return {
         answer: responseText || "Lo siento, estoy teniendo problemas para responder en este momento. Por favor, intenta de nuevo o contacta al anfitrión.",

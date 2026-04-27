@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
         const imageUrl = imageRecord?.image_url || '';
 
-        const content = await generateManualForQualityTest(imageUrl, basicAnalysis);
+        const content = await generateManualForQualityTest(imageUrl, basicAnalysis, { propertyId, tenantId: authResult.access?.tenant_id });
 
         return new Response(JSON.stringify({ content, chars: content.length }), {
             headers: { 'Content-Type': 'application/json' },

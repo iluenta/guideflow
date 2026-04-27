@@ -103,7 +103,8 @@
       "Bash(npx --yes serve . -p 4444)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4444/Landing.html)",
       "Bash(pkill -f \"serve \\\\.\")",
-      "Bash(pkill -f \"npx.*serve\")"
+      "Bash(pkill -f \"npx.*serve\")",
+      "Bash(grep -v \":0$\")"
     ],
     "additionalDirectories": [
       "C:\\Proyectos\\guideflow\\.claude",

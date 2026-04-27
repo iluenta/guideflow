@@ -5,6 +5,7 @@ import { logger } from '@/lib/logger'
 import { geminiREST } from '@/lib/ai/clients/gemini-rest'
 import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/clients/openai'
 import { syncManualToRAG } from './rag-sync'
+import { logAiUsage } from '@/lib/services/ai-usage-logger'
 import { revalidatePath } from 'next/cache'
 
 /**
@@ -45,10 +46,12 @@ REGLAS DE ORO:
 
 RESPONDE SOLO CON EL NUEVO CONTENIDO DEL MANUAL EN MARKDOWN.`
 
+    const t0 = Date.now()
     const genResponse = await geminiREST('gemini-2.5-flash', fusionPrompt, {
         responseMimeType: 'text/plain',
         temperature: 0.3
     })
+    logAiUsage({ operation: 'manual_enrichment', model: 'gemini-2.5-flash', usage: genResponse?.usage, durationMs: Date.now() - t0, propertyId: manual.property_id })
 
     const enrichedContent = genResponse?.data
     if (!enrichedContent) throw new Error('Error al generar el manual enriquecido')
