@@ -237,6 +237,8 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
 
     let guestName = ''
     let tokenLanguage = ''
+    let checkinDate = ''
+    let checkoutDate = ''
     let activeToken = token
 
     // Backward compatibility: If token is in URL, store it in cookie and REDIRECT to hide it
@@ -265,6 +267,8 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
             if (valid && access) {
                 guestName = access.guest_name
                 tokenLanguage = access.language
+                checkinDate = access.checkin_date || ''
+                checkoutDate = access.checkout_date || ''
             } else if (!isOwner) {
                 // Si no es el dueño y el token no es válido, fuera
                 (await cookies()).delete(`gf_token_${slug}`)
@@ -396,6 +400,8 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
                 tokenLanguage={tokenLanguage}
                 initialLanguage={initialLanguage}
                 initialTranslations={allTranslations}
+                checkinDate={checkinDate}
+                checkoutDate={checkoutDate}
             />
         </div>
     )

@@ -16,6 +16,8 @@ interface WeatherWidgetMiniProps {
     currentLanguage?: string;
     accessToken?: string;
     propertyId?: string;
+    checkInTime?: string;
+    locationName?: string;
 }
 
 export function WeatherWidgetMini({
@@ -27,6 +29,8 @@ export function WeatherWidgetMini({
     currentLanguage = 'es',
     accessToken,
     propertyId,
+    checkInTime,
+    locationName,
 }: WeatherWidgetMiniProps) {
     const t = getGuideTheme(themeId);
     const lang = currentLanguage;
@@ -54,21 +58,19 @@ export function WeatherWidgetMini({
 
     // Dynamic weather strings (generated in Spanish by useWeather, translated here)
     const primarySource = weather?.contextual.primaryLine ?? '';
-    const secondarySource = weather?.contextual.secondaryLine ?? '';
     const { content: primaryLine } = useLocalizedContent(primarySource, lang, 'ui', accessToken, propertyId);
-    const { content: secondaryLine } = useLocalizedContent(secondarySource, lang, 'ui', accessToken, propertyId);
 
     // Static UI strings
-    const { content: labelActualizado } = useLocalizedContent('Actualizado', lang, 'ui', accessToken, propertyId);
-    const { content: labelDatosRealTime } = useLocalizedContent('Datos meteorológicos en tiempo real', lang, 'ui', accessToken, propertyId);
-    const { content: labelActualizar } = useLocalizedContent('Actualizar', lang, 'ui', accessToken, propertyId);
+    const { content: labelCheckinTitle } = useLocalizedContent('Check-in disponible', lang, 'ui', accessToken, propertyId);
+    const { content: labelWeatherAt } = useLocalizedContent('Tiempo en', lang, 'ui', accessToken, propertyId);
+    const { content: labelYourDestination } = useLocalizedContent('tu destino', lang, 'ui', accessToken, propertyId);
 
     if (!lat || !lng) return null;
 
     // Skeleton mientras carga la primera vez
     if (isLoading && !weather) {
         return (
-            <div className={cn("mx-5 mt-6 w-[calc(100%-2.5rem)] rounded-2xl shadow-sm border px-4 py-3 flex items-center gap-3 animate-pulse", t.cardBg, t.searchBorder)}>
+            <div className={cn("mx-5 mt-6 w-[calc(100%-2.5rem)] rounded-[20px] shadow-sm border px-[18px] py-[14px] flex items-center gap-3 animate-pulse", t.cardBg, t.searchBorder)}>
                 <div className={cn("h-11 w-11 rounded-xl shrink-0", t.chipIconBg)} />
                 <div className="flex-1 space-y-2">
                     <div className={cn("h-4 rounded w-3/4", t.chipIconBg)} />
@@ -81,74 +83,47 @@ export function WeatherWidgetMini({
     if (error || !weather) return null;
 
     const icon = CONDITION_ICONS[weather.condition];
-
-    // Formatear hora de última actualización: "12:59"
-    const updatedStr = lastUpdated
-        ? lastUpdated.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-        : null;
+    const minTemp = weather.hourly?.length 
+        ? Math.min(...weather.hourly.map(h => h.temp)) 
+        : weather.feelsLike;
 
     return (
-        <div className={cn("mx-5 mt-6 w-[calc(100%-2.5rem)] rounded-2xl shadow-sm border px-4 py-3 flex flex-col gap-2.5 transition-colors", t.cardBg, t.searchBorder)}>
-            {/* Fila principal — clickable si hay onClick */}
-            <div
-                role={onClick ? 'button' : undefined}
-                tabIndex={onClick ? 0 : undefined}
-                onClick={onClick}
-                onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
-                className={cn(
-                    'flex items-center gap-3',
-                    onClick && 'cursor-pointer active:scale-[0.98] transition-transform'
-                )}
-            >
-                {/* Icono condición */}
-                <div className={cn("h-11 w-11 rounded-xl flex items-center justify-center shrink-0", t.chipIconBg)}>
-                    <span className="text-2xl leading-none">{icon}</span>
+        <div 
+            role={onClick ? 'button' : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            onClick={onClick}
+            onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
+            className={cn(
+                "mx-5 mt-6 w-[calc(100%-2.5rem)] rounded-[20px] shadow-sm border px-[18px] py-[16px] flex items-center transition-all relative z-10", 
+                t.cardBg, 
+                t.searchBorder,
+                onClick && 'cursor-pointer active:scale-[0.98]'
+            )}
+        >
+            {/* Columna Izquierda: Tiempo */}
+            <div className="flex-1 min-w-0 pr-4 border-r" style={{ borderColor: 'var(--border, rgba(0,0,0,0.08))' }}>
+                <div className={cn("text-[9.5px] font-bold uppercase tracking-[.1em] mb-2 opacity-60", t.sectionLabel)}>
+                    {labelWeatherAt} {locationName?.split(',')[0] || labelYourDestination}
                 </div>
-
-                {/* Texto */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-1.5">
-                        <span className={cn("text-lg font-bold", t.guideCardTitle.split(' ').filter(c => c.startsWith('text-')).join(' '))}>
-                            {weather.currentTemp}°
-                        </span>
-                        <span className={cn("text-xs truncate", t.guideCardSubtitle)}>
-                            {primaryLine}
-                        </span>
-                    </div>
-                    <p className={cn("text-[10px] truncate", t.sectionLabel)}>
-                        {secondaryLine}
-                    </p>
+                <div className="flex items-center gap-2.5 mb-1.5">
+                    <span className="text-[24px] leading-none">{icon}</span>
+                    <span className={cn("text-[18px] font-bold tracking-tight", t.guideCardTitle.split(' ').filter(c => c.startsWith('text-')).join(' '))}>
+                        {weather.currentTemp}° <span className="text-[14px] font-medium opacity-40">/ {minTemp}°</span>
+                    </span>
                 </div>
-
-                {onClick && <ChevronRight className={cn("h-4 w-4 shrink-0", t.sectionLabel)} />}
+                <div className={cn("text-[11.5px] font-medium truncate opacity-70", t.guideCardSubtitle)}>
+                    {primaryLine.split('·')[0].trim()}
+                </div>
             </div>
 
-            {/* Fila inferior: última actualización + botón refresco */}
-            <div className={cn("flex items-center justify-between pt-1 border-t", t.searchBorder)}>
-                <span className={cn("text-[9px] font-medium", t.sectionLabel)}>
-                    {updatedStr
-                        ? `${labelActualizado} · ${updatedStr}`
-                        : labelDatosRealTime}
-                </span>
-
-                <button
-                    onClick={handleRefresh}
-                    disabled={isRefreshing || isLoading}
-                    className={cn(
-                        'flex items-center gap-1 text-[9px] font-semibold transition-colors px-1.5 py-0.5 rounded-lg active:scale-95',
-                        t.sectionLabel,
-                        (isRefreshing || isLoading) && 'opacity-40 cursor-not-allowed'
-                    )}
-                    aria-label="Actualizar datos del tiempo"
-                >
-                    <RefreshCw
-                        className={cn(
-                            'h-3 w-3',
-                            (isRefreshing || isLoading) && 'animate-spin'
-                        )}
-                    />
-                    <span>{labelActualizar}</span>
-                </button>
+            {/* Columna Derecha: Check-in */}
+            <div className="flex-1 min-w-0 pl-4 text-right flex flex-col items-end">
+                <div className={cn("text-[9.5px] font-bold uppercase tracking-[.1em] mb-2 opacity-60", t.sectionLabel)}>
+                    {labelCheckinTitle}
+                </div>
+                <div className="text-[16px] font-bold text-[#10B981] tracking-wide mb-1.5">
+                    {checkInTime || '15:00 - 22:00'}
+                </div>
             </div>
         </div>
     );

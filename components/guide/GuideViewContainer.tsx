@@ -85,6 +85,8 @@ interface GuideViewContainerProps {
     tokenLanguage?: string;
     initialLanguage?: string;
     initialTranslations?: Record<string, string>;
+    checkinDate?: string;
+    checkoutDate?: string;
 }
 
 export function GuideViewContainer({
@@ -100,6 +102,8 @@ export function GuideViewContainer({
     tokenLanguage,
     initialLanguage = 'es',
     initialTranslations = {},
+    checkinDate,
+    checkoutDate,
 }: GuideViewContainerProps) {
     const themeId: string =
         branding?.layout_theme_id ||
@@ -431,6 +435,9 @@ export function GuideViewContainer({
                     showBack={false}
                     hasParking={property.has_parking}
                     parkingNumber={property.parking_number}
+                    property={property}
+                    checkinDate={checkinDate}
+                    checkoutDate={checkoutDate}
                 />
             );
         }
@@ -455,6 +462,7 @@ export function GuideViewContainer({
                     sections={sections}
                     manuals={displayManuals}
                     disabledLanguage={!!tokenLanguage}
+                    property={property}
                 />
             );
         }
@@ -485,7 +493,9 @@ export function GuideViewContainer({
                     const cc = contactsData.custom_contacts.find((c: any) => c.id === contactsData.preferred_contact_id);
                     if (cc) { prefName = cc.name; prefPhone = cc.phone; }
                 }
-                return <CheckInView onBack={handleBack} checkinData={checkinData} address={accessData?.full_address || property.full_address || ''} hostName={welcomeData?.host_name || labelHostNameFallback} currentLanguage={language} preferredContactName={prefName} preferredContactPhone={prefPhone} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
+                const hasAccessCodeEnabled = property?.has_access_code === true;
+                const accessCodeProp = hasAccessCodeEnabled ? (property.access_code || accessData?.access_code || '') : '';
+                return <CheckInView onBack={handleBack} propertyName={property.name} accessCodeProp={accessCodeProp} hasAccessCodeEnabled={hasAccessCodeEnabled} checkinData={checkinData} address={accessData?.full_address || property.full_address || ''} hostName={welcomeData?.host_name || labelHostNameFallback} currentLanguage={language} preferredContactName={prefName} preferredContactPhone={prefPhone} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
             }
             case 'emergency': {
                 const contactsData = context?.find((c: any) => c.category === 'contacts')?.content || {};

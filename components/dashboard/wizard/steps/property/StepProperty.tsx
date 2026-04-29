@@ -299,6 +299,35 @@ export default function StepProperty({ value }: { value?: string }) {
                         </div>
                     )}
                 </div>
+
+                {/* ── Código de acceso ───────────────────────────── */}
+                <div className="pt-4 border-t border-slate-50 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <Hash className="h-4 w-4 text-[#316263]" />
+                                ¿Tiene Código de acceso?
+                            </Label>
+                            <p className="text-[11px] text-slate-400">Código del portal, urbanización o cerradura electrónica.</p>
+                        </div>
+                        <Switch
+                            checked={data.property?.has_access_code || false}
+                            onCheckedChange={val => setData({ ...data, property: { ...data.property, has_access_code: val } })}
+                        />
+                    </div>
+
+                    {data.property?.has_access_code && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <Label className="text-sm font-medium text-slate-600 ml-1">Código</Label>
+                            <Input
+                                placeholder="Ej: 04652"
+                                className="h-11 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-[#316263]/20"
+                                value={data.property?.access_code || ''}
+                                onChange={e => setData({ ...data, property: { ...data.property, access_code: e.target.value } })}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
         </TabsContent>
     )

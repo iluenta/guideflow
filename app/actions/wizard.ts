@@ -37,6 +37,8 @@ export async function saveWizardStep(
             baths: stepData.baths,
             has_parking: stepData.has_parking,
             parking_number: stepData.parking_number,
+            has_access_code: stepData.has_access_code,
+            access_code: stepData.access_code,
             main_image_url: stepData.main_image_url,
             theme_config: { primary_color: stepData.primary_color },
             latitude: stepData.latitude,

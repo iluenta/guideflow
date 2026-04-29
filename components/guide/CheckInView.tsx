@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, MapPin, Copy, Phone, ExternalLink, Key, Lock, DoorOpen, Info, Wifi, Check, MessageSquare } from 'lucide-react';
+import { ArrowLeft, MapPin, Copy, Phone, ExternalLink, Key, Lock, DoorOpen, Info, Wifi, Check, MessageSquare, Clock } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from './PageHeader';
@@ -17,6 +17,9 @@ interface CheckinStep {
 
 interface CheckInViewProps {
     onBack: () => void;
+    propertyName?: string;
+    accessCodeProp?: string;
+    hasAccessCodeEnabled?: boolean;
     checkinData: {
         checkin_time?: string;
         emergency_phone?: string;
@@ -59,49 +62,46 @@ function StepItem({
     const StepIcon = getIcon(step.icon);
 
     return (
-        <motion.div variants={itemVars} className="bg-surface rounded-3xl p-6 shadow-card border border-primary/[0.03] relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/[0.02] rounded-full -mr-16 -mt-16 transition-transform duration-700 group-hover:scale-110" />
-
-            <div className="flex items-start gap-4 relative z-10">
-                <div className="w-10 h-10 rounded-2xl bg-surface border border-primary/10 text-primary flex items-center justify-center font-serif text-base font-bold shrink-0 shadow-sm transition-colors group-hover:border-primary/20">
-                    {idx + 2}
-                </div>
-                <div className="flex-1 pt-0.5">
-                    <div className="flex items-center gap-2 mb-2">
-                        <StepIcon className="w-3.5 h-3.5 text-primary/40" />
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.1em] text-primary/60">
-                            {localizedTitle}
-                        </h3>
-                    </div>
-                    <p className="font-serif text-base text-slate-800 font-bold leading-snug mb-4">
-                        {localizedDescription}
-                    </p>
-
-                    {step.image_url && (
-                        <div className="mb-4 rounded-2xl overflow-hidden border border-primary/5 shadow-inner bg-primary/[0.02] relative min-h-[200px]">
-                            <Image
-                                src={step.image_url}
-                                alt={step.title}
-                                fill
-                                sizes="(max-width: 768px) 100vw, 400px"
-                                className="object-cover transition-transform duration-700 hover:scale-105"
-                                loading="lazy"
-                            />
-                        </div>
-                    )}
-
-                    {isCode(step.description) && (
-                        <button
-                            className="flex items-center gap-2 text-xs font-bold text-primary bg-primary/[0.06] px-4 py-2 rounded-xl transition-all hover:bg-primary/[0.1] active:scale-95 shadow-sm"
-                            onClick={() => handleCopy(step.description)}
-                        >
-                            <Copy className="w-3 h-3" />
-                            {copyCodeLabel}
-                        </button>
-                    )}
-                </div>
+        <div className="relative flex items-start gap-4">
+            <div className="w-8 h-8 rounded-full bg-background border-2 border-primary/20 text-primary flex items-center justify-center font-sans text-xs font-bold shrink-0 z-10 mt-2">
+                {idx + 2}
             </div>
-        </motion.div>
+            <motion.div variants={itemVars} className="flex-1 bg-surface rounded-2xl p-5 shadow-sm border border-primary/5">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/5 text-primary mb-3">
+                    <StepIcon className="w-3 h-3" />
+                    <span className="text-[9px] font-black uppercase tracking-wider">{localizedTitle}</span>
+                </div>
+                <p className="font-sans text-[13px] text-slate-700 leading-relaxed mb-4">
+                    {localizedDescription}
+                </p>
+
+                {step.image_url && (
+                    <div className="rounded-xl overflow-hidden border border-primary/5 shadow-inner bg-primary/[0.02] relative min-h-[160px] mb-4">
+                        <Image
+                            src={step.image_url}
+                            alt={step.title}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 400px"
+                            className="object-cover"
+                            loading="lazy"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8 pointer-events-none">
+                            <p className="text-white text-[10px] font-bold">{localizedTitle}</p>
+                        </div>
+                    </div>
+                )}
+
+                {isCode(step.description) && (
+                    <button
+                        className="flex items-center justify-center gap-2 w-full text-xs font-bold text-primary bg-primary/[0.04] border border-primary/10 px-4 py-2.5 rounded-xl transition-all hover:bg-primary/[0.08] active:scale-95 shadow-sm"
+                        onClick={() => handleCopy(step.description)}
+                    >
+                        <Copy className="w-3.5 h-3.5" />
+                        {copyCodeLabel}
+                    </button>
+                )}
+            </motion.div>
+        </div>
     );
 }
 
@@ -122,6 +122,9 @@ const itemVars: Variants = {
 
 export function CheckInView({
     onBack,
+    propertyName,
+    accessCodeProp,
+    hasAccessCodeEnabled,
     checkinData,
     address,
     hostName,
@@ -145,7 +148,35 @@ export function CheckInView({
     const { content: callLabel } = useLocalizedContent('Llamar', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: copiedLabel } = useLocalizedContent('Copiado', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: codeCopiedLabel } = useLocalizedContent('Código copiado al portapapeles', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: copyCodeLabel } = useLocalizedContent('Copiar código', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelCopiar } = useLocalizedContent('Copiar', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelWhatsApp } = useLocalizedContent('WhatsApp', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: digitalKeyLabel } = useLocalizedContent('Tu llave digital', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: welcomeLabel } = useLocalizedContent('Bienvenido a', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: urbCodeLabel } = useLocalizedContent('Código urb.', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: stepsLabel } = useLocalizedContent('Sigue estos pasos al llegar', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: nowLabel } = useLocalizedContent('Ahora', currentLanguage, 'ui_label', accessToken, propertyId);
+    const isCode = (text: string) => {
+        const trimmed = text.trim();
+        return /^[0-9A-Z]{3,8}$/.test(trimmed) || trimmed.includes('Código:');
+    };
+
+    // Extract access code from steps for the hero block
+    const accessCodeStep = steps.find((s: any) => isCode(s.description));
+    let accessCode = accessCodeProp || '';
+    if (hasAccessCodeEnabled && !accessCode && accessCodeStep) {
+        const text = accessCodeStep.description;
+        const codeMatch = text.match(/Código:\s*([^\s.]+)/);
+        if (codeMatch) {
+            accessCode = codeMatch[1];
+        } else if (/^[0-9A-Z]{3,8}$/.test(text.trim())) {
+            accessCode = text.trim();
+        } else {
+            accessCode = text.match(/([0-9A-Z]{4,8})/)?.[1] || '';
+        }
+    }
+    // If global toggle is off, force empty code
+    if (!hasAccessCodeEnabled) accessCode = '';
 
     // Use preferred contact if available, fallback to hostName/emergency_phone
     const displayContactName = preferredContactName || hostName;
@@ -174,10 +205,7 @@ export function CheckInView({
         }
     };
 
-    const isCode = (text: string) => {
-        const trimmed = text.trim();
-        return /^[0-9A-Z]{3,8}$/.test(trimmed) || trimmed.includes('Código:');
-    };
+
 
     const handleCopy = (text: string) => {
         const codeMatch = text.match(/Código:\s*([^\s.]+)/) || [null, text];
@@ -210,51 +238,93 @@ export function CheckInView({
             />
 
             <motion.div
-                className="p-5 max-w-md mx-auto pb-32 space-y-6"
+                className="p-5 max-w-md mx-auto pb-32"
                 variants={containerVars}
                 initial="hidden"
                 animate="show"
             >
-                {/* Time info card */}
-                <motion.div variants={itemVars} className="bg-surface rounded-3xl p-6 shadow-card border border-primary/[0.03] text-center">
-                    <p className="text-text-secondary/60 text-[10px] uppercase tracking-[0.2em] mb-3 font-bold">
-                        {checkinAvailableLabel}
-                    </p>
-                    <p className="font-serif text-3xl text-slate-800 font-bold">
-                        {checkinData.checkin_time || '15:00 - 22:00'}
-                    </p>
-                </motion.div>
+                {/* Hero block */}
+                <motion.div variants={itemVars} className="bg-primary text-white rounded-[28px] p-6 shadow-xl relative overflow-hidden mb-8">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 pointer-events-none" />
+                    
+                    <div className="relative z-10">
+                        <p className="text-white/80 text-[9px] uppercase tracking-[0.15em] font-bold mb-1">
+                            {digitalKeyLabel}
+                        </p>
+                        <h2 className="text-[22px] font-bold font-sans mb-6 leading-tight">
+                            {welcomeLabel} {propertyName || hostName}
+                        </h2>
 
-                {/* Steps List */}
-                <div className="space-y-4">
-                    {/* Step 1: Address (Fixed) */}
-                    <motion.div variants={itemVars} className="bg-surface rounded-3xl p-6 shadow-card border border-primary/[0.03] relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/[0.02] rounded-full -mr-16 -mt-16 transition-transform duration-700 group-hover:scale-110" />
-
-                        <div className="flex items-start gap-4 relative z-10">
-                            <div className="w-10 h-10 rounded-2xl bg-primary text-white flex items-center justify-center font-serif text-base font-bold shrink-0 shadow-lg shadow-primary/20">
-                                1
-                            </div>
-                            <div className="flex-1 pt-0.5">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <MapPin className="w-3.5 h-3.5 text-primary/40" />
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.1em] text-primary/60">
-                                        {addressLabel}
-                                    </h3>
+                        {accessCode && (
+                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-4 flex items-center justify-between border border-white/10">
+                                <div>
+                                    <p className="text-white/70 text-[9px] uppercase tracking-[0.15em] font-bold mb-1">
+                                        {urbCodeLabel}
+                                    </p>
+                                    <p className="text-xl font-black tracking-widest">
+                                        {accessCode}
+                                    </p>
                                 </div>
-                                <p className="font-serif text-lg text-slate-800 font-bold leading-snug mb-4">
-                                    {address}
-                                </p>
                                 <button
-                                    className="flex items-center gap-2 text-xs font-bold text-primary bg-primary/[0.06] px-4 py-2 rounded-xl transition-all hover:bg-primary/[0.1] active:scale-95 shadow-sm"
-                                    onClick={openMaps}
+                                    onClick={() => handleCopy(`Código: ${accessCode}`)}
+                                    className="flex items-center gap-1.5 bg-white text-primary px-3 py-2 rounded-full text-[10px] font-bold active:scale-95 transition-transform shadow-sm"
                                 >
-                                    <ExternalLink className="w-3 h-3" />
-                                    {showOnMapLabel}
+                                    <Copy className="w-3 h-3" />
+                                    <span className="hidden sm:inline">{copyCodeLabel}</span>
+                                    <span className="sm:hidden">{labelCopiar || 'Copiar'}</span>
                                 </button>
                             </div>
+                        )}
+
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white/10 p-2 rounded-full">
+                                <Clock className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-white/70 text-[9px] uppercase tracking-widest font-bold mb-0.5">
+                                    {checkinAvailableLabel}
+                                </p>
+                                <p className="font-sans text-sm font-bold">
+                                    {checkinData.checkin_time || '15:00 - 22:00'}
+                                </p>
+                            </div>
                         </div>
-                    </motion.div>
+                    </div>
+                </motion.div>
+
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="h-px bg-primary/10 flex-1" />
+                    <p className="text-[10px] text-primary/40 font-bold uppercase tracking-widest text-center whitespace-nowrap">{stepsLabel}</p>
+                    <div className="h-px bg-primary/10 flex-1" />
+                </div>
+
+                {/* Steps List */}
+                <div className="relative space-y-6 mb-8">
+                    {/* Vertical Timeline Line */}
+                    <div className="absolute left-[15px] top-6 bottom-6 w-[2px] bg-primary/10" />
+
+                    {/* Step 1: Address (Fixed) */}
+                    <div className="relative flex items-start gap-4">
+                        <div className="w-8 h-8 rounded-full bg-background border-2 border-primary/20 text-primary flex items-center justify-center font-sans text-xs font-bold shrink-0 z-10 mt-2">
+                            1
+                        </div>
+                        <motion.div variants={itemVars} className="flex-1 bg-surface rounded-2xl p-5 shadow-sm border border-primary/5">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/5 text-primary mb-3">
+                                <MapPin className="w-3 h-3" />
+                                <span className="text-[9px] font-black uppercase tracking-wider">{addressLabel}</span>
+                            </div>
+                            <p className="font-sans text-[13px] text-slate-700 leading-relaxed mb-4">
+                                {address}
+                            </p>
+                            <button
+                                className="flex items-center justify-center gap-2 w-full text-xs font-bold text-primary bg-primary/[0.04] border border-primary/10 px-4 py-2.5 rounded-xl transition-all hover:bg-primary/[0.08] active:scale-95 shadow-sm"
+                                onClick={openMaps}
+                            >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                {showOnMapLabel}
+                            </button>
+                        </motion.div>
+                    </div>
 
                     {/* Dynamic Steps */}
                     {steps.map((step, idx) => (

@@ -79,6 +79,8 @@ export type Property = {
     timezone: string | null
     has_parking: boolean
     parking_number: string
+    has_access_code: boolean
+    access_code: string
     created_at: string
     updated_at: string
 }

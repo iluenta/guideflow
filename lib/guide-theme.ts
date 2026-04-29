@@ -57,6 +57,12 @@ export interface GuideThemeClasses {
     conciergeText: string
     /** Accent text color for active tabs and highlighted text bits */
     accentText: string
+    /** Entry card gradient (access code hero card in Welcome screen) */
+    entryCardGradient: string
+    /** Icon button background (light tint) — for copy/map/call buttons in InfoCards */
+    iconBtnBg: string
+    /** Icon button color — for copy/map/call buttons in InfoCards */
+    iconBtnColor: string
 }
 
 // ── Type alias for backward compat with color-harmonizer.ts ──
@@ -71,7 +77,7 @@ const modern: GuideThemeClasses = {
     heroGreeting:     'text-white font-bold',
     heroPropertyName: 'text-white/90 font-light',
     cardBg:           'bg-white border border-gray-100 shadow-sm',
-    sectionLabel:     'text-gray-400 font-bold uppercase tracking-widest',
+    sectionLabel:     'text-gray-500 font-bold uppercase tracking-widest',
     actionBtn:        'bg-gray-900 text-white rounded-xl',
     searchBg:         'bg-white',
     searchText:       'text-gray-500 font-bold tracking-widest uppercase',
@@ -89,6 +95,9 @@ const modern: GuideThemeClasses = {
     guideCardChevron: 'bg-gray-100 text-gray-700 group-hover:bg-gray-900 group-hover:text-white',
     conciergeText:    'text-gray-700 font-bold tracking-widest',
     accentText:       'text-gray-900',
+    entryCardGradient: 'bg-gradient-to-br from-gray-900 to-gray-700',
+    iconBtnBg:        'bg-gray-100',
+    iconBtnColor:     'text-gray-700',
 }
 
 // ── Urban Dark ─────────────────────────────────────────────────
@@ -118,6 +127,9 @@ const urban: GuideThemeClasses = {
     guideCardChevron: 'bg-[#0F0F0F] border border-[#555] text-[#555] group-hover:text-[#00E5FF]',
     conciergeText:    'text-[#00E5FF] font-bold tracking-[0.2em] uppercase',
     accentText:       'text-[#00E5FF]',
+    entryCardGradient: 'bg-gradient-to-br from-[#0F0F0F] to-[#1C1C1C] border border-[#00E5FF]/20',
+    iconBtnBg:        'bg-[#1C1C1C] border border-[#333]',
+    iconBtnColor:     'text-[#00E5FF]',
 }
 
 // ── Coastal Breeze ─────────────────────────────────────────────────
@@ -129,7 +141,7 @@ const coastal: GuideThemeClasses = {
     heroGreeting:     'text-white font-extrabold',
     heroPropertyName: 'text-white/90 font-semibold',
     cardBg:           'bg-white border border-[#E0F2FE] rounded-3xl shadow-sm',
-    sectionLabel:     'text-[#94A3B8] font-extrabold uppercase tracking-widest',
+    sectionLabel:     'text-[#64748B] font-extrabold uppercase tracking-widest',
     actionBtn:        'bg-[#0EA5E9] text-white font-extrabold rounded-full',
     searchBg:         'bg-white',
     searchText:       'text-[#0EA5E9] font-extrabold tracking-widest uppercase',
@@ -151,8 +163,11 @@ const coastal: GuideThemeClasses = {
     guideCardSubtitle:'text-[#64748B] font-semibold',
     guideCardBg:      'bg-white border border-[#E0F2FE] rounded-3xl shadow-sm',
     guideCardChevron: 'bg-[#F0F9FF] text-[#BAE6FD] group-hover:bg-[#0EA5E9] group-hover:text-white rounded-full',
-    conciergeText:    'text-[#0EA5E9] font-extrabold tracking-widest uppercase',
-    accentText:       'text-[#0EA5E9]',
+    conciergeText:    'text-[#0284C7] font-extrabold tracking-widest uppercase',
+    accentText:       'text-[#0284C7]',
+    entryCardGradient: 'bg-gradient-to-br from-[#1593D2] via-[#0D7CB8] to-[#0A5F8E]',
+    iconBtnBg:        'bg-[#EAF6FD]',
+    iconBtnColor:     'text-[#0D7CB8]',
 }
 
 // ── Warm Boutique ─────────────────────────────────────────────────
@@ -182,6 +197,9 @@ const warm: GuideThemeClasses = {
     guideCardChevron: 'bg-[#FEF3E2] text-[#C4956A] group-hover:bg-[#8B5E3C] group-hover:text-white',
     conciergeText:    'text-[#8B5E3C] font-bold tracking-widest uppercase',
     accentText:       'text-[#8B5E3C]',
+    entryCardGradient: 'bg-gradient-to-br from-[#8B5E3C] to-[#5A2D0A]',
+    iconBtnBg:        'bg-[#FEF3E2]',
+    iconBtnColor:     'text-[#8B5E3C]',
 }
 
 // ── Luxury Estate ─────────────────────────────────────────────────
@@ -211,6 +229,9 @@ const luxury: GuideThemeClasses = {
     guideCardChevron: 'bg-[#F9F7F4] border border-[#D4C5A9] text-[#C9A84C] group-hover:bg-[#1B2A4A] group-hover:text-[#C9A84C]',
     conciergeText:    'text-[#8A8070] font-medium tracking-[0.25em] uppercase',
     accentText:       'text-[#1B2A4A]',
+    entryCardGradient: 'bg-gradient-to-br from-[#1B2A4A] to-[#0D1929]',
+    iconBtnBg:        'bg-[#F9F7F4] border border-[#D4C5A9]',
+    iconBtnColor:     'text-[#C9A84C]',
 }
 
 // ── Registry ─────────────────────────────────────────────────

@@ -94,9 +94,9 @@ export function WizardProvider({
     const [aiLoading, setAiLoading] = useState<string | null>(null)
     const [property, setProperty] = useState<any>(null)
     const [data, setData] = useState<any>({
-        property: { name: '', slug: '', guests: 2, beds: 1, baths: 1, has_parking: false, parking_number: '', description: '', primary_color: '#316263', main_image_url: '' },
+        property: { name: '', slug: '', guests: 2, beds: 1, baths: 1, has_parking: false, parking_number: '', has_access_code: false, access_code: '', description: '', primary_color: '#316263', main_image_url: '' },
         welcome: { title: '', host_name: '', message: '' },
-        access: { full_address: '', checkin_type: 'lockbox' },
+        access: { full_address: '', latitude: null, longitude: null, nearby_transport: [], access_code: '' },
         checkin: { checkin_time: '15:00 - 22:00', emergency_phone: '', steps: [] },
         contacts: {
             support_name: '',
@@ -377,6 +377,8 @@ export function WizardProvider({
                         baths: propDetails.baths,
                         has_parking: propDetails.has_parking,
                         parking_number: propDetails.parking_number,
+                        has_access_code: propDetails.has_access_code,
+                        access_code: propDetails.access_code,
                         description: propDetails.description,
                         primary_color: propDetails.theme_config?.primary_color || '#316263',
                         main_image_url: propDetails.main_image_url,

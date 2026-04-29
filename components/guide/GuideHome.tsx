@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import {
     ArrowLeft,
     ChevronRight,
     Key,
-    Wifi,
     AlertTriangle,
     Utensils,
     Calendar,
@@ -14,18 +13,15 @@ import {
     Info,
     FileText,
     Book,
-    Clock,
     Star
 } from 'lucide-react';
 import Image from 'next/image';
-import { Card } from '@/components/ui/card';
 import { LanguageSelector } from '@/components/guide/LanguageSelector';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { getGuideTheme } from '@/lib/guide-theme';
 import { cn } from '@/lib/utils';
 import supabaseLoader from '@/lib/image-loader';
 import { DynamicRecommendationWidget } from './DynamicRecommendationWidget';
-
 
 interface GuideHomeProps {
     propertyName: string;
@@ -45,6 +41,7 @@ interface GuideHomeProps {
     sections?: any[];
     manuals?: any[];
     disabledLanguage?: boolean;
+    property?: { full_address?: string };
 }
 
 const container = {
@@ -80,10 +77,10 @@ export function GuideHome({
     sections = [],
     manuals = [],
     disabledLanguage = false,
+    property,
 }: GuideHomeProps) {
     const t = getGuideTheme(themeId)
 
-    const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
     const hasCheckin = !!context?.find(c => c.category === 'checkin')?.content?.steps?.length;
 
     // Evaluate if there are actual rules text inside the section
@@ -97,7 +94,6 @@ export function GuideHome({
     const { content: localizedPropertyName } = useLocalizedContent(propertyName, currentLanguage, 'general', accessToken, propertyId);
     const { content: greetingLabel } = useLocalizedContent('Hola', currentLanguage, 'ui_label', accessToken, propertyId);
 
-    const hasRecommendations = recommendations && recommendations.length > 0;
     const EAT_SET = new Set(['restaurantes', 'italiano', 'mediterraneo', 'hamburguesas', 'asiatico', 'alta_cocina', 'internacional', 'desayuno', 'restaurant', 'restaurante', 'cafe', 'bar', 'food', 'comida']);
     const DO_SET = new Set(['naturaleza', 'cultura', 'ocio', 'relax', 'activity', 'actividad', 'actividades', 'park', 'parque', 'museum', 'museo', 'landmark', 'experiencias', 'experience']);
     const SHOP_SET = new Set(['compras', 'shopping', 'market', 'mercado', 'pharmacy', 'farmacia', 'supermarket', 'supermercado', 'supermercados']);
@@ -107,10 +103,6 @@ export function GuideHome({
     const shopRecs = recommendations.filter(r => SHOP_SET.has(getRType(r)));
 
     const { content: labelTuGuia } = useLocalizedContent('Tu Guía', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelRecomendacion } = useLocalizedContent('RECOMENDACIÓN', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelExploraZona } = useLocalizedContent('Explora la zona', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelDescubreRincones } = useLocalizedContent('Descubre los mejores rincones cerca de ti.', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelVerRecomendaciones } = useLocalizedContent('Ver recomendaciones', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelLoIndispensable } = useLocalizedContent('Lo Indispensable', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelSobreCasa } = useLocalizedContent('Sobre la Casa', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelGastronomia } = useLocalizedContent('Gastronomía', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -123,7 +115,6 @@ export function GuideHome({
     const { content: labelNormas } = useLocalizedContent('Normas', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelManual } = useLocalizedContent('Manual', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelCheckin } = useLocalizedContent('Check In', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelWifi } = useLocalizedContent('WiFi', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelSOS } = useLocalizedContent('SOS', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', currentLanguage, 'ui_label', accessToken, propertyId);
 
@@ -197,13 +188,13 @@ export function GuideHome({
                     theme={t}
                 />
 
-                {/* Essentials Grid */}
+                {/* Essentials Grid — WiFi chip eliminado (cubierto por GlanceBlock) */}
                 <motion.div variants={item} className="mb-10">
                     <h3 className={cn('text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2', t.sectionLabel)}>
                         <Star size={12} className="text-[#f59e0b]" fill="currentColor" />
                         {labelLoIndispensable}
                     </h3>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className={cn('grid gap-3', hasCheckin ? 'grid-cols-2' : 'grid-cols-1')}>
                         {hasCheckin && (
                             <button
                                 onClick={() => onNavigate('checkin')}
@@ -212,17 +203,6 @@ export function GuideHome({
                                 <Key size={24} className="mb-2 opacity-90" />
                                 <span className="text-[9px] font-black tracking-widest uppercase">
                                     {labelCheckin}
-                                </span>
-                            </button>
-                        )}
-                        {hasWifi && (
-                            <button
-                                onClick={() => onNavigate('wifi')}
-                                className={cn('flex flex-col items-center justify-center p-4 rounded-2xl shadow-sm active:scale-95 transition-all', t.chipBg, t.accentText)}
-                            >
-                                <Wifi size={24} className="mb-2" />
-                                <span className={cn('text-[9px] font-black tracking-widest uppercase', t.chipLabel)}>
-                                    {labelWifi}
                                 </span>
                             </button>
                         )}
