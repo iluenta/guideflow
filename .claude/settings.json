@@ -104,7 +104,15 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4444/Landing.html)",
       "Bash(pkill -f \"serve \\\\.\")",
       "Bash(pkill -f \"npx.*serve\")",
-      "Bash(grep -v \":0$\")"
+      "Bash(grep -v \":0$\")",
+      "mcp__playwright__browser_fill_form",
+      "Bash(node scripts/dev-admin-login.js guideflow1234@gmail.com)",
+      "Bash(node scripts/dev-admin-login.js veratespera@gmail.com)",
+      "mcp__playwright__browser_run_code",
+      "Bash(node scratch/check-tokens.js)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx|sql|js|jsx\\)$\")",
+      "Bash(xargs cat *)",
+      "Read(//c/Users/PEDRO~1.RAM/AppData/Local/Temp/claude/c--Proyectos-guideflow/53f84f3d-3e1a-44ba-b256-26ba752ed28c/tasks/**)"
     ],
     "additionalDirectories": [
       "C:\\Proyectos\\guideflow\\.claude",

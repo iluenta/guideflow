@@ -4,13 +4,15 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { 
-  Home, 
-  Building2, 
-  CalendarCheck, 
-  Calendar, 
-  BarChart3, 
-  ShieldCheck, 
+import {
+  Home,
+  Building2,
+  CalendarCheck,
+  Calendar,
+  BarChart3,
+  Eye,
+  ShieldCheck,
+
   Settings,
   LogOut,
   User
@@ -22,8 +24,10 @@ const navigation = [
   { name: "Propiedades", href: "/dashboard/properties", icon: Building2 },
   { name: "Reservas", href: "/dashboard/bookings", icon: CalendarCheck },
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
-  { name: "Analiticas", href: "/dashboard/analytics", icon: BarChart3 },
+  { name: "Analíticas", href: "/dashboard/analytics", icon: BarChart3 },
+  { name: "Accesos", href: "/dashboard/analytics/links", icon: Eye },
   { name: "Seguridad", href: "/dashboard/security", icon: ShieldCheck },
+
   { name: "Ajustes", href: "/dashboard/settings", icon: Settings },
 ];
 
@@ -69,13 +73,13 @@ export const DashboardSidebar = ({ collapsed, profile, onSignOut }: SidebarProps
                   href={item.href}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative",
-                    isActive 
-                      ? "bg-landing-navy text-white shadow-[0_4px_12px_-4px_rgba(30,58,138,0.35)]" 
+                    isActive
+                      ? "bg-landing-navy text-white shadow-[0_4px_12px_-4px_rgba(30,58,138,0.35)]"
                       : "text-landing-ink-soft hover:bg-landing-bg-deep hover:text-landing-ink"
                   )}
                 >
                   <item.icon className={cn("h-[18px] w-[18px] shrink-0 stroke-[1.75]", isActive ? "text-white" : "text-landing-ink-soft")} />
-                  
+
                   {!collapsed && (
                     <span className="whitespace-nowrap overflow-hidden opacity-100 transition-all duration-300">
                       {item.name}

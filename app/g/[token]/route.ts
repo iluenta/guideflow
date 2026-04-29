@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
-import { validateAccessToken } from '@/lib/security';
+import { createEdgeAdminClient } from '@/lib/supabase/edge';
+import { validateAccessToken, generateDeviceFingerprint } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { NextRequest, NextResponse } from 'next/server';
@@ -48,7 +49,25 @@ export async function GET(
 
     logger.warn(`[GUEST_ACTIVATION] Access granted for ${access.guest_name} at /${property.slug}`);
 
-    // 4. Redirect to the slug page (no token in URL!)
+    // 4. Registrar métricas de apertura (fire-and-forget, no bloquea el redirect)
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const ua = request.headers.get('user-agent') ?? 'unknown';
+    generateDeviceFingerprint(ip, ua).then(fingerprint => {
+        const supabaseAdmin = createEdgeAdminClient();
+        const now = new Date().toISOString();
+        supabaseAdmin.from('guest_access_tokens').update({
+            first_opened_at: access.first_opened_at ?? now,
+            last_seen_at: now,
+            open_count: (access.open_count ?? 0) + 1,
+            device_fingerprint: access.device_fingerprint ?? fingerprint,
+            ip_first_access: access.ip_first_access ?? ip,
+            user_agent_first: access.user_agent_first ?? ua,
+        }).eq('access_token', token).then(({ error }) => {
+            if (error) logger.error(`[GUEST_ACTIVATION] Failed to update open metrics: ${error.message}`);
+        });
+    }).catch(() => { /* silent — analytics no deben interrumpir el acceso */ });
+
+    // 5. Redirect to the slug page (no token in URL!)
     // We use a response object to set security headers like Referrer-Policy
     const lang = request.nextUrl.searchParams.get('lang');
     const redirectUrl = new URL(`/${property.slug}${lang ? `?lang=${lang}` : ''}`, request.url);

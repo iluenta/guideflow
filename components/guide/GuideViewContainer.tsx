@@ -152,6 +152,10 @@ export function GuideViewContainer({
     const [localData, setLocalData] = useState<any>(null);
     const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
 
+    // Refs para calcular tiempo por sección
+    const pageEntryTimeRef = React.useRef<number>(Date.now());
+    const prevPageRef = React.useRef<string | null>(null);
+
     // Initialize guest session
     useEffect(() => {
         let sid = localStorage.getItem('hospyia_guest_session_id');
@@ -162,27 +166,47 @@ export function GuideViewContainer({
         setGuestSessionId(sid);
     }, []);
 
-    // Track page views
+    // Track page views con tiempo de permanencia
     useEffect(() => {
-        if (currentPage && property?.id && guestSessionId && accessToken) {
-            const trackView = async () => {
-                try {
-                    await fetch('/api/tracking', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            propertyId: property.id,
-                            guestSessionId,
-                            section: currentPage,
-                            accessToken
-                        })
-                    });
-                } catch (err) {
-                    console.error('[TRACKING] Failed:', err);
-                }
-            };
-            trackView();
+        if (!property?.id || !guestSessionId || !accessToken) return;
+
+        const now = Date.now();
+
+        // Si venimos de una página anterior, enviar el tiempo que se pasó en ella
+        if (prevPageRef.current && prevPageRef.current !== currentPage) {
+            const timeSpent = Math.floor((now - pageEntryTimeRef.current) / 1000);
+            const prevSection = prevPageRef.current;
+            fetch('/api/tracking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    propertyId: property.id,
+                    guestSessionId,
+                    section: prevSection,
+                    accessToken,
+                    timeSpent,
+                })
+            }).catch(() => { /* silent */ });
         }
+
+        // Registrar la nueva página actual (sin tiempo todavía)
+        if (currentPage) {
+            fetch('/api/tracking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    propertyId: property.id,
+                    guestSessionId,
+                    section: currentPage,
+                    accessToken,
+                })
+            }).catch((err) => {
+                console.error('[TRACKING] Failed:', err);
+            });
+        }
+
+        prevPageRef.current = currentPage;
+        pageEntryTimeRef.current = now;
     }, [currentPage, property?.id, guestSessionId, accessToken]);
 
     useEffect(() => {

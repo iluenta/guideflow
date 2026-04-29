@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { MessageSquare, CheckCircle2, AlertCircle, Globe, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { MessageSquare, CheckCircle2, DollarSign, Cpu, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TrendData {
@@ -102,47 +102,46 @@ function StatCard({ label, value, icon: Icon, trend, variant = "default", isLoad
 
 export interface ExecutiveSummaryProps {
   totalConversations: { current: number; trend: number };
-  answeredRate: { current: number; trend: number }; // Percentage 0-100
-  unansweredGaps: { current: number; trend: number };
-  languagesCount: number;
+  answeredRate: { current: number; trend: number };
+  iaCost: { current: number; label: string };
+  iaTokens: { current: number; label: string };
   isLoading?: boolean;
 }
 
 export function ExecutiveSummaryCard({
   totalConversations,
   answeredRate,
-  unansweredGaps,
-  languagesCount,
+  iaCost,
+  iaTokens,
   isLoading,
 }: ExecutiveSummaryProps) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
-        label="Conversaciones"
-        value={totalConversations.current}
+        label="Total Conversaciones"
+        value={totalConversations.current.toLocaleString()}
         trend={{ value: totalConversations.current, percentage: totalConversations.trend, isPositiveGood: true }}
         icon={MessageSquare}
         isLoading={isLoading}
       />
       <StatCard
-        label="Tasa de Respuesta"
+        label="IA Response Rate"
         value={`${answeredRate.current}%`}
         trend={{ value: answeredRate.current, percentage: answeredRate.trend, isPositiveGood: true }}
         icon={CheckCircle2}
         isLoading={isLoading}
       />
       <StatCard
-        label="Preguntas sin respuesta"
-        value={unansweredGaps.current}
-        trend={{ value: unansweredGaps.current, percentage: unansweredGaps.trend, isPositiveGood: false }}
-        icon={AlertCircle}
-        variant={unansweredGaps.current > 0 ? "alert" : "default"}
+        label="IA Cost Month"
+        value={`$${iaCost.current.toFixed(2)}`}
+        icon={DollarSign}
+        variant="default"
         isLoading={isLoading}
       />
       <StatCard
-        label="Idiomas Activos"
-        value={languagesCount}
-        icon={Globe}
+        label="Tokens Usados"
+        value={iaTokens.label}
+        icon={Cpu}
         variant="dark"
         isLoading={isLoading}
       />
