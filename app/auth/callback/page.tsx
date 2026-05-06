@@ -40,9 +40,19 @@ function CallbackContent() {
       const queryAccessToken = effectiveParams.get('access_token') // Por si viene desde login
       const queryRefreshToken = effectiveParams.get('refresh_token') // Por si viene desde login
 
-      // Destino post-login: parámetro ?next= o /dashboard por defecto
-      const rawNext = effectiveParams.get('next') || '/dashboard'
-      const nextUrl = rawNext.startsWith('%') || rawNext.includes('%2F') ? decodeURIComponent(rawNext) : rawNext
+      // Destino post-login: leer cookie del servidor (más fiable que query params con Supabase)
+      // La cookie 'post_login_redirect' la escribe el action signInWithMagicLink
+      async function getNextUrl(): Promise<string> {
+        try {
+          const res = await fetch('/api/auth/post-login-redirect', { credentials: 'include' })
+          if (res.ok) {
+            const { redirect } = await res.json()
+            return redirect || '/dashboard'
+          }
+        } catch {}
+        return '/dashboard'
+      }
+      const nextUrl = await getNextUrl()
 
       // PRIORIDAD 1: Si hay tokens en el hash, procesarlos primero (ignorar errores en query params)
       // Caso 1: Tokens en hash (magic link/recovery directo de Supabase)
