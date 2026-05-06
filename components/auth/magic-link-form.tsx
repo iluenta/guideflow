@@ -15,10 +15,10 @@ interface MagicLinkFormProps {
 }
 
 function MagicLinkFormContent({ mode, onSuccess, hideError = false }: MagicLinkFormProps) {
-  const [email, setEmail] = useState('')
+  const searchParams = useSearchParams()
+  const [email, setEmail] = useState(searchParams.get('email') ?? '')
   const [fullName, setFullName] = useState('')
   const [isPending, startTransition] = useTransition()
-  const searchParams = useSearchParams()
   const error = searchParams.get('error')
   const success = searchParams.get('success')
 

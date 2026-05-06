@@ -2,7 +2,6 @@
 
 import React, { Suspense, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { MagicLinkForm } from '@/components/auth/magic-link-form'
 import { Logo } from '@/components/ui/logo'
 
@@ -36,7 +35,13 @@ function LoginForm() {
             router.push(`/auth/login?error=${encodeURIComponent(errorData.error || 'Error al iniciar sesión')}`)
             return
           }
-          router.push('/dashboard')
+          const pendingRedirect = sessionStorage.getItem('post_login_redirect')
+          if (pendingRedirect) {
+            sessionStorage.removeItem('post_login_redirect')
+            router.push(pendingRedirect)
+          } else {
+            router.push('/dashboard')
+          }
         })
         .catch((err) => {
           console.error('Error processing callback:', err)
