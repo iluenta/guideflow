@@ -74,9 +74,8 @@ function AcceptInvitationContent() {
   }, [token])
 
   function handleLoginRedirect(email: string, tok: string) {
-    // Guardar el destino en sessionStorage para que LoginForm lo honre tras autenticar
-    sessionStorage.setItem('post_login_redirect', `/accept-invitation?token=${tok}`)
-    router.push(`/auth/login?email=${encodeURIComponent(email)}`)
+    const nextPath = `/accept-invitation?token=${tok}`
+    router.push(`/auth/login?email=${encodeURIComponent(email)}&next=${encodeURIComponent(nextPath)}`)
   }
 
   return (

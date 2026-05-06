@@ -120,7 +120,8 @@
       "c:\\tmp",
       "C:\\Users\\pedro.ramirez\\.claude\\plans",
       "c:\\Proyectos\\guideflow\\app\\dashboard",
-      "c:\\Proyectos\\guideflow\\app\\api\\tenant"
+      "c:\\Proyectos\\guideflow\\app\\api\\tenant",
+      "c:\\Proyectos\\guideflow\\app\\auth\\callback"
     ]
   },
   "enabledMcpjsonServers": [

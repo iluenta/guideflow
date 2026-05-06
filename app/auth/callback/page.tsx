@@ -40,6 +40,9 @@ function CallbackContent() {
       const queryAccessToken = effectiveParams.get('access_token') // Por si viene desde login
       const queryRefreshToken = effectiveParams.get('refresh_token') // Por si viene desde login
 
+      // Destino post-login: parámetro ?next= o /dashboard por defecto
+      const nextUrl = effectiveParams.get('next') || '/dashboard'
+
       // PRIORIDAD 1: Si hay tokens en el hash, procesarlos primero (ignorar errores en query params)
       // Caso 1: Tokens en hash (magic link/recovery directo de Supabase)
       // Necesitamos enviarlos al servidor para establecer cookies HTTP-only
@@ -67,8 +70,7 @@ function CallbackContent() {
             return
           }
 
-          // Redirigir al dashboard
-          router.push('/dashboard')
+          router.push(nextUrl)
           return
         } catch (err) {
           console.error('Error processing callback:', err)
@@ -99,8 +101,7 @@ function CallbackContent() {
             return
           }
 
-          // Redirigir al dashboard
-          router.push('/dashboard')
+          router.push(nextUrl)
           return
         } catch (err) {
           console.error('Error processing callback from query params:', err)
@@ -140,7 +141,7 @@ function CallbackContent() {
           }
 
           // Redirigir al dashboard
-          router.push('/dashboard')
+          router.push(nextUrl)
           return
         } catch (err) {
           console.error('Error verifying token:', err)
@@ -171,7 +172,7 @@ function CallbackContent() {
           }
 
           // Redirigir al dashboard
-          router.push('/dashboard')
+          router.push(nextUrl)
           return
         } catch (err) {
           console.error('Error exchanging code:', err)

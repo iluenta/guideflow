@@ -21,6 +21,7 @@ function MagicLinkFormContent({ mode, onSuccess, hideError = false }: MagicLinkF
   const [isPending, startTransition] = useTransition()
   const error = searchParams.get('error')
   const success = searchParams.get('success')
+  const next = searchParams.get('next') ?? ''
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -68,6 +69,7 @@ function MagicLinkFormContent({ mode, onSuccess, hideError = false }: MagicLinkF
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <input type="hidden" name="next" value={next} />
       {mode === 'signup' && (
         <div className="space-y-2">
           <Label htmlFor="fullName">Nombre completo</Label>
