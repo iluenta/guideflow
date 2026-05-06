@@ -319,9 +319,16 @@ export async function getInvitationByToken(token: string) {
 }
 
 export async function acceptInvitation(
-  token: string,
-  userId: string
+  token: string
 ): Promise<{ success?: boolean; tenant_id?: string; error?: string }> {
+  // Leer el usuario desde la sesión del servidor — nunca del cliente browser
+  // Esto garantiza que usamos el usuario que acaba de autenticar con el magic link
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { error: 'No tienes sesión activa. Vuelve al enlace de invitación.' }
+  }
+
   const adminClient = createServerAdminClient()
 
   // 1. Obtener invitación
@@ -336,11 +343,7 @@ export async function acceptInvitation(
     return { error: 'Esta invitación ya fue aceptada anteriormente.' }
   }
 
-  // 2. Verificar que el email del usuario coincide
-  const { data: { user }, error: userError } = await adminClient.auth.admin.getUserById(userId)
-  if (userError || !user) {
-    return { error: 'No se pudo verificar tu cuenta' }
-  }
+  // 2. Verificar que el email del usuario coincide con el de la invitación
   if ((user.email ?? '').toLowerCase() !== invitation.email.toLowerCase()) {
     return { error: 'Esta invitación es para otro email. Inicia sesión con la cuenta correcta.' }
   }
@@ -349,7 +352,7 @@ export async function acceptInvitation(
   const { data: existingProfile } = await adminClient
     .from('profiles')
     .select('id, tenant_id')
-    .eq('id', userId)
+    .eq('id', user.id)
     .single()
 
   if (existingProfile) {
@@ -364,7 +367,7 @@ export async function acceptInvitation(
 
   // 4. Crear perfil en el tenant de la invitación
   const { error: insertError } = await adminClient.from('profiles').insert({
-    id: userId,
+    id: user.id,
     email: user.email!,
     full_name: (user.user_metadata?.full_name as string) ?? null,
     tenant_id: invitation.tenant_id,

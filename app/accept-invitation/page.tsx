@@ -61,7 +61,7 @@ function AcceptInvitationContent() {
       // Hay sesión — intentar aceptar directamente
       setState({ status: 'accepting' })
       startTransition(async () => {
-        const result = await acceptInvitation(token, user.id)
+        const result = await acceptInvitation(token)
         if (result.error) {
           setState({ status: 'error', message: result.error })
         } else {
