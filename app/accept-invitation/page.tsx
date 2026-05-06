@@ -31,7 +31,9 @@ function AcceptInvitationContent() {
 
     async function init() {
       // Verificar si el token es válido antes de hacer nada
+      console.log('[AcceptInvitation] Verificando token:', token)
       const invitation = await getInvitationByToken(token)
+      console.log('[AcceptInvitation] Resultado invitación:', invitation ? 'Encontrada' : 'No encontrada')
 
       if (!invitation) {
         setState({ status: 'invalid', message: 'Invitación no válida o no encontrada.' })

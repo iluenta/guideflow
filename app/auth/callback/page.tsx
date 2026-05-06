@@ -41,7 +41,8 @@ function CallbackContent() {
       const queryRefreshToken = effectiveParams.get('refresh_token') // Por si viene desde login
 
       // Destino post-login: parámetro ?next= o /dashboard por defecto
-      const nextUrl = effectiveParams.get('next') || '/dashboard'
+      const rawNext = effectiveParams.get('next') || '/dashboard'
+      const nextUrl = rawNext.startsWith('%') || rawNext.includes('%2F') ? decodeURIComponent(rawNext) : rawNext
 
       // PRIORIDAD 1: Si hay tokens en el hash, procesarlos primero (ignorar errores en query params)
       // Caso 1: Tokens en hash (magic link/recovery directo de Supabase)
