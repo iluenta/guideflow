@@ -6,6 +6,15 @@ import { can, type TenantRole } from '@/lib/permissions'
 import { getLimit, type PackageLevel } from '@/lib/entitlements'
 import { sendInvitationEmail } from '@/lib/services/invitation-email'
 import { requireProfile } from '@/lib/supabase/get-tenant-id'
+function getSiteUrl(): string {
+  // SITE_URL (sin prefijo NEXT_PUBLIC) se lee siempre en runtime en el servidor
+  // NEXT_PUBLIC_SITE_URL puede quedar inlinada en build time con el valor de localhost
+  return (
+    process.env.SITE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    'http://localhost:3000'
+  ).replace(/\/$/, '')
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -140,8 +149,7 @@ export async function inviteMember(
     return { error: 'Error al crear la invitación' }
   }
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
-  const acceptLink = `${siteUrl}/accept-invitation?token=${invitation.token}`
+  const acceptLink = `${getSiteUrl()}/accept-invitation?token=${invitation.token}`
 
   // Intentar enviar email — no revertir si falla
   try {

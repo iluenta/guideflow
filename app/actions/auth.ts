@@ -36,7 +36,18 @@ export async function signInWithMagicLink(formData: FormData) {
     })
   }
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+  // Derivar siteUrl del header 'origin' de la request (funciona en cualquier entorno)
+  // NEXT_PUBLIC_SITE_URL es el fallback si el header no está disponible
+  const headersList = await headers()
+  const origin = headersList.get('origin')
+  const host = headersList.get('host') ?? ''
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1')
+  const derivedSiteUrl = origin
+    ? origin.replace(/\/$/, '')
+    : isLocalhost
+      ? `http://${host}`
+      : `https://${host}`
+  const siteUrl = derivedSiteUrl || (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
   const redirectUrl = `${siteUrl}/auth/callback`
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -47,21 +58,22 @@ export async function signInWithMagicLink(formData: FormData) {
   })
 
   if (error) {
-    // Log details for debugging
-    console.error('Error sending magic link details:', {
+    console.error('Magic link error:', {
       code: error.code,
       status: error.status,
       message: error.message,
-      redirectUrl
+      redirectUrl,
+      siteUrl,
     })
-    
-    let errorMessage = 'No se pudo enviar el enlace mágico'
+
+    let errorMessage: string
     if (error.status === 429 || error.code === 'over_email_send_rate_limit' || error.message.includes('rate limit') || error.message.includes('too many')) {
-      errorMessage = `Demasiados intentos. Espera unos minutos y vuelve a intentarlo.`
+      errorMessage = 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.'
     } else if (error.message.includes('invalid')) {
       errorMessage = 'Email inválido. Por favor, verifica tu dirección de correo.'
     } else {
-      errorMessage = 'No se pudo enviar el enlace. Por favor, inténtalo de nuevo.'
+      // Mostrar la URL generada para diagnosticar en producción
+      errorMessage = `Error al enviar el enlace (URL: ${redirectUrl}). Código: ${error.status ?? error.code ?? 'unknown'}`
     }
 
     const errorUrl = `/auth/login?error=${encodeURIComponent(errorMessage)}${next ? `&next=${encodeURIComponent(next)}` : ''}`
