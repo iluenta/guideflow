@@ -12,7 +12,7 @@ import {
   BarChart3,
   Eye,
   ShieldCheck,
-
+  Users,
   Settings,
   LogOut,
   User
@@ -26,8 +26,8 @@ const navigation = [
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
   { name: "Analíticas", href: "/dashboard/analytics", icon: BarChart3 },
   { name: "Accesos", href: "/dashboard/analytics/links", icon: Eye },
+  { name: "Equipo", href: "/dashboard/team", icon: Users },
   { name: "Seguridad", href: "/dashboard/security", icon: ShieldCheck },
-
   { name: "Ajustes", href: "/dashboard/settings", icon: Settings },
 ];
 

@@ -90,6 +90,7 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
     await supabase.from('context_embeddings')
         .delete()
         .eq('property_id', currentPropId)
+        .eq('tenant_id', currentTenantId)
         .eq('source_type', sourceType)
         .filter('metadata->>category', 'eq', category === 'faqs' ? 'guía_uso' : category === 'dining' ? 'ocio' : category)
 
@@ -194,7 +195,7 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
         const suffix = catIndex.toString(16).padStart(4, '0')
         const deterministicSourceId = currentPropId.substring(0, currentPropId.length - 4) + suffix
 
-        await supabase.from('context_embeddings').delete().eq('source_id', deterministicSourceId)
+        await supabase.from('context_embeddings').delete().eq('source_id', deterministicSourceId).eq('tenant_id', currentTenantId)
 
         const { error: insError } = await supabase.from('context_embeddings').insert({
             property_id: currentPropId,
@@ -249,6 +250,7 @@ export async function syncManualToRAG(
             .from('property_manuals')
             .select('metadata')
             .eq('id', currentManualId)
+            .eq('tenant_id', currentTenantId)
             .single()
 
         const hostNotes = manual?.metadata?.notes || ''
@@ -262,7 +264,7 @@ export async function syncManualToRAG(
             : enrichedManual
 
         // 1. Delete old embeddings for this manual
-        await supabase.from('context_embeddings').delete().eq('source_id', currentManualId)
+        await supabase.from('context_embeddings').delete().eq('source_id', currentManualId).eq('tenant_id', currentTenantId)
 
         // 2. Split content into logical chunks (approx 800-1000 chars)
         const chunks = splitIntoChunks(augmentedContent, 800)

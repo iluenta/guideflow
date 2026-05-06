@@ -1,20 +1,11 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { requireProfile } from '@/lib/supabase/get-tenant-id'
 
 export async function getGuestChats(propertyId?: string) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
-
-    // Fetch tenant_id for the user
-    const { data: profile, error: pError } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .single()
-
-    if (!profile?.tenant_id) throw new Error('No se encontró el perfil del usuario')
+    const { tenant_id } = await requireProfile(supabase)
 
     let query = supabase
         .from('guest_chats')
@@ -32,7 +23,7 @@ export async function getGuestChats(propertyId?: string) {
                 name
             )
         `)
-        .eq('tenant_id', profile.tenant_id)
+        .eq('tenant_id', tenant_id)
         .order('updated_at', { ascending: false })
 
     if (propertyId && propertyId !== 'all') {

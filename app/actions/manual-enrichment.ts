@@ -3,10 +3,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 import { geminiREST } from '@/lib/ai/clients/gemini-rest'
-import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/clients/openai'
 import { syncManualToRAG } from './rag-sync'
 import { logAiUsage } from '@/lib/services/ai-usage-logger'
 import { revalidatePath } from 'next/cache'
+import { requireProfile } from '@/lib/supabase/get-tenant-id'
+import { can, type TenantRole } from '@/lib/permissions'
 
 /**
  * Fuses user-provided notes into an existing AI-generated manual.
@@ -14,17 +15,21 @@ import { revalidatePath } from 'next/cache'
  */
 export async function enrichManualWithHostNotes(manualId: string, hostNotes: string) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
 
-    // 1. Obtener el manual actual
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para editar manuales')
+    }
+
+    // 1. Obtener el manual actual (asegurando pertenencia al tenant)
     const { data: manual, error: fetchErr } = await supabase
         .from('property_manuals')
         .select('*')
         .eq('id', manualId)
+        .eq('tenant_id', tenant_id)
         .single()
 
-    if (fetchErr || !manual) throw new Error('Manual no encontrado')
+    if (fetchErr || !manual) throw new Error('Manual no encontrado o sin permiso')
 
     logger.debug(`[ENRICH] Enriqueciendo manual ${manual.appliance_name} (${manual.brand})...`)
 
@@ -51,7 +56,14 @@ RESPONDE SOLO CON EL NUEVO CONTENIDO DEL MANUAL EN MARKDOWN.`
         responseMimeType: 'text/plain',
         temperature: 0.3
     })
-    logAiUsage({ operation: 'manual_enrichment', model: 'gemini-2.5-flash', usage: genResponse?.usage, durationMs: Date.now() - t0, propertyId: manual.property_id })
+    logAiUsage({ 
+        operation: 'manual_enrichment', 
+        model: 'gemini-2.5-flash', 
+        usage: genResponse?.usage, 
+        durationMs: Date.now() - t0, 
+        propertyId: manual.property_id,
+        tenantId: tenant_id
+    })
 
     const enrichedContent = genResponse?.data
     if (!enrichedContent) throw new Error('Error al generar el manual enriquecido')
@@ -64,6 +76,7 @@ RESPONDE SOLO CON EL NUEVO CONTENIDO DEL MANUAL EN MARKDOWN.`
             updated_at: new Date().toISOString()
         })
         .eq('id', manualId)
+        .eq('tenant_id', tenant_id)
 
     if (updateErr) {
         console.error('[ENRICHMENT] Error updating manual:', updateErr.message)
@@ -73,7 +86,7 @@ RESPONDE SOLO CON EL NUEVO CONTENIDO DEL MANUAL EN MARKDOWN.`
     // 4. Actualizar embeddings (Chat RAG)
     await syncManualToRAG(
         manual.property_id,
-        manual.tenant_id,
+        tenant_id,
         manualId,
         enrichedContent,
         manual.appliance_name,

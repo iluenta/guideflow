@@ -2,7 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { generateSecureToken } from '@/lib/security'
-import { getTenantId } from '@/app/actions/properties'
+import { requireProfile } from '@/lib/supabase/get-tenant-id'
+import { can, type TenantRole } from '@/lib/permissions'
 import { addDays, subDays } from 'date-fns'
 import { revalidatePath } from 'next/cache'
 
@@ -20,12 +21,11 @@ export async function createGuestAccess(params: {
 }) {
     const { propertyId, guestName, guestEmail, checkinDate, checkoutDate, bookingId } = params
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
-
-    // 1. Verify property ownership (via tenant_id from profile — authoritative source)
-    const tenant_id = await getTenantId(supabase, user)
-    if (!tenant_id) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para generar accesos')
+    }
 
     const { data: property, error: propErr } = await supabase
         .from('properties')
@@ -37,7 +37,7 @@ export async function createGuestAccess(params: {
     if (propErr || !property) throw new Error('Propiedad no encontrada o sin permiso')
 
     // 2. Generate secure token
-    const accessToken = generateSecureToken(12) // Format: a8f3k2m9p1x7 (32 is too long for easy reading, 12 is enough for 36^12)
+    const accessToken = generateSecureToken(12)
 
     // 3. Calculate temporal window
     const validFrom = subDays(new Date(checkinDate), 2).toISOString()
@@ -82,14 +82,18 @@ export async function createGuestAccess(params: {
  */
 export async function revokeGuestAccess(tokenId: string, propertyId: string) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para revocar accesos')
+    }
 
     const { error } = await supabase
         .from('guest_access_tokens')
         .update({ is_active: false })
         .eq('id', tokenId)
         .eq('property_id', propertyId)
+        .eq('tenant_id', tenant_id)
 
     if (error) throw new Error('Error al revocar el acceso')
 

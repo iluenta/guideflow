@@ -26,8 +26,7 @@ export async function signUpWithMagicLink(email: string, fullName: string) {
       emailRedirectTo: `${window.location.origin}/auth/callback`,
       data: {
         full_name: fullName,
-        role: 'user', // Default all users are end users
-        package_level: 'basic', // Basic level by default
+        role: 'user',
       },
     },
   })

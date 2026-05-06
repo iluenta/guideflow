@@ -53,6 +53,7 @@ interface GuideWelcomeProps {
     property?: any;
     checkinDate?: string;
     checkoutDate?: string;
+    onPrivacyClick?: () => void;
 }
 
 const item = {
@@ -200,6 +201,7 @@ export function GuideWelcome({
     property,
     checkinDate,
     checkoutDate,
+    onPrivacyClick,
 }: GuideWelcomeProps) {
 
     const t = getGuideTheme(themeId);
@@ -675,9 +677,16 @@ export function GuideWelcome({
             )}
 
             {/* ── 9. FOOTER ── */}
-            <motion.div variants={item} className="text-center opacity-40 pt-7 pb-6">
-                <p className={cn('text-[10px] font-black tracking-[.14em] uppercase', t.chipLabel)}>
-                    {labelPoweredBy} Hospyia
+            <motion.div variants={item} className="text-center opacity-40 pt-7 pb-6 px-6">
+                <p className={cn('text-[10px] font-black tracking-[.14em] uppercase flex flex-wrap items-center justify-center gap-x-2', t.chipLabel)}>
+                    <span>{labelPoweredBy} Hospyia</span>
+                    <span className="opacity-30">·</span>
+                    <button 
+                        onClick={onPrivacyClick}
+                        className="hover:underline"
+                    >
+                        {currentLanguage === 'en' ? 'Privacy' : 'Privacidad'}
+                    </button>
                 </p>
             </motion.div>
         </motion.div>

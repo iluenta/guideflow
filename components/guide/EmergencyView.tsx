@@ -278,7 +278,7 @@ export function EmergencyView({
     disabledLanguage = false,
     themeId = 'modern_v2',
 }: EmergencyViewProps) {
-    const isDark = themeId === 'urban';
+    const isDark = themeId === 'urban' || themeId === 'modern' || themeId === 'modern_v2';
     const isCoastal = themeId === 'coastal';
     const isWarm = themeId === 'warm';
     const isLuxury = themeId === 'luxury';

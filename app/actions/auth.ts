@@ -93,8 +93,7 @@ export async function signUpWithMagicLink(formData: FormData) {
       emailRedirectTo: redirectUrl,
       data: {
         full_name: fullName.trim(),
-        role: 'user', // Default all users are end users
-        package_level: 'basic', // Basic level by default
+        role: 'user',
       },
     },
   })

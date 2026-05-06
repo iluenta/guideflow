@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { syncWizardDataToRAG, syncManualToRAG } from './rag-sync'
 import { sanitizeUUID } from '@/lib/utils'
+import { can, type TenantRole } from '@/lib/permissions'
+import { requireProfile, requireTenantId } from '@/lib/supabase/get-tenant-id'
 
 function generateSlug(name: string): string {
     return name
@@ -100,10 +102,7 @@ export type GuideSection = {
 export async function getProperties() {
     const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
-
-    const tenant_id = await getTenantId(supabase, user)
+    const { tenant_id } = await requireProfile(supabase)
 
     // ✅ Una sola query — el cálculo ocurre en Postgres, no en JS
     const { data, error } = await supabase
@@ -147,6 +146,10 @@ export async function getProperty(id: string) {
 
         if (now - lastUpdate > threshold) {
             console.warn(`[AUTO-RECOVERY] Property ${currentPropId} stuck in ${data.inventory_status}. Resetting.`)
+            // Recovery update: should ideally also have tenant_id if we have session, 
+            // but this is often triggered by public or internal cleanup.
+            // For now, let's keep it safe with just ID as it's a "fix" rather than a user action, 
+            // but for a strict audit we'd need tenant_id.
             await supabase.from('properties').update({ inventory_status: 'completed' }).eq('id', currentPropId)
             data.inventory_status = 'completed'
         }
@@ -205,11 +208,10 @@ export async function getPropertyBySlug(slug: string) {
 export async function createProperty(formData: Partial<Property>) {
     const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
-
-    // Get tenant_id with robust fallback
-    const tenant_id = await getTenantId(supabase, user)
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'create')) {
+        throw new Error('No tienes permisos para crear propiedades')
+    }
 
     // Validate required fields
     if (!formData.name?.trim()) {
@@ -227,6 +229,7 @@ export async function createProperty(formData: Partial<Property>) {
             .from('properties')
             .select('id')
             .eq('slug', formData.slug)
+            .eq('tenant_id', tenant_id)
             .maybeSingle()
 
         if (existing) {
@@ -260,8 +263,10 @@ export async function createProperty(formData: Partial<Property>) {
 export async function updateProperty(id: string, formData: Partial<Property>) {
     const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para editar propiedades')
+    }
 
     // Validate required fields
     if (!formData.name?.trim()) {
@@ -279,6 +284,7 @@ export async function updateProperty(id: string, formData: Partial<Property>) {
             .from('properties')
             .select('id')
             .eq('slug', formData.slug)
+            .eq('tenant_id', tenant_id)
             .neq('id', id)
             .maybeSingle()
 
@@ -297,6 +303,7 @@ export async function updateProperty(id: string, formData: Partial<Property>) {
         .from('properties')
         .update(payload)
         .eq('id', currentPropId)
+        .eq('tenant_id', tenant_id)
         .select()
         .maybeSingle()
 
@@ -321,8 +328,10 @@ export async function updateProperty(id: string, formData: Partial<Property>) {
 export async function updatePropertyStatus(id: string, newStatus: 'draft' | 'active' | 'archived') {
     const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para editar propiedades')
+    }
 
     const currentPropId = sanitizeUUID(id)
     if (!currentPropId) throw new Error('ID de propiedad inválido')
@@ -331,6 +340,7 @@ export async function updatePropertyStatus(id: string, newStatus: 'draft' | 'act
         .from('properties')
         .update({ status: newStatus })
         .eq('id', currentPropId)
+        .eq('tenant_id', tenant_id)
         .select()
         .single()
 
@@ -347,8 +357,10 @@ export async function updatePropertyStatus(id: string, newStatus: 'draft' | 'act
 export async function deleteProperty(id: string) {
     const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'delete')) {
+        throw new Error('No tienes permisos para eliminar propiedades')
+    }
 
     const currentPropId = sanitizeUUID(id)
     if (!currentPropId) throw new Error('ID de propiedad inválido')
@@ -357,6 +369,7 @@ export async function deleteProperty(id: string) {
         .from('properties')
         .delete()
         .eq('id', currentPropId)
+        .eq('tenant_id', tenant_id)
 
     if (error) {
         console.error('Error deleting property:', error.message)
@@ -458,10 +471,10 @@ export async function getPropertyManuals(propertyId: string) {
 
 export async function deleteManual(manualId: string, propertyId: string) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
-
-    const tenant_id = await getTenantId(supabase, user)
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para editar manuales')
+    }
 
     const currentPropId = sanitizeUUID(propertyId)
     if (!currentPropId) throw new Error('propertyId es requerido')
@@ -471,6 +484,7 @@ export async function deleteManual(manualId: string, propertyId: string) {
         .from('property_manuals')
         .delete()
         .eq('id', manualId)
+        .eq('tenant_id', tenant_id)
 
     if (error) {
         console.error('[MANUAL] Error deleting:', error.message)
@@ -478,7 +492,7 @@ export async function deleteManual(manualId: string, propertyId: string) {
     }
 
     // 2. Delete embeddings from context table
-    await supabase.from('context_embeddings').delete().eq('source_id', manualId)
+    await supabase.from('context_embeddings').delete().eq('source_id', manualId).eq('tenant_id', tenant_id)
 
     // 3. Sync appliance list in property_context
     if (tenant_id) {
@@ -490,8 +504,10 @@ export async function deleteManual(manualId: string, propertyId: string) {
 
 export async function updateManualContent(manualId: string, propertyId: string, content: string) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para editar manuales')
+    }
 
     const currentPropId = sanitizeUUID(propertyId)
     if (!currentPropId) throw new Error('propertyId es requerido')
@@ -500,16 +516,14 @@ export async function updateManualContent(manualId: string, propertyId: string, 
         .from('property_manuals')
         .update({ manual_content: content, updated_at: new Date().toISOString() })
         .eq('id', manualId)
+        .eq('tenant_id', tenant_id)
 
     if (error) {
         console.error('[MANUAL] Error updating content:', error.message)
         throw new Error('Error al actualizar el manual')
     }
 
-    const tenant_id = await getTenantId(supabase, user)
-    if (tenant_id) {
-        await syncPropertyApplianceList(currentPropId, tenant_id)
-    }
+    await syncPropertyApplianceList(currentPropId, tenant_id)
 
     // Trigger RAG update
     const { data: manual } = await supabase
@@ -535,8 +549,10 @@ export async function updateManualContent(manualId: string, propertyId: string, 
 
 export async function saveManual(manualId: string, propertyId: string, updates: { manual_content?: string, notes?: string, is_revised?: boolean }) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para editar manuales')
+    }
 
     const currentPropId = sanitizeUUID(propertyId)
     if (!currentPropId) throw new Error('propertyId es requerido')
@@ -567,13 +583,12 @@ export async function saveManual(manualId: string, propertyId: string, updates: 
         .from('property_manuals')
         .update(updateFields)
         .eq('id', manualId)
+        .eq('tenant_id', tenant_id)
 
     if (error) {
         console.error('[MANUAL] Error saving:', error.message)
         throw new Error('Error al guardar el manual')
     }
-
-    const tenant_id = await getTenantId(supabase, user)
 
     // Re-index for RAG if content changed, if notes changed, or if it's the first time approval
     if (updates.manual_content !== undefined || updates.notes !== undefined || updates.is_revised) {
@@ -591,9 +606,7 @@ export async function saveManual(manualId: string, propertyId: string, updates: 
         }
     }
 
-    if (tenant_id) {
-        await syncPropertyApplianceList(currentPropId, tenant_id)
-    }
+    await syncPropertyApplianceList(currentPropId, tenant_id)
 
     revalidatePath(`/dashboard/properties/${currentPropId}`)
 }
@@ -664,10 +677,10 @@ export async function getPropertyFaqs(propertyId: string) {
 
 export async function saveGuideSection(propertyId: string, section: Partial<GuideSection>) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
-
-    const tenant_id = await getTenantId(supabase, user)
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para editar la guía')
+    }
     if (!tenant_id) throw new Error('Usuario sin tenant')
 
     const currentPropId = sanitizeUUID(propertyId)
@@ -695,8 +708,10 @@ export async function saveGuideSection(propertyId: string, section: Partial<Guid
 
 export async function deleteGuideSection(sectionId: string, propertyId: string) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para editar la guía')
+    }
 
     const currentSectionId = sanitizeUUID(sectionId)
     const currentPropId = sanitizeUUID(propertyId)
@@ -706,6 +721,7 @@ export async function deleteGuideSection(sectionId: string, propertyId: string) 
         .from('guide_sections')
         .delete()
         .eq('id', currentSectionId)
+        .eq('tenant_id', tenant_id)
 
     if (error) {
         console.error('[SECTION] Error deleting:', error.message)
@@ -717,9 +733,10 @@ export async function deleteGuideSection(sectionId: string, propertyId: string) 
 
 export async function updateSectionsOrder(propertyId: string, sectionIds: string[]) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
-    const tenant_id = await getTenantId(supabase, user)
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para editar la guía')
+    }
     const currentPropId = sanitizeUUID(propertyId)
     const currentTenantId = sanitizeUUID(tenant_id)
     if (!currentPropId || !currentTenantId) throw new Error('IDs requeridos')

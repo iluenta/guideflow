@@ -6,12 +6,14 @@ import { after } from 'next/server'
 import axios from 'axios'
 import { geminiREST, analyzeImageWithGemini, geminiVision, isValidExternalUrl } from '@/lib/ai/clients/gemini-rest'
 import { generateOpenAIEmbedding, splitIntoChunks } from '@/lib/ai/clients/openai'
-import { syncPropertyApplianceList, getTenantId } from './properties'
+import { syncPropertyApplianceList } from './properties'
 import { syncWizardDataToRAG, syncManualToRAG } from './rag-sync'
 import { searchBrave, formatBraveResults } from '@/lib/ai/clients/brave'
 import { sanitizeUUID } from '@/lib/utils'
 import { matchesInventoryItem } from '@/lib/inventory-utils'
 import { logAiUsage } from '@/lib/services/ai-usage-logger'
+import { can, type TenantRole } from '@/lib/permissions'
+import { requireProfile, requireTenantId } from '@/lib/supabase/get-tenant-id'
 
 function logT(msg: string) {
     const time = new Date().toLocaleTimeString('es-ES', { hour12: false });
@@ -20,12 +22,13 @@ function logT(msg: string) {
 
 export async function generateManualFromImage(propertyId: string, imageUrl: string) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para generar manuales')
+    }
 
     const currentPropId = sanitizeUUID(propertyId)
-    if (!currentPropId) throw new Error('ID de propiedad requerido para generar manuales')
-    const tenant_id = await getTenantId(supabase, user)
+    if (!currentPropId) throw new Error('ID de propiedad requerido')
 
     if (!isValidExternalUrl(imageUrl)) {
         throw new Error('URL de imagen no permitida por seguridad (SSRF PROTECTION)')
@@ -69,12 +72,13 @@ export async function generateManualFromImage(propertyId: string, imageUrl: stri
 
 export async function processBatchScans(propertyId: string, imageUrls: string[], replaceExisting: boolean = false) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para realizar escaneos')
+    }
 
     const currentPropId = sanitizeUUID(propertyId)
-    if (!currentPropId) throw new Error('ID de propiedad requerido para escaneo por lotes')
-    const tenant_id = await getTenantId(supabase, user)
+    if (!currentPropId) throw new Error('ID de propiedad requerido para escaneos')
 
     try {
         logT(`[BATCH] Starting TWO-PHASE analysis for ${imageUrls.length} images (Replace: ${replaceExisting})...`)
@@ -86,6 +90,7 @@ export async function processBatchScans(propertyId: string, imageUrls: string[],
                 inventory_last_scan_at: new Date().toISOString()
             })
             .eq('id', currentPropId)
+            .eq('tenant_id', tenant_id)
 
         const CONCURRENCY_LIMIT = 5;
 
@@ -151,6 +156,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
 
                 const { data: imgRecord } = await supabase.from('appliance_images').insert({
                     property_id: currentPropId,
+                    tenant_id: tenant_id,
                     image_url: url,
                     analysis_result: analysis,
                     status: 'identified',
@@ -212,7 +218,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
 
                 // Fetch existentes UNA sola vez (no N queries en loop)
                 const { data: existingManuals } = replaceExisting
-                    ? await supabase.from('property_manuals').select('id, appliance_name').eq('property_id', currentPropId)
+                    ? await supabase.from('property_manuals').select('id, appliance_name, brand, model').eq('property_id', currentPropId).eq('tenant_id', tenant_id)
                     : { data: [] as any[] };
 
                 async function generateOneManual(item: IdentificationResult, index: number): Promise<{ success: boolean; error?: string; skipped?: boolean }> {
@@ -274,8 +280,8 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                             })
                             for (const dup of duplicates) {
                                 logT(`[PHASE2] [${index + 1}] Removing duplicate: ${dup.id} (${dup.appliance_name} ${dup.brand || ''})`)
-                                await supabase.from('property_manuals').delete().eq('id', dup.id)
-                                await supabase.from('context_embeddings').delete().eq('source_id', dup.id)
+                                await supabase.from('property_manuals').delete().eq('id', dup.id).eq('tenant_id', tenant_id)
+                                await supabase.from('context_embeddings').delete().eq('source_id', dup.id).eq('tenant_id', tenant_id)
                             }
                         }
 
@@ -319,6 +325,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                             .from('properties')
                             .update({ inventory_status: 'generating' })
                             .eq('id', currentPropId)
+                            .eq('tenant_id', tenant_id)
 
                         return { success: true }
                     } catch (err: any) {
@@ -367,6 +374,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                     .from('properties')
                     .update({ inventory_status: 'completed' })
                     .eq('id', currentPropId)
+                    .eq('tenant_id', tenant_id)
 
                 logT(`[BATCH] Completed full pipeline for property ${propertyId}`)
             } catch (error: any) {
@@ -375,6 +383,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                     .from('properties')
                     .update({ inventory_status: 'failed' })
                     .eq('id', currentPropId)
+                    .eq('tenant_id', tenant_id)
             }
         }
 
@@ -393,6 +402,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
             .from('properties')
             .update({ inventory_status: 'failed' })
             .eq('id', currentPropId)
+            .eq('tenant_id', tenant_id)
         throw error
     }
 }
@@ -400,12 +410,13 @@ FORMATO DE SALIDA (JSON ESTRICTO):
 
 export async function processInventoryManuals(propertyId: string, items: any[]) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    const { tenant_id, tenant_role } = await requireProfile(supabase)
+    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
+        throw new Error('No tienes permisos para procesar el inventario')
+    }
 
     const currentPropId = sanitizeUUID(propertyId)
     if (!currentPropId) throw new Error('ID de propiedad requerido para procesar inventario')
-    const tenant_id = await getTenantId(supabase, user)
 
     try {
         console.log(`[INVENTORY] Starting background processing for ${items.length} items...`)
@@ -414,11 +425,13 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
             .from('properties')
             .update({ inventory_status: 'generating' })
             .eq('id', currentPropId)
+            .eq('tenant_id', tenant_id)
 
         const { data: existingManuals } = await supabase
             .from('property_manuals')
             .select('appliance_name, brand, model, metadata')
             .eq('property_id', currentPropId)
+            .eq('tenant_id', tenant_id)
 
         const itemsToProcess = items.filter(item => {
             if (!item.isPresent) return false
@@ -438,7 +451,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
 
         if (itemsToProcess.length === 0) {
             console.log('[INVENTORY] No new items to process.')
-            await supabase.from('properties').update({ inventory_status: 'completed' }).eq('id', currentPropId)
+            await supabase.from('properties').update({ inventory_status: 'completed' }).eq('id', currentPropId).eq('tenant_id', tenant_id)
             return { success: true, processed: 0 }
         }
 
@@ -513,7 +526,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
                             }
                         }))
 
-                        await supabase.from('context_embeddings').delete().eq('source_id', manual.id);
+                        await supabase.from('context_embeddings').delete().eq('source_id', manual.id).eq('tenant_id', tenant_id);
                         await supabase.from('context_embeddings').insert(contextEmbeddings);
 
                     } catch (itemErr: any) {
@@ -527,6 +540,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
                     .from('properties')
                     .update({ inventory_status: 'completed' })
                     .eq('id', currentPropId)
+                    .eq('tenant_id', tenant_id)
 
                 console.log('[INVENTORY-BG] Background processing completed.')
             } catch (bgErr: any) {
@@ -535,6 +549,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
                     .from('properties')
                     .update({ inventory_status: 'failed' })
                     .eq('id', currentPropId)
+                    .eq('tenant_id', tenant_id)
             }
         })
 
@@ -542,7 +557,7 @@ export async function processInventoryManuals(propertyId: string, items: any[]) 
 
     } catch (error: any) {
         console.error('[INVENTORY] Fatal initialization error:', error.message)
-        await supabase.from('properties').update({ inventory_status: 'failed' }).eq('id', currentPropId)
+        await supabase.from('properties').update({ inventory_status: 'failed' }).eq('id', currentPropId).eq('tenant_id', tenant_id)
         return { success: false, error: error.message }
     }
 }

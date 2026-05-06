@@ -15,6 +15,8 @@ import { GuideWelcome } from '@/components/guide/GuideWelcome';
 import { BottomNav } from '@/components/guide/BottomNav';
 import { ContactModal } from '@/components/guide/ContactModal';
 import { AnimatePresence, motion } from 'framer-motion';
+import { PrivacyBanner } from '@/components/guide/PrivacyBanner';
+import { PrivacyModal } from '@/components/guide/PrivacyModal';
 
 // ─── Carga lazy: ssr:false evita que Next incluya estos chunks en el bundle SSR
 // Sin ssr:false los módulos se analizan en el servidor aunque no se rendericen,
@@ -155,6 +157,43 @@ export function GuideViewContainer({
     // Refs para calcular tiempo por sección
     const pageEntryTimeRef = React.useRef<number>(Date.now());
     const prevPageRef = React.useRef<string | null>(null);
+    const hasTrackedCurrentPageRef = React.useRef<string | null>(null);
+
+    // GDPR Privacy state
+    const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
+    const [privacyBannerVisible, setPrivacyBannerVisible] = useState(false);
+    const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+
+    const confirmPrivacy = (hideBanner = true) => {
+        if (!accessToken) return;
+        
+        // El tracking se activa siempre
+        setPrivacyAcknowledged(true);
+
+        // La persistencia y ocultación solo ocurre si el usuario interactuó (clic en botón/X)
+        if (hideBanner) {
+            localStorage.setItem(`hospyia_privacy_acknowledged_${accessToken}`, 'true');
+            setPrivacyBannerVisible(false);
+        }
+    };
+
+    useEffect(() => {
+        if (accessToken) {
+            const acknowledged = localStorage.getItem(`hospyia_privacy_acknowledged_${accessToken}`) === 'true';
+            
+            if (acknowledged) {
+                setPrivacyAcknowledged(true);
+                setPrivacyBannerVisible(false);
+            } else {
+                setPrivacyBannerVisible(true);
+                // Activar tracking a los 5s (interés legítimo) pero NO ocultar el banner
+                const timer = setTimeout(() => {
+                    confirmPrivacy(false); 
+                }, 5000);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [accessToken]);
 
     // Initialize guest session
     useEffect(() => {
@@ -168,7 +207,7 @@ export function GuideViewContainer({
 
     // Track page views con tiempo de permanencia
     useEffect(() => {
-        if (!property?.id || !guestSessionId || !accessToken) return;
+        if (!property?.id || !guestSessionId || !accessToken || !privacyAcknowledged) return;
 
         const now = Date.now();
 
@@ -189,8 +228,8 @@ export function GuideViewContainer({
             }).catch(() => { /* silent */ });
         }
 
-        // Registrar la nueva página actual (sin tiempo todavía)
-        if (currentPage) {
+        // Registrar la nueva página actual si no la hemos registrado ya
+        if (currentPage && hasTrackedCurrentPageRef.current !== currentPage) {
             fetch('/api/tracking', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -200,6 +239,8 @@ export function GuideViewContainer({
                     section: currentPage,
                     accessToken,
                 })
+            }).then(() => {
+                hasTrackedCurrentPageRef.current = currentPage;
             }).catch((err) => {
                 console.error('[TRACKING] Failed:', err);
             });
@@ -207,7 +248,7 @@ export function GuideViewContainer({
 
         prevPageRef.current = currentPage;
         pageEntryTimeRef.current = now;
-    }, [currentPage, property?.id, guestSessionId, accessToken]);
+    }, [currentPage, property?.id, guestSessionId, accessToken, privacyAcknowledged]);
 
     useEffect(() => {
         const cached = localStorage.getItem(cacheKey);
@@ -460,36 +501,38 @@ export function GuideViewContainer({
                     hasParking={property.has_parking}
                     parkingNumber={property.parking_number}
                     property={property}
-                    checkinDate={checkinDate}
-                    checkoutDate={checkoutDate}
-                />
-            );
-        }
-
-        if (!currentPage || currentPage === 'home' || currentPage === 'assistant') {
-            return (
-                <GuideHome
-                    propertyName={property.name}
-                    heroImage={property.main_image_url || branding?.hero_image_url || ''}
-                    location={property.city || ''}
-                    onBack={() => setCurrentPage('welcome')}
-                    onNavigate={handleNavigate}
-                    onChatQuery={handleChatWithQuery}
-                    currentLanguage={language}
-                    onLanguageChange={setLanguage}
-                    recommendations={recommendations}
-                    guestName={guestName}
-                    accessToken={accessToken}
-                    propertyId={property.id}
-                    themeId={themeId}
-                    context={displayContext}
-                    sections={sections}
-                    manuals={displayManuals}
-                    disabledLanguage={!!tokenLanguage}
-                    property={property}
-                />
-            );
-        }
+                     checkinDate={checkinDate}
+                     checkoutDate={checkoutDate}
+                     onPrivacyClick={() => setIsPrivacyModalOpen(true)}
+                 />
+             );
+         }
+ 
+         if (!currentPage || currentPage === 'home' || currentPage === 'assistant') {
+             return (
+                 <GuideHome
+                     propertyName={property.name}
+                     heroImage={property.main_image_url || branding?.hero_image_url || ''}
+                     location={property.city || ''}
+                     onBack={() => setCurrentPage('welcome')}
+                     onNavigate={handleNavigate}
+                     onChatQuery={handleChatWithQuery}
+                     currentLanguage={language}
+                     onLanguageChange={setLanguage}
+                     recommendations={recommendations}
+                     guestName={guestName}
+                     accessToken={accessToken}
+                     propertyId={property.id}
+                     themeId={themeId}
+                     context={displayContext}
+                     sections={sections}
+                     manuals={displayManuals}
+                     disabledLanguage={!!tokenLanguage}
+                     property={property}
+                     onPrivacyClick={() => setIsPrivacyModalOpen(true)}
+                 />
+             );
+         }
 
         switch (currentPage) {
             case 'wifi': {
@@ -554,7 +597,16 @@ export function GuideViewContainer({
                             <MenuGrid onNavigate={handleNavigate} welcomeData={welcomeData} imageUrl={property.main_image_url} currentLanguage={language} accessToken={accessToken} propertyId={property.id} manuals={displayManuals} recommendations={displayRecommendations} context={displayContext} sections={sections} />
                         </div>
                         <div className="px-6 pb-24 text-center opacity-30">
-                            <p className="text-[9px] text-navy uppercase font-black tracking-[0.4em]">{poweredByLabel} Hospyia</p>
+                            <p className="text-[9px] text-navy uppercase font-black tracking-[0.4em] flex flex-wrap items-center justify-center gap-x-2">
+                                <span>{poweredByLabel} Hospyia</span>
+                                <span className="opacity-30">·</span>
+                                <button 
+                                    onClick={() => setIsPrivacyModalOpen(true)}
+                                    className="hover:underline"
+                                >
+                                    {language === 'en' ? 'Privacy' : 'Privacidad'}
+                                </button>
+                            </p>
                         </div>
                     </div>
                 );
@@ -654,6 +706,22 @@ export function GuideViewContainer({
                 </div>,
                 document.body
             )}
+
+            {/* Privacy UI */}
+            <PrivacyBanner
+                isVisible={privacyBannerVisible}
+                onAccept={() => confirmPrivacy(true)}
+                onClose={() => confirmPrivacy(true)}
+                onMoreInfo={() => setIsPrivacyModalOpen(true)}
+                language={language}
+                themeId={themeId}
+            />
+            <PrivacyModal
+                isOpen={isPrivacyModalOpen}
+                onClose={() => setIsPrivacyModalOpen(false)}
+                language={language}
+                themeId={themeId}
+            />
         </>
     );
 }

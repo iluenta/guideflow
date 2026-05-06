@@ -62,7 +62,10 @@ export function BottomNav({
     };
 
     // Resolve accent color from theme for active tab
-    const accentColor = t?.accentText?.match(/text-\[([^\]]+)\]/)?.[1] || '#0EA5E9';
+    const isDarkTheme = themeId === 'urban' || themeId === 'modern' || themeId === 'modern_v2';
+    const navBg = isDarkTheme ? 'rgba(9, 9, 11, 0.9)' : 'rgba(255, 255, 255, 0.85)';
+    const navBorder = isDarkTheme ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
+    const inactiveColor = isDarkTheme ? '#94a3b8' : '#6b7280';
 
     return (
         <nav style={{
@@ -71,11 +74,11 @@ export function BottomNav({
             left: 0,
             right: 0,
             height: '64px',
-            backgroundColor: 'rgba(255, 255, 255, 0.85)',
+            backgroundColor: navBg,
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            borderTop: '1px solid rgba(0, 0, 0, 0.05)',
-            boxShadow: '0 -4px 20px -4px rgba(0,0,0,0.05)',
+            borderTop: `1px solid ${navBorder}`,
+            boxShadow: '0 -4px 20px -4px rgba(0,0,0,0.15)',
             zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
@@ -109,7 +112,7 @@ export function BottomNav({
                                 border: 'none',
                                 background: 'transparent',
                                 cursor: 'pointer',
-                                color: isActive ? accentColor : '#6b7280',
+                                color: isActive ? (t?.accentText?.match(/text-\[([^\]]+)\]/)?.[1] || '#0EA5E9') : inactiveColor,
                                 fontWeight: isActive ? 700 : 400,
                                 transition: 'color 0.2s',
                                 position: 'relative',
@@ -123,7 +126,7 @@ export function BottomNav({
                                     right: '20%',
                                     height: '3px',
                                     borderRadius: '0 0 3px 3px',
-                                    backgroundColor: accentColor,
+                                    backgroundColor: (t?.accentText?.match(/text-\[([^\]]+)\]/)?.[1] || '#0EA5E9'),
                                 }} />
                             )}
                             <Icon

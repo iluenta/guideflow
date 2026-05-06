@@ -6,7 +6,7 @@ export interface Profile {
   full_name: string | null
   tenant_id: string
   role: 'admin' | 'user'
-  package_level: 'basic' | 'standard' | 'premium' | null
+  tenant_role: 'owner' | 'admin' | 'support' | 'viewer'
   phone: string | null
   avatar_url: string | null
   created_at: string

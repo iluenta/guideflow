@@ -42,6 +42,7 @@ interface GuideHomeProps {
     manuals?: any[];
     disabledLanguage?: boolean;
     property?: { full_address?: string };
+    onPrivacyClick?: () => void;
 }
 
 const container = {
@@ -78,6 +79,7 @@ export function GuideHome({
     manuals = [],
     disabledLanguage = false,
     property,
+    onPrivacyClick,
 }: GuideHomeProps) {
     const t = getGuideTheme(themeId)
 
@@ -279,9 +281,16 @@ export function GuideHome({
                 </motion.div>
 
                 {/* Footer */}
-                <motion.div variants={item} className="mt-8 text-center opacity-30">
-                    <p className="text-[9px] font-black text-navy tracking-[0.4em] uppercase">
-                        {poweredByLabel} Hospyia
+                <motion.div variants={item} className="mt-8 text-center opacity-30 px-6">
+                    <p className="text-[9px] font-black text-navy tracking-[0.4em] uppercase flex flex-wrap items-center justify-center gap-x-2">
+                        <span>{poweredByLabel} Hospyia</span>
+                        <span className="opacity-30 text-navy/50">·</span>
+                        <button 
+                            onClick={onPrivacyClick}
+                            className="hover:underline"
+                        >
+                            {currentLanguage === 'en' ? 'Privacy' : 'Privacidad'}
+                        </button>
                     </p>
                 </motion.div>
             </div>
