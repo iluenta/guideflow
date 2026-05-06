@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 
 export async function signInWithMagicLink(formData: FormData) {
   const email = formData.get('email')?.toString()
@@ -23,8 +24,14 @@ export async function signInWithMagicLink(formData: FormData) {
 
   const supabase = await createClient()
   
-  // Get the site URL from environment or construct it
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+  // Get the site URL from headers (origin) for better accuracy in different environments
+  const headersList = await headers()
+  const origin = headersList.get('origin') || headersList.get('host')
+  const protocol = origin?.includes('localhost') ? 'http' : 'https'
+  const siteUrl = origin 
+    ? (origin.startsWith('http') ? origin : `${protocol}://${origin}`) 
+    : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+    
   let redirectUrl = `${siteUrl}/auth/callback`
   if (next) {
     redirectUrl += `?next=${encodeURIComponent(next)}`
@@ -38,9 +45,13 @@ export async function signInWithMagicLink(formData: FormData) {
   })
 
   if (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error sending magic link:', error.code || error.status)
-    }
+    // Log details for debugging
+    console.error('Error sending magic link details:', {
+      code: error.code,
+      status: error.status,
+      message: error.message,
+      redirectUrl
+    })
     
     let errorMessage = 'No se pudo enviar el enlace mágico'
     if (error.status === 429 || error.code === 'over_email_send_rate_limit' || error.message.includes('rate limit') || error.message.includes('too many')) {
@@ -91,7 +102,14 @@ export async function signUpWithMagicLink(formData: FormData) {
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+  // Get the site URL from headers (origin) for better accuracy
+  const headersList = await headers()
+  const origin = headersList.get('origin') || headersList.get('host')
+  const protocol = origin?.includes('localhost') ? 'http' : 'https'
+  const siteUrl = origin 
+    ? (origin.startsWith('http') ? origin : `${protocol}://${origin}`) 
+    : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+    
   let redirectUrl = `${siteUrl}/auth/callback`
   if (next) {
     redirectUrl += `?next=${encodeURIComponent(next)}`
@@ -110,9 +128,13 @@ export async function signUpWithMagicLink(formData: FormData) {
   })
 
   if (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error signing up:', error.code || error.status)
-    }
+    // Log details for debugging
+    console.error('Error signing up details:', {
+      code: error.code,
+      status: error.status,
+      message: error.message,
+      redirectUrl
+    })
     
     let errorMessage = 'No se pudo crear la cuenta'
     if (error.status === 429 || error.code === 'over_email_send_rate_limit' || error.message.includes('rate limit') || error.message.includes('too many')) {
