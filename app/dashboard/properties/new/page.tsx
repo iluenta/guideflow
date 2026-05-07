@@ -2,6 +2,8 @@ import { PropertySetupWizard } from '@/components/dashboard/PropertySetupWizard'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { requireProfile } from '@/lib/supabase/get-tenant-id'
+import { can, type TenantRole } from '@/lib/permissions'
 
 export default async function NewPropertyPage() {
     const supabase = await createClient()
@@ -9,7 +11,10 @@ export default async function NewPropertyPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/auth/login')
 
-    const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).single()
+    const profile = await requireProfile(supabase).catch(() => null)
+    if (!profile || !can(profile.tenant_role as TenantRole, 'properties', 'create')) {
+        redirect('/dashboard/properties')
+    }
 
     return (
         <div className="min-h-screen bg-beige">

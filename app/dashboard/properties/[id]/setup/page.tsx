@@ -2,6 +2,8 @@ import { PropertySetupWizard } from '@/components/dashboard/PropertySetupWizard'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { requireProfile } from '@/lib/supabase/get-tenant-id'
+import { can, type TenantRole } from '@/lib/permissions'
 
 export default async function PropertySetupPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
@@ -10,10 +12,16 @@ export default async function PropertySetupPage({ params }: { params: Promise<{ 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/auth/login')
 
+    const profile = await requireProfile(supabase).catch(() => null)
+    if (!profile || !can(profile.tenant_role as TenantRole, 'properties', 'edit')) {
+        redirect('/dashboard/properties')
+    }
+
     const { data: property } = await supabase
         .from('properties')
         .select('name, tenant_id')
         .eq('id', id)
+        .eq('tenant_id', profile.tenant_id)
         .single()
 
     if (!property) redirect('/dashboard/properties')
