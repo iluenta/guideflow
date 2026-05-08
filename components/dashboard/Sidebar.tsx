@@ -15,20 +15,30 @@ import {
   Users,
   Settings,
   LogOut,
-  User
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
+import { can, type TenantRole, TENANT_ROLE_PERMISSIONS } from "@/lib/permissions";
 
-const navigation = [
-  { name: "Inicio", href: "/dashboard", icon: Home },
-  { name: "Propiedades", href: "/dashboard/properties", icon: Building2 },
-  { name: "Reservas", href: "/dashboard/bookings", icon: CalendarCheck },
-  { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
-  { name: "Analíticas", href: "/dashboard/analytics", icon: BarChart3 },
-  { name: "Accesos", href: "/dashboard/analytics/links", icon: Eye },
-  { name: "Equipo", href: "/dashboard/team", icon: Users },
-  { name: "Seguridad", href: "/dashboard/security", icon: ShieldCheck },
-  { name: "Ajustes", href: "/dashboard/settings", icon: Settings },
+type NavResource = keyof typeof TENANT_ROLE_PERMISSIONS.owner
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ElementType;
+  resource?: NavResource;
+  action?: string;
+}
+
+const navigation: NavItem[] = [
+  { name: "Inicio",      href: "/dashboard",                icon: Home },
+  { name: "Propiedades", href: "/dashboard/properties",     icon: Building2 },
+  { name: "Reservas",    href: "/dashboard/bookings",       icon: CalendarCheck, resource: "reservations", action: "view" },
+  { name: "Calendario",  href: "/dashboard/calendar",       icon: Calendar,      resource: "reservations", action: "view" },
+  { name: "Analíticas",  href: "/dashboard/analytics",      icon: BarChart3,     resource: "finances",     action: "reports" },
+  { name: "Accesos",     href: "/dashboard/analytics/links",icon: Eye,           resource: "guests",       action: "view" },
+  { name: "Equipo",      href: "/dashboard/team",           icon: Users,         resource: "members",      action: "invite" },
+  { name: "Seguridad",   href: "/dashboard/security",       icon: ShieldCheck,   resource: "settings",     action: "view" },
+  { name: "Ajustes",     href: "/dashboard/settings",       icon: Settings,      resource: "settings",     action: "edit" },
 ];
 
 interface SidebarProps {
@@ -39,6 +49,13 @@ interface SidebarProps {
 
 export const DashboardSidebar = ({ collapsed, profile, onSignOut }: SidebarProps) => {
   const pathname = usePathname();
+  const tenantRole = (profile?.tenant_role ?? 'viewer') as TenantRole;
+
+  const visibleNav = navigation.filter(item => {
+    if (!item.resource || !item.action) return true;
+    const perms = TENANT_ROLE_PERMISSIONS[tenantRole]?.[item.resource] as Record<string, boolean> | undefined;
+    return perms?.[item.action] === true;
+  });
 
   return (
     <aside className={cn(
@@ -65,7 +82,7 @@ export const DashboardSidebar = ({ collapsed, profile, onSignOut }: SidebarProps
           </div>
         )}
         <ul className="space-y-1">
-          {navigation.map((item) => {
+          {visibleNav.map((item) => {
             const isActive = pathname === item.href;
             return (
               <li key={item.name}>
@@ -102,8 +119,8 @@ export const DashboardSidebar = ({ collapsed, profile, onSignOut }: SidebarProps
         </ul>
       </nav>
 
-      {/* Footer / Upgrade Card */}
-      {!collapsed && (
+      {/* Footer / Upgrade Card — solo para owners */}
+      {!collapsed && can(tenantRole, 'billing', 'view') && (
         <div className="p-4 border-t border-landing-rule-soft">
           <div className="bg-gradient-to-br from-landing-navy to-landing-navy-soft text-white p-4 rounded-[14px] relative overflow-hidden group cursor-pointer transition-transform hover:-translate-y-1">
             <div className="absolute -top-5 -right-5 w-20 h-20 bg-landing-mint/40 rounded-full blur-2xl opacity-50"></div>

@@ -58,6 +58,7 @@ interface WizardContextType {
 
     // Compound Actions
     filteredSteps: string[]
+    isReadOnly: boolean
     handleTabChange: (value: string) => void
     handleNext: () => Promise<void>
     handleBack: () => void
@@ -89,6 +90,7 @@ export function WizardProvider({
     const supabase = createClient()
 
     const [mounted, setMounted] = useState(false)
+    const [isReadOnly, setIsReadOnly] = useState(false)
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'property')
     const [loading, setLoading] = useState(false)
     const [aiLoading, setAiLoading] = useState<string | null>(null)
@@ -222,6 +224,19 @@ export function WizardProvider({
 
     useEffect(() => {
         setMounted(true)
+
+        // Detectar si el usuario es solo lectura (viewer / support sin edición)
+        async function checkPermissions() {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) { router.replace('/auth/login'); return }
+            const tenantRole = user.app_metadata?.tenant_role || user.user_metadata?.tenant_role
+            const editRoles = ['owner', 'admin']
+            if (tenantRole && !editRoles.includes(tenantRole)) {
+                setIsReadOnly(true)
+            }
+        }
+        checkPermissions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // Polling para el estado del inventario
@@ -672,6 +687,15 @@ export function WizardProvider({
     }
 
     const handleNext = async () => {
+        // Modo solo lectura: solo navegar al siguiente paso, sin guardar
+        if (isReadOnly) {
+            const currentIndex = filteredSteps.indexOf(activeTab)
+            if (currentIndex < filteredSteps.length - 1) {
+                handleTabChange(filteredSteps[currentIndex + 1])
+            }
+            return
+        }
+
         setLoading(true)
         try {
             let stepData = null;
@@ -1069,6 +1093,7 @@ export function WizardProvider({
             setDirection,
             setCompletedSteps,
             filteredSteps,
+            isReadOnly,
             handleTabChange,
             handleNext,
             handleBack,

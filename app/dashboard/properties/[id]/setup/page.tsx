@@ -13,7 +13,7 @@ export default async function PropertySetupPage({ params }: { params: Promise<{ 
     if (!user) redirect('/auth/login')
 
     const profile = await requireProfile(supabase).catch(() => null)
-    if (!profile || !can(profile.tenant_role as TenantRole, 'properties', 'edit')) {
+    if (!profile || !can(profile.tenant_role as TenantRole, 'properties', 'view')) {
         redirect('/dashboard/properties')
     }
 

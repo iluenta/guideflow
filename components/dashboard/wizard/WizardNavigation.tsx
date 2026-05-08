@@ -14,25 +14,28 @@ export function WizardNavigation() {
         aiLoading,
         property,
         filteredSteps,
-        data
+        data,
+        isReadOnly,
     } = useWizard()
 
     const currentIndex = filteredSteps.indexOf(activeTab)
     const isFirstStep = currentIndex === 0
     const isLastStep = currentIndex === filteredSteps.length - 1
 
-    // Validar el paso activo
+    // Validar el paso activo (solo relevante cuando no es readOnly)
     let isCurrentStepValid = true;
-    if (activeTab === 'property') {
+    if (!isReadOnly && activeTab === 'property') {
         const hasName = !!data.property?.name?.trim();
         const hasSlug = !!data.property?.slug?.trim();
         isCurrentStepValid = hasName && hasSlug;
     }
 
-    const canContinue = (property?.id || isFirstStep) && isCurrentStepValid;
+    const canContinue = isReadOnly || ((property?.id || isFirstStep) && isCurrentStepValid);
     const isDisabled = loading || !!aiLoading || !canContinue;
 
-    const mainLabel = isLastStep ? 'Finalizar configuración' : 'Guardar y continuar'
+    const mainLabel = isReadOnly
+        ? (isLastStep ? 'Volver a propiedades' : 'Siguiente')
+        : (isLastStep ? 'Finalizar configuración' : 'Guardar y continuar')
     const mainIcon = isLastStep
         ? <CheckCircle className="w-5 h-5 shrink-0" />
         : <ArrowRight className="w-5 h-5 shrink-0" />

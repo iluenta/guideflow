@@ -25,9 +25,10 @@ interface PropertyCardProps {
     }
     onStatusChange?: (id: string, newStatus: 'active' | 'draft' | 'archived') => void
     priority?: boolean
+    canEdit?: boolean
 }
 
-export function PropertyCard({ property, onStatusChange, priority = false }: PropertyCardProps) {
+export function PropertyCard({ property, onStatusChange, priority = false, canEdit = true }: PropertyCardProps) {
     const router = useRouter()
     const [isUpdating, setIsUpdating] = useState(false)
     const [currentStatus, setCurrentStatus] = useState(property.status || 'draft')
@@ -132,7 +133,7 @@ export function PropertyCard({ property, onStatusChange, priority = false }: Pro
                 >
                     <Link href={`/dashboard/properties/${property.id}/setup`}>
                         <Edit2 className="h-3.5 w-3.5 mr-2" />
-                        Gestionar
+                        {canEdit ? 'Gestionar' : 'Ver'}
                     </Link>
                 </Button>
 
@@ -155,34 +156,40 @@ export function PropertyCard({ property, onStatusChange, priority = false }: Pro
                                         <span className="font-bold text-xs uppercase tracking-wider">Ver Guía Pública</span>
                                     </Link>
                                 </DropdownMenuItem>
-                                <GuestAccessDialog propertyId={property.id} propertyName={property.name}>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="rounded-xl p-2.5 focus:bg-landing-mint-tint focus:text-landing-mint-deep cursor-pointer">
-                                        <div className="flex items-center gap-3">
-                                            <UserPlus className="h-4 w-4" />
-                                            <span className="font-bold text-xs uppercase tracking-wider">Acceso Huésped</span>
-                                        </div>
-                                    </DropdownMenuItem>
-                                </GuestAccessDialog>
-                                <DropdownMenuSeparator className="bg-landing-rule-soft" />
+                                {canEdit && (
+                                    <GuestAccessDialog propertyId={property.id} propertyName={property.name}>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="rounded-xl p-2.5 focus:bg-landing-mint-tint focus:text-landing-mint-deep cursor-pointer">
+                                            <div className="flex items-center gap-3">
+                                                <UserPlus className="h-4 w-4" />
+                                                <span className="font-bold text-xs uppercase tracking-wider">Acceso Huésped</span>
+                                            </div>
+                                        </DropdownMenuItem>
+                                    </GuestAccessDialog>
+                                )}
+                                {canEdit && <DropdownMenuSeparator className="bg-landing-rule-soft" />}
                             </>
                         )}
 
-                        <DropdownMenuItem onClick={() => handleStatusChange('active')} className="rounded-xl p-2.5 focus:bg-landing-mint-tint focus:text-landing-mint-deep cursor-pointer">
-                            <Globe className="h-4 w-4 mr-3" />
-                            <span className="font-bold text-xs uppercase tracking-wider">Activar</span>
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuItem onClick={() => handleStatusChange('draft')} className="rounded-xl p-2.5 focus:bg-landing-amber-tint focus:text-landing-amber cursor-pointer">
-                            <FileEdit className="h-4 w-4 mr-3" />
-                            <span className="font-bold text-xs uppercase tracking-wider">Borrador</span>
-                        </DropdownMenuItem>
+                        {canEdit && (
+                            <>
+                                <DropdownMenuItem onClick={() => handleStatusChange('active')} className="rounded-xl p-2.5 focus:bg-landing-mint-tint focus:text-landing-mint-deep cursor-pointer">
+                                    <Globe className="h-4 w-4 mr-3" />
+                                    <span className="font-bold text-xs uppercase tracking-wider">Activar</span>
+                                </DropdownMenuItem>
 
-                        <DropdownMenuSeparator className="bg-landing-rule-soft" />
-                        
-                        <DropdownMenuItem onClick={() => handleStatusChange('archived')} className="rounded-xl p-2.5 focus:bg-landing-rose-tint focus:text-landing-rose cursor-pointer">
-                            <Archive className="h-4 w-4 mr-3" />
-                            <span className="font-bold text-xs uppercase tracking-wider">Archivar</span>
-                        </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStatusChange('draft')} className="rounded-xl p-2.5 focus:bg-landing-amber-tint focus:text-landing-amber cursor-pointer">
+                                    <FileEdit className="h-4 w-4 mr-3" />
+                                    <span className="font-bold text-xs uppercase tracking-wider">Borrador</span>
+                                </DropdownMenuItem>
+
+                                <DropdownMenuSeparator className="bg-landing-rule-soft" />
+
+                                <DropdownMenuItem onClick={() => handleStatusChange('archived')} className="rounded-xl p-2.5 focus:bg-landing-rose-tint focus:text-landing-rose cursor-pointer">
+                                    <Archive className="h-4 w-4 mr-3" />
+                                    <span className="font-bold text-xs uppercase tracking-wider">Archivar</span>
+                                </DropdownMenuItem>
+                            </>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>

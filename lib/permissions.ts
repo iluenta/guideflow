@@ -30,9 +30,9 @@ export const TENANT_ROLE_PERMISSIONS = {
   },
   viewer: {
     properties:   { create: false, edit: false, delete: false, view: true  },
-    reservations: { create: false, edit: false, cancel: false, view: true  },
-    guests:       { view: true,  communicate: false, manage_guides: false },
-    finances:     { view: true,  create: false, edit: false, reports: true },
+    reservations: { create: false, edit: false, cancel: false, view: false },
+    guests:       { view: false, communicate: false, manage_guides: false },
+    finances:     { view: false, create: false, edit: false, reports: false },
     members:      { invite: false, edit: false, remove: false },
     billing:      { view: false, manage: false },
     settings:     { view: false, edit: false },

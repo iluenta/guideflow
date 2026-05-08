@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
+import { can, type TenantRole } from '@/lib/permissions'
 
 const FILTERS = ['Todas', 'Activas', 'Borradores', 'Archivadas'] as const
 type Filter = typeof FILTERS[number]
@@ -20,6 +22,19 @@ export default function PropertiesPage() {
   const [search, setSearch] = useState('')
   const [activeFilter, setActiveFilter] = useState<Filter>('Todas')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [canCreate, setCanCreate] = useState(false)
+  const [canEdit, setCanEdit] = useState(false)
+
+  useEffect(() => {
+    async function loadRole() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      const role = (user?.app_metadata?.tenant_role || user?.user_metadata?.tenant_role || 'viewer') as TenantRole
+      setCanCreate(can(role, 'properties', 'create'))
+      setCanEdit(can(role, 'properties', 'edit'))
+    }
+    loadRole()
+  }, [])
 
   useEffect(() => { fetchProperties() }, [])
 
@@ -71,12 +86,14 @@ export default function PropertiesPage() {
             Organiza tus propiedades, edita guías digitales y controla el acceso de tus huéspedes.
           </p>
         </div>
-        <Link href="/dashboard/properties/new">
-          <Button className="bg-landing-navy text-white rounded-full h-11 px-6 hover:bg-landing-navy-deep transition-all shadow-lg shadow-landing-navy/20 active:scale-95 font-medium text-[13px]">
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva propiedad
-          </Button>
-        </Link>
+        {canCreate && (
+          <Link href="/dashboard/properties/new">
+            <Button className="bg-landing-navy text-white rounded-full h-11 px-6 hover:bg-landing-navy-deep transition-all shadow-lg shadow-landing-navy/20 active:scale-95 font-medium text-[13px]">
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva propiedad
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Toolbar - Exactly like Dashboard.html */}
@@ -183,11 +200,12 @@ export default function PropertiesPage() {
         )}>
           {filtered.map((property, index) => (
             viewMode === 'grid' ? (
-              <PropertyCard 
-                key={property.id} 
-                property={property} 
+              <PropertyCard
+                key={property.id}
+                property={property}
                 onStatusChange={handleStatusUpdateLocal}
                 priority={index < 3}
+                canEdit={canEdit}
               />
             ) : (
               <PropertyListItem
@@ -198,28 +216,30 @@ export default function PropertiesPage() {
             )
           ))}
 
-          {/* Add New Property CTA */}
-          <Link
-            href="/dashboard/properties/new"
-            className={cn(
-              "group border border-dashed border-landing-rule-soft hover:border-landing-navy-soft/40 hover:bg-landing-navy-tint/30 transition-all flex items-center justify-center relative overflow-hidden",
-              viewMode === 'grid' 
-                ? "flex-col rounded-[28px] min-h-[360px]" 
-                : "flex-row rounded-[18px] p-6 gap-6 h-28"
-            )}
-          >
-            <div className={cn(
-              "rounded-2xl bg-landing-bg-deep group-hover:bg-landing-navy-tint flex items-center justify-center transition-all group-hover:scale-110",
-              viewMode === 'grid' ? "h-16 w-16 mb-6" : "h-14 w-14"
-            )}>
-              <Plus className="h-7 w-7 text-landing-ink-mute group-hover:text-landing-navy" />
-            </div>
-            <div className={cn(viewMode === 'grid' ? "text-center" : "flex-1")}>
-              <h3 className="text-base font-bold text-landing-navy">Añadir propiedad</h3>
-              <p className="text-[13px] text-landing-ink-soft mt-1">Configura un nuevo alojamiento en minutos</p>
-            </div>
-            <ArrowRight className="absolute bottom-6 right-6 h-5 w-5 text-landing-navy opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-          </Link>
+          {/* Add New Property CTA — solo visible para roles con permiso de crear */}
+          {canCreate && (
+            <Link
+              href="/dashboard/properties/new"
+              className={cn(
+                "group border border-dashed border-landing-rule-soft hover:border-landing-navy-soft/40 hover:bg-landing-navy-tint/30 transition-all flex items-center justify-center relative overflow-hidden",
+                viewMode === 'grid'
+                  ? "flex-col rounded-[28px] min-h-[360px]"
+                  : "flex-row rounded-[18px] p-6 gap-6 h-28"
+              )}
+            >
+              <div className={cn(
+                "rounded-2xl bg-landing-bg-deep group-hover:bg-landing-navy-tint flex items-center justify-center transition-all group-hover:scale-110",
+                viewMode === 'grid' ? "h-16 w-16 mb-6" : "h-14 w-14"
+              )}>
+                <Plus className="h-7 w-7 text-landing-ink-mute group-hover:text-landing-navy" />
+              </div>
+              <div className={cn(viewMode === 'grid' ? "text-center" : "flex-1")}>
+                <h3 className="text-base font-bold text-landing-navy">Añadir propiedad</h3>
+                <p className="text-[13px] text-landing-ink-soft mt-1">Configura un nuevo alojamiento en minutos</p>
+              </div>
+              <ArrowRight className="absolute bottom-6 right-6 h-5 w-5 text-landing-navy opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+            </Link>
+          )}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-[28px] border border-dashed border-landing-rule-soft bg-landing-bg/30">
