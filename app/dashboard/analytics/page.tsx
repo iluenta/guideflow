@@ -50,7 +50,7 @@ export default function AnalyticsPage() {
   const [unansweredQuestions, setUnansweredQuestions] = useState<any[]>([]);
   const [recentChats, setRecentChats] = useState<any[]>([]);
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     if (!profile?.tenant_id) return;
     setIsLoading(true);
     const supabase = createClient();
@@ -164,11 +164,11 @@ export default function AnalyticsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [profile?.tenant_id, selectedPropertyId, dateFilter]);
 
   useEffect(() => {
     if (profile?.tenant_id) fetchData();
-  }, [profile?.tenant_id, selectedPropertyId, dateFilter]);
+  }, [profile?.tenant_id, fetchData]);
 
   const activePropName = selectedPropertyId === "all"
     ? "Todas las propiedades"

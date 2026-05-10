@@ -115,7 +115,11 @@
       "Read(//c/Users/PEDRO~1.RAM/AppData/Local/Temp/claude/c--Proyectos-guideflow/53f84f3d-3e1a-44ba-b256-26ba752ed28c/tasks/**)",
       "Read(//c/Users/PEDRO~1.RAM/AppData/Local/Temp/claude/c--Proyectos-guideflow/3f916f8c-0bad-4d19-b89d-01b3881ccce4/tasks/**)",
       "Bash(grep -r \"NEXT_PUBLIC_SITE_URL\" .env.local)",
-      "Bash(grep -r \"NEXT_PUBLIC_SITE_URL\" .env)"
+      "Bash(grep -r \"NEXT_PUBLIC_SITE_URL\" .env)",
+      "Bash(npx supabase *)",
+      "PowerShell(\\(Get-Content \"c:\\\\Proyectos\\\\guideflow\\\\app\\\\actions\\\\reservations.ts\"\\).Count)",
+      "PowerShell(\\(Get-Content \"c:\\\\Proyectos\\\\guideflow\\\\components\\\\dashboard\\\\reservations\\\\ReservationDrawer.tsx\"\\).Count)",
+      "Bash(grep -E \"^[0-9]{3,}\")"
     ],
     "additionalDirectories": [
       "C:\\Proyectos\\guideflow\\.claude",
@@ -123,7 +127,11 @@
       "C:\\Users\\pedro.ramirez\\.claude\\plans",
       "c:\\Proyectos\\guideflow\\app\\dashboard",
       "c:\\Proyectos\\guideflow\\app\\api\\tenant",
-      "c:\\Proyectos\\guideflow\\app\\auth\\callback"
+      "c:\\Proyectos\\guideflow\\app\\auth\\callback",
+      "c:\\Proyectos\\guideflow\\app\\dashboard\\bookings\\[id]",
+      "c:\\Proyectos\\guideflow\\components\\dashboard",
+      "c:\\Proyectos\\guideflow\\app\\dashboard\\expenses\\[id]",
+      "c:\\Proyectos\\guideflow\\app\\dashboard\\treasury"
     ]
   },
   "enabledMcpjsonServers": [

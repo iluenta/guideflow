@@ -1,264 +1,281 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+} from '@/components/ui/select'
+import { ReservationDrawer } from '@/components/dashboard/reservations/ReservationDrawer'
+import { getReservations, getReservation } from '@/app/actions/reservations'
+import { getPaymentMethods, getChannels } from '@/app/actions/reservation-settings'
+import { getProperties } from '@/app/actions/properties'
+import { useUserProfile } from '@/hooks/use-user-profile'
+import { can, type TenantRole } from '@/lib/permissions'
+import type {
+  ReservationListItem,
+  ReservationWithDetails,
+  ChannelSetting,
+  PaymentMethodSetting,
+} from '@/types/reservations'
 
-const properties = [
-  { id: "all", name: "Todas las propiedades" },
-  { id: "1", name: "Apartamento Centro Madrid" },
-  { id: "2", name: "Casa Rural Asturias" },
-  { id: "3", name: "Estudio Playa Valencia" },
-];
+// ─── Channel colors ───────────────────────────────────────────────────────────
+const CHANNEL_COLORS: Record<string, string> = {
+  airbnb:   '#e11d48',
+  booking:  '#1d4ed8',
+  direct:   '#0d9488',
+  manual:   '#94a3b8',
+}
 
-const bookings = [
-  {
-    id: 1,
-    propertyId: "1",
-    propertyName: "Apt. Madrid",
-    guest: "Carlos Martinez",
-    startDay: 15,
-    endDay: 20,
-    color: "bg-primary",
-  },
-  {
-    id: 2,
-    propertyId: "2",
-    propertyName: "Casa Asturias",
-    guest: "Laura Sanchez",
-    startDay: 22,
-    endDay: 28,
-    color: "bg-accent",
-  },
-  {
-    id: 3,
-    propertyId: "3",
-    propertyName: "Estudio Valencia",
-    guest: "Ana Garcia",
-    startDay: 10,
-    endDay: 15,
-    color: "bg-chart-3",
-  },
-  {
-    id: 4,
-    propertyId: "1",
-    propertyName: "Apt. Madrid",
-    guest: "Pedro Lopez",
-    startDay: 25,
-    endDay: 31,
-    color: "bg-primary",
-  },
-];
+function getChannelColor(code: string): string {
+  return CHANNEL_COLORS[code] ?? CHANNEL_COLORS.manual
+}
 
-const daysOfWeek = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
-const months = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre",
-];
+const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+]
 
+const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate()
+}
+
+function firstDayOfWeek(year: number, month: number): number {
+  const d = new Date(year, month, 1).getDay()
+  return d === 0 ? 6 : d - 1
+}
+
+function isoDate(year: number, month: number, day: number): string {
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 22));
-  const [selectedProperty, setSelectedProperty] = useState("all");
+  const { profile } = useUserProfile()
+  const canEdit   = profile ? can(profile.tenant_role as TenantRole, 'reservations', 'edit') : false
+  const canCancel = profile ? can(profile.tenant_role as TenantRole, 'reservations', 'cancel') : false
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+  const searchParams = useSearchParams()
+  const globalYearParam = searchParams.get('year')
+  const globalYear = (globalYearParam && globalYearParam !== 'all')
+    ? parseInt(globalYearParam, 10) : null
 
-  const firstDayOfMonth = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const now = new Date()
+  const [year, setYear] = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth())
+
+  useEffect(() => {
+    if (globalYear === null) return
+    setYear(globalYear)
+    setMonth(globalYear === now.getFullYear() ? now.getMonth() : 0)
+  }, [globalYear]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [reservations, setReservations] = useState<ReservationListItem[]>([])
+  const [channels, setChannels] = useState<ChannelSetting[]>([])
+  const [properties, setProperties] = useState<{ id: string; name: string }[]>([])
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodSetting[]>([])
+  const [filterProperty, setFilterProperty] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [selectedReservation, setSelectedReservation] = useState<ReservationWithDetails | null>(null)
+
+  useEffect(() => {
+    Promise.all([getChannels(), getPaymentMethods(), getProperties()]).then(
+      ([{ channels: chs }, { methods }, props]) => {
+        setChannels(chs)
+        setPaymentMethods(methods)
+        setProperties((props as unknown as { id: string; name: string }[]) ?? [])
+      }
+    )
+  }, [])
+
+  useEffect(() => {
+    setLoading(true)
+    const dateFrom = isoDate(year, month, 1)
+    const dateTo = isoDate(year, month, daysInMonth(year, month))
+    getReservations({
+      date_from: dateFrom,
+      date_to: dateTo,
+      property_id: filterProperty || undefined,
+      per_page: 200,
+    }).then(({ reservations: rows }) => {
+      setReservations(rows)
+      setLoading(false)
+    })
+  }, [year, month, filterProperty])
 
   const prevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
+    if (month === 0) { setYear(y => y - 1); setMonth(11) }
+    else setMonth(m => m - 1)
+  }
 
   const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
-
-  const filteredBookings =
-    selectedProperty === "all"
-      ? bookings
-      : bookings.filter((b) => b.propertyId === selectedProperty);
-
-  const getBookingsForDay = (day: number) => {
-    return filteredBookings.filter((b) => day >= b.startDay && day <= b.endDay);
-  };
-
-  const calendarDays = [];
-  for (let i = 0; i < firstDayOfMonth; i++) {
-    calendarDays.push(null);
+    if (month === 11) { setYear(y => y + 1); setMonth(0) }
+    else setMonth(m => m + 1)
   }
-  for (let i = 1; i <= daysInMonth; i++) {
-    calendarDays.push(i);
+
+  const openDrawer = async (id: string) => {
+    const { reservation } = await getReservation(id)
+    if (reservation) {
+      setSelectedReservation(reservation)
+      setDrawerOpen(true)
+    }
   }
+
+  const handleReservationUpdated = (updated: ReservationWithDetails) => {
+    setSelectedReservation(updated)
+  }
+
+  const totalDays = daysInMonth(year, month)
+  const firstDay = firstDayOfWeek(year, month)
+
+  const reservationsForDay = (day: number): ReservationListItem[] => {
+    const date = isoDate(year, month, day)
+    return reservations.filter(r => r.checkin_date <= date && r.checkout_date > date)
+  }
+
+  const cells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: totalDays }, (_, i) => i + 1),
+  ]
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const today = new Date()
+  const isToday = (day: number) =>
+    day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="p-8 max-w-[1440px] mx-auto">
+      <div className="flex justify-between items-end gap-8 mb-8 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+          <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2.5 mb-2.5">
+            <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf] shadow-[0_0_0_4px_rgba(45,212,191,0.2)] inline-block" />
+            Dashboard
+          </p>
+          <h1 className="text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
             Calendario
           </h1>
-          <p className="mt-1 text-muted-foreground">
-            Gestiona disponibilidad y reservas
-          </p>
+          <p className="text-[15px] text-slate-500 mt-2">Vista mensual de ocupación</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-            <SelectTrigger className="w-[220px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {properties.map((property) => (
-                <SelectItem key={property.id} value={property.id}>
-                  {property.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Bloquear fechas</span>
-          </Button>
-        </div>
-      </div>
 
-      {/* Calendar */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-xl">
-            {months[month]} {year}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={prevMonth}>
+        <div className="flex items-center gap-3">
+          {properties.length > 1 && (
+            <Select value={filterProperty || '_all'} onValueChange={v => setFilterProperty(v === '_all' ? '' : v)}>
+              <SelectTrigger className="h-9 rounded-full bg-white border-[#eef2f7] text-[13px] w-44">
+                <SelectValue placeholder="Todas las propiedades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">Todas las propiedades</SelectItem>
+                {properties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" className="rounded-full h-9 w-9 p-0" onClick={prevMonth}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={nextMonth}>
+            <span className="font-semibold text-[15px] text-slate-800 min-w-[160px] text-center">
+              {MONTH_NAMES[month]} {year}
+            </span>
+            <Button variant="outline" size="sm" className="rounded-full h-9 w-9 p-0" onClick={nextMonth}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          {/* Days of week header */}
-          <div className="grid grid-cols-7 border-b border-border">
-            {daysOfWeek.map((day) => (
-              <div
-                key={day}
-                className="py-2 text-center text-sm font-medium text-muted-foreground"
-              >
-                {day}
-              </div>
-            ))}
-          </div>
+        </div>
+      </div>
 
-          {/* Calendar grid */}
-          <div className="grid grid-cols-7">
-            {calendarDays.map((day, index) => {
-              const dayBookings = day ? getBookingsForDay(day) : [];
-              const isToday = day === 22 && month === 0 && year === 2026;
+      {/* Legend */}
+      <div className="flex items-center gap-4 mb-4 flex-wrap">
+        {channels.filter(c => c.is_active).map(c => (
+          <span key={c.id} className="flex items-center gap-1.5 text-[12px] text-slate-600">
+            <span className="w-3 h-3 rounded-sm inline-block" style={{ background: getChannelColor(c.code) }} />
+            {c.name}
+          </span>
+        ))}
+      </div>
 
-              return (
-                <div
-                  key={index}
-                  className={`min-h-[80px] border-b border-r border-border p-1 sm:min-h-[100px] sm:p-2 ${
-                    index % 7 === 0 ? "border-l" : ""
-                  } ${!day ? "bg-muted/30" : "hover:bg-muted/50"}`}
-                >
-                  {day && (
-                    <>
-                      <span
-                        className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-sm ${
-                          isToday
-                            ? "bg-primary text-primary-foreground"
-                            : "text-foreground"
-                        }`}
-                      >
-                        {day}
-                      </span>
-                      <div className="mt-1 space-y-1">
-                        {dayBookings.slice(0, 2).map((booking) => (
-                          <div
-                            key={booking.id}
-                            className={`${booking.color} truncate rounded px-1 py-0.5 text-xs text-primary-foreground`}
-                          >
-                            <span className="hidden sm:inline">
-                              {booking.guest}
-                            </span>
-                            <span className="sm:hidden">
-                              {booking.propertyName}
-                            </span>
-                          </div>
-                        ))}
-                        {dayBookings.length > 2 && (
-                          <span className="text-xs text-muted-foreground">
-                            +{dayBookings.length - 2} mas
-                          </span>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Calendar grid */}
+      <div className="bg-white border border-[#eef2f7] rounded-[18px] overflow-hidden shadow-sm">
+        <div className="grid grid-cols-7 border-b border-[#eef2f7]">
+          {DAY_NAMES.map(d => (
+            <div key={d} className="px-3 py-2.5 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400 border-r border-[#eef2f7] last:border-r-0">
+              {d}
+            </div>
+          ))}
+        </div>
 
-      {/* Upcoming Bookings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Proximas reservas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredBookings.map((booking) => (
-              <div
-                key={booking.id}
-                className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`h-3 w-3 rounded-full ${booking.color}`} />
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {booking.guest}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {booking.propertyName}
-                    </p>
+        {loading ? (
+          <div className="py-20 text-center text-slate-400 text-[13px]">Cargando calendario...</div>
+        ) : (
+          Array.from({ length: cells.length / 7 }, (_, weekIdx) => (
+            <div key={weekIdx} className="grid grid-cols-7 border-b border-[#eef2f7] last:border-b-0" style={{ minHeight: 100 }}>
+              {cells.slice(weekIdx * 7, weekIdx * 7 + 7).map((day, dayIdx) => {
+                const dayReservations = day ? reservationsForDay(day) : []
+                return (
+                  <div
+                    key={dayIdx}
+                    className={`p-2 border-r border-[#eef2f7] last:border-r-0 min-h-[100px] ${!day ? 'bg-[#fafbfc]' : ''}`}
+                  >
+                    {day && (
+                      <>
+                        <span className={`text-[12px] font-mono font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-1 ${
+                          isToday(day) ? 'bg-[#1e3a8a] text-white' : 'text-slate-500'
+                        }`}>
+                          {day}
+                        </span>
+
+                        <div className="space-y-0.5">
+                          {dayReservations.slice(0, 4).map(r => {
+                            const color = r.channel ? getChannelColor(r.channel.code) : getChannelColor('manual')
+                            const isCheckin = r.checkin_date === isoDate(year, month, day)
+                            return (
+                              <button
+                                key={r.id}
+                                onClick={() => openDrawer(r.id)}
+                                className="w-full text-left text-white text-[10px] font-medium px-1.5 py-0.5 truncate transition-opacity hover:opacity-80 block rounded"
+                                style={{ background: color }}
+                                title={r.guest_name}
+                              >
+                                {isCheckin ? r.guest_name : '·'}
+                              </button>
+                            )
+                          })}
+                          {dayReservations.length > 4 && (
+                            <p className="text-[10px] text-slate-400 font-mono">+{dayReservations.length - 4}</p>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Badge variant="secondary">
-                    {booking.startDay} - {booking.endDay} Ene
-                  </Badge>
-                  <Button variant="outline" size="sm">
-                    Ver detalles
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                )
+              })}
+            </div>
+          ))
+        )}
+      </div>
+
+      <ReservationDrawer
+        reservation={selectedReservation}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        paymentMethods={paymentMethods}
+        canEdit={canEdit}
+        canCancel={canCancel}
+        onEditClick={(id) => {
+          setDrawerOpen(false)
+          window.location.href = `/dashboard/bookings/new?edit=${id}`
+        }}
+        onReservationUpdated={handleReservationUpdated}
+      />
     </div>
-  );
+  )
 }

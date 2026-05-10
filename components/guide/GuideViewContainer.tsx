@@ -164,7 +164,7 @@ export function GuideViewContainer({
     const [privacyBannerVisible, setPrivacyBannerVisible] = useState(false);
     const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
-    const confirmPrivacy = (hideBanner = true) => {
+    const confirmPrivacy = React.useCallback((hideBanner = true) => {
         if (!accessToken) return;
         
         // El tracking se activa siempre
@@ -175,7 +175,7 @@ export function GuideViewContainer({
             localStorage.setItem(`hospyia_privacy_acknowledged_${accessToken}`, 'true');
             setPrivacyBannerVisible(false);
         }
-    };
+    }, [accessToken]);
 
     useEffect(() => {
         if (accessToken) {
@@ -193,7 +193,7 @@ export function GuideViewContainer({
                 return () => clearTimeout(timer);
             }
         }
-    }, [accessToken]);
+    }, [accessToken, confirmPrivacy]);
 
     // Initialize guest session
     useEffect(() => {

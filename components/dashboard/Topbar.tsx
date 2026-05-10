@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Bell, Search, Menu, Settings, User, LogOut } from "lucide-react";
+import { YearFilterLoader } from './YearFilterLoader';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +45,11 @@ export const DashboardTopbar = ({ onMenuClick, profile, onSignOut }: TopbarProps
           className="w-full bg-landing-bg-deep border border-transparent rounded-full py-2.5 pl-11 pr-4 text-sm text-landing-ink placeholder:text-landing-ink-mute focus:outline-none focus:bg-white focus:border-landing-navy-soft focus:shadow-[0_0_0_4px_rgba(59,91,189,0.1)] transition-all"
         />
         <kbd className="absolute right-3 top-1/2 -translate-y-1/2 font-jetbrains text-[10px] px-2 py-1 bg-white border border-landing-rule rounded-md text-landing-ink-mute">⌘K</kbd>
+      </div>
+
+      {/* Year Filter */}
+      <div className="hidden lg:flex items-center">
+        <YearFilterLoader />
       </div>
 
       {/* Actions */}

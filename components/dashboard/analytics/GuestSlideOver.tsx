@@ -17,13 +17,7 @@ export function GuestSlideOver({ isOpen, onClose, guestId, guestName, propertyNa
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<any>(null);
 
-  useEffect(() => {
-    if (isOpen && guestId) {
-      fetchGuestData();
-    }
-  }, [isOpen, guestId]);
-
-  const fetchGuestData = async () => {
+  const fetchGuestData = React.useCallback(async () => {
     setIsLoading(true);
     const supabase = createClient();
     try {
@@ -49,7 +43,13 @@ export function GuestSlideOver({ isOpen, onClose, guestId, guestName, propertyNa
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [guestId]);
+
+  useEffect(() => {
+    if (isOpen && guestId) {
+      fetchGuestData();
+    }
+  }, [isOpen, guestId, fetchGuestData]);
 
   if (!isOpen) return null;
 

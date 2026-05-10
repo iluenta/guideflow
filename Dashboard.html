@@ -1241,6 +1241,792 @@
   }
   .mobile-bottom-nav { display: none; }
 
+  /* ====== TABLE ====== */
+  .table-card {
+    background: var(--bg-card);
+    border: 1px solid var(--rule-soft);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+  }
+  .table-wrap { overflow-x: auto; }
+  table.t {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.t thead th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    font-weight: 500;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--rule-soft);
+    background: var(--bg);
+    white-space: nowrap;
+  }
+  table.t tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: middle;
+  }
+  table.t tbody tr {
+    transition: background .12s;
+    cursor: pointer;
+  }
+  table.t tbody tr:hover { background: var(--bg); }
+  table.t tbody tr:last-child td { border-bottom: none; }
+  table.t .num {
+    font-family: var(--mono);
+    font-weight: 600;
+    color: var(--ink);
+    text-align: right;
+    white-space: nowrap;
+  }
+  table.t .num.pending { color: var(--amber); }
+  table.t .num.paid { color: #047857; }
+  table.t .num.muted { color: var(--ink-mute); font-weight: 400; }
+  table.t .guest-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  table.t .guest-cell .sb-avatar { width: 32px; height: 32px; font-size: 11px; }
+  table.t .guest-cell .gname {
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 13px;
+  }
+  table.t .guest-cell .gemail {
+    font-size: 11px;
+    color: var(--ink-mute);
+    font-family: var(--mono);
+  }
+  table.t .dates {
+    font-size: 12px;
+    color: var(--ink);
+  }
+  table.t .dates .nights {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+  table.t .row-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+  table.t .row-actions button {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    color: var(--ink-mute);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  table.t .row-actions button:hover {
+    background: var(--bg-deep);
+    color: var(--ink);
+  }
+  table.t .row-actions svg { width: 14px; height: 14px; stroke-width: 2; }
+
+  /* Channel chips */
+  .chan {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .chan::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+  .chan.airbnb { background: #ffe5e9; color: #be185d; }
+  .chan.airbnb::before { background: #e11d48; }
+  .chan.booking { background: #e0edff; color: #1d4ed8; }
+  .chan.booking::before { background: #1d4ed8; }
+  .chan.direct { background: var(--mint-tint); color: #0d9488; }
+  .chan.direct::before { background: #0d9488; }
+  .chan.manual { background: var(--bg-deep); color: var(--ink-soft); }
+  .chan.manual::before { background: var(--ink-soft); }
+  .chan.vrbo { background: #fef3c7; color: #b45309; }
+  .chan.vrbo::before { background: #d97706; }
+
+  .badge.confirmed { background: #ecfdf5; color: #047857; }
+  .badge.confirmed::before { background: #10b981; }
+  .badge.pending { background: var(--amber-tint); color: var(--amber); }
+  .badge.pending::before { background: var(--amber); }
+  .badge.cancelled { background: var(--rose-tint); color: var(--rose); }
+  .badge.cancelled::before { background: var(--rose); }
+
+  /* KPI strip */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--rule-soft);
+    border-radius: 18px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .kpi {
+    padding: 18px 22px;
+    border-right: 1px solid var(--rule-soft);
+  }
+  .kpi:last-child { border-right: none; }
+  .kpi-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .kpi-value .cur { color: var(--ink-mute); font-weight: 500; }
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--ink-mute);
+    margin-top: 6px;
+    font-family: var(--mono);
+    letter-spacing: 0.04em;
+  }
+  .kpi-value.pending { color: var(--amber); }
+  .kpi-value.paid { color: #047857; }
+
+  /* ====== DRAWER ====== */
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.45);
+    backdrop-filter: blur(2px);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s;
+  }
+  .drawer-backdrop.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .drawer {
+    position: fixed;
+    top: 0; right: 0;
+    width: 640px;
+    max-width: 100vw;
+    height: 100vh;
+    background: var(--bg);
+    z-index: 210;
+    transform: translateX(100%);
+    transition: transform .3s cubic-bezier(.2,.8,.2,1);
+    display: flex;
+    flex-direction: column;
+    box-shadow: -20px 0 60px -20px rgba(15,23,42,0.2);
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-head {
+    padding: 22px 28px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--rule-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .drawer-head h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .drawer-head .meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    flex-wrap: wrap;
+  }
+  .drawer-close {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .drawer-close:hover { background: var(--bg-deep); color: var(--ink); }
+  .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+  }
+  .drawer-foot {
+    padding: 16px 28px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--rule-soft);
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  /* Drawer tabs */
+  .dtabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--rule-soft);
+    margin: 0 -28px 22px;
+    padding: 0 24px;
+    background: var(--bg-card);
+  }
+  .dtab {
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-mute);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all .15s;
+  }
+  .dtab:hover { color: var(--ink); }
+  .dtab.active {
+    color: var(--navy);
+    border-bottom-color: var(--navy);
+  }
+  .dtab .tab-count {
+    margin-left: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--bg-deep);
+    padding: 1px 6px;
+    border-radius: 999px;
+  }
+  .dtab.active .tab-count { background: var(--navy-tint); color: var(--navy); }
+
+  /* Financial summary */
+  .fin-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--rule-soft);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .fin {
+    padding: 18px 20px;
+    border-right: 1px solid var(--rule-soft);
+  }
+  .fin:last-child { border-right: none; background: var(--navy-tint); }
+  .fin-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 8px;
+  }
+  .fin:last-child .fin-label { color: var(--navy); }
+  .fin-value {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.1;
+  }
+  .fin-value .cur { color: var(--ink-mute); font-weight: 500; font-size: 18px; }
+  .fin-value.neg { color: var(--rose); }
+  .fin:last-child .fin-value { color: var(--navy); }
+  .fin-sub {
+    font-size: 11px;
+    color: var(--ink-mute);
+    margin-top: 4px;
+    font-family: var(--mono);
+  }
+
+  /* Section block in drawer */
+  .dsection { margin-bottom: 24px; }
+  .dsection-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .dsection-head h4 {
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .dsection-head button {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--navy);
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--navy-tint);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .dsection-head button:hover { background: var(--navy); color: #fff; }
+  .dsection-head button svg { width: 12px; height: 12px; stroke-width: 2.5; }
+
+  /* Editable line items */
+  .line-list {
+    background: var(--bg-card);
+    border: 1px solid var(--rule-soft);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .line {
+    display: grid;
+    grid-template-columns: 1fr 70px 100px 32px;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .line:last-child { border-bottom: none; }
+  .line input.l-input,
+  .line select.l-input {
+    border: none;
+    background: transparent;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    width: 100%;
+    padding: 4px 6px;
+    border-radius: 6px;
+  }
+  .line input.l-input:hover,
+  .line input.l-input:focus,
+  .line select.l-input:hover,
+  .line select.l-input:focus {
+    background: var(--bg);
+  }
+  .line .l-amount {
+    font-family: var(--mono);
+    font-weight: 600;
+    text-align: right;
+  }
+  .line .l-iva {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-align: right;
+    color: var(--ink-mute);
+  }
+  .line-del {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    color: var(--ink-mute);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .line-del:hover { background: var(--rose-tint); color: var(--rose); }
+  .line-del svg { width: 13px; height: 13px; stroke-width: 2; }
+  .line.locked .l-input { color: var(--ink-soft); }
+  .line.total {
+    background: var(--bg);
+    font-weight: 600;
+  }
+  .line.total .l-amount { color: var(--navy); font-size: 14px; }
+
+  /* Payment row */
+  .pay-row {
+    display: grid;
+    grid-template-columns: auto 1fr 100px 32px;
+    gap: 14px;
+    align-items: center;
+    padding: 14px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .pay-row:last-child { border-bottom: none; }
+  .pay-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--mint-tint);
+    color: var(--mint-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pay-icon svg { width: 16px; height: 16px; stroke-width: 2; }
+  .pay-meta .pmethod {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .pay-meta .pdetail {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--ink-mute);
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+  .pay-amount {
+    font-family: var(--mono);
+    font-weight: 600;
+    text-align: right;
+    color: #047857;
+  }
+
+  /* ====== SETTINGS CARDS (canales / pagos) ====== */
+  .set-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+  .set-card {
+    background: var(--bg-card);
+    border: 1px solid var(--rule-soft);
+    border-radius: 18px;
+    padding: 22px;
+    transition: all .2s;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+    position: relative;
+  }
+  .set-card:hover {
+    border-color: var(--navy-soft);
+    box-shadow: 0 12px 28px -14px rgba(30,58,138,0.18);
+  }
+  .set-card.archived {
+    opacity: 0.6;
+    background: var(--bg-deep);
+  }
+  .set-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+    gap: 12px;
+  }
+  .set-card-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+  .set-logo {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--bg-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--navy);
+    flex-shrink: 0;
+  }
+  .set-logo.airbnb { background: #ffe5e9; color: #be185d; }
+  .set-logo.booking { background: #e0edff; color: #1d4ed8; }
+  .set-logo.direct { background: var(--mint-tint); color: #0d9488; }
+  .set-logo.manual { background: var(--bg-deep); color: var(--ink-soft); }
+  .set-logo.vrbo { background: #fef3c7; color: #b45309; }
+  .set-logo.stripe { background: #efe7ff; color: #6d28d9; }
+  .set-logo.redsys { background: var(--mint-tint); color: #0d9488; }
+  .set-logo.transfer { background: var(--navy-tint); color: var(--navy); }
+  .set-logo.cash { background: #ecfdf5; color: #047857; }
+  .set-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .set-card-sub {
+    font-size: 12px;
+    color: var(--ink-mute);
+    margin-top: 2px;
+  }
+  .set-menu {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    color: var(--ink-mute);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .set-menu:hover { background: var(--bg-deep); color: var(--ink); }
+  .set-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+    background: var(--bg);
+    border: 1px solid var(--rule-soft);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .set-stat {
+    padding: 12px 14px;
+    border-right: 1px solid var(--rule-soft);
+  }
+  .set-stat:last-child { border-right: none; }
+  .set-stat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 4px;
+  }
+  .set-stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .set-stat-value .pct { color: var(--ink-mute); font-weight: 500; font-size: 13px; }
+  .set-stat-iva {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-mute);
+    margin-top: 4px;
+  }
+  .set-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-top: 1px dashed var(--rule-soft);
+    font-size: 13px;
+  }
+  .set-row:first-of-type { border-top: none; }
+  .set-row-label {
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .set-row-label svg { width: 14px; height: 14px; color: var(--ink-mute); stroke-width: 1.75; }
+  .set-card-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .set-card-foot .left {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    letter-spacing: 0.04em;
+  }
+
+  /* Switch */
+  .switch {
+    width: 36px; height: 20px;
+    background: var(--rule);
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    transition: background .15s;
+    flex-shrink: 0;
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform .2s;
+  }
+  .switch.on { background: var(--navy); }
+  .switch.on::after { transform: translateX(16px); }
+
+  /* Add settings card */
+  .set-add {
+    border: 2px dashed var(--rule);
+    background: transparent;
+    border-radius: 18px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all .15s;
+    min-height: 280px;
+  }
+  .set-add:hover { border-color: var(--navy); background: var(--navy-tint); }
+  .set-add-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--bg-deep);
+    color: var(--ink-mute);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .set-add:hover .set-add-icon { background: var(--navy); color: #fff; }
+  .set-add-icon svg { width: 18px; height: 18px; stroke-width: 2; }
+  .set-add h4 { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .set-add p { font-size: 12px; color: var(--ink-mute); max-width: 220px; }
+
+  /* ====== MODAL ====== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.55);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(3px);
+  }
+  .modal-backdrop.open { display: flex; animation: mfade .2s ease; }
+  @keyframes mfade { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--bg-card);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 30px 80px -20px rgba(15,23,42,0.4);
+    animation: mslide .25s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes mslide { from { transform: translateY(20px) scale(.96); } to { transform: translateY(0) scale(1); } }
+  .modal-head {
+    padding: 22px 26px 6px;
+  }
+  .modal-head .eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 6px;
+  }
+  .modal-head h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+  }
+  .modal-body { padding: 18px 26px; overflow-y: auto; }
+  .modal-foot {
+    padding: 16px 26px;
+    border-top: 1px solid var(--rule-soft);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  /* Form */
+  .form-row { margin-bottom: 14px; }
+  .form-row.split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .form-input,
+  .form-select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    transition: all .15s;
+    font-family: var(--sans);
+  }
+  .form-input:focus,
+  .form-select:focus {
+    border-color: var(--navy-soft);
+    box-shadow: 0 0 0 3px rgba(59,91,189,0.12);
+    background: var(--bg-card);
+  }
+  .form-prefix {
+    position: relative;
+  }
+  .form-prefix .form-input { padding-left: 30px; }
+  .form-prefix-symbol {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink-mute);
+  }
+  .form-help {
+    font-size: 11px;
+    color: var(--ink-mute);
+    margin-top: 4px;
+    font-family: var(--mono);
+    letter-spacing: 0.03em;
+  }
+
+  .btn-danger {
+    background: var(--rose-tint);
+    color: var(--rose);
+  }
+  .btn-danger:hover { background: var(--rose); color: #fff; }
+
+  @media (max-width: 1100px) {
+    .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+    .kpi:nth-child(2) { border-right: none; }
+    .kpi:nth-child(1), .kpi:nth-child(2) { border-bottom: 1px solid var(--rule-soft); }
+    .set-grid { grid-template-columns: 1fr; }
+    .drawer { width: 540px; }
+  }
+  @media (max-width: 768px) {
+    .drawer { width: 100vw; }
+    .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+    .kpi { padding: 14px; }
+    .kpi-value { font-size: 20px; }
+    .fin-summary { grid-template-columns: 1fr; }
+    .fin { border-right: none; border-bottom: 1px solid var(--rule-soft); }
+    .fin:last-child { border-bottom: none; }
+    .line { grid-template-columns: 1fr 60px 32px; }
+    .line .l-iva { display: none; }
+    table.t .hide-mobile { display: none; }
+    .drawer-body { padding: 18px 18px; }
+    .dtabs { margin: 0 -18px 18px; padding: 0 14px; }
+    .drawer-foot { padding: 14px 18px; flex-wrap: wrap; }
+  }
+
 </style>
 </head>
 <body>
@@ -1300,10 +2086,10 @@
         <span>Propiedades</span>
         <span class="sb-badge">6</span>
       </a>
-      <a class="sb-item" href="#">
+      <a class="sb-item" href="#" data-screen="reservas">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M8 2 V6 M16 2 V6 M3 10 H21"/><circle cx="8" cy="15" r="1" fill="currentColor"/><circle cx="12" cy="15" r="1" fill="currentColor"/><circle cx="16" cy="15" r="1" fill="currentColor"/></svg>
         <span>Reservas</span>
-        <span class="sb-badge">3</span>
+        <span class="sb-badge">12</span>
       </a>
       <a class="sb-item" href="#">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3 V7 M16 3 V7 M3 10 H21"/></svg>
@@ -1325,6 +2111,16 @@
         <span>Seguridad</span>
       </a>
 
+      <div class="sb-label">Configuración</div>
+      <a class="sb-item" href="#" data-screen="canales">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M3 12 H21 M12 3 A14 14 0 0 1 12 21 A14 14 0 0 1 12 3"/></svg>
+        <span>Canales</span>
+      </a>
+      <a class="sb-item" href="#" data-screen="pagos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 11 H22 M6 16 H10"/></svg>
+        <span>Métodos de pago</span>
+      </a>
+
       <div class="sb-label">Cuenta</div>
       <a class="sb-item" href="#">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15 A1.65 1.65 0 0 0 20 13.35 V10.65 A1.65 1.65 0 0 0 19.4 9 L17.87 8.1 A8 8 0 0 0 17.1 6.13 L17.87 4.6 A1.65 1.65 0 0 0 17.5 2.5 L15.5 1.1 A1.65 1.65 0 0 0 13.4 1.47 L12.5 3 A8 8 0 0 0 10.5 3 L9.6 1.47 A1.65 1.65 0 0 0 7.5 1.1 L5.5 2.5 A1.65 1.65 0 0 0 5.13 4.6"/></svg>
@@ -1343,7 +2139,7 @@
         <div class="sb-avatar">MG</div>
         <div class="sb-user-meta">
           <div class="name">María García</div>
-          <div class="email"><span class="__cf_email__" data-cfemail="abc6cad9c2caebc3c4d8dbd2c2ca85c8c4c6">[email&#160;protected]</span></div>
+          <div class="email">maria@hospyia.com</div>
         </div>
       </a>
     </div>
@@ -1712,6 +2508,125 @@
 
     </main>
 
+    <!-- ============= SCREEN: RESERVAS ============= -->
+    <main class="screen page" id="screen-reservas" data-screen-label="Reservas">
+      <div class="page-head">
+        <div>
+          <div class="page-eyebrow"><span class="dot"></span> Abril 2026 · 12 reservas</div>
+          <h1 class="page-title"><em>Reservas</em>.</h1>
+          <p class="page-sub">Cobros, comisiones y cargos por reserva. Todo el dinero, en un sitio.</p>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15 V19 A2 2 0 0 1 19 21 H5 A2 2 0 0 1 3 19 V15"/><path d="M7 10 L12 15 L17 10"/><path d="M12 15 V3" stroke-linecap="round"/></svg>
+            Exportar
+          </button>
+          <button class="btn btn-primary" onclick="openReservaDrawer(null)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5 V19 M5 12 H19" stroke-linecap="round"/></svg>
+            Nueva reserva
+          </button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-strip">
+        <div class="kpi">
+          <div class="kpi-label">Bruto facturado</div>
+          <div class="kpi-value"><span class="cur">€</span>3.840</div>
+          <div class="kpi-sub">12 reservas · abr</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Comisiones aplicadas</div>
+          <div class="kpi-value"><span class="cur">€</span>512</div>
+          <div class="kpi-sub">13,3% del bruto</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Cobrado</div>
+          <div class="kpi-value paid"><span class="cur">€</span>3.190</div>
+          <div class="kpi-sub">9 cobros completos</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Pendiente</div>
+          <div class="kpi-value pending"><span class="cur">€</span>650</div>
+          <div class="kpi-sub">3 reservas</div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="tab-group" id="resvFilterTabs">
+          <button class="tab active" data-rfilter="all">Todas <span class="tab-count">12</span></button>
+          <button class="tab" data-rfilter="confirmed">Confirmadas <span class="tab-count">8</span></button>
+          <button class="tab" data-rfilter="pending">Pendientes <span class="tab-count">3</span></button>
+          <button class="tab" data-rfilter="cancelled">Canceladas <span class="tab-count">1</span></button>
+        </div>
+        <div class="toolbar-right">
+          <div class="tool-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21 L16 16" stroke-linecap="round"/></svg>
+            <input id="resvSearch" type="text" placeholder="Huésped, propiedad, ID..." />
+          </div>
+          <button class="btn btn-ghost" style="padding: 8px 14px; font-size: 12px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6 H21 M6 12 H18 M10 18 H14" stroke-linecap="round"/></svg>
+            Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-wrap">
+          <table class="t">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Huésped</th>
+                <th class="hide-mobile">Propiedad</th>
+                <th class="hide-mobile">Fechas</th>
+                <th class="hide-mobile">Canal</th>
+                <th style="text-align:right">Bruto</th>
+                <th style="text-align:right" class="hide-mobile">Cobrado</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="resvBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============= SCREEN: CANALES ============= -->
+    <main class="screen page" id="screen-canales" data-screen-label="Canales">
+      <div class="page-head">
+        <div>
+          <div class="page-eyebrow"><span class="dot"></span> 4 canales activos</div>
+          <h1 class="page-title">Canales de <em>venta</em>.</h1>
+          <p class="page-sub">Configura comisiones, IVA y cómo cobra cada canal. Los cambios solo afectan a reservas nuevas.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openChannelModal(null)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5 V19 M5 12 H19" stroke-linecap="round"/></svg>
+          Añadir canal
+        </button>
+      </div>
+      <div class="set-grid" id="canalesGrid"></div>
+    </main>
+
+    <!-- ============= SCREEN: MÉTODOS DE PAGO ============= -->
+    <main class="screen page" id="screen-pagos" data-screen-label="Métodos de pago">
+      <div class="page-head">
+        <div>
+          <div class="page-eyebrow"><span class="dot"></span> 5 métodos configurados</div>
+          <h1 class="page-title">Métodos de <em>cobro</em>.</h1>
+          <p class="page-sub">Define cuánto te cuesta cada forma de cobrar. Incluye comisiones e IVA.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openMethodModal(null)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5 V19 M5 12 H19" stroke-linecap="round"/></svg>
+          Añadir método
+        </button>
+      </div>
+      <div class="set-grid" id="pagosGrid"></div>
+    </main>
+
     <!-- ============= SCREEN: PROPIEDADES ============= -->
     <main class="screen page" id="screen-propiedades" data-screen-label="Propiedades">
       <div class="page-head">
@@ -1790,7 +2705,186 @@
   </a>
 </nav>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<!-- ============= DRAWER: RESERVA ============= -->
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+<aside class="drawer" id="reservaDrawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div>
+      <h2 id="drwGuest">—</h2>
+      <div class="meta" id="drwMeta"></div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()" aria-label="Cerrar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6 L18 18 M18 6 L6 18" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body">
+    <div class="dtabs" id="drwTabs">
+      <button class="dtab active" data-dtab="detalles">Detalles</button>
+      <button class="dtab" data-dtab="cargos">Cargos <span class="tab-count" id="drwCargosCount">3</span></button>
+      <button class="dtab" data-dtab="comisiones">Comisiones <span class="tab-count" id="drwCommCount">1</span></button>
+      <button class="dtab" data-dtab="cobros">Cobros <span class="tab-count" id="drwPayCount">1</span></button>
+      <button class="dtab" data-dtab="notas">Notas</button>
+    </div>
+
+    <!-- Always-visible financial summary -->
+    <div class="fin-summary">
+      <div class="fin">
+        <div class="fin-label">Bruto</div>
+        <div class="fin-value"><span class="cur">€</span><span id="drwGross">0</span></div>
+        <div class="fin-sub" id="drwChargesSub">3 cargos</div>
+      </div>
+      <div class="fin">
+        <div class="fin-label">− Comisiones</div>
+        <div class="fin-value neg">−<span class="cur">€</span><span id="drwCommTotal">0</span></div>
+        <div class="fin-sub" id="drwCommSub">Venta + cobro</div>
+      </div>
+      <div class="fin">
+        <div class="fin-label">Neto a recibir</div>
+        <div class="fin-value"><span class="cur">€</span><span id="drwNet">0</span></div>
+        <div class="fin-sub" id="drwPaidSub">Cobrado: €0</div>
+      </div>
+    </div>
+
+    <!-- DETALLES tab -->
+    <div class="dtab-pane" data-pane="detalles">
+      <div class="form-row split">
+        <div>
+          <label class="form-label">Huésped</label>
+          <input class="form-input" id="drwGuestName" type="text" value="" />
+        </div>
+        <div>
+          <label class="form-label">Email</label>
+          <input class="form-input" id="drwGuestEmail" type="email" value="" />
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Propiedad</label>
+        <select class="form-select" id="drwProperty">
+          <option>Apartamento Centro Madrid</option>
+          <option>Casa Rural Asturias</option>
+          <option>Estudio Playa Valencia</option>
+          <option>Loft Barcelona Gràcia</option>
+          <option>Ático Sevilla Triana</option>
+        </select>
+      </div>
+      <div class="form-row split">
+        <div>
+          <label class="form-label">Check-in</label>
+          <input class="form-input" id="drwCheckin" type="date" />
+        </div>
+        <div>
+          <label class="form-label">Check-out</label>
+          <input class="form-input" id="drwCheckout" type="date" />
+        </div>
+      </div>
+      <div class="form-row split">
+        <div>
+          <label class="form-label">Canal</label>
+          <select class="form-select" id="drwChannel">
+            <option value="airbnb">Airbnb</option>
+            <option value="booking">Booking</option>
+            <option value="direct">Direct</option>
+            <option value="manual">Manual</option>
+            <option value="vrbo">VRBO</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Estado</label>
+          <select class="form-select" id="drwStatus">
+            <option value="confirmed">Confirmada</option>
+            <option value="pending">Pendiente</option>
+            <option value="cancelled">Cancelada</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARGOS tab -->
+    <div class="dtab-pane" data-pane="cargos" hidden>
+      <div class="dsection">
+        <div class="dsection-head">
+          <h4>Componentes del bruto</h4>
+          <button onclick="addCharge()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5 V19 M5 12 H19" stroke-linecap="round"/></svg>
+            Añadir cargo
+          </button>
+        </div>
+        <div class="line-list" id="chargesList"></div>
+        <p class="form-help" style="margin-top: 10px;">La suma de cargos debe coincidir con el bruto registrado en la reserva.</p>
+      </div>
+    </div>
+
+    <!-- COMISIONES tab -->
+    <div class="dtab-pane" data-pane="comisiones" hidden>
+      <div class="dsection">
+        <div class="dsection-head">
+          <h4>Comisiones aplicadas · histórico congelado</h4>
+          <button onclick="alert('Añadir comisión manual…')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5 V19 M5 12 H19" stroke-linecap="round"/></svg>
+            Sobreescribir
+          </button>
+        </div>
+        <div class="line-list" id="commissionsList"></div>
+        <p class="form-help" style="margin-top: 10px;">Si el canal sube su comisión el año que viene, las reservas viejas mantienen el % aplicado en su momento.</p>
+      </div>
+    </div>
+
+    <!-- COBROS tab -->
+    <div class="dtab-pane" data-pane="cobros" hidden>
+      <div class="dsection">
+        <div class="dsection-head">
+          <h4>Cobros recibidos</h4>
+          <button onclick="addPayment()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5 V19 M5 12 H19" stroke-linecap="round"/></svg>
+            Registrar cobro
+          </button>
+        </div>
+        <div class="line-list" id="paymentsList"></div>
+      </div>
+    </div>
+
+    <!-- NOTAS tab -->
+    <div class="dtab-pane" data-pane="notas" hidden>
+      <div class="form-row">
+        <label class="form-label">Notas internas</label>
+        <textarea class="form-input" id="drwNotes" rows="6" placeholder="No visible para el huésped…"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-ghost" onclick="alert('Reserva archivada')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="4" rx="1"/><path d="M5 7 V19 A2 2 0 0 0 7 21 H17 A2 2 0 0 0 19 19 V7 M10 12 H14"/></svg>
+        Archivar
+      </button>
+      <button class="btn btn-danger" onclick="alert('Reserva cancelada')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M5 5 L19 19"/></svg>
+        Cancelar
+      </button>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-ghost" onclick="closeDrawer()">Cerrar</button>
+      <button class="btn btn-primary" onclick="saveReserva()">Guardar cambios</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ============= MODAL: CANAL / MÉTODO ============= -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="settingsModal">
+    <div class="modal-head">
+      <div class="eyebrow" id="modalEyebrow">Nuevo canal</div>
+      <h3 id="modalTitle">Añadir canal de venta</h3>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
 // ============ DATA ============
 const PROPS = [
   {
@@ -2012,7 +3106,555 @@ document.getElementById('propSearch').addEventListener('input', e => {
   renderProps();
 });
 
+// ============ RESERVAS DATA ============
+const RESERVAS = [
+  { id:'R-1042', guest:{name:'Sophie Dubois',email:'sophie.d@gmail.com',initials:'SD'}, property:'Estudio Playa Valencia', channel:'airbnb', checkIn:'2026-04-24', checkOut:'2026-04-27', nights:3, gross:380, paid:380, status:'confirmed',
+    charges:[{c:'Alojamiento (3 noches)',a:320,iva:10},{c:'Limpieza',a:45,iva:21},{c:'Tasa turística',a:15,iva:0}],
+    commissions:[{type:'sale',label:'Comisión Airbnb',pct:15,a:57,iva:21}],
+    payments:[{date:'2026-04-20',method:'Cobro Airbnb',amount:380,ref:'AIR-92034'}] },
+  { id:'R-1041', guest:{name:'Luca Romano',email:'luca.r@outlook.com',initials:'LR'}, property:'Apartamento Centro Madrid', channel:'booking', checkIn:'2026-04-27', checkOut:'2026-05-02', nights:5, gross:625, paid:200, status:'confirmed',
+    charges:[{c:'Alojamiento (5 noches)',a:550,iva:10},{c:'Limpieza',a:60,iva:21},{c:'Tasa turística',a:15,iva:0}],
+    commissions:[{type:'sale',label:'Comisión Booking',pct:17,a:106,iva:21},{type:'payment',label:'Comisión cobro Stripe',pct:1.4,a:9,iva:21}],
+    payments:[{date:'2026-04-12',method:'Stripe · Anticipo',amount:200,ref:'pi_3Nk2'}] },
+  { id:'R-1040', guest:{name:'Emma Schmidt',email:'emma.s@web.de',initials:'ES'}, property:'Casa Rural Asturias', channel:'direct', checkIn:'2026-04-30', checkOut:'2026-05-07', nights:7, gross:1260, paid:1260, status:'confirmed',
+    charges:[{c:'Alojamiento (7 noches)',a:1140,iva:10},{c:'Limpieza',a:90,iva:21},{c:'Fianza',a:30,iva:0}],
+    commissions:[{type:'payment',label:'Comisión Stripe',pct:1.4,a:18,iva:21}],
+    payments:[{date:'2026-03-15',method:'Stripe · Anticipo',amount:300,ref:'pi_2Mk1'},{date:'2026-04-25',method:'Stripe · Final',amount:960,ref:'pi_2Mk8'}] },
+  { id:'R-1039', guest:{name:'James Carter',email:'james.c@gmail.com',initials:'JC'}, property:'Loft Barcelona Gràcia', channel:'airbnb', checkIn:'2026-05-03', checkOut:'2026-05-05', nights:2, gross:240, paid:0, status:'pending',
+    charges:[{c:'Alojamiento (2 noches)',a:200,iva:10},{c:'Limpieza',a:40,iva:21}],
+    commissions:[{type:'sale',label:'Comisión Airbnb',pct:15,a:36,iva:21}],
+    payments:[] },
+  { id:'R-1038', guest:{name:'Hiroshi Tanaka',email:'h.tanaka@me.com',initials:'HT'}, property:'Apartamento Centro Madrid', channel:'booking', checkIn:'2026-05-08', checkOut:'2026-05-12', nights:4, gross:520, paid:520, status:'confirmed',
+    charges:[{c:'Alojamiento (4 noches)',a:460,iva:10},{c:'Limpieza',a:60,iva:21}],
+    commissions:[{type:'sale',label:'Comisión Booking',pct:17,a:88,iva:21}],
+    payments:[{date:'2026-04-30',method:'Cobro Booking',amount:520,ref:'BDC-5523'}] },
+  { id:'R-1037', guest:{name:'Marta Ruíz',email:'marta.r@correo.es',initials:'MR'}, property:'Ático Sevilla Triana', channel:'direct', checkIn:'2026-05-10', checkOut:'2026-05-15', nights:5, gross:700, paid:350, status:'pending',
+    charges:[{c:'Alojamiento (5 noches)',a:625,iva:10},{c:'Limpieza',a:75,iva:21}],
+    commissions:[],
+    payments:[{date:'2026-04-18',method:'Transferencia',amount:350,ref:'TRF-887'}] },
+  { id:'R-1036', guest:{name:'Olivia Brown',email:'olivia.b@uk.com',initials:'OB'}, property:'Estudio Playa Valencia', channel:'vrbo', checkIn:'2026-05-15', checkOut:'2026-05-20', nights:5, gross:475, paid:0, status:'pending',
+    charges:[{c:'Alojamiento (5 noches)',a:425,iva:10},{c:'Limpieza',a:50,iva:21}],
+    commissions:[{type:'sale',label:'Comisión VRBO',pct:8,a:38,iva:21}],
+    payments:[] },
+  { id:'R-1035', guest:{name:'Pedro Álvarez',email:'p.alvarez@gmail.com',initials:'PA'}, property:'Casa Rural Asturias', channel:'manual', checkIn:'2026-04-15', checkOut:'2026-04-20', nights:5, gross:0, paid:0, status:'cancelled',
+    charges:[],
+    commissions:[],
+    payments:[] },
+];
+
+const CANALES = [
+  { id:'airbnb', name:'Airbnb', logo:'A', logoClass:'airbnb', saleCommission:15, saleIVA:21, channelCollects:true, active:true, reservations:48 },
+  { id:'booking', name:'Booking.com', logo:'B', logoClass:'booking', saleCommission:17, saleIVA:21, channelCollects:true, active:true, reservations:36 },
+  { id:'direct', name:'Direct', logo:'D', logoClass:'direct', saleCommission:0, saleIVA:0, channelCollects:false, active:true, reservations:21 },
+  { id:'manual', name:'Manual', logo:'M', logoClass:'manual', saleCommission:0, saleIVA:0, channelCollects:false, active:true, reservations:7 },
+  { id:'vrbo', name:'VRBO', logo:'V', logoClass:'vrbo', saleCommission:8, saleIVA:21, channelCollects:true, active:false, reservations:3 },
+];
+
+const METODOS = [
+  { id:'stripe', name:'Stripe', logo:'S', logoClass:'stripe', commission:1.4, fixed:0.25, iva:21, active:true, type:'Online · tarjeta', payments:42 },
+  { id:'redsys', name:'Redsys', logo:'R', logoClass:'redsys', commission:0.9, fixed:0.10, iva:21, active:true, type:'Online · tarjeta', payments:18 },
+  { id:'transfer', name:'Transferencia', logo:'T', logoClass:'transfer', commission:0, fixed:0, iva:0, active:true, type:'Bancario', payments:14 },
+  { id:'cash', name:'Efectivo', logo:'€', logoClass:'cash', commission:0, fixed:0, iva:0, active:true, type:'Presencial', payments:5 },
+  { id:'booking_pay', name:'Cobro Booking', logo:'B', logoClass:'booking', commission:0, fixed:0, iva:0, active:true, type:'Pasarela canal', payments:36 },
+];
+
+// ============ RESERVAS RENDER ============
+let resvFilter = 'all';
+let resvSearch = '';
+let currentResv = null;
+let currentCharges = [];
+let currentPayments = [];
+
+function statusBadgeR(s) {
+  const map = { confirmed:'Confirmada', pending:'Pendiente', cancelled:'Cancelada' };
+  return `<span class="badge ${s}">${map[s]||s}</span>`;
+}
+function chanChip(c) {
+  const map = { airbnb:'Airbnb', booking:'Booking', direct:'Direct', manual:'Manual', vrbo:'VRBO' };
+  return `<span class="chan ${c}">${map[c]||c}</span>`;
+}
+function fmtDate(d) {
+  const dt = new Date(d);
+  return dt.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}).replace('.','');
+}
+
+function renderResvs() {
+  const tbody = document.getElementById('resvBody');
+  const filtered = RESERVAS.filter(r => {
+    if (resvFilter !== 'all' && r.status !== resvFilter) return false;
+    if (resvSearch) {
+      const q = resvSearch.toLowerCase();
+      if (!(r.guest.name + ' ' + r.property + ' ' + r.id + ' ' + r.guest.email).toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 60px 20px; color: var(--ink-mute);">Sin reservas que coincidan</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(r => {
+    const pending = r.gross - r.paid;
+    return `
+    <tr onclick="openReservaDrawer('${r.id}')">
+      <td><span style="font-family:var(--mono);font-size:11px;color:var(--ink-mute);font-weight:500;">${r.id}</span></td>
+      <td>
+        <div class="guest-cell">
+          <div class="sb-avatar">${r.guest.initials}</div>
+          <div>
+            <div class="gname">${r.guest.name}</div>
+            <div class="gemail">${r.guest.email}</div>
+          </div>
+        </div>
+      </td>
+      <td class="hide-mobile" style="color:var(--ink-soft);">${r.property}</td>
+      <td class="hide-mobile">
+        <div class="dates">${fmtDate(r.checkIn)} → ${fmtDate(r.checkOut)}</div>
+        <div class="nights">${r.nights} noches</div>
+      </td>
+      <td class="hide-mobile">${chanChip(r.channel)}</td>
+      <td class="num"><span style="color:var(--ink-mute);font-weight:400;">€</span>${r.gross}</td>
+      <td class="hide-mobile num">
+        ${r.paid > 0 ? `<span class="paid">€${r.paid}</span>` : '<span class="muted">—</span>'}
+        ${pending > 0 ? `<div style="font-size:10px;color:var(--amber);font-weight:500;margin-top:2px;">€${pending} pend.</div>` : ''}
+      </td>
+      <td>${statusBadgeR(r.status)}</td>
+      <td>
+        <div class="row-actions">
+          <button onclick="event.stopPropagation();openReservaDrawer('${r.id}')" aria-label="Editar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4 H5 A2 2 0 0 0 3 6 V19 A2 2 0 0 0 5 21 H18 A2 2 0 0 0 20 19 V13"/><path d="M18 2 L22 6 L12 16 H8 V12 Z"/></svg>
+          </button>
+          <button onclick="event.stopPropagation()" aria-label="Más">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+document.querySelectorAll('#resvFilterTabs .tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('#resvFilterTabs .tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    resvFilter = t.dataset.rfilter;
+    renderResvs();
+  });
+});
+document.getElementById('resvSearch').addEventListener('input', e => {
+  resvSearch = e.target.value;
+  renderResvs();
+});
+
+// ============ DRAWER ============
+function openReservaDrawer(id) {
+  const r = id ? RESERVAS.find(x => x.id === id) : {
+    id:'NUEVA', guest:{name:'',email:'',initials:'?'}, property:'Apartamento Centro Madrid',
+    channel:'direct', checkIn:'', checkOut:'', nights:0, gross:0, paid:0, status:'pending',
+    charges:[], commissions:[], payments:[]
+  };
+  currentResv = r;
+  currentCharges = [...(r.charges || [])];
+  currentPayments = [...(r.payments || [])];
+
+  document.getElementById('drwGuest').textContent = r.guest.name || 'Nueva reserva';
+  document.getElementById('drwMeta').innerHTML = `
+    <span style="font-family:var(--mono);font-size:11px;color:var(--ink-mute);">${r.id}</span>
+    • ${chanChip(r.channel)}
+    • ${statusBadgeR(r.status)}
+    ${r.nights ? `• <span>${fmtDate(r.checkIn)} → ${fmtDate(r.checkOut)} · ${r.nights}n</span>` : ''}
+  `;
+  document.getElementById('drwGuestName').value = r.guest.name || '';
+  document.getElementById('drwGuestEmail').value = r.guest.email || '';
+  document.getElementById('drwProperty').value = r.property;
+  document.getElementById('drwCheckin').value = r.checkIn;
+  document.getElementById('drwCheckout').value = r.checkOut;
+  document.getElementById('drwChannel').value = r.channel;
+  document.getElementById('drwStatus').value = r.status;
+
+  renderCharges();
+  renderCommissions();
+  renderPayments();
+  recalcFinancials();
+
+  document.getElementById('drawerBackdrop').classList.add('open');
+  document.getElementById('reservaDrawer').classList.add('open');
+  document.getElementById('reservaDrawer').setAttribute('aria-hidden','false');
+  // reset to first tab
+  document.querySelectorAll('#drwTabs .dtab').forEach(t => t.classList.toggle('active', t.dataset.dtab === 'detalles'));
+  document.querySelectorAll('.dtab-pane').forEach(p => p.hidden = p.dataset.pane !== 'detalles');
+}
+function closeDrawer() {
+  document.getElementById('drawerBackdrop').classList.remove('open');
+  document.getElementById('reservaDrawer').classList.remove('open');
+  document.getElementById('reservaDrawer').setAttribute('aria-hidden','true');
+}
+function saveReserva() {
+  alert('Cambios guardados ✅');
+  closeDrawer();
+}
+
+// Drawer tabs
+document.querySelectorAll('#drwTabs .dtab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('#drwTabs .dtab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.querySelectorAll('.dtab-pane').forEach(p => p.hidden = p.dataset.pane !== t.dataset.dtab);
+  });
+});
+
+// Charges
+function renderCharges() {
+  const list = document.getElementById('chargesList');
+  if (!list) return;
+  let html = currentCharges.map((c, i) => `
+    <div class="line" data-idx="${i}">
+      <input class="l-input" type="text" value="${c.c}" oninput="currentCharges[${i}].c=this.value" placeholder="Concepto" />
+      <input class="l-input l-iva" type="text" value="${c.iva}%" oninput="currentCharges[${i}].iva=parseFloat(this.value)||0;recalcFinancials()" />
+      <input class="l-input l-amount" type="text" value="€${c.a}" oninput="currentCharges[${i}].a=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;recalcFinancials()" />
+      <button class="line-del" onclick="currentCharges.splice(${i},1);renderCharges();recalcFinancials()" aria-label="Eliminar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6 L18 18 M18 6 L6 18" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  `).join('');
+  const sum = currentCharges.reduce((s,c)=>s+(c.a||0),0);
+  html += `<div class="line total">
+    <span style="font-size:13px;color:var(--ink);">Total bruto</span>
+    <span></span>
+    <span class="l-amount">€${sum.toFixed(2)}</span>
+    <span></span>
+  </div>`;
+  list.innerHTML = html;
+  document.getElementById('drwCargosCount').textContent = currentCharges.length;
+}
+function addCharge() {
+  currentCharges.push({c:'Nuevo cargo',a:0,iva:21});
+  renderCharges(); recalcFinancials();
+}
+
+function renderCommissions() {
+  const list = document.getElementById('commissionsList');
+  if (!list) return;
+  if (!currentResv.commissions || currentResv.commissions.length === 0) {
+    list.innerHTML = `<div style="padding:24px;text-align:center;color:var(--ink-mute);font-size:13px;">Sin comisiones aplicadas a esta reserva.</div>`;
+    document.getElementById('drwCommCount').textContent = 0;
+    return;
+  }
+  list.innerHTML = currentResv.commissions.map(c => `
+    <div class="line locked">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--ink);">${c.label}</div>
+        <div style="font-size:10px;font-family:var(--mono);color:var(--ink-mute);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;">${c.type==='sale'?'Comisión venta':'Comisión cobro'} · IVA ${c.iva}%</div>
+      </div>
+      <span class="l-iva" style="font-family:var(--mono);font-size:11px;color:var(--navy);font-weight:600;">${c.pct}%</span>
+      <span class="l-amount" style="color:var(--rose);">−€${c.a}</span>
+      <span></span>
+    </div>
+  `).join('');
+  document.getElementById('drwCommCount').textContent = currentResv.commissions.length;
+}
+
+function renderPayments() {
+  const list = document.getElementById('paymentsList');
+  if (!list) return;
+  if (currentPayments.length === 0) {
+    list.innerHTML = `<div style="padding:24px;text-align:center;color:var(--ink-mute);font-size:13px;">Aún no se ha registrado ningún cobro.</div>`;
+    document.getElementById('drwPayCount').textContent = 0;
+    return;
+  }
+  list.innerHTML = currentPayments.map((p, i) => `
+    <div class="pay-row">
+      <div class="pay-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13 L9 17 L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="pay-meta">
+        <div class="pmethod">${p.method}</div>
+        <div class="pdetail">${p.date} · REF ${p.ref}</div>
+      </div>
+      <div class="pay-amount">+€${p.amount}</div>
+      <button class="line-del" onclick="currentPayments.splice(${i},1);renderPayments();recalcFinancials()" aria-label="Eliminar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6 L18 18 M18 6 L6 18" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  `).join('');
+  document.getElementById('drwPayCount').textContent = currentPayments.length;
+}
+function addPayment() {
+  currentPayments.push({date:new Date().toISOString().slice(0,10),method:'Stripe',amount:0,ref:'NEW-'+Math.floor(Math.random()*9999)});
+  renderPayments(); recalcFinancials();
+}
+
+function recalcFinancials() {
+  const gross = currentCharges.reduce((s,c)=>s+(c.a||0),0);
+  const comm = (currentResv.commissions||[]).reduce((s,c)=>s+(c.a||0),0);
+  const paid = currentPayments.reduce((s,p)=>s+(p.amount||0),0);
+  const net = gross - comm;
+  document.getElementById('drwGross').textContent = gross.toFixed(0);
+  document.getElementById('drwCommTotal').textContent = comm.toFixed(0);
+  document.getElementById('drwNet').textContent = net.toFixed(0);
+  document.getElementById('drwChargesSub').textContent = `${currentCharges.length} cargos`;
+  document.getElementById('drwPaidSub').textContent = `Cobrado: €${paid.toFixed(0)}`;
+}
+
+// ============ CANALES ============
+function renderCanales() {
+  const grid = document.getElementById('canalesGrid');
+  grid.innerHTML = CANALES.map(c => `
+    <div class="set-card ${c.active?'':'archived'}">
+      <div class="set-card-head">
+        <div class="set-card-title">
+          <div class="set-logo ${c.logoClass}">${c.logo}</div>
+          <div>
+            <h3>${c.name}</h3>
+            <div class="set-card-sub">${c.reservations} reservas · ${c.active?'Activo':'Archivado'}</div>
+          </div>
+        </div>
+        <button class="set-menu" onclick="openChannelModal('${c.id}')" aria-label="Más">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/></svg>
+        </button>
+      </div>
+      <div class="set-stats">
+        <div class="set-stat">
+          <div class="set-stat-label">Comisión venta</div>
+          <div class="set-stat-value">${c.saleCommission}<span class="pct">%</span></div>
+          <div class="set-stat-iva">+ IVA ${c.saleIVA}%</div>
+        </div>
+        <div class="set-stat">
+          <div class="set-stat-label">Cobra al huésped</div>
+          <div class="set-stat-value" style="font-size:14px;">${c.channelCollects?'El canal':'El anfitrión'}</div>
+          <div class="set-stat-iva">${c.channelCollects?'Pago en pasarela del canal':'Cobro directo'}</div>
+        </div>
+      </div>
+      <div class="set-row">
+        <span class="set-row-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M9 12 L11 14 L15 10" stroke-linecap="round"/></svg>
+          Activo en reservas nuevas
+        </span>
+        <span class="switch ${c.active?'on':''}" onclick="toggleChannel('${c.id}')"></span>
+      </div>
+      <div class="set-card-foot">
+        <span class="left">ID · ${c.id}</span>
+        <button class="btn btn-subtle" style="padding:6px 12px;font-size:12px;" onclick="openChannelModal('${c.id}')">
+          Editar
+        </button>
+      </div>
+    </div>
+  `).join('') + `
+    <button class="set-add" onclick="openChannelModal(null)">
+      <div class="set-add-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5 V19 M5 12 H19" stroke-linecap="round"/></svg>
+      </div>
+      <h4>Añadir canal</h4>
+      <p>Conecta una nueva plataforma de venta para tus propiedades.</p>
+    </button>
+  `;
+}
+function toggleChannel(id) {
+  const c = CANALES.find(x => x.id === id);
+  c.active = !c.active;
+  renderCanales();
+}
+
+// ============ MÉTODOS DE PAGO ============
+function renderMetodos() {
+  const grid = document.getElementById('pagosGrid');
+  grid.innerHTML = METODOS.map(m => `
+    <div class="set-card ${m.active?'':'archived'}">
+      <div class="set-card-head">
+        <div class="set-card-title">
+          <div class="set-logo ${m.logoClass}">${m.logo}</div>
+          <div>
+            <h3>${m.name}</h3>
+            <div class="set-card-sub">${m.type} · ${m.payments} cobros</div>
+          </div>
+        </div>
+        <button class="set-menu" onclick="openMethodModal('${m.id}')" aria-label="Más">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/></svg>
+        </button>
+      </div>
+      <div class="set-stats">
+        <div class="set-stat">
+          <div class="set-stat-label">Comisión cobro</div>
+          <div class="set-stat-value">${m.commission}<span class="pct">%</span></div>
+          <div class="set-stat-iva">+ IVA ${m.iva}%</div>
+        </div>
+        <div class="set-stat">
+          <div class="set-stat-label">Importe fijo</div>
+          <div class="set-stat-value"><span class="pct">€</span>${m.fixed.toFixed(2)}</div>
+          <div class="set-stat-iva">por transacción</div>
+        </div>
+      </div>
+      <div class="set-row">
+        <span class="set-row-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M9 12 L11 14 L15 10" stroke-linecap="round"/></svg>
+          Disponible para cobrar
+        </span>
+        <span class="switch ${m.active?'on':''}" onclick="toggleMethod('${m.id}')"></span>
+      </div>
+      <div class="set-card-foot">
+        <span class="left">ID · ${m.id}</span>
+        <button class="btn btn-subtle" style="padding:6px 12px;font-size:12px;" onclick="openMethodModal('${m.id}')">
+          Editar
+        </button>
+      </div>
+    </div>
+  `).join('') + `
+    <button class="set-add" onclick="openMethodModal(null)">
+      <div class="set-add-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5 V19 M5 12 H19" stroke-linecap="round"/></svg>
+      </div>
+      <h4>Añadir método</h4>
+      <p>Stripe, Redsys, transferencia, efectivo…</p>
+    </button>
+  `;
+}
+function toggleMethod(id) {
+  const m = METODOS.find(x => x.id === id);
+  m.active = !m.active;
+  renderMetodos();
+}
+
+// ============ MODAL ============
+let modalContext = null;
+function openChannelModal(id) {
+  const c = id ? CANALES.find(x => x.id === id) : { name:'',saleCommission:0,saleIVA:21,channelCollects:false,active:true };
+  modalContext = { kind:'channel', id, data:{...c} };
+  document.getElementById('modalEyebrow').textContent = id ? 'Editar canal' : 'Nuevo canal';
+  document.getElementById('modalTitle').textContent = id ? `Editar ${c.name}` : 'Añadir canal de venta';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="form-row">
+      <label class="form-label">Nombre del canal</label>
+      <input class="form-input" id="mName" type="text" value="${c.name||''}" placeholder="Airbnb, Booking, Direct…" />
+    </div>
+    <div class="form-row split">
+      <div>
+        <label class="form-label">Comisión venta (%)</label>
+        <div class="form-prefix"><span class="form-prefix-symbol">%</span><input class="form-input" id="mSale" type="number" step="0.01" value="${c.saleCommission||0}" /></div>
+        <p class="form-help">Aplicado al bruto de cada reserva nueva.</p>
+      </div>
+      <div>
+        <label class="form-label">IVA sobre comisión (%)</label>
+        <div class="form-prefix"><span class="form-prefix-symbol">%</span><input class="form-input" id="mIva" type="number" step="0.01" value="${c.saleIVA||0}" /></div>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">¿Quién cobra al huésped?</label>
+      <select class="form-select" id="mCollects">
+        <option value="channel" ${c.channelCollects?'selected':''}>El canal cobra y luego me liquida</option>
+        <option value="host" ${!c.channelCollects?'selected':''}>Yo cobro directamente al huésped</option>
+      </select>
+    </div>
+    ${id ? `<div class="form-row" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule-soft);">
+      <button class="btn btn-danger" style="width:100%;justify-content:center;" onclick="archiveChannel('${id}')">
+        Archivar canal · mantiene el histórico
+      </button>
+    </div>` : ''}
+  `;
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+function openMethodModal(id) {
+  const m = id ? METODOS.find(x => x.id === id) : { name:'',commission:0,fixed:0,iva:21,type:'',active:true };
+  modalContext = { kind:'method', id, data:{...m} };
+  document.getElementById('modalEyebrow').textContent = id ? 'Editar método' : 'Nuevo método';
+  document.getElementById('modalTitle').textContent = id ? `Editar ${m.name}` : 'Añadir método de cobro';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="form-row split">
+      <div>
+        <label class="form-label">Nombre</label>
+        <input class="form-input" id="mName" type="text" value="${m.name||''}" placeholder="Stripe, Redsys…" />
+      </div>
+      <div>
+        <label class="form-label">Tipo</label>
+        <select class="form-select" id="mType">
+          <option ${m.type==='Online · tarjeta'?'selected':''}>Online · tarjeta</option>
+          <option ${m.type==='Bancario'?'selected':''}>Bancario</option>
+          <option ${m.type==='Presencial'?'selected':''}>Presencial</option>
+          <option ${m.type==='Pasarela canal'?'selected':''}>Pasarela canal</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row split">
+      <div>
+        <label class="form-label">Comisión (%)</label>
+        <div class="form-prefix"><span class="form-prefix-symbol">%</span><input class="form-input" id="mComm" type="number" step="0.01" value="${m.commission||0}" /></div>
+      </div>
+      <div>
+        <label class="form-label">Importe fijo (€)</label>
+        <div class="form-prefix"><span class="form-prefix-symbol">€</span><input class="form-input" id="mFixed" type="number" step="0.01" value="${m.fixed||0}" /></div>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">IVA sobre comisión (%)</label>
+      <div class="form-prefix"><span class="form-prefix-symbol">%</span><input class="form-input" id="mIva" type="number" step="0.01" value="${m.iva||0}" /></div>
+      <p class="form-help">Solo aplica si el proveedor te factura con IVA (ej. Stripe España).</p>
+    </div>
+    ${id ? `<div class="form-row" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule-soft);">
+      <button class="btn btn-danger" style="width:100%;justify-content:center;" onclick="archiveMethod('${id}')">
+        Archivar método · mantiene el histórico
+      </button>
+    </div>` : ''}
+  `;
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+  modalContext = null;
+}
+function saveModal() {
+  if (!modalContext) return;
+  if (modalContext.kind === 'channel') {
+    const data = {
+      name: document.getElementById('mName').value,
+      saleCommission: parseFloat(document.getElementById('mSale').value)||0,
+      saleIVA: parseFloat(document.getElementById('mIva').value)||0,
+      channelCollects: document.getElementById('mCollects').value === 'channel',
+    };
+    if (modalContext.id) {
+      Object.assign(CANALES.find(x => x.id === modalContext.id), data);
+    } else {
+      CANALES.push({ id: data.name.toLowerCase().replace(/\s+/g,'-'), logo: data.name[0]||'?', logoClass:'manual', active:true, reservations:0, ...data });
+    }
+    renderCanales();
+  } else {
+    const data = {
+      name: document.getElementById('mName').value,
+      type: document.getElementById('mType').value,
+      commission: parseFloat(document.getElementById('mComm').value)||0,
+      fixed: parseFloat(document.getElementById('mFixed').value)||0,
+      iva: parseFloat(document.getElementById('mIva').value)||0,
+    };
+    if (modalContext.id) {
+      Object.assign(METODOS.find(x => x.id === modalContext.id), data);
+    } else {
+      METODOS.push({ id: data.name.toLowerCase().replace(/\s+/g,'-'), logo: data.name[0]||'?', logoClass:'transfer', active:true, payments:0, ...data });
+    }
+    renderMetodos();
+  }
+  closeModal();
+}
+function archiveChannel(id) {
+  CANALES.find(x => x.id === id).active = false;
+  renderCanales();
+  closeModal();
+}
+function archiveMethod(id) {
+  METODOS.find(x => x.id === id).active = false;
+  renderMetodos();
+  closeModal();
+}
+
+// Update crumb labels
+const CRUMB_LABELS = { inicio:'Inicio', propiedades:'Propiedades', reservas:'Reservas', canales:'Canales', pagos:'Métodos de pago' };
+const _origGo = window.go;
+window.go = function(s) {
+  _origGo(s);
+  const cur = document.getElementById('crumbCur');
+  if (cur && CRUMB_LABELS[s]) cur.textContent = CRUMB_LABELS[s];
+};
+
 // ============ INIT ============
+renderResvs();
+renderCanales();
+renderMetodos();
 renderProps();
 const saved = localStorage.getItem('hospyia_screen');
 if (saved && saved !== 'inicio') go(saved);

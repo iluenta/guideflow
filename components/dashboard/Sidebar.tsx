@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   Home,
@@ -15,6 +15,12 @@ import {
   Users,
   Settings,
   LogOut,
+  Radio,
+  CreditCard,
+  UserCog,
+  Receipt,
+  Landmark,
+  Wallet,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { can, type TenantRole, TENANT_ROLE_PERMISSIONS } from "@/lib/permissions";
@@ -34,11 +40,17 @@ const navigation: NavItem[] = [
   { name: "Propiedades", href: "/dashboard/properties",     icon: Building2 },
   { name: "Reservas",    href: "/dashboard/bookings",       icon: CalendarCheck, resource: "reservations", action: "view" },
   { name: "Calendario",  href: "/dashboard/calendar",       icon: Calendar,      resource: "reservations", action: "view" },
+  { name: "Gastos",      href: "/dashboard/expenses",       icon: Receipt,       resource: "finances",     action: "view" },
+  { name: "Tesorería",   href: "/dashboard/treasury",       icon: Landmark,      resource: "finances",     action: "view" },
   { name: "Analíticas",  href: "/dashboard/analytics",      icon: BarChart3,     resource: "finances",     action: "reports" },
   { name: "Accesos",     href: "/dashboard/analytics/links",icon: Eye,           resource: "guests",       action: "view" },
   { name: "Equipo",      href: "/dashboard/team",           icon: Users,         resource: "members",      action: "invite" },
-  { name: "Seguridad",   href: "/dashboard/security",       icon: ShieldCheck,   resource: "settings",     action: "view" },
-  { name: "Ajustes",     href: "/dashboard/settings",       icon: Settings,      resource: "settings",     action: "edit" },
+  { name: "Seguridad",        href: "/dashboard/security",                    icon: ShieldCheck,  resource: "settings", action: "view" },
+  { name: "Ajustes",          href: "/dashboard/settings",                    icon: Settings,     resource: "settings", action: "edit" },
+  { name: "Canales",          href: "/dashboard/settings/channels",           icon: Radio,        resource: "settings", action: "edit" },
+  { name: "Métodos de pago",  href: "/dashboard/settings/payment-methods",   icon: CreditCard,   resource: "settings", action: "edit" },
+  { name: "Proveedores",      href: "/dashboard/settings/providers",          icon: UserCog,      resource: "settings", action: "edit" },
+  { name: "Cuentas",          href: "/dashboard/settings/accounts",           icon: Wallet,       resource: "finances", action: "view" },
 ];
 
 interface SidebarProps {
@@ -49,6 +61,9 @@ interface SidebarProps {
 
 export const DashboardSidebar = ({ collapsed, profile, onSignOut }: SidebarProps) => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const yearParam = searchParams.get('year');
+  const withYear = (path: string) => yearParam ? `${path}?year=${yearParam}` : path;
   const tenantRole = (profile?.tenant_role ?? 'viewer') as TenantRole;
 
   const visibleNav = navigation.filter(item => {
@@ -87,7 +102,7 @@ export const DashboardSidebar = ({ collapsed, profile, onSignOut }: SidebarProps
             return (
               <li key={item.name}>
                 <Link
-                  href={item.href}
+                  href={withYear(item.href)}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative",
                     isActive

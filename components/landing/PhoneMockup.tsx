@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import Image from 'next/image';
 
 export const PhoneMockup = () => {
   return (
@@ -41,9 +41,13 @@ export const PhoneMockup = () => {
       >
         <div className="phone-screen">
           <div className="phone-notch"></div>
-          <div className="phone-content phone-content-img">
-            {/* The image here remains guia-1.png unless you prefer another one */}
-            <img src="/guia-1.png" alt="Hospyia guest guide preview" className="phone-img" />
+          <div className="phone-content phone-content-img relative">
+            <Image 
+              src="/guia-1.png" 
+              alt="Hospyia guest guide preview" 
+              fill
+              className="object-cover object-top"
+            />
           </div>
         </div>
       </div>

@@ -1,917 +1,670 @@
-"use client";
+'use client'
 
-import { useState, useEffect, useId } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { Plus, Search, Filter, Calendar, Lock, Eye, Pencil, Trash2, AlertTriangle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Search,
-  Plus,
-  MoreVertical,
-  Calendar,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  CreditCard,
-  MessageSquare,
-  X,
-  Check,
-  Clock,
-  Ban,
-  FileText,
-  Send,
-  Euro,
-  Users,
-  Bed,
-  CalendarDays,
-  AlertTriangle,
-  ExternalLink,
-} from "lucide-react";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+} from '@/components/ui/select'
+import { ReservationDrawer } from '@/components/dashboard/reservations/ReservationDrawer'
+import { toast } from 'sonner'
+import { getReservations, getReservation, deleteReservation } from '@/app/actions/reservations'
+import { round2 } from '@/lib/reservations/commission-utils'
+import { getChannels, getPaymentMethods } from '@/app/actions/reservation-settings'
+import { getProperties } from '@/app/actions/properties'
+import { useUserProfile } from '@/hooks/use-user-profile'
+import { can, type TenantRole } from '@/lib/permissions'
+import type {
+  ReservationListItem,
+  ReservationWithDetails,
+  ReservationFilters,
+  ReservationStatus,
+  ChannelSetting,
+  PaymentMethodSetting,
+} from '@/types/reservations'
 
-type BookingStatus = "confirmed" | "pending" | "cancelled" | "completed" | "blocked";
-
-interface Booking {
-  id: string;
-  propertyId: string;
-  propertyName: string;
-  propertyImage: string;
-  guestName: string;
-  guestEmail: string;
-  guestPhone: string;
-  guests: number;
-  checkIn: string;
-  checkOut: string;
-  nights: number;
-  pricePerNight: number;
-  cleaningFee: number;
-  totalPrice: number;
-  status: BookingStatus;
-  source: string;
-  notes: string;
-  createdAt: string;
-  paymentStatus: "paid" | "pending" | "refunded" | "partial";
+// ─── Channel styles ───────────────────────────────────────────────────────────
+const CHANNEL_STYLES: Record<string, { bg: string; color: string; dot: string }> = {
+  airbnb:   { bg: '#ffe5e9', color: '#be185d', dot: '#e11d48' },
+  booking:  { bg: '#e0edff', color: '#1d4ed8', dot: '#1d4ed8' },
+  direct:   { bg: '#ecfdf9', color: '#0d9488', dot: '#0d9488' },
+  manual:   { bg: '#f1f4f8', color: '#475569', dot: '#94a3b8' },
 }
 
-const bookings: Booking[] = [
-  {
-    id: "RES-2026-001",
-    propertyId: "1",
-    propertyName: "Apartamento Centro Madrid",
-    propertyImage: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=300&fit=crop",
-    guestName: "Carlos Martinez",
-    guestEmail: "carlos.martinez@email.com",
-    guestPhone: "+34 612 345 678",
-    guests: 2,
-    checkIn: "2026-01-15",
-    checkOut: "2026-01-20",
-    nights: 5,
-    pricePerNight: 85,
-    cleaningFee: 40,
-    totalPrice: 465,
-    status: "confirmed",
-    source: "Airbnb",
-    notes: "Llegada tardia prevista (22:00). Necesitan cuna para bebe.",
-    createdAt: "2026-01-10",
-    paymentStatus: "paid",
-  },
-  {
-    id: "RES-2026-002",
-    propertyId: "2",
-    propertyName: "Casa Rural Asturias",
-    propertyImage: "https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400&h=300&fit=crop",
-    guestName: "Laura Sanchez",
-    guestEmail: "laura.sanchez@email.com",
-    guestPhone: "+34 623 456 789",
-    guests: 4,
-    checkIn: "2026-01-22",
-    checkOut: "2026-01-28",
-    nights: 6,
-    pricePerNight: 120,
-    cleaningFee: 60,
-    totalPrice: 780,
-    status: "confirmed",
-    source: "Booking.com",
-    notes: "Familia con 2 ninos. Preguntan por actividades en la zona.",
-    createdAt: "2026-01-08",
-    paymentStatus: "paid",
-  },
-  {
-    id: "RES-2026-003",
-    propertyId: "3",
-    propertyName: "Estudio Playa Valencia",
-    propertyImage: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop",
-    guestName: "Ana Garcia",
-    guestEmail: "ana.garcia@email.com",
-    guestPhone: "+34 634 567 890",
-    guests: 2,
-    checkIn: "2026-01-10",
-    checkOut: "2026-01-15",
-    nights: 5,
-    pricePerNight: 65,
-    cleaningFee: 30,
-    totalPrice: 355,
-    status: "completed",
-    source: "Directo",
-    notes: "",
-    createdAt: "2026-01-02",
-    paymentStatus: "paid",
-  },
-  {
-    id: "RES-2026-004",
-    propertyId: "1",
-    propertyName: "Apartamento Centro Madrid",
-    propertyImage: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=300&fit=crop",
-    guestName: "Pedro Lopez",
-    guestEmail: "pedro.lopez@email.com",
-    guestPhone: "+34 645 678 901",
-    guests: 3,
-    checkIn: "2026-01-25",
-    checkOut: "2026-01-31",
-    nights: 6,
-    pricePerNight: 85,
-    cleaningFee: 40,
-    totalPrice: 550,
-    status: "pending",
-    source: "Landing",
-    notes: "Pendiente de confirmacion de pago.",
-    createdAt: "2026-01-20",
-    paymentStatus: "pending",
-  },
-  {
-    id: "RES-2026-005",
-    propertyId: "2",
-    propertyName: "Casa Rural Asturias",
-    propertyImage: "https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400&h=300&fit=crop",
-    guestName: "Maria Fernandez",
-    guestEmail: "maria.fernandez@email.com",
-    guestPhone: "+34 656 789 012",
-    guests: 6,
-    checkIn: "2026-02-05",
-    checkOut: "2026-02-10",
-    nights: 5,
-    pricePerNight: 120,
-    cleaningFee: 60,
-    totalPrice: 660,
-    status: "cancelled",
-    source: "Airbnb",
-    notes: "Cancelado por el huesped. Motivo: cambio de planes.",
-    createdAt: "2026-01-15",
-    paymentStatus: "refunded",
-  },
-  {
-    id: "BLK-2026-001",
-    propertyId: "3",
-    propertyName: "Estudio Playa Valencia",
-    propertyImage: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop",
-    guestName: "Bloqueo - Mantenimiento",
-    guestEmail: "",
-    guestPhone: "",
-    guests: 0,
-    checkIn: "2026-01-18",
-    checkOut: "2026-01-20",
-    nights: 2,
-    pricePerNight: 0,
-    cleaningFee: 0,
-    totalPrice: 0,
-    status: "blocked",
-    source: "Manual",
-    notes: "Reparacion aire acondicionado",
-    createdAt: "2026-01-16",
-    paymentStatus: "paid",
-  },
-];
+const STATUS_LABELS: Record<ReservationStatus, string> = {
+  pending:     'Pendiente',
+  confirmed:   'Confirmada',
+  checked_in:  'En curso',
+  checked_out: 'Finalizada',
+  cancelled:   'Cancelada',
+  no_show:     'No show',
+}
 
-const properties = [
-  { id: "all", name: "Todas las propiedades" },
-  { id: "1", name: "Apartamento Centro Madrid" },
-  { id: "2", name: "Casa Rural Asturias" },
-  { id: "3", name: "Estudio Playa Valencia" },
-];
+const STATUS_STYLES: Record<string, { bg: string; color: string; dot: string }> = {
+  pending:     { bg: '#fef3c7', color: '#d97706', dot: '#d97706' },
+  confirmed:   { bg: '#ecfdf5', color: '#047857', dot: '#10b981' },
+  checked_in:  { bg: '#eef2fb', color: '#1e3a8a', dot: '#1e3a8a' },
+  checked_out: { bg: '#f1f4f8', color: '#475569', dot: '#94a3b8' },
+  cancelled:   { bg: '#ffe4e6', color: '#e11d48', dot: '#e11d48' },
+  no_show:     { bg: '#fef3c7', color: '#d97706', dot: '#d97706' },
+}
 
-const getStatusConfig = (status: BookingStatus) => {
-  const configs = {
-    confirmed: { label: "Confirmada", variant: "default" as const, color: "bg-green-500", icon: Check },
-    pending: { label: "Pendiente", variant: "secondary" as const, color: "bg-amber-500", icon: Clock },
-    cancelled: { label: "Cancelada", variant: "destructive" as const, color: "bg-red-500", icon: X },
-    completed: { label: "Completada", variant: "outline" as const, color: "bg-gray-500", icon: Check },
-    blocked: { label: "Bloqueado", variant: "secondary" as const, color: "bg-gray-700", icon: Ban },
-  };
-  return configs[status];
-};
+const STATUS_TABS: { value: string; label: string }[] = [
+  { value: 'all', label: 'Todas' },
+  { value: 'confirmed', label: 'Confirmadas' },
+  { value: 'checked_in', label: 'En curso' },
+  { value: 'pending', label: 'Pendientes' },
+  { value: 'cancelled', label: 'Canceladas' },
+]
 
-const getPaymentStatusConfig = (status: string) => {
-  const configs: Record<string, { label: string; color: string }> = {
-    paid: { label: "Pagado", color: "text-green-600" },
-    pending: { label: "Pendiente", color: "text-amber-600" },
-    refunded: { label: "Reembolsado", color: "text-blue-600" },
-    partial: { label: "Parcial", color: "text-orange-600" },
-  };
-  return configs[status] || configs.pending;
-};
+function fmt(n: number) {
+  return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
 
-function BookingsPageContent() {
-  const [selectedProperty, setSelectedProperty] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [blockDatesOpen, setBlockDatesOpen] = useState(false);
-  const [newBookingOpen, setNewBookingOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const id = useId();
-  const searchParams = useSearchParams();
+function yearToDateRange(y: string): { date_from?: string; date_to?: string } {
+  if (y === 'all') return {}
+  const year = parseInt(y, 10)
+  if (isNaN(year)) return {}
+  return { date_from: `${year}-01-01`, date_to: `${year}-12-31` }
+}
+
+function formatDate(d: string) {
+  return new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {
+    day: '2-digit', month: 'short',
+  })
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+export default function BookingsPage() {
+  const { profile } = useUserProfile()
+  const canCreate = profile ? can(profile.tenant_role as TenantRole, 'reservations', 'create') : false
+  const canEdit   = profile ? can(profile.tenant_role as TenantRole, 'reservations', 'edit') : false
+  const canCancel = profile ? can(profile.tenant_role as TenantRole, 'reservations', 'cancel') : false
+  const canDelete = profile ? can(profile.tenant_role as TenantRole, 'reservations', 'delete') : false
+
+  const [reservations, setReservations] = useState<ReservationListItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [channels, setChannels] = useState<ChannelSetting[]>([])
+  const [properties, setProperties] = useState<{ id: string; name: string }[]>([])
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodSetting[]>([])
+
+  // Filters
+  const [statusTab, setStatusTab] = useState('all')
+  const [search, setSearch] = useState('')
+  const [filterChannel, setFilterChannel] = useState('')
+  const [filterProperty, setFilterProperty] = useState('')
+  const [filterPending, setFilterPending] = useState(false)
+  const [page, setPage] = useState(1)
+
+  // Drawer
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [selectedReservation, setSelectedReservation] = useState<ReservationWithDetails | null>(null)
+
+  // Delete
+  const [deleteTarget, setDeleteTarget] = useState<ReservationListItem | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  // Query param ?view=ID para abrir el drawer tras editar
+  const searchParams = useSearchParams()
+  const viewId = searchParams.get('view')
+  const yearParam = searchParams.get('year') ?? String(new Date().getFullYear())
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    const { date_from, date_to } = yearToDateRange(yearParam)
+    const filters: ReservationFilters = {
+      page,
+      per_page: 20,
+      has_pending: filterPending || undefined,
+      ...(date_from ? { date_from, date_to } : {}),
+    }
+    if (statusTab !== 'all') filters.status = [statusTab as ReservationStatus]
+    if (search) filters.search = search
+    if (filterChannel) filters.channel_id = filterChannel
+    if (filterProperty) filters.property_id = filterProperty
+
+    const { reservations: rows, total: t } = await getReservations(filters)
+    setReservations(rows)
+    setTotal(t)
+    setLoading(false)
+  }, [page, statusTab, search, filterChannel, filterProperty, filterPending, yearParam])
+
+  useEffect(() => { fetchData() }, [fetchData])
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    Promise.all([
+      getChannels(),
+      getPaymentMethods(),
+      getProperties(),
+    ]).then(([{ channels: chs }, { methods }, props]) => {
+      setChannels(chs)
+      setPaymentMethods(methods)
+      setProperties((props as unknown as { id: string; name: string }[]) ?? [])
+    })
+  }, [])
 
-  const filteredBookings = bookings.filter((booking) => {
-    const matchesProperty = selectedProperty === "all" || booking.propertyId === selectedProperty;
-    const matchesStatus = selectedStatus === "all" || booking.status === selectedStatus;
-    const matchesSearch =
-      booking.guestName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.propertyName.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesProperty && matchesStatus && matchesSearch;
-  });
+  const openDrawer = async (id: string) => {
+    // Optimistic: abre el drawer inmediatamente con los datos de lista
+    // mientras carga el detalle completo
+    const quick = reservations.find(r => r.id === id)
+    if (quick) {
+      setSelectedReservation(quick as unknown as ReservationWithDetails)
+      setDrawerOpen(true)
+    }
+    const { reservation, error } = await getReservation(id)
+    if (error) {
+      toast.error(`Error al cargar la reserva: ${error}`)
+      return
+    }
+    if (reservation) {
+      setSelectedReservation(reservation)
+    }
+  }
 
-  const openBookingDetails = (booking: Booking) => {
-    setSelectedBooking(booking);
-    setDetailsOpen(true);
-  };
+  const handleReservationUpdated = (updated: ReservationWithDetails) => {
+    setSelectedReservation(updated)
+    fetchData()
+  }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
-  };
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    const result = await deleteReservation(deleteTarget.id)
+    setDeleting(false)
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+    setDeleteTarget(null)
+    if (drawerOpen && selectedReservation?.id === deleteTarget.id) {
+      setDrawerOpen(false)
+      setSelectedReservation(null)
+    }
+    let msg = 'Reserva eliminada'
+    if (result.had_payments) msg += ' · Los cobros asociados también fueron eliminados'
+    toast.success(msg)
+    fetchData()
+  }
 
-  const stats = {
-    total: bookings.filter(b => b.status !== "blocked").length,
-    confirmed: bookings.filter(b => b.status === "confirmed").length,
-    pending: bookings.filter(b => b.status === "pending").length,
-    revenue: bookings.filter(b => b.status === "confirmed" || b.status === "completed").reduce((sum, b) => sum + b.totalPrice, 0),
-  };
+  // Abrir drawer cuando viene ?view=ID y los datos ya cargaron
+  useEffect(() => {
+    if (!viewId || loading) return
+    openDrawer(viewId)
+  }, [viewId, loading]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // KPI totals from current list
+  const grossTotal = reservations.reduce((s, r) => s + r.gross_amount, 0)
+  const netTotal = reservations.reduce((s, r) => s + r.net_amount, 0)
+  const pendingTotal = reservations.reduce((s, r) => s + Math.max(0, round2(r.net_amount - r.total_received)), 0)
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="p-8 max-w-[1440px] mx-auto">
+      {/* Page header */}
+      <div className="flex justify-between items-end gap-8 mb-8 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Reservas</h1>
-          <p className="mt-1 text-muted-foreground">Gestiona todas tus reservas y bloqueos</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2.5 mb-2.5">
+            <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf] shadow-[0_0_0_4px_rgba(45,212,191,0.2)] inline-block" />
+            Dashboard
+          </p>
+          <h1 className="text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
+            Reservas
+          </h1>
+          <p className="text-[15px] text-slate-500 mt-2">
+            {total} reserva{total !== 1 ? 's' : ''} · {yearParam === 'all' ? 'Histórico completo' : yearParam}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Dialog open={blockDatesOpen} onOpenChange={setBlockDatesOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2 bg-transparent">
-                <Ban className="h-4 w-4" />
-                <span className="hidden sm:inline">Bloquear fechas</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Bloquear fechas</DialogTitle>
-                <DialogDescription>
-                  Bloquea fechas para mantenimiento, uso personal u otros motivos
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label>Propiedad</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una propiedad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {properties.filter(p => p.id !== "all").map((property) => (
-                        <SelectItem key={property.id} value={property.id}>
-                          {property.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Fecha inicio</Label>
-                    <Input type="date" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Fecha fin</Label>
-                    <Input type="date" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Motivo</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un motivo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="maintenance">Mantenimiento</SelectItem>
-                      <SelectItem value="personal">Uso personal</SelectItem>
-                      <SelectItem value="renovation">Reformas</SelectItem>
-                      <SelectItem value="other">Otro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Notas (opcional)</Label>
-                  <Textarea placeholder="Detalles adicionales..." rows={3} />
-                </div>
-              </div>
-              <DialogFooter className="mt-6">
-                <Button variant="outline" className="bg-transparent" onClick={() => setBlockDatesOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={() => setBlockDatesOpen(false)}>Bloquear fechas</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
 
-          <Dialog open={newBookingOpen} onOpenChange={setNewBookingOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/calendar">
+            <Button variant="outline" className="rounded-full gap-2">
+              <Calendar className="h-4 w-4" />
+              Calendario
+            </Button>
+          </Link>
+          {canCreate && (
+            <Link href="/dashboard/bookings/new">
+              <Button className="bg-[#1e3a8a] hover:bg-[#15296b] text-white rounded-full gap-2 shadow-[0_4px_12px_-4px_rgba(30,58,138,0.4)]">
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Nueva reserva</span>
+                Nueva reserva
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Nueva reserva manual</DialogTitle>
-                <DialogDescription>
-                  Crea una reserva para un huesped que ha contactado directamente
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-6 pt-4 sm:grid-cols-2">
-                <div className="space-y-4 sm:col-span-2">
-                  <div className="space-y-2">
-                    <Label>Propiedad</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona una propiedad" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {properties.filter(p => p.id !== "all").map((property) => (
-                          <SelectItem key={property.id} value={property.id}>
-                            {property.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Fecha entrada</Label>
-                  <Input type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Fecha salida</Label>
-                  <Input type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Nombre del huesped</Label>
-                  <Input placeholder="Nombre completo" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" placeholder="email@ejemplo.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Telefono</Label>
-                  <Input type="tel" placeholder="+34 600 000 000" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Numero de huespedes</Label>
-                  <Input type="number" min={1} defaultValue={2} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Precio por noche</Label>
-                  <Input type="number" placeholder="85" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Tasa de limpieza</Label>
-                  <Input type="number" placeholder="40" />
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Notas</Label>
-                  <Textarea placeholder="Informacion adicional sobre la reserva..." rows={3} />
-                </div>
-              </div>
-              <DialogFooter className="mt-6">
-                <Button variant="outline" className="bg-transparent" onClick={() => setNewBookingOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={() => setNewBookingOpen(false)}>Crear reserva</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Total reservas</p>
-              <CalendarDays className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <p className="mt-2 text-2xl font-bold">{stats.total}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Confirmadas</p>
-              <Check className="h-4 w-4 text-green-500" />
-            </div>
-            <p className="mt-2 text-2xl font-bold">{stats.confirmed}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Pendientes</p>
-              <Clock className="h-4 w-4 text-amber-500" />
-            </div>
-            <p className="mt-2 text-2xl font-bold">{stats.pending}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Ingresos</p>
-              <Euro className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <p className="mt-2 text-2xl font-bold">{stats.revenue.toLocaleString("es-ES")}€</p>
-          </CardContent>
-        </Card>
+      {/* KPI strip */}
+      <div className="grid grid-cols-4 bg-white border border-[#eef2f7] rounded-[18px] mb-6 overflow-hidden shadow-sm">
+        <KPI label="Reservas" value={String(total)} sub="en el filtro actual" />
+        <KPI label="Ingresos brutos" value={`€${fmt(grossTotal)}`} sub="total bruto" />
+        <KPI label="Neto estimado" value={`€${fmt(netTotal)}`} sub="después de comisiones" />
+        <KPI label="Pendiente cobro" value={`€${fmt(pendingTotal)}`} sub="sin cobrar" valueClass="pending" />
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre, ID o propiedad..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+      {/* Toolbar */}
+      <div className="bg-white border border-[#eef2f7] rounded-[18px] p-2.5 flex items-center justify-between gap-4 mb-6 flex-wrap shadow-sm">
+        {/* Status tabs */}
+        <div className="flex gap-1 flex-wrap">
+          {STATUS_TABS.map(t => (
+            <button
+              key={t.value}
+              onClick={() => { setStatusTab(t.value); setPage(1) }}
+              className={`px-3.5 py-2 rounded-full text-[13px] font-medium transition-all ${
+                statusTab === t.value
+                  ? 'bg-[#1e3a8a] text-white shadow-[0_4px_10px_-2px_rgba(30,58,138,0.35)]'
+                  : 'text-slate-500 hover:bg-[#f1f4f8] hover:text-slate-800'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Input
+              className="pl-8 rounded-full bg-[#f1f4f8] border-transparent focus:border-[#3b5bbd] w-52 h-9 text-[13px]"
+              placeholder="Buscar huésped..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }}
+            />
+          </div>
+
+          {/* Channel filter */}
+          {channels.length > 0 && (
+            <Select value={filterChannel || '_all'} onValueChange={v => { setFilterChannel(v === '_all' ? '' : v); setPage(1) }}>
+              <SelectTrigger className="h-9 rounded-full bg-[#f1f4f8] border-transparent text-[13px] w-36">
+                <SelectValue placeholder="Canal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">Todos los canales</SelectItem>
+                {channels.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Property filter */}
+          {properties.length > 1 && (
+            <Select value={filterProperty || '_all'} onValueChange={v => { setFilterProperty(v === '_all' ? '' : v); setPage(1) }}>
+              <SelectTrigger className="h-9 rounded-full bg-[#f1f4f8] border-transparent text-[13px] w-40">
+                <SelectValue placeholder="Propiedad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">Todas las propiedades</SelectItem>
+                {properties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Pending filter */}
+          <button
+            onClick={() => { setFilterPending(v => !v); setPage(1) }}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-medium transition-all ${
+              filterPending
+                ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                : 'bg-[#f1f4f8] text-slate-500 hover:bg-[#e2e8f0]'
+            }`}
+          >
+            <Filter className="h-3 w-3" />
+            Con pendiente
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white border border-[#eef2f7] rounded-[18px] overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr>
+                <th className="text-left font-mono text-[10px] tracking-[0.12em] uppercase text-slate-400 font-medium px-4 py-3.5 border-b border-[#eef2f7] bg-[#fafbfc] whitespace-nowrap">Huésped</th>
+                <th className="text-left font-mono text-[10px] tracking-[0.12em] uppercase text-slate-400 font-medium px-4 py-3.5 border-b border-[#eef2f7] bg-[#fafbfc] whitespace-nowrap">Fechas</th>
+                <th className="text-left font-mono text-[10px] tracking-[0.12em] uppercase text-slate-400 font-medium px-4 py-3.5 border-b border-[#eef2f7] bg-[#fafbfc] whitespace-nowrap">Canal</th>
+                <th className="text-right font-mono text-[10px] tracking-[0.12em] uppercase text-slate-400 font-medium px-4 py-3.5 border-b border-[#eef2f7] bg-[#fafbfc] whitespace-nowrap">Bruto</th>
+                <th className="text-right font-mono text-[10px] tracking-[0.12em] uppercase text-slate-400 font-medium px-4 py-3.5 border-b border-[#eef2f7] bg-[#fafbfc] whitespace-nowrap">Cargos</th>
+                <th className="text-right font-mono text-[10px] tracking-[0.12em] uppercase text-slate-400 font-medium px-4 py-3.5 border-b border-[#eef2f7] bg-[#fafbfc] whitespace-nowrap">Comisiones</th>
+                <th className="text-right font-mono text-[10px] tracking-[0.12em] uppercase text-slate-400 font-medium px-4 py-3.5 border-b border-[#eef2f7] bg-[#fafbfc] whitespace-nowrap">Neto</th>
+                <th className="text-right font-mono text-[10px] tracking-[0.12em] uppercase text-slate-400 font-medium px-4 py-3.5 border-b border-[#eef2f7] bg-[#fafbfc] whitespace-nowrap">Cobrado / Pendiente</th>
+                <th className="text-left font-mono text-[10px] tracking-[0.12em] uppercase text-slate-400 font-medium px-4 py-3.5 border-b border-[#eef2f7] bg-[#fafbfc] whitespace-nowrap">Estado</th>
+                <th className="text-right font-mono text-[10px] tracking-[0.12em] uppercase text-slate-400 font-medium px-4 py-3.5 border-b border-[#eef2f7] bg-[#fafbfc] whitespace-nowrap">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-16 text-slate-400 text-[13px]">
+                    Cargando reservas...
+                  </td>
+                </tr>
+              ) : reservations.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-16 text-slate-400 text-[13px]">
+                    No hay reservas con los filtros actuales
+                  </td>
+                </tr>
+              ) : (
+                reservations.map(r => {
+                  const channelStyle = r.channel ? (CHANNEL_STYLES[r.channel.code] ?? CHANNEL_STYLES.manual) : CHANNEL_STYLES.manual
+                  const statusStyle = STATUS_STYLES[r.status] ?? STATUS_STYLES.pending
+                  const netPending = Math.max(0, round2(r.net_amount - r.total_received))
+                  const progressPct = r.net_amount > 0 ? Math.min(100, (r.total_received / r.net_amount) * 100) : 0
+
+                  return (
+                    <tr
+                      key={r.id}
+                      className="hover:bg-[#fafbfc] transition-colors border-b border-[#eef2f7] last:border-b-0"
+                    >
+                      {/* Huésped */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1e3a8a] to-[#2dd4bf] text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+                            {r.guest_name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-800">{r.guest_name}</p>
+                            {r.guest_country && (
+                              <p className="text-[11px] text-slate-400 font-mono">{r.guest_country}</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Fechas */}
+                      <td className="px-4 py-3.5">
+                        <p className="text-slate-800">{formatDate(r.checkin_date)} → {formatDate(r.checkout_date)}</p>
+                        <p className="font-mono text-[10px] text-slate-400 uppercase tracking-[0.08em] mt-0.5">{r.nights} noches</p>
+                      </td>
+
+                      {/* Canal */}
+                      <td className="px-4 py-3.5">
+                        {r.channel ? (
+                          <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                            style={{ background: channelStyle.bg, color: channelStyle.color }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: channelStyle.dot }} />
+                            {r.channel.name}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[12px]">—</span>
+                        )}
+                      </td>
+
+                      {/* Bruto */}
+                      <td className="px-4 py-3.5 text-right font-mono font-semibold text-slate-800 whitespace-nowrap">
+                        €{fmt(r.gross_amount)}
+                      </td>
+
+                      {/* Cargos */}
+                      <td className="px-4 py-3.5 text-right font-mono font-semibold text-slate-600 whitespace-nowrap">
+                        {r.total_charges > 0 ? `€${fmt(r.total_charges)}` : '—'}
+                      </td>
+
+                      {/* Comisiones con tooltip de desglose */}
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                        <div
+                          className="group relative inline-block"
+                          title={`Comisión venta: ${fmt(r.total_sale_commission)}€ + IVA ${fmt(r.total_sale_commission_vat)}€${r.total_pay_commission > 0 ? ` / Cobro: ${fmt(r.total_pay_commission)}€ + IVA ${fmt(r.total_pay_commission_vat)}€` : ''}`}
+                        >
+                          <span className="font-mono font-semibold text-rose-600 cursor-help underline decoration-dotted">
+                            {r.commission_total > 0 ? `-€${fmt(r.commission_total)}` : '—'}
+                          </span>
+                          {r.commission_total > 0 && (
+                            <div className="absolute bottom-full right-0 mb-1.5 hidden group-hover:block z-50 bg-[#1e3a8a] text-white text-[11px] rounded-lg px-3 py-2 shadow-xl whitespace-nowrap min-w-[180px]">
+                              <p className="font-mono mb-1 opacity-60 text-[10px] uppercase tracking-wider">Desglose</p>
+                              {r.total_sale_commission > 0 && (
+                                <p>Venta: {fmt(r.total_sale_commission)}€</p>
+                              )}
+                              {r.total_sale_commission_vat > 0 && (
+                                <p className="opacity-70">IVA venta: {fmt(r.total_sale_commission_vat)}€</p>
+                              )}
+                              {r.total_pay_commission > 0 && (
+                                <p>Cobro: {fmt(r.total_pay_commission)}€</p>
+                              )}
+                              {r.total_pay_commission_vat > 0 && (
+                                <p className="opacity-70">IVA cobro: {fmt(r.total_pay_commission_vat)}€</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Neto */}
+                      <td className="px-4 py-3.5 text-right font-mono font-semibold text-[#1e3a8a] whitespace-nowrap">
+                        €{fmt(r.net_amount)}
+                      </td>
+
+                      {/* Cobrado / Pendiente */}
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-semibold text-[#047857]">€{fmt(r.total_received)}</span>
+                            {netPending > 0 && (
+                              <span className="font-mono font-semibold text-amber-600">€{fmt(netPending)}</span>
+                            )}
+                          </div>
+                          <div className="h-1 w-20 bg-[#f1f4f8] rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-[#1e3a8a] rounded-full"
+                              style={{ width: `${progressPct}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Estado */}
+                      <td className="px-4 py-3.5">
+                        <span
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium tracking-wide uppercase whitespace-nowrap"
+                          style={{ background: statusStyle.bg, color: statusStyle.color }}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusStyle.dot }} />
+                          {STATUS_LABELS[r.status as ReservationStatus]}
+                        </span>
+                      </td>
+                      {/* Acciones */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center justify-end gap-1">
+                          {r.is_locked && (
+                            <span title="Reserva cerrada — cobro completo" className="mr-1">
+                              <Lock className="h-3.5 w-3.5 text-slate-400" />
+                            </span>
+                          )}
+                          {/* Ver detalle */}
+                          <button
+                            onClick={() => openDrawer(r.id)}
+                            title="Ver detalle"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-[#eef2fb] hover:text-[#1e3a8a] transition-colors"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </button>
+                          {/* Editar */}
+                          {canEdit && (
+                            <Link
+                              href={`/dashboard/bookings/new?edit=${r.id}`}
+                              title={r.is_locked ? 'Editar (solo notas)' : 'Editar reserva'}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-[#eef2fb] hover:text-[#1e3a8a] transition-colors"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Link>
+                          )}
+                          {/* Eliminar */}
+                          {canDelete && (
+                            <button
+                              onClick={() => setDeleteTarget(r)}
+                              title="Eliminar reserva"
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+            {/* Footer totals */}
+            {reservations.length > 0 && !loading && (
+              <tfoot>
+                <tr className="bg-[#f1f4f8]">
+                  <td colSpan={3} className="px-4 py-3 font-semibold text-[12px] text-slate-600">
+                    {reservations.length} reservas mostradas
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono font-bold text-slate-800 whitespace-nowrap">€{fmt(grossTotal)}</td>
+                  <td className="px-4 py-3 text-right font-mono font-bold text-slate-600 whitespace-nowrap">€{fmt(reservations.reduce((s, r) => s + r.total_charges, 0))}</td>
+                  <td className="px-4 py-3 text-right font-mono font-bold text-rose-600 whitespace-nowrap">
+                    -{`€${fmt(reservations.reduce((s, r) => s + r.commission_total, 0))}`}
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono font-bold text-[#1e3a8a] whitespace-nowrap">€{fmt(netTotal)}</td>
+                  <td className="px-4 py-3 text-right font-mono font-bold text-amber-600 whitespace-nowrap">€{fmt(pendingTotal)}</td>
+                  <td />
+                  <td />
+                  <td />
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {total > 20 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-[#eef2f7]">
+            <span className="text-[12px] text-slate-400 font-mono">
+              {(page - 1) * 20 + 1}–{Math.min(page * 20, total)} de {total}
+            </span>
             <div className="flex gap-2">
-              <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
-                      {property.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="confirmed">Confirmadas</SelectItem>
-                  <SelectItem value="pending">Pendientes</SelectItem>
-                  <SelectItem value="completed">Completadas</SelectItem>
-                  <SelectItem value="cancelled">Canceladas</SelectItem>
-                  <SelectItem value="blocked">Bloqueados</SelectItem>
-                </SelectContent>
-              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full h-8"
+                disabled={page === 1}
+                onClick={() => setPage(p => p - 1)}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full h-8"
+                disabled={page * 20 >= total}
+                onClick={() => setPage(p => p + 1)}
+              >
+                Siguiente
+              </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
-      {/* Bookings List */}
-      {!mounted ? (
-        <div className="w-full h-96 bg-slate-50 animate-pulse rounded-xl" />
-      ) : (
-        <Tabs id={id} defaultValue="list" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="list">Lista</TabsTrigger>
-            <TabsTrigger value="calendar">
-              <Link href="/dashboard/calendar">Calendario</Link>
-            </TabsTrigger>
-          </TabsList>
+      {/* Reservation Drawer */}
+      <ReservationDrawer
+        reservation={selectedReservation}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        paymentMethods={paymentMethods}
+        canEdit={canEdit}
+        canCancel={canCancel}
+        onEditClick={(id) => {
+          setDrawerOpen(false)
+          window.location.href = `/dashboard/bookings/new?edit=${id}`
+        }}
+        onReservationUpdated={handleReservationUpdated}
+      />
 
-          <TabsContent value="list" className="space-y-4">
-            {filteredBookings.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Calendar className="h-12 w-12 text-muted-foreground/50" />
-                  <h3 className="mt-4 text-lg font-medium text-foreground">No hay reservas</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    No se encontraron reservas con los filtros seleccionados
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              filteredBookings.map((booking) => {
-                const statusConfig = getStatusConfig(booking.status);
-                const paymentConfig = getPaymentStatusConfig(booking.paymentStatus);
-                const StatusIcon = statusConfig.icon;
-
-                return (
-                  <Card key={booking.id} className="overflow-hidden">
-                    <CardContent className="p-0">
-                      <div className="flex flex-col lg:flex-row">
-                        {/* Property Image */}
-                        <div className="relative h-32 w-full shrink-0 lg:h-auto lg:w-40">
-                          <Image
-                            src={booking.propertyImage || "/placeholder.svg"}
-                            alt={booking.propertyName}
-                            fill
-                            className="object-cover"
-                          />
-                          <div className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full ${statusConfig.color} text-white`}>
-                            <StatusIcon className="h-3.5 w-3.5" />
-                          </div>
-                        </div>
-
-                        {/* Booking Info */}
-                        <div className="flex flex-1 flex-col p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold text-foreground">
-                                  {booking.status === "blocked" ? booking.guestName : booking.guestName}
-                                </h3>
-                                <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
-                              </div>
-                              <p className="mt-0.5 text-sm text-muted-foreground">{booking.propertyName}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">{booking.id}</span>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => openBookingDetails(booking)}>
-                                    <FileText className="mr-2 h-4 w-4" />
-                                    Ver detalles
-                                  </DropdownMenuItem>
-                                  {booking.status !== "blocked" && booking.guestEmail && (
-                                    <DropdownMenuItem>
-                                      <Send className="mr-2 h-4 w-4" />
-                                      Enviar mensaje
-                                    </DropdownMenuItem>
-                                  )}
-                                  {booking.status !== "blocked" && (
-                                    <DropdownMenuItem>
-                                      <ExternalLink className="mr-2 h-4 w-4" />
-                                      Enviar guia
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuSeparator />
-                                  {(booking.status === "confirmed" || booking.status === "pending") && (
-                                    <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive"
-                                      onClick={() => {
-                                        setSelectedBooking(booking);
-                                        setCancelDialogOpen(true);
-                                      }}
-                                    >
-                                      <X className="mr-2 h-4 w-4" />
-                                      Cancelar reserva
-                                    </DropdownMenuItem>
-                                  )}
-                                  {booking.status === "blocked" && (
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                      <X className="mr-2 h-4 w-4" />
-                                      Eliminar bloqueo
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <Calendar className="h-4 w-4" />
-                              <span>{formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <Bed className="h-4 w-4" />
-                              <span>{booking.nights} noches</span>
-                            </div>
-                            {booking.status !== "blocked" && (
-                              <div className="flex items-center gap-1.5 text-muted-foreground">
-                                <Users className="h-4 w-4" />
-                                <span>{booking.guests} huespedes</span>
-                              </div>
-                            )}
-                            {booking.source && (
-                              <Badge variant="outline" className="text-xs">{booking.source}</Badge>
-                            )}
-                          </div>
-
-                          {booking.notes && (
-                            <p className="mt-2 line-clamp-1 text-sm text-muted-foreground">
-                              {booking.notes}
-                            </p>
-                          )}
-
-                          {booking.status !== "blocked" && (
-                            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-                              <div className="flex items-center gap-4">
-                                {booking.guestPhone && (
-                                  <a href={`tel:${booking.guestPhone}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-                                    <Phone className="h-4 w-4" />
-                                    <span className="hidden sm:inline">{booking.guestPhone}</span>
-                                  </a>
-                                )}
-                                {booking.guestEmail && (
-                                  <a href={`mailto:${booking.guestEmail}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-                                    <Mail className="h-4 w-4" />
-                                    <span className="hidden sm:inline">{booking.guestEmail}</span>
-                                  </a>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className={`text-sm font-medium ${paymentConfig.color}`}>
-                                  {paymentConfig.label}
-                                </span>
-                                <span className="text-lg font-bold text-foreground">{booking.totalPrice}€</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
-            )}
-          </TabsContent>
-        </Tabs>
-      )}
-
-      {/* Booking Details Dialog */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          {selectedBooking && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center justify-between">
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <>
+          <div
+            className="fixed inset-0 bg-[rgba(15,23,42,0.45)] backdrop-blur-[2px] z-[200]"
+            onClick={() => !deleting && setDeleteTarget(null)}
+          />
+          <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 pointer-events-none">
+            <div
+              className="w-full max-w-md bg-white rounded-2xl shadow-[0_24px_80px_-12px_rgba(15,23,42,0.25)] pointer-events-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="px-6 pt-6 pb-4 border-b border-[#eef2f7]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="h-5 w-5 text-rose-500" />
+                  </div>
                   <div>
-                    <DialogTitle className="flex items-center gap-2">
-                      {selectedBooking.status === "blocked" ? "Bloqueo de fechas" : "Detalles de la reserva"}
-                      <Badge variant={getStatusConfig(selectedBooking.status).variant}>
-                        {getStatusConfig(selectedBooking.status).label}
-                      </Badge>
-                    </DialogTitle>
-                    <DialogDescription>
-                      {selectedBooking.id} - Creada el {formatDate(selectedBooking.createdAt)}
-                    </DialogDescription>
+                    <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-400 mb-0.5">Confirmar eliminación</p>
+                    <h2 className="text-[18px] font-bold text-slate-800 tracking-tight">Eliminar reserva</h2>
                   </div>
-                </div>
-              </DialogHeader>
-
-              <div className="space-y-6 pt-4">
-                {/* Property Info */}
-                <div className="flex items-center gap-4 rounded-lg border border-border p-4">
-                  <Image
-                    src={selectedBooking.propertyImage || "/placeholder.svg"}
-                    alt={selectedBooking.propertyName}
-                    width={96}
-                    height={64}
-                    className="rounded-lg object-cover"
-                  />
-                  <div>
-                    <h4 className="font-medium text-foreground">{selectedBooking.propertyName}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(selectedBooking.checkIn)} - {formatDate(selectedBooking.checkOut)} ({selectedBooking.nights} noches)
-                    </p>
-                  </div>
-                </div>
-
-                {/* Guest Info */}
-                {selectedBooking.status !== "blocked" && (
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-foreground">Informacion del huesped</h4>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-                        <User className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Nombre</p>
-                          <p className="font-medium">{selectedBooking.guestName}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Huespedes</p>
-                          <p className="font-medium">{selectedBooking.guests}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-                        <Mail className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="font-medium">{selectedBooking.guestEmail}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-                        <Phone className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Telefono</p>
-                          <p className="font-medium">{selectedBooking.guestPhone}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Payment Info */}
-                {selectedBooking.status !== "blocked" && (
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-foreground">Desglose del pago</h4>
-                    <div className="rounded-lg border border-border p-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            {selectedBooking.pricePerNight}€ x {selectedBooking.nights} noches
-                          </span>
-                          <span>{selectedBooking.pricePerNight * selectedBooking.nights}€</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Limpieza</span>
-                          <span>{selectedBooking.cleaningFee}€</span>
-                        </div>
-                        <div className="border-t border-border pt-2 mt-2">
-                          <div className="flex justify-between">
-                            <span className="font-medium">Total</span>
-                            <span className="font-bold text-lg">{selectedBooking.totalPrice}€</span>
-                          </div>
-                          <div className="flex justify-between mt-1">
-                            <span className="text-sm text-muted-foreground">Estado</span>
-                            <span className={`text-sm font-medium ${getPaymentStatusConfig(selectedBooking.paymentStatus).color}`}>
-                              {getPaymentStatusConfig(selectedBooking.paymentStatus).label}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Notes */}
-                {selectedBooking.notes && (
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-foreground">Notas</h4>
-                    <div className="rounded-lg border border-border p-4">
-                      <p className="text-sm text-muted-foreground">{selectedBooking.notes}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-                  {selectedBooking.status !== "blocked" && selectedBooking.guestEmail && (
-                    <Button variant="outline" className="gap-2 bg-transparent">
-                      <Send className="h-4 w-4" />
-                      Enviar mensaje
-                    </Button>
-                  )}
-                  {selectedBooking.status !== "blocked" && (
-                    <Button variant="outline" className="gap-2 bg-transparent">
-                      <ExternalLink className="h-4 w-4" />
-                      Enviar guia
-                    </Button>
-                  )}
-                  {(selectedBooking.status === "confirmed" || selectedBooking.status === "pending") && (
-                    <Button
-                      variant="destructive"
-                      className="gap-2"
-                      onClick={() => {
-                        setDetailsOpen(false);
-                        setCancelDialogOpen(true);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                      Cancelar reserva
-                    </Button>
-                  )}
                 </div>
               </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
 
-      {/* Cancel Booking Dialog */}
-      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Cancelar reserva
-            </DialogTitle>
-            <DialogDescription>
-              Esta a punto de cancelar la reserva de {selectedBooking?.guestName}. Esta accion no se puede deshacer.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="rounded-lg bg-destructive/10 p-4">
-              <p className="text-sm text-destructive">
-                Si la reserva ya esta pagada, debera procesar el reembolso manualmente segun su politica de cancelacion.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>Motivo de cancelacion</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un motivo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="guest_request">Solicitud del huesped</SelectItem>
-                  <SelectItem value="host_unavailable">Propiedad no disponible</SelectItem>
-                  <SelectItem value="payment_issue">Problema con el pago</SelectItem>
-                  <SelectItem value="violation">Violacion de normas</SelectItem>
-                  <SelectItem value="other">Otro motivo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Notas adicionales</Label>
-              <Textarea placeholder="Detalles sobre la cancelacion..." rows={3} />
+              {/* Body */}
+              <div className="px-6 py-5 space-y-3">
+                <p className="text-[14px] text-slate-700">
+                  ¿Eliminar la reserva de <span className="font-semibold">{deleteTarget.guest_name}</span>?
+                </p>
+                {(deleteTarget.total_received > 0 || deleteTarget.total_charges > 0) && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[13px] text-amber-800 space-y-1">
+                    {deleteTarget.total_received > 0 && (
+                      <p>· Se eliminarán <span className="font-semibold">{deleteTarget.total_received.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€</span> en cobros registrados</p>
+                    )}
+                    {deleteTarget.total_charges > 0 && (
+                      <p>· Se eliminarán los cargos asociados</p>
+                    )}
+                  </div>
+                )}
+                {deleteTarget.is_locked && (
+                  <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 text-[13px] text-rose-700 flex items-center gap-2">
+                    <Lock className="h-4 w-4 shrink-0" />
+                    <span>Esta reserva está cerrada. Su eliminación afectará el saldo de las cuentas asociadas.</span>
+                  </div>
+                )}
+                <p className="text-[12px] text-slate-400">Esta acción no se puede deshacer.</p>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 pb-6 flex justify-end gap-2.5 border-t border-[#eef2f7] pt-4">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-full text-[13px] font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-full text-[13px] font-medium bg-rose-500 hover:bg-rose-600 text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {deleting ? 'Eliminando...' : 'Eliminar'}
+                </button>
+              </div>
             </div>
           </div>
-          <DialogFooter className="mt-6">
-            <Button variant="outline" className="bg-transparent" onClick={() => setCancelDialogOpen(false)}>
-              Volver
-            </Button>
-            <Button variant="destructive" onClick={() => setCancelDialogOpen(false)}>
-              Confirmar cancelacion
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </>
+      )}
     </div>
-  );
+  )
 }
 
-export default function BookingsPage() {
+function KPI({ label, value, sub, valueClass }: { label: string; value: string; sub: string; valueClass?: string }) {
   return (
-    <Suspense fallback={
-      <div className="space-y-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Reservas</h1>
-            <p className="mt-1 text-muted-foreground">Cargando...</p>
-          </div>
-        </div>
-      </div>
-    }>
-      <BookingsPageContent />
-    </Suspense>
-  );
+    <div className="px-5 py-4 border-r border-[#eef2f7] last:border-r-0">
+      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400 mb-2">{label}</p>
+      <p className={`text-[24px] font-bold tracking-[-0.025em] leading-none ${valueClass === 'pending' ? 'text-amber-600' : 'text-slate-800'}`}>
+        {value}
+      </p>
+      <p className="text-[11px] text-slate-400 mt-1.5 font-mono tracking-[0.04em]">{sub}</p>
+    </div>
+  )
 }

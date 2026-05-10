@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import React, { useState, Suspense } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/app/actions/auth";
@@ -23,10 +23,21 @@ const mobileNav = [
 ] as const;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={null}>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </Suspense>
+  );
+}
+
+function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const yearParam = searchParams.get('year');
+  const withYear = (path: string) => yearParam ? `${path}?year=${yearParam}` : path;
   const { profile, loading: profileLoading } = useUserProfile();
 
   const tenantRole = (profile?.tenant_role ?? 'viewer') as TenantRole;
@@ -60,10 +71,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* SIDEBAR (Desktop) */}
-      <DashboardSidebar 
-        collapsed={collapsed} 
-        profile={profile} 
-        onSignOut={handleSignOut} 
+      <DashboardSidebar
+        collapsed={collapsed}
+        profile={profile}
+        onSignOut={handleSignOut}
       />
 
       {/* MAIN CONTENT AREA */}
@@ -117,7 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={withYear(item.href)}
                 onClick={() => setMobileSidebarOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
@@ -142,7 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={withYear(item.href)}
                 className={cn(
                   "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[52px]",
                   isActive ? "text-landing-navy" : "text-landing-ink-mute"
