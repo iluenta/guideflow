@@ -209,6 +209,21 @@ export async function createExpense(
 
     const { vat_amount, total_amount } = calcVat(input.amount, input.vat_pct)
 
+    // Security check: If reservation_id is provided, verify it belongs to this tenant and property
+    if (input.reservation_id) {
+      const { data: resData, error: resErr } = await supabase
+        .from('reservations')
+        .select('id')
+        .eq('id', input.reservation_id)
+        .eq('property_id', input.property_id)
+        .eq('tenant_id', profile.tenant_id)
+        .single()
+
+      if (resErr || !resData) {
+        return { error: 'La reserva seleccionada no es válida para esta propiedad' }
+      }
+    }
+
     const { data, error } = await supabase
       .from('expenses')
       .insert({
@@ -270,6 +285,24 @@ export async function updateExpense(
       .single()
 
     if (!current) return { error: 'Gasto no encontrado' }
+
+    // Security check: If reservation_id is changing or property_id is changing, verify link
+    const newReservationId = input.reservation_id !== undefined ? input.reservation_id : (current as any).reservation_id
+    const newPropertyId = input.property_id ?? (current as any).property_id
+
+    if (newReservationId) {
+      const { data: resData, error: resErr } = await supabase
+        .from('reservations')
+        .select('id')
+        .eq('id', newReservationId)
+        .eq('property_id', newPropertyId)
+        .eq('tenant_id', profile.tenant_id)
+        .single()
+
+      if (resErr || !resData) {
+        return { error: 'La reserva seleccionada no es válida para esta propiedad' }
+      }
+    }
 
     const updates: Record<string, unknown> = { ...input, updated_at: new Date().toISOString() }
 

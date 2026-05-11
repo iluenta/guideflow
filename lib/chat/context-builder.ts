@@ -60,7 +60,7 @@ function buildStructuredContextLines(
                 contentString = `Dirección: ${c.content.full_address || c.content.address || ''}. Parking: ${c.content.parking?.info || 'N/A'}. Transp: ${c.content.from_airport?.instructions || 'N/A'}`;
             } else if (c.category === 'tech') {
                 let techStr = '';
-                if (c.content.wifi_ssid) techStr += `Red WiFi: \`${c.content.wifi_ssid}\`. Contraseña WiFi: \`${c.content.wifi_password || ''}\`. `;
+                if (c.content.wifi_ssid) techStr += `Red WiFi: \`${c.content.wifi_ssid}\`. Contraseña WiFi: [REDACTADO]. `;
                 if (c.content.router_notes) techStr += `Notas Router: ${c.content.router_notes}. `;
                 contentString = techStr.trim() || JSON.stringify(c.content);
             } else {

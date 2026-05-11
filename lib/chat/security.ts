@@ -79,11 +79,14 @@ export async function validateChatRequest(
         guestSessionId = '',
     } = body;
 
+    if (!Array.isArray(messages) || messages.length === 0) {
+        return { error: new Response(JSON.stringify({ error: 'Mensajes inválidos' }), { status: 400 }) };
+    }
     const lastMessage: string = messages[messages.length - 1].content;
     const ip = req.headers.get('x-forwarded-for') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
     const stressSecret = req.headers.get('x-stress-test-secret');
-    const isStressTest = stressSecret && stressSecret === process.env.STRESS_TEST_SECRET;
+    const isStressTest = !!process.env.STRESS_TEST_SECRET && stressSecret === process.env.STRESS_TEST_SECRET;
 
     let propertyId: string = legacyPropertyId;
     let propertyTier: 'standard' | 'premium' | 'enterprise' = 'standard';

@@ -16,10 +16,9 @@ export async function POST(req: Request) {
     try {
         supabase = createEdgeAdminClient();
     } catch (err: any) {
-        console.error('[CHAT] Initialization Error:', err.message);
+        console.error('[CHAT] Initialization Error:', err);
         return new Response(JSON.stringify({
-            error: 'Database initialization failed. Check environment variables.',
-            details: err.message,
+            error: 'Servicio no disponible actualmente.',
         }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -67,14 +66,13 @@ export async function POST(req: Request) {
             messages,
             lastMessage,
         );
-
     } catch (error: any) {
         console.error('[CHAT ERROR]', error);
         const isRateLimit = error.message?.includes('Resource exhausted') || error.message?.includes('429');
         const status = isRateLimit ? 503 : 500;
         const userMessage = isRateLimit
             ? 'El asistente está recibiendo muchas solicitudes en este momento. Por favor, inténtalo de nuevo en unos segundos.'
-            : error.message;
+            : 'Ha ocurrido un error al procesar tu solicitud.';
         return new Response(JSON.stringify({ error: userMessage }), { status, headers: { 'Content-Type': 'application/json' } });
     }
 }

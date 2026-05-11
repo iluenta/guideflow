@@ -405,12 +405,28 @@ export async function getUploadUrl(fileName: string, contentType: string) {
 
 export async function getScanUploadUrl(propertyId: string, fileName: string, contentType: string) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No autorizado')
+    
+    // Authorization check
+    const { tenant_id } = await requireProfile(supabase)
+    
+    const currentPropId = sanitizeUUID(propertyId)
+    if (!currentPropId) throw new Error('ID de propiedad inválido')
+
+    // Verify ownership
+    const { data: property, error: propError } = await supabase
+        .from('properties')
+        .select('id')
+        .eq('id', currentPropId)
+        .eq('tenant_id', tenant_id)
+        .single()
+
+    if (propError || !property) {
+        throw new Error('No tienes permiso para subir archivos a esta propiedad')
+    }
 
     // Use a shared timestamp for a batch upload if possible, or just individual
     const timestamp = Date.now()
-    const path = `${propertyId}/${timestamp}/${fileName}`
+    const path = `${currentPropId}/${timestamp}/${fileName}`
 
     const { data, error } = await supabase.storage
         .from('property_scans')

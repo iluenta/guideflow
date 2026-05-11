@@ -3,13 +3,14 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Scan, Upload, X, FileText, Image as ImageIcon, Download } from 'lucide-react'
+import { Scan, Upload, X, FileText, Image as ImageIcon, Download, Loader2 } from 'lucide-react'
 import { createExpense, updateExpense, uploadExpenseDocument } from '@/app/actions/expenses'
 import { extractExpenseFromImage } from '@/app/actions/expense-ocr'
 import { getProviders } from '@/app/actions/providers'
 import { getProperties } from '@/app/actions/properties'
 import { getPaymentAccounts } from '@/app/actions/payment-accounts'
 import { getExpenseDocumentUrl } from '@/app/actions/expenses'
+import { getActiveReservations } from '@/app/actions/reservations'
 import { useEffect } from 'react'
 import type { PaymentAccount } from '@/types/treasury'
 import type {
@@ -58,6 +59,8 @@ export function ExpenseForm({
   )
   const [propertyId, setPropertyId] = useState(expense?.property_id ?? defaultPropertyId ?? '')
   const [reservationId, setReservationId] = useState(expense?.reservation_id ?? defaultReservationId ?? '')
+  const [activeReservations, setActiveReservations] = useState<{ id: string; guest_name: string; checkin_date: string; checkout_date: string }[]>([])
+  const [loadingReservations, setLoadingReservations] = useState(false)
   const [category, setCategory] = useState<ExpenseCategory>(expense?.category ?? 'other')
 
   // Proveedores que tienen la categoría activa entre sus servicios (o ningún servicio = mostrar siempre)
@@ -107,6 +110,28 @@ export function ExpenseForm({
       setAccounts((accs ?? []).filter(a => a.is_active))
     })
   }, [])
+
+  // Cargar reservas cuando cambia la propiedad y el tipo es 'reservation'
+  useEffect(() => {
+    if (expenseType === 'reservation' && propertyId) {
+      setLoadingReservations(true)
+      getActiveReservations(propertyId).then(({ reservations, error }) => {
+        if (error) {
+          toast.error(error)
+          setActiveReservations([])
+        } else {
+          setActiveReservations(reservations ?? [])
+          // Si estamos en modo create y el ID actual no está en la lista nueva, resetear
+          if (mode === 'create' && reservationId && !reservations?.some(r => r.id === reservationId)) {
+            setReservationId('')
+          }
+        }
+        setLoadingReservations(false)
+      })
+    } else {
+      setActiveReservations([])
+    }
+  }, [propertyId, expenseType, mode])
 
   const vatAmount = Math.round(parseFloat(amount || '0') * vatPct) / 100
   const totalAmount = Math.round((parseFloat(amount || '0') + vatAmount) * 100) / 100
@@ -295,14 +320,31 @@ export function ExpenseForm({
 
           {expenseType === 'reservation' && (
             <div>
-              <label className="block text-[12px] font-medium text-slate-600 mb-1.5">ID de reserva</label>
-              <input
-                type="text"
-                value={reservationId}
-                onChange={e => setReservationId(e.target.value)}
-                placeholder="UUID de la reserva"
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-landing-navy focus:ring-2 focus:ring-landing-navy/10"
-              />
+              <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Reserva vinculada *</label>
+              <div className="relative">
+                <select
+                  value={reservationId}
+                  onChange={e => setReservationId(e.target.value)}
+                  disabled={!propertyId || loadingReservations}
+                  required={expenseType === 'reservation'}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-landing-navy focus:ring-2 focus:ring-landing-navy/10 bg-white disabled:bg-slate-50 disabled:text-slate-400"
+                >
+                  <option value="">{loadingReservations ? 'Cargando reservas...' : propertyId ? 'Seleccionar reserva...' : 'Primero selecciona propiedad'}</option>
+                  {activeReservations.map(r => (
+                    <option key={r.id} value={r.id}>
+                      {r.guest_name} ({new Date(r.checkin_date).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })} - {new Date(r.checkout_date).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })})
+                    </option>
+                  ))}
+                </select>
+                {loadingReservations && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                  </div>
+                )}
+              </div>
+              {!loadingReservations && propertyId && activeReservations.length === 0 && (
+                <p className="mt-1 text-[11px] text-amber-600 font-medium">No hay reservas abiertas para esta propiedad</p>
+              )}
             </div>
           )}
         </div>
@@ -491,6 +533,7 @@ export function ExpenseForm({
                     <option value="Transferencia">Transferencia</option>
                     <option value="Efectivo">Efectivo</option>
                     <option value="Tarjeta">Tarjeta</option>
+                    <option value="Bizum">Bizum</option>
                   </select>
                 </div>
               </div>

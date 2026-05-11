@@ -1,28 +1,24 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { requireProfile } from '@/lib/supabase/get-tenant-id'
 
 export async function GET() {
   try {
     const supabase = await createClient()
+    const { tenant_id } = await requireProfile(supabase)
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { data: tenant, error } = await supabase
+      .from('tenants')
+      .select('package_level')
+      .eq('id', tenant_id)
+      .single()
 
-    const tenantId = user.user_metadata?.tenant_id
-    if (!tenantId) {
+    if (error) {
       return NextResponse.json({ packageLevel: 'basic' })
     }
 
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('package_level')
-      .eq('id', tenantId)
-      .single()
-
     return NextResponse.json({ packageLevel: tenant?.package_level ?? 'basic' })
-  } catch {
+  } catch (error) {
     return NextResponse.json({ packageLevel: 'basic' })
   }
 }

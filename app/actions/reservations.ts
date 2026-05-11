@@ -293,6 +293,39 @@ export async function createReservation(
   return { reservation: result.reservation }
 }
 
+/**
+ * Fetch active/open reservations for a specific property to be used in dropdowns (e.g. expenses)
+ * Excludes cancelled and no_show statuses.
+ */
+export async function getActiveReservations(
+  propertyId: string
+): Promise<{ reservations?: { id: string; guest_name: string; checkin_date: string; checkout_date: string }[]; error?: string }> {
+  const supabase = await createClient()
+
+  let profile
+  try {
+    profile = await requireProfile(supabase)
+  } catch (e: unknown) {
+    return { error: e instanceof Error ? e.message : 'Authentication failed' }
+  }
+
+  const { data, error } = await supabase
+    .from('reservations')
+    .select('id, guest_name, checkin_date, checkout_date')
+    .eq('property_id', propertyId)
+    .eq('tenant_id', profile.tenant_id)
+    .not('status', 'in', '("cancelled", "no_show")')
+    .order('checkin_date', { ascending: false })
+    .limit(50)
+
+  if (error) {
+    console.error('[getActiveReservations] Error:', error.message)
+    return { error: 'Error al cargar las reservas' }
+  }
+
+  return { reservations: data }
+}
+
 export async function updateReservation(
   id: string,
   data: UpdateReservationInput

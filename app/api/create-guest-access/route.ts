@@ -100,6 +100,6 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         logger.error('[GUEST_ACCESS] Unexpected error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
     }
 }

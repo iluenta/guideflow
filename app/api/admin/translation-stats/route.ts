@@ -26,7 +26,7 @@ export async function GET(req: Request) {
 
     if (error) {
       console.error('[STATS] DB Error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Error al obtener estadísticas' }, { status: 500 });
     }
 
     // 3. Return results
@@ -38,6 +38,6 @@ export async function GET(req: Request) {
 
   } catch (error: any) {
     console.error('[STATS] Server Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

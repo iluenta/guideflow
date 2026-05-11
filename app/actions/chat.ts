@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { requireProfile } from '@/lib/supabase/get-tenant-id'
 import { generateOpenAIEmbedding } from '@/lib/ai/clients/openai'
 import { geminiREST } from '@/lib/ai/clients/gemini-rest'
 import { logAiUsage } from '@/lib/services/ai-usage-logger'
@@ -10,6 +11,19 @@ import { logAiUsage } from '@/lib/services/ai-usage-logger'
  */
 export async function chatWithHostBot(propertyId: string, message: string) {
     const supabase = await createClient()
+
+    const profile = await requireProfile(supabase)
+
+    const { data: property, error: propError } = await supabase
+        .from('properties')
+        .select('id, tenant_id')
+        .eq('id', propertyId)
+        .eq('tenant_id', profile.tenant_id)
+        .single()
+
+    if (propError || !property) {
+        throw new Error('Propiedad no encontrada o acceso no autorizado')
+    }
 
     // 1. Generate embedding for the query (OpenAI 1536)
     const queryEmbedding = await generateOpenAIEmbedding(message)

@@ -6,8 +6,13 @@ import { headers, cookies } from 'next/headers'
 
 export async function signInWithMagicLink(formData: FormData) {
   const email = formData.get('email')?.toString()
-  const next = formData.get('next')?.toString() || ''
+  let next = formData.get('next')?.toString() || ''
   
+  // Validate 'next' redirect to prevent Open Redirect
+  if (next && (!next.startsWith('/') || next.startsWith('//'))) {
+    next = '/dashboard'
+  }
+
   if (!email) {
     const errorUrl = `/auth/login?error=${encodeURIComponent('El email es requerido')}${next ? `&next=${encodeURIComponent(next)}` : ''}`
     redirect(errorUrl)
@@ -88,7 +93,12 @@ export async function signInWithMagicLink(formData: FormData) {
 export async function signUpWithMagicLink(formData: FormData) {
   const email = formData.get('email')?.toString()
   const fullName = formData.get('fullName')?.toString()
-  const next = formData.get('next')?.toString() || ''
+  let next = formData.get('next')?.toString() || ''
+
+  // Validate 'next' redirect to prevent Open Redirect
+  if (next && (!next.startsWith('/') || next.startsWith('//'))) {
+    next = '/dashboard'
+  }
 
   if (!email) {
     const errorUrl = `/auth/signup?error=${encodeURIComponent('El email es requerido')}${next ? `&next=${encodeURIComponent(next)}` : ''}`

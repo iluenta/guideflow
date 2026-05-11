@@ -270,10 +270,11 @@ export default function DashboardPage() {
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <p 
-                    className="text-[13px] text-landing-ink leading-snug mb-1"
-                    dangerouslySetInnerHTML={{ __html: activity.message }}
-                  />
+                  <p className="text-[13px] text-landing-ink leading-snug mb-1">
+                    {activity.message.split(/<strong>(.*?)<\/strong>/g).map((part, i) => (
+                      i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+                    ))}
+                  </p>
                   <span className="font-jetbrains text-[10px] text-landing-ink-mute tracking-wide uppercase">
                     {activity.time}
                   </span>

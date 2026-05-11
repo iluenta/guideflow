@@ -197,7 +197,6 @@ export function HouseInfoView({
     const { content: labelMessageHost } = useLocalizedContent('Mensaje de los anfitriones', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelTheProperty } = useLocalizedContent('La propiedad', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelVerifiedDetails } = useLocalizedContent('Detalles verificados', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelWarmly } = useLocalizedContent('Con cariño,', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelContactHost } = useLocalizedContent('Llamar', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelWhatsApp } = useLocalizedContent('WhatsApp', currentLanguage, 'ui_label', accessToken, propertyId);
 
@@ -292,9 +291,6 @@ export function HouseInfoView({
                                         {hostName.substring(0, 2).toUpperCase()}
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className={cn('text-[11px] font-bold uppercase tracking-widest', t.warmlyColor)}>
-                                            {labelWarmly}
-                                        </span>
                                         <span className={cn('leading-tight', t.hostNameColor, t.hostNameExtra)}>
                                             {hostName}
                                         </span>

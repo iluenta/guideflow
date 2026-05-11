@@ -160,9 +160,14 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
             `Contactos adicionales:\n${custom}`
         metadata = { category: 'contactos', type: 'soporte' }
     } else if (category === 'tech') {
+        /**
+         * RAG PRIVACY AUDIT:
+         * - SÍ: SSID (Nombre de red), notas de ubicación del router, instrucciones de configuración.
+         * - NO: Contraseñas (wifi_password), códigos de acceso (access_code), secretos API.
+         */
         contentToEmbed = `[WIFI Y TECNOLOGÍA]:\n` +
             `Red WiFi: ${data.wifi_ssid || ''}\n` +
-            `Contraseña WiFi: ${data.wifi_password || ''}\n` +
+            `Contraseña WiFi: [REDUCIDO POR SEGURIDAD]\n` +
             `Ubicación del router/Notas: ${data.router_notes || ''}`
         metadata = { category: 'tecnologia', type: 'wifi' }
     } else if (category === 'inventory') {
@@ -255,13 +260,11 @@ export async function syncManualToRAG(
 
         const hostNotes = manual?.metadata?.notes || ''
 
-        // ✅ FIX: Enriquecer manuales de TV con nota explícita de acceso a streaming
-        // Esto evita que Gemini infiera por analogía que una app tiene botón directo
+        // ✅ SECURITY FIX: Do NOT include hostNotes in embeddings as they often contain 
+        // sensitive info like temporary access codes or private instructions.
+        // We only embed the manual content itself (enriched with safe derived facts).
         const enrichedManual = enrichTVManual(manualContent, hostNotes)
-
-        const augmentedContent = hostNotes
-            ? `[NOTAS DEL ANFITRIÓN]: ${hostNotes}\n\n${enrichedManual}`
-            : enrichedManual
+        const augmentedContent = enrichedManual
 
         // 1. Delete old embeddings for this manual
         await supabase.from('context_embeddings').delete().eq('source_id', currentManualId).eq('tenant_id', currentTenantId)
