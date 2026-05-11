@@ -177,3 +177,17 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Safe area para iPhone notch/home bar */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Touch targets mínimos en mobile */
+@media (max-width: 767px) {
+  button:not([data-no-touch]),
+  [role="button"],
+  a {
+    min-height: 44px;
+  }
+}

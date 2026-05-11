@@ -22,12 +22,18 @@ import { AddPaymentModal } from './AddPaymentModal'
 import { ReservationExpensesSection } from '@/components/dashboard/expenses/ReservationExpensesSection'
 import { updateReservationStatus, deletePayment, getReservation, updateChargePayment } from '@/app/actions/reservations'
 import { round2 } from '@/lib/reservations/commission-utils'
+import { AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import type {
   ReservationWithDetails,
   ReservationStatus,
   PaymentMethodSetting,
 } from '@/types/reservations'
+import {
+  getDisplayStatus,
+  getAvailableActions,
+  DISPLAY_STATUS_CONFIG,
+} from '@/lib/reservation-display-status'
 
 // ─── Channel chip colors ──────────────────────────────────────────────────────
 const CHANNEL_STYLES: Record<string, { bg: string; color: string; dot: string }> = {
@@ -42,41 +48,14 @@ function getChannelStyle(code: string) {
   return CHANNEL_STYLES[code] ?? CHANNEL_STYLES.manual
 }
 
-const STATUS_LABELS: Record<ReservationStatus, string> = {
-  pending:     'Pendiente',
-  confirmed:   'Confirmada',
-  checked_in:  'En curso',
-  checked_out: 'Finalizada',
-  cancelled:   'Cancelada',
-  no_show:     'No show',
-}
-
-const STATUS_STYLES: Record<ReservationStatus, { bg: string; color: string; dot: string }> = {
-  pending:     { bg: '#fef3c7', color: '#d97706', dot: '#d97706' },
-  confirmed:   { bg: '#ecfdf5', color: '#047857', dot: '#10b981' },
-  checked_in:  { bg: '#eef2fb', color: '#1e3a8a', dot: '#1e3a8a' },
-  checked_out: { bg: '#f1f4f8', color: '#475569', dot: '#94a3b8' },
-  cancelled:   { bg: '#ffe4e6', color: '#e11d48', dot: '#e11d48' },
-  no_show:     { bg: '#fef3c7', color: '#d97706', dot: '#d97706' },
-}
-
-const NEXT_STATUSES: Record<ReservationStatus, { value: ReservationStatus; label: string }[]> = {
-  pending:     [{ value: 'confirmed', label: 'Confirmar' }, { value: 'cancelled', label: 'Cancelar' }],
-  confirmed:   [{ value: 'checked_in', label: 'Check-in' }, { value: 'cancelled', label: 'Cancelar' }, { value: 'no_show', label: 'No show' }],
-  checked_in:  [{ value: 'checked_out', label: 'Check-out' }],
-  checked_out: [],
-  cancelled:   [],
-  no_show:     [],
-}
-
-function fmt(n: number) {
-  return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
 function formatDate(d: string) {
   return new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {
     day: '2-digit', month: 'short', year: 'numeric',
   })
+}
+
+function fmt(n: number) {
+  return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -105,6 +84,7 @@ export function ReservationDrawer({
   const [addPaymentOpen, setAddPaymentOpen] = useState(false)
   const [statusLoading, setStatusLoading] = useState(false)
   const [providerWarningStatus, setProviderWarningStatus] = useState<ReservationStatus | null>(null)
+  const [reopenModal, setReopenModal] = useState<'simple' | 'locked' | null>(null)
   const [chargeModal, setChargeModal] = useState<{
     chargeId: string
     date: string
@@ -123,7 +103,7 @@ export function ReservationDrawer({
     if (result.error) {
       toast.error(result.error)
     } else {
-      toast.success(`Estado actualizado: ${STATUS_LABELS[status]}`)
+      toast.success('Estado actualizado')
       const { reservation: updated } = await getReservation(reservation.id)
       if (updated) onReservationUpdated(updated)
     }
@@ -139,6 +119,16 @@ export function ReservationDrawer({
     } else {
       doStatusChange(status)
     }
+  }
+
+  const handleReopenClick = () => {
+    if (!reservation) return
+    setReopenModal(reservation.is_locked ? 'locked' : 'simple')
+  }
+
+  const confirmReopen = async () => {
+    setReopenModal(null)
+    await doStatusChange('confirmed')
   }
 
   const openChargeModal = (chargeId: string) => {
@@ -203,15 +193,20 @@ export function ReservationDrawer({
 
   if (!reservation) return null
 
-  const status = reservation.status as ReservationStatus
-  const statusStyle = STATUS_STYLES[status]
   const channelStyle = reservation.channel
     ? getChannelStyle(reservation.channel.code)
     : getChannelStyle('manual')
-  const nextStatuses = NEXT_STATUSES[status] ?? []
-  const allowedNextStatuses = canCancel
-    ? nextStatuses
-    : nextStatuses.filter(s => s.value !== 'cancelled')
+
+  const displayStatus = getDisplayStatus(reservation)
+  const displayConfig = DISPLAY_STATUS_CONFIG[displayStatus]
+  const availableActions = getAvailableActions(reservation)
+  const allowedNextStatuses = availableActions
+    .filter(a => a !== 'cancelar' || canCancel)
+    .map(a => {
+      if (a === 'finalizar') return { value: 'checked_out' as ReservationStatus, label: 'Finalizar' }
+      if (a === 'cancelar')  return { value: 'cancelled'  as ReservationStatus, label: 'Cancelar' }
+      return                        { value: 'no_show'    as ReservationStatus, label: 'No show' }
+    })
 
   // El anfitrión recibe el neto (bruto - comisiones). La barra refleja cuánto
   // del neto ya ha entrado en su cuenta.
@@ -261,10 +256,10 @@ export function ReservationDrawer({
               )}
               <span
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium tracking-wide uppercase"
-                style={{ background: statusStyle.bg, color: statusStyle.color }}
+                style={{ background: displayConfig.bg, color: displayConfig.color }}
               >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusStyle.dot }} />
-                {STATUS_LABELS[status]}
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: displayConfig.dot }} />
+                {displayConfig.label}
               </span>
               {/* 🔒 is_locked badge */}
               {reservation.is_locked && (
@@ -287,6 +282,21 @@ export function ReservationDrawer({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {/* Botón reabrir — solo en reservas finalizadas */}
+            {displayStatus === 'finished' && canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={statusLoading}
+                className="rounded-full text-[12px] h-8 gap-1.5"
+                onClick={handleReopenClick}
+              >
+                <RotateCcw className="h-3 w-3" />
+                Reabrir
+              </Button>
+            )}
+
+            {/* Botón cambio de estado — para reservas no finalizadas */}
             {allowedNextStatuses.length > 0 && canEdit && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -299,7 +309,7 @@ export function ReservationDrawer({
                     Estado <ChevronDown className="ml-1 h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="z-[300]">
                   {allowedNextStatuses.map(s => (
                     <DropdownMenuItem key={s.value} onClick={() => handleStatusChange(s.value)}>
                       {s.label}
@@ -359,6 +369,29 @@ export function ReservationDrawer({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-7">
+
+          {/* Banner overdue */}
+          {displayStatus === 'overdue' && (
+            <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-xl p-3 mb-5">
+              <AlertCircle className="h-5 w-5 text-orange-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-orange-800">Checkout pendiente de cerrar</p>
+                <p className="text-[11px] text-orange-600">El checkout fue el {formatDate(reservation.checkout_date)}</p>
+              </div>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-orange-300 text-orange-700 hover:bg-orange-100 shrink-0"
+                  disabled={statusLoading}
+                  onClick={() => doStatusChange('checked_out')}
+                >
+                  Cerrar
+                </Button>
+              )}
+            </div>
+          )}
+
           {/* ── TAB: RESUMEN ── */}
           {activeTab === 'summary' && (
             <div className="space-y-6">
@@ -577,7 +610,7 @@ export function ReservationDrawer({
                       >
                         {p.payment_type === 'refund' ? '-' : ''}€{fmt(Math.abs(p.amount))}
                       </span>
-                      {canEdit && reservation.status !== 'checked_out' && !reservation.is_locked && (
+                      {canEdit && displayStatus !== 'finished' && !reservation.is_locked && (
                         <button
                           onClick={() => handleDeletePayment(p.id)}
                           className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-[#ffe4e6] hover:text-rose-600 transition-colors"
@@ -598,7 +631,7 @@ export function ReservationDrawer({
               {canEdit &&
                 netPending > 0 &&
                 !reservation.is_locked &&
-                reservation.status !== 'checked_out' && (
+                displayStatus !== 'finished' && (
                   <Button
                     onClick={() => setAddPaymentOpen(true)}
                     className="w-full bg-[#1e3a8a] hover:bg-[#15296b] text-white rounded-full"
@@ -734,6 +767,73 @@ export function ReservationDrawer({
                   disabled={chargeModal.loading}
                 >
                   {chargeModal.loading ? 'Guardando...' : 'Confirmar cobro'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modal reabrir — reserva NO locked (simple) */}
+      {reopenModal === 'simple' && (
+        <>
+          <div className="fixed inset-0 bg-[rgba(15,23,42,0.55)] backdrop-blur-[2px] z-[300]" onClick={() => setReopenModal(null)} />
+          <div className="fixed inset-0 z-[310] flex items-center justify-center p-4 pointer-events-none">
+            <div className="w-full max-w-sm bg-white rounded-2xl shadow-[0_24px_80px_-12px_rgba(15,23,42,0.3)] pointer-events-auto p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#eef2fb] flex items-center justify-center shrink-0">
+                  <RotateCcw className="h-5 w-5 text-[#1e3a8a]" />
+                </div>
+                <div>
+                  <p className="text-[15px] font-bold text-slate-800 mb-1">¿Reabrir esta reserva?</p>
+                  <p className="text-[13px] text-slate-500 leading-relaxed">
+                    La reserva volverá al estado <span className="font-medium text-slate-700">Sin cerrar</span> y podrás registrar cobros y editar los detalles.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2.5 justify-end">
+                <Button variant="outline" className="rounded-full" onClick={() => setReopenModal(null)} disabled={statusLoading}>
+                  Cancelar
+                </Button>
+                <Button className="bg-[#1e3a8a] hover:bg-[#15296b] text-white rounded-full" onClick={confirmReopen} disabled={statusLoading}>
+                  {statusLoading ? 'Reabriendo...' : 'Reabrir'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modal reabrir — reserva locked (con advertencia) */}
+      {reopenModal === 'locked' && (
+        <>
+          <div className="fixed inset-0 bg-[rgba(15,23,42,0.55)] backdrop-blur-[2px] z-[300]" onClick={() => setReopenModal(null)} />
+          <div className="fixed inset-0 z-[310] flex items-center justify-center p-4 pointer-events-none">
+            <div className="w-full max-w-sm bg-white rounded-2xl shadow-[0_24px_80px_-12px_rgba(15,23,42,0.3)] pointer-events-auto p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                  <Lock className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-[15px] font-bold text-slate-800 mb-1">Reserva completamente cobrada</p>
+                  <p className="text-[13px] text-slate-500 leading-relaxed">
+                    Esta reserva tiene todos los cobros registrados y está contablemente cerrada. Reabrirla puede descuadrar tus cuentas de tesorería.
+                  </p>
+                </div>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-[12px] text-amber-800">
+                ⚠️ Solo hazlo si hay un error en los datos o necesitas añadir un cobro adicional.
+              </div>
+              <div className="flex gap-2.5 justify-end">
+                <Button variant="outline" className="rounded-full" onClick={() => setReopenModal(null)} disabled={statusLoading}>
+                  Cancelar
+                </Button>
+                <Button
+                  className="bg-amber-500 hover:bg-amber-600 text-white rounded-full"
+                  onClick={confirmReopen}
+                  disabled={statusLoading}
+                >
+                  {statusLoading ? 'Reabriendo...' : 'Reabrir igualmente'}
                 </Button>
               </div>
             </div>

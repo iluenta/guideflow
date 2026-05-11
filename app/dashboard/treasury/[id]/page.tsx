@@ -52,7 +52,7 @@ export default function AccountDetailPage() {
   const backHref = `/dashboard/treasury${yearParam ? `?year=${yearParam}` : ''}`
 
   return (
-    <div className="p-8 max-w-[1440px] mx-auto">
+    <div className="p-4 md:p-8 max-w-[1440px] mx-auto">
       {/* Breadcrumb */}
       <Link href={backHref} className="inline-flex items-center gap-1.5 text-[12px] text-slate-400 hover:text-landing-navy transition-colors mb-6">
         <ArrowLeft className="h-3.5 w-3.5" />

@@ -2,6 +2,7 @@
 
 import { Paperclip, Pencil, Trash2, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 import type { ExpenseWithDetails, ExpenseCategory } from '@/types/expenses'
 import { EXPENSE_CATEGORY_LABELS } from '@/types/expenses'
 
@@ -70,136 +71,175 @@ export function ExpenseList({
 
   return (
     <div className="bg-white rounded-2xl border border-[#eef2f7] overflow-hidden">
-      {/* Header */}
-      <div className="grid grid-cols-[100px_1fr_130px_130px_80px_80px_90px_90px_70px] gap-3 px-5 py-3 border-b border-[#eef2f7] bg-[#f8fafc]">
-        {['Fecha', 'Descripción', 'Categoría', 'Proveedor', 'Base', 'IVA', 'Total', 'Estado', ''].map(h => (
-          <span key={h} className="text-[10px] font-mono uppercase tracking-wider text-slate-400">{h}</span>
-        ))}
+
+      {/* ── Desktop: tabla grid ── */}
+      <div className="hidden md:block">
+        {/* Header */}
+        <div className="grid grid-cols-[100px_1fr_130px_130px_80px_80px_90px_90px_70px] gap-3 px-5 py-3 border-b border-[#eef2f7] bg-[#f8fafc]">
+          {['Fecha', 'Descripción', 'Categoría', 'Proveedor', 'Base', 'IVA', 'Total', 'Estado', ''].map(h => (
+            <span key={h} className="text-[10px] font-mono uppercase tracking-wider text-slate-400">{h}</span>
+          ))}
+        </div>
+
+        {/* Rows */}
+        {expenses.map(exp => {
+          const catStyle = CATEGORY_COLORS[exp.category] ?? CATEGORY_COLORS.other
+          return (
+            <div
+              key={exp.id}
+              className="grid grid-cols-[100px_1fr_130px_130px_80px_80px_90px_90px_70px] gap-3 items-center px-5 py-4 border-b border-[#eef2f7] last:border-b-0 hover:bg-[#fafbfc] transition-colors"
+            >
+              <span className="text-[12px] text-slate-500">{fmtDate(exp.expense_date)}</span>
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-slate-800 truncate">{exp.description}</p>
+                {exp.reservation_guest && (
+                  <p className="text-[11px] text-slate-400 truncate">Reserva: {exp.reservation_guest}</p>
+                )}
+              </div>
+              <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium truncate"
+                style={{ background: catStyle.bg, color: catStyle.color }}>
+                {EXPENSE_CATEGORY_LABELS[exp.category]}
+              </span>
+              <span className="text-[12px] text-slate-600 truncate">
+                {exp.provider_name ?? exp.provider_name_override ?? <span className="text-slate-300">—</span>}
+              </span>
+              <span className="text-[13px] text-slate-700 font-mono">€{fmt(exp.amount)}</span>
+              <span className="text-[13px] text-slate-500 font-mono">€{fmt(exp.vat_amount)}</span>
+              <span className="text-[13px] font-semibold text-slate-800 font-mono">€{fmt(exp.total_amount)}</span>
+              <div className="flex flex-col gap-1">
+                {exp.status === 'estimated' ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 cursor-pointer hover:bg-amber-100"
+                    onClick={() => onConfirm(exp)}>
+                    <AlertTriangle className="h-2.5 w-2.5" />Estimado
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700">
+                    <CheckCircle className="h-2.5 w-2.5" />Confirmado
+                  </span>
+                )}
+                {exp.payment_status === 'pending' ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 text-rose-600">
+                    <Clock className="h-2.5 w-2.5" />Pendiente
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500">
+                    Pagado
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center justify-end gap-1">
+                {exp.document_url && (
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400" title="Tiene documento">
+                    <Paperclip className="h-3.5 w-3.5" />
+                  </span>
+                )}
+                {canEdit && (
+                  <Link href={`/dashboard/expenses/${exp.id}/edit`}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-[#eef2fb] hover:text-[#1e3a8a] transition-colors" title="Editar">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Link>
+                )}
+                {canDelete && (
+                  <button onClick={() => onDelete(exp.id)}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors" title="Eliminar">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+
+        {/* Footer totales */}
+        <div className="grid grid-cols-[100px_1fr_130px_130px_80px_80px_90px_90px_70px] gap-3 px-5 py-3 border-t border-[#eef2f7] bg-[#f8fafc]">
+          <span /><span className="text-[11px] font-semibold text-slate-500">{total} gastos</span>
+          <span /><span className="text-[11px] font-mono font-semibold text-slate-500">Totales</span>
+          <span className="text-[13px] font-mono font-bold text-slate-700">€{fmt(totalAmount)}</span>
+          <span className="text-[13px] font-mono font-bold text-slate-500">€{fmt(totalVat)}</span>
+          <span className="text-[13px] font-mono font-bold text-landing-navy">€{fmt(totalWithVat)}</span>
+          <span /><span />
+        </div>
       </div>
 
-      {/* Rows */}
-      {expenses.map(exp => {
-        const catStyle = CATEGORY_COLORS[exp.category] ?? CATEGORY_COLORS.other
-        return (
-          <div
-            key={exp.id}
-            className="grid grid-cols-[100px_1fr_130px_130px_80px_80px_90px_90px_70px] gap-3 items-center px-5 py-4 border-b border-[#eef2f7] last:border-b-0 hover:bg-[#fafbfc] transition-colors"
-          >
-            <span className="text-[12px] text-slate-500">{fmtDate(exp.expense_date)}</span>
-
-            <div className="min-w-0">
-              <p className="text-[13px] font-medium text-slate-800 truncate">{exp.description}</p>
+      {/* ── Mobile: lista compacta ── */}
+      <div className="md:hidden divide-y divide-[#eef2f7]">
+        {expenses.map(exp => {
+          const catStyle = CATEGORY_COLORS[exp.category] ?? CATEGORY_COLORS.other
+          return (
+            <div key={exp.id} className="p-4">
+              {/* Fila 1: categoría + fecha + doc */}
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium"
+                  style={{ background: catStyle.bg, color: catStyle.color }}>
+                  {EXPENSE_CATEGORY_LABELS[exp.category]}
+                </span>
+                <div className="flex items-center gap-2">
+                  {exp.document_url && <Paperclip className="h-3.5 w-3.5 text-slate-400" />}
+                  <span className="text-[11px] text-slate-400">{fmtDate(exp.expense_date)}</span>
+                </div>
+              </div>
+              {/* Fila 2: descripción */}
+              <p className="text-[13px] font-medium text-slate-800 mb-0.5">{exp.description}</p>
               {exp.reservation_guest && (
-                <p className="text-[11px] text-slate-400 truncate">
-                  Reserva: {exp.reservation_guest}
-                </p>
+                <p className="text-[11px] text-slate-400 mb-0.5">Reserva: {exp.reservation_guest}</p>
               )}
+              {(exp.provider_name ?? exp.provider_name_override) && (
+                <p className="text-[11px] text-slate-400 mb-2">{exp.provider_name ?? exp.provider_name_override}</p>
+              )}
+              {/* Fila 3: importe + estado + acciones */}
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-semibold text-[14px] text-slate-800">€{fmt(exp.total_amount)}</span>
+                  <span className={cn('text-[11px] font-medium', exp.payment_status === 'paid' ? 'text-emerald-600' : 'text-rose-500')}>
+                    {exp.payment_status === 'paid' ? '✓ Pagado' : 'Pendiente'}
+                  </span>
+                  {exp.status === 'estimated' && (
+                    <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                      Estimado
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  {exp.status === 'estimated' && canEdit && (
+                    <button onClick={() => onConfirm(exp)}
+                      className="flex items-center gap-1 h-8 px-2 text-[11px] font-medium rounded-lg bg-[#eef2fb] text-[#1e3a8a]">
+                      <CheckCircle className="h-3 w-3" /> Confirmar
+                    </button>
+                  )}
+                  {canEdit && (
+                    <Link href={`/dashboard/expenses/${exp.id}/edit`}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-[#eef2fb] hover:text-[#1e3a8a]">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Link>
+                  )}
+                  {canDelete && (
+                    <button onClick={() => onDelete(exp.id)}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-
-            <span
-              className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium truncate"
-              style={{ background: catStyle.bg, color: catStyle.color }}
-            >
-              {EXPENSE_CATEGORY_LABELS[exp.category]}
-            </span>
-
-            <span className="text-[12px] text-slate-600 truncate">
-              {exp.provider_name ?? exp.provider_name_override ?? <span className="text-slate-300">—</span>}
-            </span>
-
-            <span className="text-[13px] text-slate-700 font-mono">€{fmt(exp.amount)}</span>
-            <span className="text-[13px] text-slate-500 font-mono">€{fmt(exp.vat_amount)}</span>
-            <span className="text-[13px] font-semibold text-slate-800 font-mono">€{fmt(exp.total_amount)}</span>
-
-            {/* Estado */}
-            <div className="flex flex-col gap-1">
-              {exp.status === 'estimated' ? (
-                <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 cursor-pointer hover:bg-amber-100"
-                  onClick={() => onConfirm(exp)}
-                >
-                  <AlertTriangle className="h-2.5 w-2.5" />
-                  Estimado
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700">
-                  <CheckCircle className="h-2.5 w-2.5" />
-                  Confirmado
-                </span>
-              )}
-              {exp.payment_status === 'pending' ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 text-rose-600">
-                  <Clock className="h-2.5 w-2.5" />
-                  Pendiente
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500">
-                  Pagado
-                </span>
-              )}
-            </div>
-
-            {/* Acciones */}
-            <div className="flex items-center justify-end gap-1">
-              {exp.document_url && (
-                <span className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400" title="Tiene documento">
-                  <Paperclip className="h-3.5 w-3.5" />
-                </span>
-              )}
-              {canEdit && (
-                <Link
-                  href={`/dashboard/expenses/${exp.id}/edit`}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-[#eef2fb] hover:text-[#1e3a8a] transition-colors"
-                  title="Editar"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Link>
-              )}
-              {canDelete && (
-                <button
-                  onClick={() => onDelete(exp.id)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors"
-                  title="Eliminar"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-        )
-      })}
-
-      {/* Footer totales */}
-      <div className="grid grid-cols-[100px_1fr_130px_130px_80px_80px_90px_90px_70px] gap-3 px-5 py-3 border-t border-[#eef2f7] bg-[#f8fafc]">
-        <span />
-        <span className="text-[11px] font-semibold text-slate-500">{total} gastos</span>
-        <span />
-        <span className="text-[11px] font-mono font-semibold text-slate-500">Totales</span>
-        <span className="text-[13px] font-mono font-bold text-slate-700">€{fmt(totalAmount)}</span>
-        <span className="text-[13px] font-mono font-bold text-slate-500">€{fmt(totalVat)}</span>
-        <span className="text-[13px] font-mono font-bold text-landing-navy">€{fmt(totalWithVat)}</span>
-        <span />
-        <span />
+          )
+        })}
+        {/* Footer mobile */}
+        <div className="px-4 py-3 bg-[#f8fafc] flex justify-between text-[12px]">
+          <span className="text-slate-500">{total} gastos</span>
+          <span className="font-mono font-bold text-landing-navy">€{fmt(totalWithVat)}</span>
+        </div>
       </div>
 
       {/* Paginación */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 py-4 border-t border-[#eef2f7]">
-          <button
-            disabled={page === 1}
-            onClick={() => onPageChange(page - 1)}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-[#eef2fb] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
+          <button disabled={page === 1} onClick={() => onPageChange(page - 1)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-[#eef2fb] disabled:opacity-40 disabled:cursor-not-allowed">
             Anterior
           </button>
-          <span className="text-xs text-slate-400">
-            {page} / {totalPages}
-          </span>
-          <button
-            disabled={page === totalPages}
-            onClick={() => onPageChange(page + 1)}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-[#eef2fb] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
+          <span className="text-xs text-slate-400">{page} / {totalPages}</span>
+          <button disabled={page === totalPages} onClick={() => onPageChange(page + 1)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-[#eef2fb] disabled:opacity-40 disabled:cursor-not-allowed">
             Siguiente
           </button>
         </div>

@@ -292,6 +292,7 @@ export interface CreateReservationChargeInput {
 
 export interface CreateReservationPaymentInput {
   payment_method_id: string
+  payment_account_id?: string
   amount: number
   payment_date: string
   payment_type: 'deposit' | 'payment'
@@ -374,8 +375,10 @@ export interface ReservationFilters {
   property_id?: string
   channel_id?: string
   status?: ReservationStatus[]
-  date_from?: string
-  date_to?: string
+  display_status?: import('@/lib/reservation-display-status').DisplayStatus
+  date_from?: string    // checkin_date >= date_from
+  date_to?: string      // checkin_date <= date_to
+  checkout_from?: string // checkout_date >= checkout_from (para calendario)
   has_pending?: boolean
   search?: string
   page?: number

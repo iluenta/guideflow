@@ -17,6 +17,7 @@ import {
 import { createReservation, updateReservation } from '@/app/actions/reservations'
 import { getChargeTemplates } from '@/app/actions/reservation-settings'
 import { getProviders } from '@/app/actions/providers'
+import { getPaymentAccounts } from '@/app/actions/payment-accounts'
 import { round2, defaultCommissionsFromChannel } from '@/lib/reservations/commission-utils'
 import { toast } from 'sonner'
 import type {
@@ -29,6 +30,7 @@ import type {
   ChargeBeneficiary,
   Provider,
 } from '@/types/reservations'
+import type { PaymentAccount } from '@/types/treasury'
 
 interface Property {
   id: string
@@ -65,11 +67,33 @@ const CHARGE_TYPE_LABELS: Record<string, string> = {
 
 const STEP_LABELS = ['Datos básicos', 'Cargos y comisiones', 'Cobro inicial']
 
-function defaultCommissions(gross: number, channel?: ChannelSetting): CommissionOverrides {
+function defaultCommissions(
+  gross: number,
+  channel?: ChannelSetting,
+  payMethod?: PaymentMethodSetting
+): CommissionOverrides {
   if (!channel) {
     return { sale_pct: 0, sale_amount: 0, sale_vat_pct: 0, sale_vat_amount: 0, pay_pct: 0, pay_amount: 0, pay_vat_pct: 0, pay_vat_amount: 0 }
   }
-  return defaultCommissionsFromChannel(gross, channel)
+  const base = defaultCommissionsFromChannel(gross, channel)
+  if (!payMethod || payMethod.payment_commission_pct === 0) return base
+  const payPct    = payMethod.payment_commission_pct
+  const payAmt    = round2(gross * (payPct / 100))
+  const payVatPct = payMethod.payment_commission_vat_pct
+  const payVatAmt = round2(payAmt * (payVatPct / 100))
+  return { ...base, pay_pct: payPct, pay_amount: payAmt, pay_vat_pct: payVatPct, pay_vat_amount: payVatAmt }
+}
+
+// Detecta el método de pago predeterminado para un canal
+// (busca por código: channel.code dentro de payment_method.code, ej: "booking" en "booking_collect")
+function findChannelPaymentMethod(
+  channel: ChannelSetting | undefined,
+  paymentMethods: PaymentMethodSetting[]
+): PaymentMethodSetting | undefined {
+  if (!channel || channel.collection_party !== 'platform') return undefined
+  return paymentMethods.find(
+    m => m.is_active && m.code.toLowerCase().includes(channel.code.toLowerCase())
+  )
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -120,31 +144,43 @@ export function ReservationWizard({
     getProviders(false).then(({ providers: data }) => setProviders(data ?? []))
   }, [])
 
+  // Método de pago asociado al canal actual (para pre-rellenar comisión de cobro)
+  const channelPayMethod = findChannelPaymentMethod(selectedChannel, paymentMethods)
+
   // Step 2 state — commissions (editables)
   const [commissions, setCommissions] = useState<CommissionOverrides>(
-    defaultValues?.commissions ?? defaultCommissions(form.gross_amount, selectedChannel)
+    defaultValues?.commissions ?? defaultCommissions(form.gross_amount, selectedChannel, channelPayMethod)
   )
 
   // Recalcular comisiones cuando cambia el canal en paso 1
   // Solo si el usuario no ha editado manualmente los valores
   const [commEdited, setCommEdited] = useState(!!defaultValues?.commissions)
 
-  // Recalcular montos cuando cambia gross en paso 1 (proporcional)
+  // Recalcular montos cuando cambia gross o canal en paso 1
   useEffect(() => {
     if (!commEdited) {
-      setCommissions(defaultCommissions(form.gross_amount, selectedChannel))
+      const payMethod = findChannelPaymentMethod(selectedChannel, paymentMethods)
+      setCommissions(defaultCommissions(form.gross_amount, selectedChannel, payMethod))
     }
-  }, [form.gross_amount]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.gross_amount, form.channel_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Step 3 state — initial payment
   const [withPayment, setWithPayment] = useState(false)
   const [payment, setPayment] = useState({
-    payment_method_id: paymentMethods.find(m => m.is_active)?.id ?? '',
+    payment_method_id: channelPayMethod?.id ?? paymentMethods.find(m => m.is_active)?.id ?? '',
+    payment_account_id: (channelPayMethod ?? paymentMethods.find(m => m.is_active))?.payment_account_id ?? null,
     amount: form.gross_amount,
     payment_date: new Date().toISOString().split('T')[0],
     payment_type: 'payment' as 'deposit' | 'payment',
     reference: '',
   })
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([])
+
+  useEffect(() => {
+    getPaymentAccounts().then(({ accounts }) =>
+      setPaymentAccounts(accounts.filter(a => a.is_active))
+    )
+  }, [])
 
   useEffect(() => {
     setPayment(p => ({ ...p, amount: form.gross_amount }))
@@ -153,7 +189,8 @@ export function ReservationWizard({
   // Cuando se selecciona un método de pago en paso 3, actualizar comisión de cobro
   const handlePaymentMethodChange = useCallback(
     (methodId: string) => {
-      setPayment(p => ({ ...p, payment_method_id: methodId }))
+      const accountId = paymentMethods.find(m => m.id === methodId)?.payment_account_id ?? null
+      setPayment(p => ({ ...p, payment_method_id: methodId, payment_account_id: accountId }))
       const method = paymentMethods.find(m => m.id === methodId)
       if (method && method.payment_commission_pct > 0) {
         const payPct = method.payment_commission_pct
@@ -246,6 +283,7 @@ export function ReservationWizard({
       withPayment && payment.amount > 0
         ? {
             payment_method_id: payment.payment_method_id,
+            payment_account_id: payment.payment_account_id ?? undefined,
             amount: payment.amount,
             payment_date: payment.payment_date,
             payment_type: payment.payment_type,
@@ -698,44 +736,33 @@ export function ReservationWizard({
               <p className="text-[11px] text-slate-400 mt-0.5">Extras fuera del canal — fianza, late checkout, mascotas, etc.</p>
             </div>
 
-            {extraCharges.length > 0 && (
-              <div className="grid grid-cols-[1fr_90px_90px_80px_32px] gap-2 px-4 py-2 bg-[#fafbfc] border-b border-[#eef2f7]">
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">Concepto</span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400 text-right">Importe</span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">Beneficiario</span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">Estado</span>
-                <span />
-              </div>
-            )}
-
             {charges.map((c, idx) => c.included_in_gross === false && (
               <div key={idx} className="px-4 py-3 border-b border-[#eef2f7] last:border-b-0 space-y-2">
-                <div className="grid grid-cols-[1fr_90px_90px_80px_32px] gap-2 items-center">
-                  <div className="flex gap-2 min-w-0">
-                    <Select
-                      value={c.charge_type}
-                      onValueChange={v => updateCharge(idx, 'charge_type', v)}
-                      disabled={isLocked}
-                    >
-                      <SelectTrigger className="h-8 text-[12px] w-[110px] shrink-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(CHARGE_TYPE_LABELS).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      className="h-8 text-[13px] min-w-0"
-                      placeholder="Descripción"
-                      value={c.name}
-                      disabled={isLocked}
-                      onChange={e => updateCharge(idx, 'name', e.target.value)}
-                    />
-                  </div>
+                {/* Fila 1: tipo + descripción + importe + borrar */}
+                <div className="flex gap-2 items-center">
+                  <Select
+                    value={c.charge_type}
+                    onValueChange={v => updateCharge(idx, 'charge_type', v)}
+                    disabled={isLocked}
+                  >
+                    <SelectTrigger className="h-8 text-[12px] w-[130px] shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(CHARGE_TYPE_LABELS).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Input
-                    className="h-8 text-[13px] text-right font-mono"
+                    className="h-8 text-[13px] flex-1 min-w-0"
+                    placeholder="Descripción"
+                    value={c.name}
+                    disabled={isLocked}
+                    onChange={e => updateCharge(idx, 'name', e.target.value)}
+                  />
+                  <Input
+                    className="h-8 text-[13px] text-right font-mono w-[90px] shrink-0"
                     type="number"
                     min="0"
                     step="0.01"
@@ -743,86 +770,105 @@ export function ReservationWizard({
                     disabled={isLocked}
                     onChange={e => updateCharge(idx, 'amount', parseFloat(e.target.value) || 0)}
                   />
-                  <Select
-                    value={c.beneficiary ?? 'owner'}
-                    onValueChange={v => updateCharge(idx, 'beneficiary', v)}
-                    disabled={isLocked}
-                  >
-                    <SelectTrigger className="h-8 text-[12px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="owner">Anfitrión</SelectItem>
-                      <SelectItem value="provider">Proveedor</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {/* Estado de cobro — aplica a todos los extras */}
-                  <Select
-                    value={c.charge_payment_status ?? 'pending'}
-                    onValueChange={v => updateCharge(idx, 'charge_payment_status', v)}
-                    disabled={isLocked}
-                  >
-                    <SelectTrigger className="h-8 text-[12px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pendiente</SelectItem>
-                      <SelectItem value="collected">Cobrado</SelectItem>
-                      <SelectItem value="waived">Condonado</SelectItem>
-                    </SelectContent>
-                  </Select>
                   {!isLocked && (
                     <button
                       onClick={() => removeCharge(idx)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-[#ffe4e6] hover:text-rose-600 transition-colors"
+                      className="w-7 h-7 shrink-0 rounded-lg flex items-center justify-center text-slate-400 hover:bg-[#ffe4e6] hover:text-rose-600 transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
-                {/* Selector de proveedor — solo cuando beneficiary=provider */}
-                {c.beneficiary === 'provider' && (
-                  <div className="mt-2 space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Select
-                          value={c.provider_id ?? '__adhoc__'}
-                          onValueChange={v => {
-                            if (v === '__adhoc__') {
-                              updateCharge(idx, 'provider_id', undefined)
-                            } else {
-                              updateCharge(idx, 'provider_id', v)
-                              updateCharge(idx, 'provider_name_override', undefined)
-                            }
-                          }}
-                          disabled={isLocked}
-                        >
-                          <SelectTrigger className="h-8 text-[12px]">
-                            <SelectValue placeholder="Proveedor..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__adhoc__">Escribir manualmente</SelectItem>
-                            {providers.map(p => (
-                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                {/* Fila 2: beneficiario + proveedor (inline si aplica) + estado */}
+                <div className="flex items-center gap-2 flex-wrap">
+
+                  {/* Toggle beneficiario */}
+                  <div className="flex rounded-lg border border-slate-200 overflow-hidden shrink-0">
+                    {(['owner', 'provider'] as const).map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        disabled={isLocked}
+                        onClick={() => {
+                          updateCharge(idx, 'beneficiary', val)
+                          if (val === 'owner') {
+                            updateCharge(idx, 'provider_id', undefined)
+                            updateCharge(idx, 'provider_name_override', undefined)
+                          }
+                        }}
+                        className={`h-8 px-3 text-[12px] font-medium transition-colors ${
+                          (c.beneficiary ?? 'owner') === val
+                            ? val === 'owner'
+                              ? 'bg-[#1e3a8a] text-white'
+                              : 'bg-amber-500 text-white'
+                            : 'text-slate-500 hover:bg-slate-50'
+                        }`}
+                      >
+                        {val === 'owner' ? 'Anfitrión' : 'Proveedor'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Selector de proveedor — inline, solo si beneficiary=provider */}
+                  {c.beneficiary === 'provider' && (
+                    <>
+                      <Select
+                        value={c.provider_id ?? '__adhoc__'}
+                        onValueChange={v => {
+                          if (v === '__adhoc__') {
+                            updateCharge(idx, 'provider_id', undefined)
+                          } else {
+                            updateCharge(idx, 'provider_id', v)
+                            updateCharge(idx, 'provider_name_override', undefined)
+                          }
+                        }}
+                        disabled={isLocked}
+                      >
+                        <SelectTrigger className="h-8 text-[12px] w-[150px] shrink-0">
+                          <SelectValue placeholder="Proveedor..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__adhoc__">Escribir nombre</SelectItem>
+                          {providers.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       {(!c.provider_id || c.provider_id === '__adhoc__') && (
                         <Input
-                          className="h-8 text-[12px]"
-                          placeholder="Nombre del proveedor"
+                          className="h-8 text-[12px] w-[140px] shrink-0"
+                          placeholder="Nombre..."
                           value={c.provider_name_override ?? ''}
                           disabled={isLocked}
                           onChange={e => updateCharge(idx, 'provider_name_override', e.target.value)}
                         />
                       )}
-                    </div>
-                    <p className="text-[11px] text-slate-400">
-                      Marca &apos;Cobrado&apos; cuando el proveedor te confirme que el cliente le ha pagado.
-                    </p>
+                    </>
+                  )}
+
+                  {/* Toggle estado de cobro */}
+                  <div className="flex rounded-lg border border-slate-200 overflow-hidden ml-auto shrink-0">
+                    {([
+                      { value: 'pending',   label: 'Pendiente', active: 'bg-rose-50 text-rose-600 border-rose-200' },
+                      { value: 'collected', label: 'Cobrado',   active: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                      { value: 'waived',    label: 'Condonado', active: 'bg-slate-100 text-slate-500 border-slate-200' },
+                    ] as const).map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        disabled={isLocked}
+                        onClick={() => updateCharge(idx, 'charge_payment_status', opt.value)}
+                        className={`h-8 px-2.5 text-[11px] font-medium transition-colors border-r last:border-r-0 border-slate-200 ${
+                          (c.charge_payment_status ?? 'pending') === opt.value
+                            ? opt.active
+                            : 'text-slate-400 hover:bg-slate-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
                   </div>
-                )}
+                </div>
               </div>
             ))}
 
@@ -1008,13 +1054,32 @@ export function ReservationWizard({
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label>Referencia <span className="text-slate-400 font-normal">(opcional)</span></Label>
-                  <Input
-                    placeholder="Ref. transferencia, etc."
-                    value={payment.reference}
-                    onChange={e => setPayment(p => ({ ...p, reference: e.target.value }))}
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Referencia <span className="text-slate-400 font-normal">(opcional)</span></Label>
+                    <Input
+                      placeholder="Ref. transferencia, etc."
+                      value={payment.reference}
+                      onChange={e => setPayment(p => ({ ...p, reference: e.target.value }))}
+                    />
+                  </div>
+                  {paymentAccounts.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label>Cuenta <span className="text-slate-400 font-normal">(opcional)</span></Label>
+                      <Select
+                        value={payment.payment_account_id ?? '_none'}
+                        onValueChange={v => setPayment(p => ({ ...p, payment_account_id: v === '_none' ? null : v }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="_none">Sin asignar</SelectItem>
+                          {paymentAccounts.map(a => (
+                            <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
 
                 {/* Resumen cobro */}

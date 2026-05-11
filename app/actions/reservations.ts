@@ -201,6 +201,7 @@ export async function createReservation(
       external_id: data.external_id ?? null,
       notes: data.notes ?? null,
       created_by: profile.id,
+      status: 'confirmed',
     })
     .select()
     .single()
@@ -257,12 +258,25 @@ export async function createReservation(
   // INSERT pago inicial si viene
   if (data.initial_payment) {
     const ip = data.initial_payment
+
+    // Si el wizard no mandó cuenta explícita, leerla del método de pago
+    let initialAccountId = (ip as typeof ip & { payment_account_id?: string | null }).payment_account_id ?? null
+    if (!initialAccountId && ip.payment_method_id) {
+      const { data: method } = await supabase
+        .from('payment_method_settings')
+        .select('payment_account_id')
+        .eq('id', ip.payment_method_id)
+        .single()
+      initialAccountId = (method as { payment_account_id: string | null } | null)?.payment_account_id ?? null
+    }
+
     const { error: payError } = await supabase
       .from('reservation_payments')
       .insert({
         tenant_id: profile.tenant_id,
         reservation_id: reservation.id,
         payment_method_id: ip.payment_method_id,
+        payment_account_id: initialAccountId,
         amount: ip.amount,
         payment_date: ip.payment_date,
         payment_type: ip.payment_type,
@@ -538,7 +552,7 @@ export async function updateReservation(
           charge_payment_reference: c.charge_payment_reference ?? null,
         }))
       )
-      if (insErr) console.error('[updateReservation] insert charges error:', insErr.message)
+      if (insErr) return { error: `Error guardando cargos: ${insErr.message}` }
     }
   }
 
@@ -549,13 +563,15 @@ export async function updateReservation(
 }
 
 // Transiciones de estado permitidas
-const STATUS_TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
-  pending: ['confirmed', 'cancelled'],
-  confirmed: ['checked_in', 'cancelled', 'no_show'],
-  checked_in: ['checked_out'],
-  checked_out: [],
-  cancelled: [],
-  no_show: [],
+const STATUS_TRANSITIONS: Record<string, ReservationStatus[]> = {
+  // Estados activos
+  confirmed:   ['checked_out', 'cancelled', 'no_show'],
+  checked_out: ['confirmed'],   // reabrir
+  cancelled:   [],
+  no_show:     [],
+  // Legacy — por si quedan reservas antiguas en BD
+  pending:     ['confirmed', 'checked_out', 'cancelled', 'no_show'],
+  checked_in:  ['checked_out', 'cancelled'],
 }
 
 export async function updateReservationStatus(
@@ -571,7 +587,7 @@ export async function updateReservationStatus(
     return { error: e instanceof Error ? e.message : 'Authentication failed' }
   }
 
-  const action = status === 'cancelled' ? 'cancel' : 'edit'
+  const action = status === 'cancelled' || status === 'no_show' ? 'cancel' : 'edit'
   if (!can(profile.tenant_role as TenantRole, 'reservations', action as 'edit' | 'cancel')) {
     return { error: 'No tienes permisos para esta acción' }
   }
@@ -767,7 +783,7 @@ export async function getReservation(
     await Promise.all([
       supabase
         .from('reservation_charges')
-        .select('*, provider:providers(id, name, provider_type)')
+        .select('*, provider:providers(id, name)')
         .eq('reservation_id', id)
         .order('sort_order'),
       supabase
@@ -841,10 +857,37 @@ export async function getReservations(
 
   if (filters.property_id) query = query.eq('property_id', filters.property_id)
   if (filters.channel_id) query = query.eq('channel_id', filters.channel_id)
-  if (filters.status?.length) query = query.in('status', filters.status)
   if (filters.date_from) query = query.gte('checkin_date', filters.date_from)
   if (filters.date_to) query = query.lte('checkin_date', filters.date_to)
+  if (filters.checkout_from) query = query.gte('checkout_date', filters.checkout_from)
   if (filters.search) query = query.ilike('guest_name', `%${filters.search}%`)
+
+  // Filtro por display_status (derivado de status + fechas)
+  if (filters.display_status) {
+    const today = new Date().toISOString().split('T')[0]
+    switch (filters.display_status) {
+      case 'upcoming':
+        query = query.eq('status', 'confirmed').gt('checkin_date', today)
+        break
+      case 'in_progress':
+        query = query.eq('status', 'confirmed').lte('checkin_date', today).gte('checkout_date', today)
+        break
+      case 'overdue':
+        query = query.eq('status', 'confirmed').lt('checkout_date', today)
+        break
+      case 'finished':
+        query = query.eq('status', 'checked_out')
+        break
+      case 'cancelled':
+        query = query.eq('status', 'cancelled')
+        break
+      case 'no_show':
+        query = query.eq('status', 'no_show')
+        break
+    }
+  } else if (filters.status?.length) {
+    query = query.in('status', filters.status)
+  }
 
   query = query.order('checkin_date', { ascending: false }).range(from, to)
 

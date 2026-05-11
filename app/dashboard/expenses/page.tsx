@@ -145,36 +145,44 @@ export default function ExpensesPage() {
   const yearLabel = yearParam === 'all' ? 'Histórico completo' : yearParam
 
   return (
-    <div className="p-8 max-w-[1440px] mx-auto">
+    <div className="p-4 md:p-8 max-w-[1440px] mx-auto">
       {/* Header */}
-      <div className="flex justify-between items-end gap-4 mb-8 flex-wrap">
+      <div className="flex justify-between items-start gap-4 mb-5 md:mb-8">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2 mb-2">
             <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf] shadow-[0_0_0_4px_rgba(45,212,191,0.2)] inline-block" />
             Dashboard
           </p>
-          <h1 className="text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
+          <h1 className="text-[24px] md:text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
             Gastos
           </h1>
-          <p className="text-[15px] text-slate-500 mt-1">
+          <p className="text-[13px] md:text-[15px] text-slate-500 mt-1">
             {loading ? '...' : `${total} gasto${total !== 1 ? 's' : ''}`} · {yearLabel}
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
+          {/* Recurrentes: solo texto en desktop */}
           <Link
             href={`/dashboard/expenses/recurring${yearParam ? `?year=${yearParam}` : ''}`}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
           >
             <RotateCcw className="h-4 w-4" />
             Recurrentes
           </Link>
+          {/* Recurrentes: solo icono en mobile */}
+          <Link
+            href={`/dashboard/expenses/recurring${yearParam ? `?year=${yearParam}` : ''}`}
+            className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Link>
           {canCreate && (
             <Link
               href={`/dashboard/expenses/new${yearParam ? `?year=${yearParam}` : ''}`}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1e3a8a] text-white text-sm font-semibold hover:bg-[#1e3a8a]/90 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-xl bg-[#1e3a8a] text-white text-sm font-semibold hover:bg-[#1e3a8a]/90 transition-colors shadow-sm"
             >
               <Plus className="h-4 w-4" />
-              Nuevo gasto
+              <span className="hidden md:inline">Nuevo gasto</span>
             </Link>
           )}
         </div>

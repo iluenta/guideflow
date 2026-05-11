@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Search, Filter, Calendar, Lock, Eye, Pencil, Trash2, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Filter, Calendar, Lock, Eye, Pencil, Trash2, AlertTriangle, SlidersHorizontal, ChevronDown, X } from 'lucide-react'
+import { MobileCard } from '@/components/ui/mobile-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -29,6 +30,11 @@ import type {
   ChannelSetting,
   PaymentMethodSetting,
 } from '@/types/reservations'
+import {
+  getDisplayStatus,
+  DISPLAY_STATUS_CONFIG,
+  type DisplayStatus,
+} from '@/lib/reservation-display-status'
 
 // ─── Channel styles ───────────────────────────────────────────────────────────
 const CHANNEL_STYLES: Record<string, { bg: string; color: string; dot: string }> = {
@@ -38,30 +44,14 @@ const CHANNEL_STYLES: Record<string, { bg: string; color: string; dot: string }>
   manual:   { bg: '#f1f4f8', color: '#475569', dot: '#94a3b8' },
 }
 
-const STATUS_LABELS: Record<ReservationStatus, string> = {
-  pending:     'Pendiente',
-  confirmed:   'Confirmada',
-  checked_in:  'En curso',
-  checked_out: 'Finalizada',
-  cancelled:   'Cancelada',
-  no_show:     'No show',
-}
-
-const STATUS_STYLES: Record<string, { bg: string; color: string; dot: string }> = {
-  pending:     { bg: '#fef3c7', color: '#d97706', dot: '#d97706' },
-  confirmed:   { bg: '#ecfdf5', color: '#047857', dot: '#10b981' },
-  checked_in:  { bg: '#eef2fb', color: '#1e3a8a', dot: '#1e3a8a' },
-  checked_out: { bg: '#f1f4f8', color: '#475569', dot: '#94a3b8' },
-  cancelled:   { bg: '#ffe4e6', color: '#e11d48', dot: '#e11d48' },
-  no_show:     { bg: '#fef3c7', color: '#d97706', dot: '#d97706' },
-}
-
 const STATUS_TABS: { value: string; label: string }[] = [
-  { value: 'all', label: 'Todas' },
-  { value: 'confirmed', label: 'Confirmadas' },
-  { value: 'checked_in', label: 'En curso' },
-  { value: 'pending', label: 'Pendientes' },
-  { value: 'cancelled', label: 'Canceladas' },
+  { value: 'all',         label: 'Todas' },
+  { value: 'upcoming',    label: 'Próximas' },
+  { value: 'in_progress', label: 'En curso' },
+  { value: 'overdue',     label: 'Sin cerrar' },
+  { value: 'finished',    label: 'Finalizadas' },
+  { value: 'cancelled',   label: 'Canceladas' },
+  { value: 'no_show',     label: 'No show' },
 ]
 
 function fmt(n: number) {
@@ -112,6 +102,9 @@ export default function BookingsPage() {
   const [deleteTarget, setDeleteTarget] = useState<ReservationListItem | null>(null)
   const [deleting, setDeleting] = useState(false)
 
+  // Mobile filters collapse
+  const [filtersOpen, setFiltersOpen] = useState(false)
+
   // Query param ?view=ID para abrir el drawer tras editar
   const searchParams = useSearchParams()
   const viewId = searchParams.get('view')
@@ -126,7 +119,7 @@ export default function BookingsPage() {
       has_pending: filterPending || undefined,
       ...(date_from ? { date_from, date_to } : {}),
     }
-    if (statusTab !== 'all') filters.status = [statusTab as ReservationStatus]
+    if (statusTab !== 'all') filters.display_status = statusTab as DisplayStatus
     if (search) filters.search = search
     if (filterChannel) filters.channel_id = filterChannel
     if (filterProperty) filters.property_id = filterProperty
@@ -206,34 +199,35 @@ export default function BookingsPage() {
   const pendingTotal = reservations.reduce((s, r) => s + Math.max(0, round2(r.net_amount - r.total_received)), 0)
 
   return (
-    <div className="p-8 max-w-[1440px] mx-auto">
+    <div className="p-4 md:p-8 max-w-[1440px] mx-auto">
       {/* Page header */}
-      <div className="flex justify-between items-end gap-8 mb-8 flex-wrap">
+      <div className="flex justify-between items-start gap-4 mb-6 md:mb-8">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2.5 mb-2.5">
+          <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2.5 mb-2">
             <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf] shadow-[0_0_0_4px_rgba(45,212,191,0.2)] inline-block" />
             Dashboard
           </p>
-          <h1 className="text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
+          <h1 className="text-[24px] md:text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
             Reservas
           </h1>
-          <p className="text-[15px] text-slate-500 mt-2">
+          <p className="text-[13px] md:text-[15px] text-slate-500 mt-1">
             {total} reserva{total !== 1 ? 's' : ''} · {yearParam === 'all' ? 'Histórico completo' : yearParam}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Calendario: icono solo en mobile, texto completo en desktop */}
           <Link href="/dashboard/calendar">
             <Button variant="outline" className="rounded-full gap-2">
               <Calendar className="h-4 w-4" />
-              Calendario
+              <span className="hidden md:inline">Calendario</span>
             </Button>
           </Link>
           {canCreate && (
             <Link href="/dashboard/bookings/new">
               <Button className="bg-[#1e3a8a] hover:bg-[#15296b] text-white rounded-full gap-2 shadow-[0_4px_12px_-4px_rgba(30,58,138,0.4)]">
                 <Plus className="h-4 w-4" />
-                Nueva reserva
+                <span className="hidden md:inline">Nueva reserva</span>
               </Button>
             </Link>
           )}
@@ -241,7 +235,7 @@ export default function BookingsPage() {
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-4 bg-white border border-[#eef2f7] rounded-[18px] mb-6 overflow-hidden shadow-sm">
+      <div className="grid grid-cols-2 md:grid-cols-4 bg-white border border-[#eef2f7] rounded-[18px] mb-6 overflow-hidden shadow-sm">
         <KPI label="Reservas" value={String(total)} sub="en el filtro actual" />
         <KPI label="Ingresos brutos" value={`€${fmt(grossTotal)}`} sub="total bruto" />
         <KPI label="Neto estimado" value={`€${fmt(netTotal)}`} sub="después de comisiones" />
@@ -249,14 +243,15 @@ export default function BookingsPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="bg-white border border-[#eef2f7] rounded-[18px] p-2.5 flex items-center justify-between gap-4 mb-6 flex-wrap shadow-sm">
-        {/* Status tabs */}
-        <div className="flex gap-1 flex-wrap">
+      <div className="bg-white border border-[#eef2f7] rounded-[18px] p-2.5 mb-6 shadow-sm">
+
+        {/* Status tabs — SOLO desktop */}
+        <div className="hidden md:flex gap-1 flex-wrap">
           {STATUS_TABS.map(t => (
             <button
               key={t.value}
               onClick={() => { setStatusTab(t.value); setPage(1) }}
-              className={`px-3.5 py-2 rounded-full text-[13px] font-medium transition-all ${
+              className={`px-3.5 py-2 rounded-full text-[13px] font-medium transition-all whitespace-nowrap ${
                 statusTab === t.value
                   ? 'bg-[#1e3a8a] text-white shadow-[0_4px_10px_-2px_rgba(30,58,138,0.35)]'
                   : 'text-slate-500 hover:bg-[#f1f4f8] hover:text-slate-800'
@@ -267,8 +262,126 @@ export default function BookingsPage() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Search */}
+        {/* Mobile: búsqueda + botón filtros */}
+        {(() => {
+          const activeMobileFilters = [
+            statusTab !== 'all',
+            !!filterChannel,
+            !!filterProperty,
+            filterPending,
+          ].filter(Boolean).length
+          return (
+            <div className="md:hidden space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <Input
+                    className="pl-8 rounded-full bg-[#f1f4f8] border-transparent focus:border-[#3b5bbd] w-full h-9 text-[13px]"
+                    placeholder="Buscar huésped..."
+                    value={search}
+                    onChange={e => { setSearch(e.target.value); setPage(1) }}
+                  />
+                </div>
+                <button
+                  onClick={() => setFiltersOpen(v => !v)}
+                  className={`flex items-center gap-1.5 px-3 h-9 rounded-full text-[12px] font-medium transition-all shrink-0 ${
+                    activeMobileFilters > 0
+                      ? 'bg-[#eef2fb] text-[#1e3a8a] border border-[#c7d2fe]'
+                      : 'bg-[#f1f4f8] text-slate-500'
+                  }`}
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  Filtros
+                  {activeMobileFilters > 0 && (
+                    <span className="bg-[#1e3a8a] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+                      {activeMobileFilters}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Pill de filtro de estado activo */}
+              {statusTab !== 'all' && (
+                <div className="flex gap-2">
+                  <span className="inline-flex items-center gap-1 bg-[#eef2fb] text-[#1e3a8a] text-[12px] font-medium px-3 py-1 rounded-full">
+                    {STATUS_TABS.find(t => t.value === statusTab)?.label}
+                    <button
+                      onClick={() => { setStatusTab('all'); setPage(1) }}
+                      className="ml-0.5 hover:text-[#15296b]"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
+        {/* Mobile: filtros colapsables (bottom sheet inline) */}
+        {filtersOpen && (
+          <div className="md:hidden mt-3 space-y-3 p-3 bg-slate-50 rounded-xl">
+            {/* Estado */}
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Estado</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {STATUS_TABS.map(t => (
+                  <button
+                    key={t.value}
+                    onClick={() => { setStatusTab(t.value); setPage(1) }}
+                    className={`h-9 rounded-lg border text-[12px] font-medium transition-colors ${
+                      statusTab === t.value
+                        ? 'bg-[#1e3a8a] text-white border-[#1e3a8a]'
+                        : 'bg-white text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Canal */}
+            {channels.length > 0 && (
+              <Select value={filterChannel || '_all'} onValueChange={v => { setFilterChannel(v === '_all' ? '' : v); setPage(1) }}>
+                <SelectTrigger className="h-10 rounded-lg bg-white border-slate-200 text-[13px] w-full">
+                  <SelectValue placeholder="Canal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all">Todos los canales</SelectItem>
+                  {channels.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Propiedad */}
+            {properties.length > 1 && (
+              <Select value={filterProperty || '_all'} onValueChange={v => { setFilterProperty(v === '_all' ? '' : v); setPage(1) }}>
+                <SelectTrigger className="h-10 rounded-lg bg-white border-slate-200 text-[13px] w-full">
+                  <SelectValue placeholder="Propiedad" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all">Todas las propiedades</SelectItem>
+                  {properties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Con pendiente */}
+            <button
+              onClick={() => { setFilterPending(v => !v); setPage(1) }}
+              className={`flex items-center gap-1.5 w-full px-3 h-10 rounded-lg text-[13px] font-medium transition-all ${
+                filterPending ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-white text-slate-500 border border-slate-200'
+              }`}
+            >
+              <Filter className="h-3.5 w-3.5" />
+              Con pendiente
+            </button>
+          </div>
+        )}
+
+        {/* Desktop: búsqueda + filtros en fila */}
+        <div className="hidden md:flex items-center gap-2 flex-wrap mt-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <Input
@@ -278,8 +391,6 @@ export default function BookingsPage() {
               onChange={e => { setSearch(e.target.value); setPage(1) }}
             />
           </div>
-
-          {/* Channel filter */}
           {channels.length > 0 && (
             <Select value={filterChannel || '_all'} onValueChange={v => { setFilterChannel(v === '_all' ? '' : v); setPage(1) }}>
               <SelectTrigger className="h-9 rounded-full bg-[#f1f4f8] border-transparent text-[13px] w-36">
@@ -291,8 +402,6 @@ export default function BookingsPage() {
               </SelectContent>
             </Select>
           )}
-
-          {/* Property filter */}
           {properties.length > 1 && (
             <Select value={filterProperty || '_all'} onValueChange={v => { setFilterProperty(v === '_all' ? '' : v); setPage(1) }}>
               <SelectTrigger className="h-9 rounded-full bg-[#f1f4f8] border-transparent text-[13px] w-40">
@@ -304,14 +413,10 @@ export default function BookingsPage() {
               </SelectContent>
             </Select>
           )}
-
-          {/* Pending filter */}
           <button
             onClick={() => { setFilterPending(v => !v); setPage(1) }}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-medium transition-all ${
-              filterPending
-                ? 'bg-amber-100 text-amber-700 border border-amber-300'
-                : 'bg-[#f1f4f8] text-slate-500 hover:bg-[#e2e8f0]'
+              filterPending ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-[#f1f4f8] text-slate-500 hover:bg-[#e2e8f0]'
             }`}
           >
             <Filter className="h-3 w-3" />
@@ -320,8 +425,8 @@ export default function BookingsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-[#eef2f7] rounded-[18px] overflow-hidden shadow-sm">
+      {/* Table — desktop only */}
+      <div className="hidden md:block bg-white border border-[#eef2f7] rounded-[18px] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-[13px]">
             <thead>
@@ -354,7 +459,8 @@ export default function BookingsPage() {
               ) : (
                 reservations.map(r => {
                   const channelStyle = r.channel ? (CHANNEL_STYLES[r.channel.code] ?? CHANNEL_STYLES.manual) : CHANNEL_STYLES.manual
-                  const statusStyle = STATUS_STYLES[r.status] ?? STATUS_STYLES.pending
+                  const ds = getDisplayStatus(r)
+                  const statusStyle = DISPLAY_STATUS_CONFIG[ds]
                   const netPending = Math.max(0, round2(r.net_amount - r.total_received))
                   const progressPct = r.net_amount > 0 ? Math.min(100, (r.total_received / r.net_amount) * 100) : 0
 
@@ -468,7 +574,7 @@ export default function BookingsPage() {
                           style={{ background: statusStyle.bg, color: statusStyle.color }}
                         >
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusStyle.dot }} />
-                          {STATUS_LABELS[r.status as ReservationStatus]}
+                          {statusStyle.label}
                         </span>
                       </td>
                       {/* Acciones */}
@@ -567,6 +673,81 @@ export default function BookingsPage() {
         )}
       </div>
 
+      {/* Mobile: lista de cards */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="text-center py-12 text-slate-400 text-sm">Cargando reservas...</div>
+        ) : reservations.length === 0 ? (
+          <div className="text-center py-12 text-slate-400 text-sm">No hay reservas con los filtros actuales</div>
+        ) : reservations.map(r => {
+          const channelStyle = r.channel ? (CHANNEL_STYLES[r.channel.code] ?? CHANNEL_STYLES.manual) : CHANNEL_STYLES.manual
+          const ds = getDisplayStatus(r)
+          const statusStyle = DISPLAY_STATUS_CONFIG[ds]
+          const netPending = Math.max(0, round2(r.net_amount - r.total_received))
+          return (
+            <MobileCard key={r.id} onClick={() => openDrawer(r.id)}>
+              {/* Fila 1: nombre + estado */}
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1e3a8a] to-[#2dd4bf] text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+                    {r.guest_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[14px] text-slate-800 truncate">{r.guest_name}</p>
+                    {r.guest_country && <p className="text-[11px] text-slate-400">{r.guest_country}</p>}
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium whitespace-nowrap shrink-0"
+                  style={{ background: statusStyle.bg, color: statusStyle.color }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusStyle.dot }} />
+                  {statusStyle.label}
+                </span>
+              </div>
+              {/* Fila 2: fechas + canal */}
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[12px] text-slate-500">{formatDate(r.checkin_date)} → {formatDate(r.checkout_date)} · {r.nights}n</p>
+                {r.channel && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                    style={{ background: channelStyle.bg, color: channelStyle.color }}>
+                    {r.channel.name}
+                  </span>
+                )}
+              </div>
+              {/* Fila 3: importes */}
+              <div className="flex justify-between text-[12px]">
+                <div>
+                  <p className="text-slate-400 text-[10px]">Bruto</p>
+                  <p className="font-mono font-semibold text-slate-800">€{fmt(r.gross_amount)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-slate-400 text-[10px]">Neto</p>
+                  <p className="font-mono font-semibold text-[#1e3a8a]">€{fmt(r.net_amount)}</p>
+                </div>
+                {netPending > 0 ? (
+                  <div className="text-right">
+                    <p className="text-slate-400 text-[10px]">Pendiente</p>
+                    <p className="font-mono font-semibold text-amber-600">€{fmt(netPending)}</p>
+                  </div>
+                ) : (
+                  <div className="text-right">
+                    <p className="text-slate-400 text-[10px]">Cobrado</p>
+                    <p className="font-mono font-semibold text-[#047857]">€{fmt(r.total_received)}</p>
+                  </div>
+                )}
+              </div>
+            </MobileCard>
+          )
+        })}
+        {/* Paginación mobile */}
+        {total > 20 && (
+          <div className="flex justify-between items-center pt-2">
+            <Button variant="outline" size="sm" className="rounded-full" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</Button>
+            <span className="text-[12px] text-slate-400">{page} / {Math.ceil(total / 20)}</span>
+            <Button variant="outline" size="sm" className="rounded-full" disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>Siguiente</Button>
+          </div>
+        )}
+      </div>
+
       {/* Reservation Drawer */}
       <ReservationDrawer
         reservation={selectedReservation}
@@ -659,12 +840,12 @@ export default function BookingsPage() {
 
 function KPI({ label, value, sub, valueClass }: { label: string; value: string; sub: string; valueClass?: string }) {
   return (
-    <div className="px-5 py-4 border-r border-[#eef2f7] last:border-r-0">
-      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400 mb-2">{label}</p>
-      <p className={`text-[24px] font-bold tracking-[-0.025em] leading-none ${valueClass === 'pending' ? 'text-amber-600' : 'text-slate-800'}`}>
+    <div className="px-3 py-3 md:px-5 md:py-4 border-r border-b md:border-b-0 border-[#eef2f7] last:border-r-0 [&:nth-child(2n)]:border-r-0 md:[&:nth-child(2n)]:border-r">
+      <p className="font-mono text-[9px] md:text-[10px] uppercase tracking-[0.12em] text-slate-400 mb-1 md:mb-2">{label}</p>
+      <p className={`text-[18px] md:text-[24px] font-bold tracking-[-0.025em] leading-none ${valueClass === 'pending' ? 'text-amber-600' : 'text-slate-800'}`}>
         {value}
       </p>
-      <p className="text-[11px] text-slate-400 mt-1.5 font-mono tracking-[0.04em]">{sub}</p>
+      <p className="text-[10px] md:text-[11px] text-slate-400 mt-1 md:mt-1.5 font-mono tracking-[0.04em] hidden md:block">{sub}</p>
     </div>
   )
 }
