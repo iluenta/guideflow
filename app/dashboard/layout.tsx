@@ -112,6 +112,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-landing-bg font-poppins">
       <GlobalErrorHandler />
 
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-0 left-0 right-0 z-[9999] bg-yellow-400 text-yellow-900 text-center text-xs font-bold py-1 tracking-widest uppercase pointer-events-none select-none">
+          ⚠ ENTORNO LOCAL — DESARROLLO ⚠
+        </div>
+      )}
+
       {/* MOBILE OVERLAY */}
       {mobileSidebarOpen && (
         <div

@@ -41,6 +41,7 @@ interface ExpenseListProps {
   page: number
   perPage: number
   onPageChange: (p: number) => void
+  backUrl?: string
 }
 
 export function ExpenseList({
@@ -53,6 +54,7 @@ export function ExpenseList({
   page,
   perPage,
   onPageChange,
+  backUrl,
 }: ExpenseListProps) {
   const totalPages = Math.ceil(total / perPage)
 
@@ -134,7 +136,7 @@ export function ExpenseList({
                   </span>
                 )}
                 {canEdit && (
-                  <Link href={`/dashboard/expenses/${exp.id}/edit`}
+                  <Link href={`/dashboard/expenses/${exp.id}/edit${backUrl ? `?back=${encodeURIComponent(backUrl)}` : ''}`}
                     className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-[#eef2fb] hover:text-[#1e3a8a] transition-colors" title="Editar">
                     <Pencil className="h-3.5 w-3.5" />
                   </Link>
@@ -207,7 +209,7 @@ export function ExpenseList({
                     </button>
                   )}
                   {canEdit && (
-                    <Link href={`/dashboard/expenses/${exp.id}/edit`}
+                    <Link href={`/dashboard/expenses/${exp.id}/edit${backUrl ? `?back=${encodeURIComponent(backUrl)}` : ''}`}
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-[#eef2fb] hover:text-[#1e3a8a]">
                       <Pencil className="h-3.5 w-3.5" />
                     </Link>

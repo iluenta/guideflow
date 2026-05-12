@@ -37,8 +37,28 @@ const EMPTY_SUMMARY: ExpensesSummary = {
 }
 
 import { ConfirmationDialog } from '@/components/dashboard/ConfirmationDialog'
+import dynamic from 'next/dynamic'
+
+const ExpensesPageInner = dynamic(() => Promise.resolve(ExpensesPageInnerComponent), { ssr: false })
 
 export default function ExpensesPage() {
+  return <ExpensesPageInner />
+}
+
+const FILTERS_KEY = 'expenses_filters'
+
+function loadFilters() {
+  if (typeof window === 'undefined') return { type: '', category: '', status: '', payment: '' }
+  try {
+    return JSON.parse(sessionStorage.getItem(FILTERS_KEY) ?? '{}')
+  } catch { return {} }
+}
+
+function saveFilters(f: Record<string, string>) {
+  sessionStorage.setItem(FILTERS_KEY, JSON.stringify(f))
+}
+
+function ExpensesPageInnerComponent() {
   const { profile } = useUserProfile()
   const searchParams = useSearchParams()
   const yearParam = searchParams.get('year') ?? String(new Date().getFullYear())
@@ -50,15 +70,19 @@ export default function ExpensesPage() {
   const [expenses, setExpenses]     = useState<ExpenseWithDetails[]>([])
   const [summary, setSummary]       = useState<ExpensesSummary>(EMPTY_SUMMARY)
   const [total, setTotal]           = useState(0)
-  const [page, setPage]             = useState(1)
   const [loading, setLoading]       = useState(true)
   const [generatingDone, setGeneratingDone] = useState(false)
 
-  // Filtros
-  const [filterType, setFilterType]       = useState<ExpenseType | ''>('')
-  const [filterCategory, setFilterCategory] = useState<ExpenseCategory | ''>('')
-  const [filterStatus, setFilterStatus]   = useState<ExpenseStatus | ''>('')
-  const [filterPayment, setFilterPayment] = useState<ExpensePaymentStatus | ''>('')
+  const [filterType,     setFilterType]     = useState<ExpenseType | ''>(() => loadFilters().type ?? '')
+  const [filterCategory, setFilterCategory] = useState<ExpenseCategory | ''>(() => loadFilters().category ?? '')
+  const [filterStatus,   setFilterStatus]   = useState<ExpenseStatus | ''>(() => loadFilters().status ?? '')
+  const [filterPayment,  setFilterPayment]  = useState<ExpensePaymentStatus | ''>(() => loadFilters().payment ?? '')
+  const [page,           setPage]           = useState(1)
+
+  function handleFilterType(v: ExpenseType | '')          { setFilterType(v);     saveFilters({ type: v, category: filterCategory, status: filterStatus, payment: filterPayment }); setPage(1) }
+  function handleFilterCategory(v: ExpenseCategory | '')  { setFilterCategory(v); saveFilters({ type: filterType, category: v, status: filterStatus, payment: filterPayment }); setPage(1) }
+  function handleFilterStatus(v: ExpenseStatus | '')      { setFilterStatus(v);   saveFilters({ type: filterType, category: filterCategory, status: v, payment: filterPayment }); setPage(1) }
+  function handleFilterPayment(v: ExpensePaymentStatus | '') { setFilterPayment(v); saveFilters({ type: filterType, category: filterCategory, status: filterStatus, payment: v }); setPage(1) }
 
   // Modal confirmar estimado
   const [confirmingExpense, setConfirmingExpense] = useState<ExpenseWithDetails | null>(null)
@@ -110,8 +134,6 @@ export default function ExpensesPage() {
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
-  // Reset page when filters change
-  useEffect(() => { setPage(1) }, [yearParam, filterType, filterCategory, filterStatus, filterPayment])
 
   async function handleDelete(id: string) {
     const expense = expenses.find(e => e.id === id)
@@ -143,6 +165,8 @@ export default function ExpensesPage() {
   }
 
   const yearLabel = yearParam === 'all' ? 'Histórico completo' : yearParam
+
+  const backUrl = '/dashboard/expenses'
 
   return (
     <div className="p-4 md:p-8 max-w-[1440px] mx-auto">
@@ -195,7 +219,7 @@ export default function ExpensesPage() {
       <div className="flex flex-wrap gap-2.5 mb-5">
         <select
           value={filterType}
-          onChange={e => setFilterType(e.target.value as ExpenseType | '')}
+          onChange={e => handleFilterType(e.target.value as ExpenseType | '')}
           className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
         >
           <option value="">Todos los tipos</option>
@@ -205,7 +229,7 @@ export default function ExpensesPage() {
 
         <select
           value={filterCategory}
-          onChange={e => setFilterCategory(e.target.value as ExpenseCategory | '')}
+          onChange={e => handleFilterCategory(e.target.value as ExpenseCategory | '')}
           className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
         >
           <option value="">Todas las categorías</option>
@@ -216,7 +240,7 @@ export default function ExpensesPage() {
 
         <select
           value={filterStatus}
-          onChange={e => setFilterStatus(e.target.value as ExpenseStatus | '')}
+          onChange={e => handleFilterStatus(e.target.value as ExpenseStatus | '')}
           className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
         >
           <option value="">Todos los estados</option>
@@ -226,7 +250,7 @@ export default function ExpensesPage() {
 
         <select
           value={filterPayment}
-          onChange={e => setFilterPayment(e.target.value as ExpensePaymentStatus | '')}
+          onChange={e => handleFilterPayment(e.target.value as ExpensePaymentStatus | '')}
           className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
         >
           <option value="">Todos los pagos</option>
@@ -253,6 +277,7 @@ export default function ExpensesPage() {
         page={page}
         perPage={20}
         onPageChange={setPage}
+        backUrl={backUrl}
       />
 
       {/* Modal confirmar estimado */}

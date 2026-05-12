@@ -449,17 +449,17 @@ export async function getBrandingUploadUrl(fileName: string, contentType: string
     const tenant_id = await getTenantId(supabase, user)
     if (!tenant_id) throw new Error('Usuario sin tenant asignado')
 
-    const path = `${tenant_id}/${Date.now()}_${fileName}`
+    const path = `${tenant_id}/branding/${Date.now()}_${fileName}`
 
     const { data, error } = await supabase.storage
-        .from('branding')
+        .from('property-images')
         .createSignedUploadUrl(path)
 
     if (error) throw error
 
     return {
         uploadUrl: data.signedUrl,
-        publicUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/branding/${path}`,
+        publicUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/property-images/${path}`,
         path: path
     }
 }

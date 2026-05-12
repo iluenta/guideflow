@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Scan, Upload, X, FileText, Image as ImageIcon, Download, Loader2 } from 'lucide-react'
 import { createExpense, updateExpense, uploadExpenseDocument } from '@/app/actions/expenses'
@@ -48,6 +48,8 @@ export function ExpenseForm({
   defaultPropertyId,
 }: ExpenseFormProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const backUrl = searchParams.get('back') ?? '/dashboard/expenses'
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ocrInputRef = useRef<HTMLInputElement>(null)
 
@@ -237,7 +239,7 @@ export function ExpenseForm({
     }
 
     toast.success(mode === 'create' ? 'Gasto creado' : 'Gasto actualizado')
-    router.push('/dashboard/expenses')
+    router.push(backUrl)
   }
 
   return (
@@ -636,7 +638,7 @@ export function ExpenseForm({
       <div className="flex gap-3">
         <button
           type="button"
-          onClick={() => router.push('/dashboard/expenses')}
+          onClick={() => router.push(backUrl)}
           className="px-6 py-3 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50"
         >
           Cancelar
