@@ -236,8 +236,8 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                     : { data: [] as any[] };
 
                 async function generateOneManual(item: IdentificationResult, index: number): Promise<{ success: boolean; error?: string; skipped?: boolean }> {
+                    const { path, analysis, imgRecordId } = item
                     try {
-                        const { path, analysis, imgRecordId } = item
 
                         // Clave de dedup: tipo + marca + modelo
                         // - Mismo tipo SIN marca/modelo conocido → una sola clave → un manual (ej: dos mandos genéricos de TV)
