@@ -189,14 +189,14 @@ export function ExpenseList({
                 <p className="text-[11px] text-slate-400 mb-2">{exp.provider_name ?? exp.provider_name_override}</p>
               )}
               {/* Fila 3: importe + estado + acciones */}
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-semibold text-[14px] text-slate-800">€{fmt(exp.total_amount)}</span>
-                  <span className={cn('text-[11px] font-medium', exp.payment_status === 'paid' ? 'text-emerald-600' : 'text-rose-500')}>
+              <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                  <span className="font-mono font-semibold text-[14px] text-slate-800 shrink-0">€{fmt(exp.total_amount)}</span>
+                  <span className={cn('text-[11px] font-medium shrink-0', exp.payment_status === 'paid' ? 'text-emerald-600' : 'text-rose-500')}>
                     {exp.payment_status === 'paid' ? '✓ Pagado' : 'Pendiente'}
                   </span>
                   {exp.status === 'estimated' && (
-                    <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                    <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full shrink-0">
                       Estimado
                     </span>
                   )}

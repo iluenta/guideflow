@@ -144,14 +144,14 @@ export default function ChannelsPage() {
   }
 
   return (
-    <div className="p-8 max-w-[1440px] mx-auto">
-      <div className="flex justify-between items-end gap-8 mb-8 flex-wrap">
+    <div className="px-4 py-8 sm:p-8 max-w-[1440px] mx-auto">
+      <div className="flex justify-between items-end gap-6 mb-8 flex-wrap">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2.5 mb-2.5">
             <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf] shadow-[0_0_0_4px_rgba(45,212,191,0.2)] inline-block" />
             Ajustes
           </p>
-          <h1 className="text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
+          <h1 className="text-3xl sm:text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
             Canales de venta
           </h1>
           <p className="text-[15px] text-slate-500 mt-2">
@@ -161,7 +161,7 @@ export default function ChannelsPage() {
         {canEdit && (
           <Button
             onClick={openCreate}
-            className="bg-[#1e3a8a] hover:bg-[#15296b] text-white rounded-full gap-2 shadow-[0_4px_12px_-4px_rgba(30,58,138,0.4)]"
+            className="bg-[#1e3a8a] hover:bg-[#15296b] text-white rounded-full gap-2 shadow-[0_4px_12px_-4px_rgba(30,58,138,0.4)] w-full sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             Nuevo canal
@@ -172,15 +172,15 @@ export default function ChannelsPage() {
       {loading ? (
         <div className="text-center py-16 text-slate-400 text-[13px]">Cargando canales...</div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4">
           {channels.map(c => {
             const logo = getLogoStyle(c.code, c.name)
             return (
               <div
                 key={c.id}
-                className={`bg-white border border-[#eef2f7] rounded-[18px] p-6 shadow-sm transition-all ${c.is_active ? 'hover:border-[#3b5bbd] hover:shadow-[0_12px_28px_-14px_rgba(30,58,138,0.18)]' : 'opacity-60 bg-[#f1f4f8]'}`}
+                className={`bg-white border border-[#eef2f7] rounded-[18px] p-4 sm:p-6 shadow-sm transition-all ${c.is_active ? 'hover:border-[#3b5bbd] hover:shadow-[0_12px_28px_-14px_rgba(30,58,138,0.18)]' : 'opacity-60 bg-[#f1f4f8]'}`}
               >
-                <div className="flex justify-between items-start mb-5 gap-3">
+                <div className="flex justify-between items-start mb-5 gap-2">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div
                       className="w-11 h-11 rounded-[12px] flex items-center justify-center font-bold text-[17px] shrink-0"
@@ -188,9 +188,9 @@ export default function ChannelsPage() {
                     >
                       {logo.abbr}
                     </div>
-                    <div>
-                      <h3 className="text-[16px] font-semibold text-slate-800 tracking-[-0.01em]">{c.name}</h3>
-                      <p className="text-[12px] text-slate-400 font-mono">{c.code}</p>
+                    <div className="min-w-0">
+                      <h3 className="text-[15px] sm:text-[16px] font-semibold text-slate-800 tracking-[-0.01em] truncate">{c.name}</h3>
+                      <p className="text-[11px] text-slate-400 font-mono truncate">{c.code}</p>
                     </div>
                   </div>
                   {canEdit && (

@@ -70,7 +70,7 @@ export async function generateManualFromImage(propertyId: string, imageUrl: stri
     return data
 }
 
-export async function processBatchScans(propertyId: string, imageUrls: string[], replaceExisting: boolean = false) {
+export async function processBatchScans(propertyId: string, imagePaths: string[], replaceExisting: boolean = false) {
     const supabase = await createClient()
     const { tenant_id, tenant_role } = await requireProfile(supabase)
     if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
@@ -81,7 +81,7 @@ export async function processBatchScans(propertyId: string, imageUrls: string[],
     if (!currentPropId) throw new Error('ID de propiedad requerido para escaneos')
 
     try {
-        logT(`[BATCH] Starting TWO-PHASE analysis for ${imageUrls.length} images (Replace: ${replaceExisting})...`)
+        logT(`[BATCH] Starting TWO-PHASE analysis for ${imagePaths.length} images (Replace: ${replaceExisting})...`)
 
         await supabase
             .from('properties')
@@ -95,18 +95,25 @@ export async function processBatchScans(propertyId: string, imageUrls: string[],
         const CONCURRENCY_LIMIT = 5;
 
         interface IdentificationResult {
-            url: string
+            path: string
             analysis: any
             imgRecordId?: string
             success: boolean
             error?: string
         }
 
-        async function identifyOneImage(url: string, index: number): Promise<IdentificationResult> {
+        async function identifyOneImage(path: string, index: number): Promise<IdentificationResult> {
             const startTime = new Date().toISOString()
             try {
-                if (!isValidExternalUrl(url)) throw new Error('URL bloqueada (SSRF)')
-                logT(`[PHASE1] [${index + 1}/${imageUrls.length}] Identifying: ${url.split('/').pop()?.substring(0, 40)}...`)
+                logT(`[PHASE1] [${index + 1}/${imagePaths.length}] Identifying: ${path.split('/').pop()?.substring(0, 40)}...`)
+
+                // 1. Download image from private storage
+                const { data: blob, error: dlError } = await supabase.storage.from('property_scans').download(path);
+                if (dlError || !blob) throw new Error(`Error al descargar imagen de storage: ${dlError?.message || 'Sin datos'}`);
+
+                const buffer = Buffer.from(await blob.arrayBuffer());
+                const base64 = buffer.toString('base64');
+                const mimeType = blob.type || 'image/jpeg';
 
                 const analysisPrompt = `Actúa como un experto en electrodomésticos y equipamiento de hogar con gran agudeza visual.
 Analiza la imagen e identifica el objeto más prominente (lavadora, cafetera, tv, etc.).
@@ -126,7 +133,8 @@ FORMATO DE SALIDA (JSON ESTRICTO):
   "confidence": 0.0-1.0,
   "reasoning_spanish": "Por qué has decidido que es este aparato"
 }`
-                const geminiResponse = await analyzeImageWithGemini(url, analysisPrompt)
+                const { analyzeImageWithBase64 } = await import('@/lib/ai/clients/gemini-rest')
+                const geminiResponse = await analyzeImageWithBase64(base64, mimeType, analysisPrompt)
                 const analysisText = geminiResponse?.data
 
                 // Log tokens and cost
@@ -151,13 +159,19 @@ FORMATO DE SALIDA (JSON ESTRICTO):
 
                 if (!analysis || !analysis.is_scannable || (analysis.confidence || 0) < 0.3) {
                     logT(`[PHASE1] [${index + 1}] Skipping: Not scannable.`)
-                    return { url, analysis: null, success: true }
+                    return { path, analysis: null, success: true }
                 }
 
+                // Construct a public-like URL for the record if needed, but since it's private, 
+                // we should store the path or a signed URL. 
+                // For now, let's store the path format in image_url to avoid breaking too many things,
+                // or use the path directly if the UI handles it.
+                // Actually, the database column image_url might expect a real URL.
+                // Let's use the path as the "url" for internal tracking.
                 const { data: imgRecord } = await supabase.from('appliance_images').insert({
                     property_id: currentPropId,
                     tenant_id: tenant_id,
-                    image_url: url,
+                    image_url: path, // We use the path here now
                     analysis_result: analysis,
                     status: 'identified',
                     analysis_started_at: startTime,
@@ -168,32 +182,32 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                 }).select().single()
 
                 logT(`[PHASE1] [${index + 1}] ✅ Identified: ${analysis.appliance_type} (${analysis.brand || '?'})`)
-                return { url, analysis, imgRecordId: imgRecord?.id, success: true }
+                return { path, analysis, imgRecordId: imgRecord?.id, success: true }
             } catch (err: any) {
                 logT(`[PHASE1] [${index + 1}] ERROR: ${err.message}`)
-                return { url, analysis: null, success: false, error: err.message }
+                return { path, analysis: null, success: false, error: err.message }
             }
         }
 
-        logT(`[PHASE1] Running ${imageUrls.length} identifications in parallel (concurrency: ${CONCURRENCY_LIMIT})...`)
+        logT(`[PHASE1] Running ${imagePaths.length} identifications in parallel (concurrency: ${CONCURRENCY_LIMIT})...`)
         const identifications: IdentificationResult[] = []
 
-        for (let i = 0; i < imageUrls.length; i += CONCURRENCY_LIMIT) {
-            const batch = imageUrls.slice(i, i + CONCURRENCY_LIMIT)
+        for (let i = 0; i < imagePaths.length; i += CONCURRENCY_LIMIT) {
+            const batch = imagePaths.slice(i, i + CONCURRENCY_LIMIT)
             const batchResults = await Promise.allSettled(
-                batch.map((url, batchIdx) => identifyOneImage(url, i + batchIdx))
+                batch.map((path, batchIdx) => identifyOneImage(path, i + batchIdx))
             )
             for (const result of batchResults) {
                 if (result.status === 'fulfilled') {
                     identifications.push(result.value)
                 } else {
-                    identifications.push({ url: 'unknown', analysis: null, success: false, error: result.reason?.message })
+                    identifications.push({ path: 'unknown', analysis: null, success: false, error: result.reason?.message })
                 }
             }
         }
 
         const identifiedAppliances = identifications.filter(r => r.success && r.analysis)
-        logT(`[PHASE1] ✅ Identification complete: ${identifiedAppliances.length} appliances found out of ${imageUrls.length} images`)
+        logT(`[PHASE1] ✅ Identification complete: ${identifiedAppliances.length} appliances found out of ${imagePaths.length} images`)
 
         await supabase
             .from('properties')
@@ -223,7 +237,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
 
                 async function generateOneManual(item: IdentificationResult, index: number): Promise<{ success: boolean; error?: string; skipped?: boolean }> {
                     try {
-                        const { url, analysis, imgRecordId } = item
+                        const { path, analysis, imgRecordId } = item
 
                         // Clave de dedup: tipo + marca + modelo
                         // - Mismo tipo SIN marca/modelo conocido → una sola clave → un manual (ej: dos mandos genéricos de TV)
@@ -253,7 +267,15 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                             ? errorCodesResult.value : '';
                         logT(`[PHASE2] [${index + 1}] Context: ${groundingData?.length || 0} chars technical + ${errorCodesData?.length || 0} chars errors`)
 
-                        const manualContent = await generateManualSinglePass(url, analysis, groundingData, errorCodesData, { propertyId: currentPropId, tenantId: tenant_id })
+                        // 1. Download image from private storage
+                        const { data: blob, error: dlError } = await supabase.storage.from('property_scans').download(path);
+                        if (dlError || !blob) throw new Error(`Error al descargar imagen: ${dlError?.message}`);
+
+                        const buffer = Buffer.from(await blob.arrayBuffer());
+                        const base64 = buffer.toString('base64');
+                        const mimeType = blob.type || 'image/jpeg';
+
+                        const manualContent = await generateManualSinglePass(base64, analysis, groundingData, errorCodesData, { propertyId: currentPropId, tenantId: tenant_id, mimeType })
 
                         if (!manualContent || manualContent.length < 300) {
                             throw new Error('Generated manual too short/empty')
@@ -333,10 +355,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
                         return { success: false, error: err.message }
                     } finally {
                         try {
-                            const urlMatch = item.url.match(/property_scans\/(.+)$/)
-                            if (urlMatch) {
-                                await supabase.storage.from('property_scans').remove([urlMatch[1]])
-                            }
+                            await supabase.storage.from('property_scans').remove([path])
                         } catch (cleanupErr) {
                             console.error(`[PHASE2] Cleanup error:`, cleanupErr)
                         }
@@ -357,10 +376,7 @@ FORMATO DE SALIDA (JSON ESTRICTO):
 
                 for (const item of identifications.filter(r => !r.analysis)) {
                     try {
-                        const urlMatch = item.url.match(/property_scans\/(.+)$/)
-                        if (urlMatch) {
-                            await supabase.storage.from('property_scans').remove([urlMatch[1]])
-                        }
+                        await supabase.storage.from('property_scans').remove([item.path])
                     } catch { }
                 }
 
@@ -702,7 +718,7 @@ function extractRelevantSections(markdown: string): string {
     return relevantContent + buffer.join('\n')
 }
 
-async function analyzeControlPanelVisually(imageUrl: string): Promise<{
+async function analyzeControlPanelVisually(imageSource: string, options: { isBase64?: boolean, mimeType?: string } = {}): Promise<{
     brand?: string,
     estimatedModel?: string,
     controls: any,
@@ -740,10 +756,19 @@ RESPONDE SOLO CON ESTE JSON (SIN MARKDOWN, SIN EXPLICACIONES):
 
     let phase1Response
     try {
-        phase1Response = await analyzeImageWithGemini(imageUrl, identificationPrompt, {
-            responseMimeType: 'application/json' as any,
-            temperature: 0.2
-        } as any)
+        const { analyzeImageWithBase64 } = await import('@/lib/ai/clients/gemini-rest')
+        
+        if (options.isBase64 && options.mimeType) {
+            phase1Response = await analyzeImageWithBase64(imageSource, options.mimeType, identificationPrompt, {
+                responseMimeType: 'application/json' as any,
+                temperature: 0.2
+            } as any)
+        } else {
+            phase1Response = await analyzeImageWithGemini(imageSource, identificationPrompt, {
+                responseMimeType: 'application/json' as any,
+                temperature: 0.2
+            } as any)
+        }
     } catch (err: any) {
         console.error('[VISUAL ANALYSIS] Phase 1 failed:', err.message)
         return { brand: 'desconocida', controls: {}, layout: { appliance_type: 'HORNO', confidence_brand: 0 } }
@@ -790,10 +815,19 @@ RESPONDE SOLO CON ESTE JSON:
 
     let phase2Response
     try {
-        phase2Response = await analyzeImageWithGemini(imageUrl, controlMappingPrompt, {
-            responseMimeType: 'application/json' as any,
-            temperature: 0.15
-        } as any)
+        const { analyzeImageWithBase64 } = await import('@/lib/ai/clients/gemini-rest')
+
+        if (options.isBase64 && options.mimeType) {
+            phase2Response = await analyzeImageWithBase64(imageSource, options.mimeType, controlMappingPrompt, {
+                responseMimeType: 'application/json' as any,
+                temperature: 0.15
+            } as any)
+        } else {
+            phase2Response = await analyzeImageWithGemini(imageSource, controlMappingPrompt, {
+                responseMimeType: 'application/json' as any,
+                temperature: 0.15
+            } as any)
+        }
     } catch (err: any) {
         console.error('[VISUAL ANALYSIS] Phase 2 failed:', err.message)
         return { brand: phase1.brand, controls: {}, layout: phase1 }
@@ -814,10 +848,20 @@ FORMATO JSON:
     {"desc": "ventilador en círculo", "meaning": "aire caliente"}
   ]
 }`
-        const retryResponse = await analyzeImageWithGemini(imageUrl, retryPrompt, {
-            responseMimeType: 'application/json' as any,
-            temperature: 0.3
-        } as any)
+        const { analyzeImageWithBase64 } = await import('@/lib/ai/clients/gemini-rest')
+        
+        let retryResponse;
+        if (options.isBase64 && options.mimeType) {
+            retryResponse = await analyzeImageWithBase64(imageSource, options.mimeType, retryPrompt, {
+                responseMimeType: 'application/json' as any,
+                temperature: 0.3
+            } as any)
+        } else {
+            retryResponse = await analyzeImageWithGemini(imageSource, retryPrompt, {
+                responseMimeType: 'application/json' as any,
+                temperature: 0.3
+            } as any)
+        }
 
         if (retryResponse?.data?.symbols?.length > (phase2.left_knob?.symbols?.length || 0)) {
             phase2.left_knob = {
@@ -839,7 +883,7 @@ FORMATO JSON:
     }
 }
 
-async function generateSymbolsFromPDF(imageUrl: string, pdfContent: string, visualAnalysis: any): Promise<string> {
+async function generateSymbolsFromPDF(imageSource: string, pdfContent: string, visualAnalysis: any, options: { isBase64?: boolean, mimeType?: string } = {}): Promise<string> {
     const prompt = `Estás creando la sección de SÍMBOLOS Y CONTROLES de una guía de uso.
 
 📄 MANUAL OFICIAL DISPONIBLE:
@@ -867,12 +911,24 @@ ${visualAnalysis.controls?.digital_display ? `Muestra el tiempo de cocción prog
 
 🚫 IMPORTANTE: NO generes más de 15 filas. RESPONDE SOLO CON MARKDOWN.`
 
-    const response = await analyzeImageWithGemini(imageUrl, prompt, {
-        responseMimeType: 'text/plain',
-        temperature: 0.15,
-        maxOutputTokens: 2000,
-        stopSequences: ['##', '# ', '\n\n\n']
-    } as any)
+    const { analyzeImageWithBase64 } = await import('@/lib/ai/clients/gemini-rest')
+
+    let response;
+    if (options.isBase64 && options.mimeType) {
+        response = await analyzeImageWithBase64(imageSource, options.mimeType, prompt, {
+            responseMimeType: 'text/plain',
+            temperature: 0.15,
+            maxOutputTokens: 2000,
+            stopSequences: ['##', '# ', '\n\n\n']
+        } as any)
+    } else {
+        response = await analyzeImageWithGemini(imageSource, prompt, {
+            responseMimeType: 'text/plain',
+            temperature: 0.15,
+            maxOutputTokens: 2000,
+            stopSequences: ['##', '# ', '\n\n\n']
+        } as any)
+    }
 
     return response?.data || '## 1. Panel de Control\n\n(No se pudo generar esta sección)'
 }
@@ -893,12 +949,12 @@ async function fetchImageAsBase64(imageUrl: string): Promise<{ data: string, mim
     }
 }
 
-async function generateSymbolsFromVisual(imageUrl: string, visualAnalysis: any): Promise<string> {
+async function generateSymbolsFromVisual(imageSource: string, visualAnalysis: any, options: { isBase64?: boolean, mimeType?: string } = {}): Promise<string> {
     const symbolsDetected = visualAnalysis.controls?.left_knob?.symbols || []
     const displayData = visualAnalysis.controls?.digital_display || {}
     const tempData = visualAnalysis.controls?.right_knob || {}
 
-    const imageData = await fetchImageAsBase64(imageUrl)
+    const imageData = options.isBase64 ? { data: imageSource, mimeType: options.mimeType || 'image/jpeg' } : await fetchImageAsBase64(imageSource)
 
     const prompt = `Eres un Ingeniero Técnico experto en electrodomésticos. Mira la foto del panel de control y genera una tabla técnica de símbolos.
 
@@ -947,7 +1003,7 @@ ${displayData.adjacent_buttons?.map((b: any) => `- **${b.icon}:** ${b.likely_fun
     return cleanContent || '## 1. Panel de Control\n\n(Error en mapeo visual)'
 }
 
-async function generateSymbolsTableFallback(imageUrl: string, visualAnalysis: any): Promise<string> {
+async function generateSymbolsTableFallback(imageSource: string, visualAnalysis: any, options: { isBase64?: boolean, mimeType?: string } = {}): Promise<string> {
     const prompt = `Mira esta imagen del panel de control.
 
 Describe TODOS los símbolos visibles y genera una tabla markdown:
@@ -966,27 +1022,38 @@ Describe TODOS los símbolos visibles y genera una tabla markdown:
 
 IMPORTANTE: Lista TODOS los símbolos visibles. RESPONDE SOLO CON MARKDOWN.`
 
-    const response = await analyzeImageWithGemini(imageUrl, prompt, {
-        responseMimeType: 'text/plain' as any,
-        temperature: 0.25,
-        maxOutputTokens: 1500
-    } as any)
+    const { analyzeImageWithBase64 } = await import('@/lib/ai/clients/gemini-rest')
+
+    let response;
+    if (options.isBase64 && options.mimeType) {
+        response = await analyzeImageWithBase64(imageSource, options.mimeType, prompt, {
+            responseMimeType: 'text/plain' as any,
+            temperature: 0.25,
+            maxOutputTokens: 1500
+        } as any)
+    } else {
+        response = await analyzeImageWithGemini(imageSource, prompt, {
+            responseMimeType: 'text/plain' as any,
+            temperature: 0.25,
+            maxOutputTokens: 1500
+        } as any)
+    }
 
     return response?.data || '## 1. Panel de Control\n\n(Error al generar tabla)'
 }
 
-async function generateSymbolsTable(imageUrl: string, pdfContent: string | undefined, visualAnalysis: any): Promise<string> {
+async function generateSymbolsTable(imageSource: string, pdfContent: string | undefined, visualAnalysis: any, options: { isBase64?: boolean, mimeType?: string } = {}): Promise<string> {
     if (pdfContent && pdfContent.length > 5000) {
-        return await generateSymbolsFromPDF(imageUrl, pdfContent, visualAnalysis)
+        return await generateSymbolsFromPDF(imageSource, pdfContent, visualAnalysis, options)
     } else {
-        return await generateSymbolsFromVisual(imageUrl, visualAnalysis)
+        return await generateSymbolsFromVisual(imageSource, visualAnalysis, options)
     }
 }
 
-async function generateInstructions(pdfContent: string | undefined, webContent: string | undefined, visualAnalysis: any, imageUrl?: string): Promise<string> {
+async function generateInstructions(pdfContent: string | undefined, webContent: string | undefined, visualAnalysis: any, imageSource?: string, options: { isBase64?: boolean, mimeType?: string } = {}): Promise<string> {
     const hasReliableSource = (pdfContent && pdfContent.length > 5000) || (webContent && webContent.length > 3000)
     const baseContext = pdfContent || webContent || ''
-    const imageData = imageUrl ? await fetchImageAsBase64(imageUrl) : null
+    const imageData = imageSource ? (options.isBase64 ? { data: imageSource, mimeType: options.mimeType || 'image/jpeg' } : await fetchImageAsBase64(imageSource)) : null
 
     const prompt = `Escribe la sección de INSTRUCCIONES DE USO. SIN SALUDOS.
 
@@ -1022,8 +1089,8 @@ ${hasReliableSource ? `📄 DOCUMENTACIÓN TÉCNICA:\n${baseContext.substring(0,
     return cleanContent || '## 2. Instrucciones de Uso\n\n(No disponible)'
 }
 
-async function generateTipsAndMaintenance(pdfContent: string | undefined, visualAnalysis: any, imageUrl?: string): Promise<string> {
-    const imageData = imageUrl ? await fetchImageAsBase64(imageUrl) : null
+async function generateTipsAndMaintenance(pdfContent: string | undefined, visualAnalysis: any, imageSource?: string, options: { isBase64?: boolean, mimeType?: string } = {}): Promise<string> {
+    const imageData = imageSource ? (options.isBase64 ? { data: imageSource, mimeType: options.mimeType || 'image/jpeg' } : await fetchImageAsBase64(imageSource)) : null
 
     const prompt = `Genera la sección de LIMPIEZA Y SOLUCIÓN DE PROBLEMAS. SIN SALUDOS.
 
@@ -1305,12 +1372,14 @@ function getApplianceSpecificInstructions(applianceType: string): string {
 }
 
 async function generateManualSinglePass(
-    imageUrl: string,
+    imageSource: string,
     basicAnalysis: any,
     groundingData: string = '',
     errorCodesData: string = '',
-    loggingContext?: { propertyId?: string | null, tenantId?: string | null }
+    loggingContext?: { propertyId?: string | null, tenantId?: string | null, mimeType?: string, isBase64?: boolean }
 ): Promise<string> {
+    const isBase64 = loggingContext?.isBase64 ?? true; // Default to true now for our current pipeline
+    const mimeType = loggingContext?.mimeType || 'image/jpeg';
     const applianceType = basicAnalysis.appliance_type || 'Electrodoméstico';
     const specificInstructions = getApplianceSpecificInstructions(applianceType);
     const brand = basicAnalysis.brand || '';
@@ -1369,10 +1438,14 @@ RECUERDA: Solo 3 secciones (Primeros Pasos / Programas y Funciones / Consejos Ú
             maxOutputTokens: 2048,
         };
 
+        const { analyzeImageWithBase64 } = await import('@/lib/ai/clients/gemini-rest')
+
         // Pass 1: manual body (no diagnostic table)
-        let result = imageUrl && isValidExternalUrl(imageUrl)
-            ? await geminiVision(imageUrl, userPrompt, opts)
-            : await geminiREST('gemini-2.5-flash', userPrompt, opts);
+        let result = imageSource && isBase64
+            ? await analyzeImageWithBase64(imageSource, mimeType, userPrompt, opts)
+            : (imageSource && isValidExternalUrl(imageSource)
+                ? await geminiVision(imageSource, userPrompt, opts)
+                : await geminiREST('gemini-2.5-flash', userPrompt, opts));
 
         if (loggingContext) {
             after(logAiUsage({
@@ -1385,7 +1458,7 @@ RECUERDA: Solo 3 secciones (Primeros Pasos / Programas y Funciones / Consejos Ú
             }));
         }
 
-        if (result.error && imageUrl) {
+        if (result.error && imageSource) {
             logT(`[GEN] Image unavailable (${result.error}), retrying without image...`);
             result = await geminiREST('gemini-2.5-flash', userPrompt, opts);
         }
@@ -1460,8 +1533,8 @@ Si el problema persiste, contacta con el soporte del alojamiento.`;
 }
 
 // Exportada para uso en endpoints de quality test (no guarda en DB)
-export async function generateManualForQualityTest(imageUrl: string, basicAnalysis: any, loggingContext?: { propertyId?: string | null, tenantId?: string | null }): Promise<string> {
-    return generateManualSinglePass(imageUrl, basicAnalysis, '', '', loggingContext);
+export async function generateManualForQualityTest(imageSource: string, basicAnalysis: any, loggingContext?: { propertyId?: string | null, tenantId?: string | null, isBase64?: boolean, mimeType?: string }): Promise<string> {
+    return generateManualSinglePass(imageSource, basicAnalysis, '', '', loggingContext);
 }
 
 export async function regenerateManualAction(manualId: string) {

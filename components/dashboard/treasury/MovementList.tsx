@@ -40,9 +40,9 @@ export function MovementList({ movements }: MovementListProps) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#eef2f7] overflow-hidden">
-      {/* Header */}
-      <div className="grid grid-cols-[110px_1fr_110px_110px_120px] gap-3 px-5 py-3 border-b border-[#eef2f7] bg-[#f8fafc]">
+    <div className="flex flex-col gap-4 sm:block sm:bg-white sm:rounded-2xl sm:border sm:border-[#eef2f7] sm:overflow-hidden">
+      {/* Header (Desktop solo) */}
+      <div className="hidden sm:grid grid-cols-[110px_1fr_110px_110px_120px] gap-3 px-5 py-3 border-b border-[#eef2f7] bg-[#f8fafc]">
         {['Fecha', 'Descripción', 'Entrada', 'Salida', 'Saldo'].map(h => (
           <span key={h} className="text-[10px] font-mono uppercase tracking-wider text-slate-400">{h}</span>
         ))}
@@ -53,26 +53,41 @@ export function MovementList({ movements }: MovementListProps) {
         <div
           key={`${m.source}-${m.id}`}
           onClick={() => handleClick(m)}
-          className="grid grid-cols-[110px_1fr_110px_110px_120px] gap-3 items-center px-5 py-4 border-b border-[#eef2f7] last:border-b-0 hover:bg-[#fafbfc] cursor-pointer transition-colors"
+          className="bg-white border border-[#eef2f7] rounded-xl sm:rounded-none sm:border-0 sm:border-b last:border-b-0 p-4 sm:p-0 sm:grid sm:grid-cols-[110px_1fr_110px_110px_120px] gap-3 items-center sm:px-5 sm:py-4 transition-colors hover:bg-[#fafbfc] cursor-pointer"
         >
-          <span className="text-[12px] text-slate-500">{fmtDate(m.date)}</span>
+          {/* Móvil: Fecha arriba */}
+          <div className="flex justify-between items-start mb-2 sm:mb-0">
+            <span className="text-[11px] font-mono text-slate-400 sm:text-slate-500">{fmtDate(m.date)}</span>
+            <span className="sm:hidden text-[10px] font-mono uppercase tracking-wider text-slate-400">Movimiento</span>
+          </div>
 
-          <div className="min-w-0">
-            <p className="text-[13px] font-medium text-slate-800 truncate">{m.description}</p>
+          <div className="min-w-0 flex-1 mb-4 sm:mb-0">
+            <p className="text-[14px] sm:text-[13px] font-semibold sm:font-medium text-slate-800 truncate">{m.description}</p>
             <p className="text-[11px] text-slate-400 truncate">{m.source_detail}</p>
           </div>
 
-          <span className={`text-[13px] font-mono font-semibold ${m.type === 'income' ? 'text-emerald-700' : 'text-slate-300'}`}>
-            {m.type === 'income' ? `+€${fmt(m.amount)}` : '—'}
-          </span>
+          <div className="grid grid-cols-2 sm:contents gap-2 pt-3 border-t border-slate-50 sm:border-0 sm:pt-0">
+            <div className="sm:contents">
+              <span className="sm:hidden text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-0.5">Entrada</span>
+              <span className={`text-[14px] sm:text-[13px] font-mono font-semibold ${m.type === 'income' ? 'text-emerald-700' : 'text-slate-300'}`}>
+                {m.type === 'income' ? `+€${fmt(m.amount)}` : '—'}
+              </span>
+            </div>
 
-          <span className={`text-[13px] font-mono font-semibold ${m.type === 'expense' ? 'text-rose-600' : 'text-slate-300'}`}>
-            {m.type === 'expense' ? `-€${fmt(m.amount)}` : '—'}
-          </span>
+            <div className="sm:contents">
+              <span className="sm:hidden text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-0.5">Salida</span>
+              <span className={`text-[14px] sm:text-[13px] font-mono font-semibold ${m.type === 'expense' ? 'text-rose-600' : 'text-slate-300'}`}>
+                {m.type === 'expense' ? `-€${fmt(m.amount)}` : '—'}
+              </span>
+            </div>
+          </div>
 
-          <span className={`text-[13px] font-mono font-bold ${m.running_balance >= 0 ? 'text-[#1e3a8a]' : 'text-rose-600'}`}>
-            €{fmt(m.running_balance)}
-          </span>
+          <div className="mt-3 pt-3 border-t border-slate-50 sm:mt-0 sm:pt-0 sm:border-0 text-right sm:text-left">
+            <span className="sm:hidden text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-0.5">Saldo tras mov.</span>
+            <span className={`text-[15px] sm:text-[13px] font-mono font-bold ${m.running_balance >= 0 ? 'text-[#1e3a8a]' : 'text-rose-600'}`}>
+              €{fmt(m.running_balance)}
+            </span>
+          </div>
         </div>
       ))}
     </div>

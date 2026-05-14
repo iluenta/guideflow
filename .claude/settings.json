@@ -119,7 +119,14 @@
       "Bash(npx supabase *)",
       "PowerShell(\\(Get-Content \"c:\\\\Proyectos\\\\guideflow\\\\app\\\\actions\\\\reservations.ts\"\\).Count)",
       "PowerShell(\\(Get-Content \"c:\\\\Proyectos\\\\guideflow\\\\components\\\\dashboard\\\\reservations\\\\ReservationDrawer.tsx\"\\).Count)",
-      "Bash(grep -E \"^[0-9]{3,}\")"
+      "Bash(grep -E \"^[0-9]{3,}\")",
+      "PowerShell(git -C \"c:\\\\Proyectos\\\\guideflow\" status)",
+      "PowerShell(git -C \"c:\\\\Proyectos\\\\guideflow\" diff --stat)",
+      "PowerShell(git -C \"c:\\\\Proyectos\\\\guideflow\" add app/actions/properties.ts app/dashboard/expenses/page.tsx app/dashboard/layout.tsx components/dashboard/expenses/ExpenseForm.tsx components/dashboard/expenses/ExpenseList.tsx supabase/migrations/061_drop_branding_bucket.sql)",
+      "PowerShell(git -C \"c:\\\\Proyectos\\\\guideflow\" push origin main)",
+      "PowerShell(git -C \"c:\\\\Proyectos\\\\guideflow\" add app/actions/analytics.ts app/actions/analytics-chat.ts app/dashboard/page.tsx app/dashboard/analytics/page.tsx app/dashboard/settings/ai-usage/page.tsx components/dashboard/Sidebar.tsx app/dashboard/layout.tsx types/analytics.ts components/dashboard/KPICards.tsx components/dashboard/PropertiesSection.tsx components/dashboard/RecentActivitySection.tsx components/dashboard/DashboardErrorHandler.tsx components/dashboard/analytics/ChartEmptyState.tsx components/dashboard/analytics/KPISummaryRow.tsx components/dashboard/analytics/AnalyticsHeader.tsx components/dashboard/analytics/IncomeExpensesChart.tsx components/dashboard/analytics/OccupancyChart.tsx components/dashboard/analytics/ChannelChart.tsx components/dashboard/analytics/ExpensesByCategoryChart.tsx components/dashboard/analytics/ProjectionSection.tsx)",
+      "PowerShell(git -C \"c:\\\\Proyectos\\\\guideflow\" commit -m $msg)",
+      "PowerShell($msg = \"feat: real dashboard KPIs, financial analytics screen, AI usage relocation`n`nMove AI usage page to /settings/ai-usage, add Uso IA nav entry.`nDashboard now uses real data: KPIs, property statuses, recent activity.`nNew /analytics screen with income/expenses chart, occupancy, channels,`nexpenses by category, and 6-month projection.`n`nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\")"
     ],
     "additionalDirectories": [
       "C:\\Proyectos\\guideflow\\.claude",
@@ -131,7 +138,8 @@
       "c:\\Proyectos\\guideflow\\app\\dashboard\\bookings\\[id]",
       "c:\\Proyectos\\guideflow\\components\\dashboard",
       "c:\\Proyectos\\guideflow\\app\\dashboard\\expenses\\[id]",
-      "c:\\Proyectos\\guideflow\\app\\dashboard\\treasury"
+      "c:\\Proyectos\\guideflow\\app\\dashboard\\treasury",
+      "\\tmp"
     ]
   },
   "enabledMcpjsonServers": [

@@ -304,7 +304,7 @@ export function ExpenseForm({
         </div>
 
         {/* Propiedad */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Propiedad *</label>
             <select
@@ -352,7 +352,7 @@ export function ExpenseForm({
         </div>
 
         {/* Categoría + Descripción */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Categoría *</label>
             <select
@@ -392,7 +392,7 @@ export function ExpenseForm({
         </div>
 
         {/* Proveedor */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Proveedor (biblioteca)</label>
             <select
@@ -421,7 +421,7 @@ export function ExpenseForm({
         </div>
 
         {/* Importes */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Base imponible (€) *</label>
             <input
@@ -469,7 +469,7 @@ export function ExpenseForm({
         </div>
 
         {/* Fechas y factura */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Fecha del gasto *</label>
             <input
@@ -513,7 +513,7 @@ export function ExpenseForm({
           </div>
           {paymentStatus === 'paid' && (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Fecha de pago</label>
                   <input

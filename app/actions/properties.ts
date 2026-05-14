@@ -436,7 +436,6 @@ export async function getScanUploadUrl(propertyId: string, fileName: string, con
 
     return {
         uploadUrl: data.signedUrl,
-        publicUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/property_scans/${path}`,
         path: path
     }
 }

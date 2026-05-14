@@ -14,8 +14,6 @@ import type {
   PropertyStatus,
 } from '@/types/analytics'
 
-export { getGuestChats } from './analytics-chat'
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function daysInMonth(year: number, month: number): number {

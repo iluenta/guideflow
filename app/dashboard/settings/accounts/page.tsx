@@ -261,15 +261,15 @@ export default function AccountsSettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-[960px] mx-auto">
+    <div className="px-4 py-8 sm:p-8 max-w-[960px] mx-auto">
       {/* Header */}
-      <div className="flex justify-between items-end gap-6 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-6 mb-8">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2.5 mb-2.5">
             <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf] shadow-[0_0_0_4px_rgba(45,212,191,0.2)] inline-block" />
             Configuración
           </p>
-          <h1 className="text-[32px] font-bold tracking-tight text-[#1e293b]">Cuentas</h1>
+          <h1 className="text-3xl sm:text-[32px] font-bold tracking-tight text-[#1e293b]">Cuentas</h1>
           <p className="text-slate-500 text-[14px] mt-1">
             {accounts.filter(a => a.is_active).length} cuenta{accounts.filter(a => a.is_active).length !== 1 ? 's' : ''} activa{accounts.filter(a => a.is_active).length !== 1 ? 's' : ''}
           </p>
@@ -277,7 +277,7 @@ export default function AccountsSettingsPage() {
         {canCreate && (
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1e3a8a] text-white text-sm font-semibold hover:bg-[#1e3a8a]/90 transition-colors shadow-sm"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#1e3a8a] text-white text-sm font-semibold hover:bg-[#1e3a8a]/90 transition-colors shadow-sm w-full sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             Nueva cuenta
@@ -304,9 +304,9 @@ export default function AccountsSettingsPage() {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-[#eef2f7] overflow-hidden">
-          {/* Header tabla */}
-          <div className="grid grid-cols-[2fr_1fr_1fr_120px_80px_80px] gap-4 px-5 py-3 border-b border-[#eef2f7] bg-[#f8fafc]">
+        <div className="flex flex-col gap-4 sm:block sm:bg-white sm:rounded-2xl sm:border sm:border-[#eef2f7] sm:overflow-hidden">
+          {/* Header tabla (Desktop) */}
+          <div className="hidden sm:grid grid-cols-[2fr_1fr_1fr_120px_80px_80px] gap-4 px-5 py-3 border-b border-[#eef2f7] bg-[#f8fafc]">
             {['Nombre', 'Tipo', 'Saldo inicial', 'Saldo estimado', 'Estado', ''].map(h => (
               <span key={h} className="text-[10px] font-mono uppercase tracking-wider text-slate-400">{h}</span>
             ))}
@@ -315,43 +315,55 @@ export default function AccountsSettingsPage() {
           {accounts.map(acc => (
             <div
               key={acc.id}
-              className={`grid grid-cols-[2fr_1fr_1fr_120px_80px_80px] gap-4 items-center px-5 py-4 border-b border-[#eef2f7] last:border-b-0 transition-colors ${!acc.is_active ? 'opacity-50' : 'hover:bg-[#fafbfc]'}`}
+              className={`bg-white border border-[#eef2f7] rounded-xl sm:rounded-none sm:border-0 sm:border-b last:border-b-0 p-4 sm:p-0 sm:grid sm:grid-cols-[2fr_1fr_1fr_120px_80px_80px] gap-4 items-center sm:px-5 sm:py-4 transition-colors ${!acc.is_active ? 'opacity-50' : 'hover:bg-[#fafbfc]'}`}
             >
-              <div>
+              <div className="mb-3 sm:mb-0">
                 <p className="text-[14px] font-semibold text-slate-800">{acc.name}</p>
                 {acc.notes && <p className="text-[11px] text-slate-400 truncate">{acc.notes}</p>}
               </div>
 
-              <span className="text-[12px] text-slate-600">
-                {ACCOUNT_TYPE_LABELS[acc.account_type]}
-              </span>
-
-              <span className="text-[13px] font-mono text-slate-600">
-                €{fmt(acc.opening_balance)}
-              </span>
-
-              <span className={`text-[13px] font-mono font-semibold ${(acc.estimated_balance ?? 0) >= 0 ? 'text-[#1e3a8a]' : 'text-rose-600'}`}>
-                €{fmt(acc.estimated_balance ?? acc.opening_balance)}
-              </span>
-
-              <div className="flex items-center">
-                <Switch
-                  checked={acc.is_active}
-                  onCheckedChange={() => handleToggle(acc)}
-                  disabled={toggling === acc.id || !canEdit}
-                />
+              <div className="flex sm:contents justify-between items-center mb-2 sm:mb-0">
+                <span className="sm:hidden text-[10px] font-mono text-slate-400 uppercase tracking-wider">Tipo</span>
+                <span className="text-[12px] text-slate-600">
+                  {ACCOUNT_TYPE_LABELS[acc.account_type]}
+                </span>
               </div>
 
-              <div className="flex items-center justify-end">
-                {canEdit && (
-                  <button
-                    onClick={() => openEdit(acc)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-[#eef2fb] hover:text-[#1e3a8a] transition-colors"
-                    title="Editar"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                )}
+              <div className="flex sm:contents justify-between items-center mb-2 sm:mb-0">
+                <span className="sm:hidden text-[10px] font-mono text-slate-400 uppercase tracking-wider">Saldo inicial</span>
+                <span className="text-[13px] font-mono text-slate-600">
+                  €{fmt(acc.opening_balance)}
+                </span>
+              </div>
+
+              <div className="flex sm:contents justify-between items-center mb-4 sm:mb-0">
+                <span className="sm:hidden text-[10px] font-mono text-slate-400 uppercase tracking-wider">Saldo estimado</span>
+                <span className={`text-[14px] sm:text-[13px] font-mono font-semibold ${(acc.estimated_balance ?? 0) >= 0 ? 'text-[#1e3a8a]' : 'text-rose-600'}`}>
+                  €{fmt(acc.estimated_balance ?? acc.opening_balance)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between sm:justify-start border-t border-[#f8fafc] pt-3 sm:pt-0 sm:border-0">
+                <div className="flex items-center gap-2">
+                  <span className="sm:hidden text-[12px] text-slate-500 font-medium">Estado</span>
+                  <Switch
+                    checked={acc.is_active}
+                    onCheckedChange={() => handleToggle(acc)}
+                    disabled={toggling === acc.id || !canEdit}
+                  />
+                </div>
+
+                <div className="flex items-center justify-end">
+                  {canEdit && (
+                    <button
+                      onClick={() => openEdit(acc)}
+                      className="w-9 h-9 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-[#eef2fb] hover:text-[#1e3a8a] transition-colors border border-slate-100 sm:border-0"
+                      title="Editar"
+                    >
+                      <Pencil className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

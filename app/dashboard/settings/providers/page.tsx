@@ -294,22 +294,22 @@ export default function ProvidersPage() {
     })
 
   return (
-    <div className="p-8 max-w-[960px] mx-auto">
+    <div className="px-4 py-8 sm:p-8 max-w-[960px] mx-auto">
       {/* Header */}
-      <div className="flex justify-between items-end gap-6 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-6 mb-8">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2.5 mb-2.5">
             <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf] shadow-[0_0_0_4px_rgba(45,212,191,0.2)] inline-block" />
             Configuración
           </p>
-          <h1 className="text-[32px] font-bold tracking-tight text-[#1e293b]">Proveedores</h1>
+          <h1 className="text-3xl sm:text-[32px] font-bold tracking-tight text-[#1e293b]">Proveedores</h1>
           <p className="text-slate-500 text-[14px] mt-1">{visible.length} proveedor{visible.length !== 1 ? 'es' : ''} activo{visible.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-initial">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <Input
-              className="pl-8 rounded-full bg-[#f1f4f8] border-transparent focus:border-[#3b5bbd] w-52 h-9 text-[13px]"
+              className="pl-8 rounded-full bg-[#f1f4f8] border-transparent focus:border-[#3b5bbd] w-full sm:w-52 h-9 text-[13px]"
               placeholder="Buscar proveedor..."
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -319,7 +319,7 @@ export default function ProvidersPage() {
             value={showInactive ? 'all' : 'active'}
             onValueChange={v => setShowInactive(v === 'all')}
           >
-            <SelectTrigger className="h-9 rounded-full bg-[#f1f4f8] border-transparent text-[13px] w-40">
+            <SelectTrigger className="h-9 rounded-full bg-[#f1f4f8] border-transparent text-[13px] w-full sm:w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -330,7 +330,7 @@ export default function ProvidersPage() {
           {canEdit && (
             <Button
               onClick={openCreate}
-              className="bg-[#1e3a8a] hover:bg-[#15296b] text-white rounded-full h-9 px-4 text-[13px] flex items-center gap-2"
+              className="bg-[#1e3a8a] hover:bg-[#15296b] text-white rounded-full h-9 px-4 text-[13px] flex items-center gap-2 w-full sm:w-auto"
             >
               <Plus className="h-4 w-4" />
               Nuevo proveedor
@@ -357,9 +357,9 @@ export default function ProvidersPage() {
           )}
         </div>
       ) : (
-        <div className="bg-white border border-[#eef2f7] rounded-2xl overflow-hidden">
-          {/* Cabecera tabla */}
-          <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_80px] gap-4 px-5 py-3 bg-[#fafbfc] border-b border-[#eef2f7]">
+        <div className="flex flex-col gap-4 sm:block sm:bg-white sm:border sm:border-[#eef2f7] sm:rounded-2xl sm:overflow-hidden">
+          {/* Cabecera tabla (Desktop solo) */}
+          <div className="hidden sm:grid grid-cols-[2fr_1.5fr_1fr_1fr_80px] gap-4 px-5 py-3 bg-[#fafbfc] border-b border-[#eef2f7]">
             <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">Nombre</span>
             <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">Tipo</span>
             <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">Teléfono</span>
@@ -373,26 +373,36 @@ export default function ProvidersPage() {
             return (
               <div
                 key={p.id}
-                className="grid grid-cols-[2fr_1.5fr_1fr_1fr_80px] gap-4 items-center px-5 py-4 border-b border-[#eef2f7] last:border-b-0 transition-colors"
+                className="bg-white border border-[#eef2f7] rounded-xl sm:rounded-none sm:border-0 sm:border-b last:border-b-0 p-4 sm:p-0 sm:grid sm:grid-cols-[2fr_1.5fr_1fr_1fr_80px] sm:gap-4 sm:items-center sm:px-5 sm:py-4 transition-colors hover:bg-[#fafbfc]"
               >
                 {/* Nombre + avatar */}
-                <div className={`flex items-center gap-3 min-w-0 ${!p.is_active ? 'opacity-40' : ''}`}>
+                <div className={`flex items-center gap-3 min-w-0 ${!p.is_active ? 'opacity-40' : ''} mb-3 sm:mb-0`}>
                   <div
-                    className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 text-[13px] font-bold"
+                    className="w-10 h-10 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center shrink-0 text-[13px] font-bold"
                     style={{ background: typeStyle.bg, color: typeStyle.color }}
                   >
                     {p.name.substring(0, 2).toUpperCase()}
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-[14px] font-semibold text-slate-800 truncate">{p.name}</p>
                     {p.notes && (
                       <p className="text-[11px] text-slate-400 truncate">{p.notes}</p>
                     )}
                   </div>
+                  {/* Acciones en móvil (arriba a la derecha) */}
+                  <div className="flex sm:hidden items-center gap-2">
+                    {canEdit && (
+                      <Switch
+                        checked={p.is_active}
+                        onCheckedChange={() => handleToggle(p)}
+                        disabled={toggling === p.id}
+                      />
+                    )}
+                  </div>
                 </div>
 
                 {/* Tipo — todos los servicios como badges */}
-                <div className={!p.is_active ? 'opacity-40' : ''}>
+                <div className={`${!p.is_active ? 'opacity-40' : ''} mb-3 sm:mb-0`}>
                   {(p.provider_services?.length ?? 0) > 0 ? (
                     <div className="flex flex-wrap gap-1">
                       {p.provider_services!.map(s => {
@@ -413,35 +423,42 @@ export default function ProvidersPage() {
                   )}
                 </div>
 
-                {/* Teléfono */}
-                <span className={`text-[13px] text-slate-600 font-mono truncate ${!p.is_active ? 'opacity-40' : ''}`}>
-                  {p.phone ?? <span className="text-slate-300">—</span>}
-                </span>
+                {/* Contacto en móvil (dos columnas o filas) */}
+                <div className="grid grid-cols-2 sm:contents gap-2 mb-4 sm:mb-0">
+                  <div className="sm:contents">
+                    <span className="sm:hidden text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Teléfono</span>
+                    <span className={`text-[13px] text-slate-600 font-mono truncate ${!p.is_active ? 'opacity-40' : ''}`}>
+                      {p.phone ?? <span className="text-slate-300">—</span>}
+                    </span>
+                  </div>
+                  <div className="sm:contents">
+                    <span className="sm:hidden text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Email</span>
+                    <span className={`text-[13px] text-slate-600 truncate ${!p.is_active ? 'opacity-40' : ''}`}>
+                      {p.email ?? <span className="text-slate-300">—</span>}
+                    </span>
+                  </div>
+                </div>
 
-                {/* Email */}
-                <span className={`text-[13px] text-slate-600 truncate ${!p.is_active ? 'opacity-40' : ''}`}>
-                  {p.email ?? <span className="text-slate-300">—</span>}
-                </span>
-
-                {/* Acciones */}
-                <div className="flex items-center justify-end gap-1.5">
-                  {canEdit && (
-                    <>
-                      <button
-                        onClick={() => openEdit(p)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-[#eef2fb] hover:text-[#1e3a8a] transition-colors"
-                        title="Editar"
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </button>
+                {/* Acciones (Desktop solo o footer móvil) */}
+                <div className="flex items-center justify-end gap-2 border-t border-[#f8fafc] pt-3 sm:pt-0 sm:border-0">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => openEdit(p)}
+                    className="h-8 rounded-lg text-slate-400 hover:text-[#1e3a8a] sm:w-8 sm:p-0"
+                  >
+                    <Edit2 className="h-3.5 w-3.5 sm:mr-0 mr-2" />
+                    <span className="sm:hidden">Editar proveedor</span>
+                  </Button>
+                  <div className="hidden sm:block">
+                    {canEdit && (
                       <Switch
                         checked={p.is_active}
                         onCheckedChange={() => handleToggle(p)}
                         disabled={toggling === p.id}
-                        title={p.is_active ? 'Desactivar' : 'Activar'}
                       />
-                    </>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             )

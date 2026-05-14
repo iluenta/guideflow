@@ -1,4 +1,4 @@
-import { getGuestChats } from '@/app/actions/analytics'
+import { getGuestChats } from '@/app/actions/analytics-chat'
 import { getProperties } from '@/app/actions/properties'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'

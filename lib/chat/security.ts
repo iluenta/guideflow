@@ -82,7 +82,12 @@ export async function validateChatRequest(
     if (!Array.isArray(messages) || messages.length === 0) {
         return { error: new Response(JSON.stringify({ error: 'Mensajes inválidos' }), { status: 400 }) };
     }
-    const lastMessage: string = messages[messages.length - 1].content;
+
+    const lastMessageRaw = messages[messages.length - 1];
+    if (typeof lastMessageRaw?.content !== 'string') {
+        return { error: new Response(JSON.stringify({ error: 'Formato de mensaje inválido' }), { status: 400 }) };
+    }
+    const lastMessage: string = lastMessageRaw.content;
     const ip = req.headers.get('x-forwarded-for') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
     const stressSecret = req.headers.get('x-stress-test-secret');

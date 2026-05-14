@@ -62,11 +62,33 @@ export async function POST(req: Request) {
             .select('image_url')
             .eq('manual_id', manualId)
             .limit(1)
-            .single();
+            .maybeSingle();
 
-        const imageUrl = imageRecord?.image_url || '';
+        let imageSource = '';
+        let isBase64 = false;
+        let mimeType = 'image/jpeg';
 
-        const content = await generateManualForQualityTest(imageUrl, basicAnalysis, { propertyId, tenantId: authResult.access?.tenant_id });
+        if (imageRecord?.image_url) {
+            if (imageRecord.image_url.startsWith('property_scans/')) {
+                // Es un path en storage privado
+                const { data: blob } = await supabase.storage.from('property_scans').download(imageRecord.image_url);
+                if (blob) {
+                    const buffer = Buffer.from(await blob.arrayBuffer());
+                    imageSource = buffer.toString('base64');
+                    isBase64 = true;
+                    mimeType = blob.type || 'image/jpeg';
+                }
+            } else {
+                imageSource = imageRecord.image_url;
+            }
+        }
+
+        const content = await generateManualForQualityTest(imageSource, basicAnalysis, { 
+            propertyId, 
+            tenantId: authResult.access?.tenant_id,
+            isBase64,
+            mimeType
+        });
 
         return new Response(JSON.stringify({ content, chars: content.length }), {
             headers: { 'Content-Type': 'application/json' },

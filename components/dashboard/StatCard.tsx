@@ -40,7 +40,7 @@ export const StatCard = ({
       </div>
 
       <div className="flex items-baseline gap-1">
-        <span className="text-[32px] font-bold tracking-tight text-landing-ink leading-none">
+        <span className="text-2xl sm:text-[32px] font-bold tracking-tight text-landing-ink leading-none">
           {value}
         </span>
         {unit && <span className="text-xl font-medium text-landing-ink-mute">{unit}</span>}

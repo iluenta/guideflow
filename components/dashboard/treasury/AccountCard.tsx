@@ -58,7 +58,7 @@ export function AccountCard({ account }: AccountCardProps) {
         <p className="text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-1">
           Saldo estimado
         </p>
-        <p className={`text-[32px] font-bold tracking-tight leading-none ${isPositive ? 'text-[#1e3a8a]' : 'text-rose-600'}`}>
+        <p className={`text-2xl sm:text-[32px] font-bold tracking-tight leading-none ${isPositive ? 'text-[#1e3a8a]' : 'text-rose-600'}`}>
           €{fmt(balance.estimated_balance)}
         </p>
       </div>

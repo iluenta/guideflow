@@ -108,14 +108,14 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
         try {
             toast.loading('Subiendo fotos...', { id: 'analyze-process' })
 
-            // 1. Upload photos and get public URLs
-            const uploadedUrls = await Promise.all(
+            // 1. Upload photos and get object paths
+            const uploadedPaths = await Promise.all(
                 photos.map(async (photo) => {
                     setUploadingIds(prev => new Set(prev).add(photo.id))
 
                     try {
                         // Pass propertyId to the action as updated in previous step
-                        const { uploadUrl, publicUrl } = await getScanUploadUrl(propertyId, photo.file.name, photo.file.type)
+                        const { uploadUrl, path } = await getScanUploadUrl(propertyId, photo.file.name, photo.file.type)
 
                         const response = await fetch(uploadUrl, {
                             method: 'PUT',
@@ -126,7 +126,7 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
                         })
 
                         if (!response.ok) throw new Error(`Error al subir ${photo.file.name}`)
-                        return publicUrl
+                        return path
                     } finally {
                         setUploadingIds(prev => {
                             const next = new Set(prev)
@@ -140,7 +140,7 @@ export function VisualScanner({ propertyId, onStart, onSuccess }: VisualScannerP
             toast.loading('Analizando con IA...', { id: 'analyze-process' })
 
             // 2. Process with AI (Fase 1) — replaceExisting siempre true
-            const result = await processBatchScans(propertyId, uploadedUrls, true)
+            const result = await processBatchScans(propertyId, uploadedPaths, true)
 
             toast.success(`Análisis completado: Se han generado ${result.identifiedCount} manuales técnicos`, { id: 'analyze-process' })
 

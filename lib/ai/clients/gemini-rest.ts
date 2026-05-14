@@ -192,7 +192,18 @@ export async function geminiREST(
 export async function analyzeImageWithGemini(imageUrl: string, prompt: string, options: { temperature?: number, responseMimeType?: 'application/json' | 'text/plain' } = {}) {
     try {
         const { mimeType, data: base64Data } = await fetchImageAsBase64(imageUrl);
+        return analyzeImageWithBase64(base64Data, mimeType, prompt, options);
+    } catch (error) {
+        console.error('[GEMINI-VISION] Error:', error);
+        return { data: null, usage: undefined, error: (error as any).message };
+    }
+}
 
+/**
+ * Helper for image analysis using base64 data directly (useful for private storage)
+ */
+export async function analyzeImageWithBase64(base64Data: string, mimeType: string, prompt: string, options: { temperature?: number, responseMimeType?: 'application/json' | 'text/plain' } = {}) {
+    try {
         const input = [
             { inlineData: { mimeType, data: base64Data } },
             prompt
@@ -205,7 +216,7 @@ export async function analyzeImageWithGemini(imageUrl: string, prompt: string, o
 
         return { data, usage, error };
     } catch (error) {
-        console.error('[GEMINI-VISION] Error:', error);
+        console.error('[GEMINI-VISION-B64] Error:', error);
         return { data: null, usage: undefined, error: (error as any).message };
     }
 }
@@ -277,9 +288,9 @@ export function isValidExternalUrl(url: string): boolean {
 }
 
 /**
- * Internal helper to fetch image as base64
+ * Internal helper to fetch image as base64. Exported for flexibility.
  */
-async function fetchImageAsBase64(imageUrl: string): Promise<{ mimeType: string, data: string }> {
+export async function fetchImageAsBase64(imageUrl: string): Promise<{ mimeType: string, data: string }> {
     if (!isValidExternalUrl(imageUrl)) {
         const domain = new URL(imageUrl).hostname;
         logger.warn(`[SSRF-BLOCK] Blocked unsafe URL. Domain: ${domain}`);

@@ -50,20 +50,20 @@ export function ExpenseKPIs({ summary }: ExpenseKPIsProps) {
       {kpis.map(kpi => (
         <div
           key={kpi.label}
-          className="bg-white rounded-2xl border border-[#eef2f7] p-5 flex items-start gap-4"
+          className="bg-white rounded-2xl border border-[#eef2f7] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4"
         >
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${kpi.bg}`}>
             <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
           </div>
-          <div>
-            <p className="text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-0.5">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-0.5">
               {kpi.label}
             </p>
-            <p className={`text-[22px] font-bold leading-tight ${kpi.color}`}>
+            <p className={`text-[17px] sm:text-[22px] font-bold leading-tight ${kpi.color} break-words`}>
               {kpi.value}
             </p>
             {kpi.suffix && (
-              <p className="text-[11px] text-slate-400 mt-0.5">{kpi.suffix}</p>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">{kpi.suffix}</p>
             )}
           </div>
         </div>

@@ -19,15 +19,10 @@ interface TopbarProps {
 
 export const DashboardTopbar = ({ onMenuClick, profile, onSignOut }: TopbarProps) => {
   return (
-    <header className="sticky top-0 z-40 h-[72px] bg-landing-bg/85 backdrop-blur-xl border-b border-landing-rule-soft flex items-center justify-between px-8">
-      {/* Mobile Toggle & Breadcrumbs */}
+    <header className="sticky top-0 z-40 h-[72px] bg-landing-bg/85 backdrop-blur-xl border-b border-landing-rule-soft flex items-center justify-between px-5 sm:px-8">
+      {/* Left side spacing for desktop alignment */}
       <div className="flex items-center gap-4">
-        <button 
-          onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-lg hover:bg-landing-bg-deep transition-colors"
-        >
-          <Menu className="h-5 w-5 text-landing-ink-soft" />
-        </button>
+        {/* Hamburger menu removed as it is redundant with bottom nav */}
         
         <div className="hidden sm:flex items-center gap-2.5 font-jetbrains text-[11px] tracking-[0.1em] uppercase text-landing-ink-mute">
           <span>Hospyia</span>

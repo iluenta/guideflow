@@ -30,7 +30,7 @@ export default function TreasuryPage() {
   const totalBalance = accounts.reduce((s, a) => s + a.balance.estimated_balance, 0)
 
   return (
-    <div className="p-4 md:p-8 max-w-[1440px] mx-auto">
+    <div className="px-4 py-8 sm:p-8 max-w-[1440px] mx-auto">
       {/* Header */}
       <div className="flex justify-between items-start gap-4 mb-5 md:mb-8 flex-wrap">
         <div>
@@ -38,7 +38,7 @@ export default function TreasuryPage() {
             <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf] shadow-[0_0_0_4px_rgba(45,212,191,0.2)] inline-block" />
             Dashboard
           </p>
-          <h1 className="text-[24px] md:text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
+          <h1 className="text-3xl sm:text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
             Tesorería
           </h1>
           {!loading && accounts.length > 0 && (
@@ -82,7 +82,7 @@ export default function TreasuryPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
+          <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
             {accounts.map(acc => (
               <AccountCard key={acc.id} account={acc} />
             ))}

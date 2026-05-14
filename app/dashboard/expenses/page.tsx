@@ -169,7 +169,7 @@ function ExpensesPageInnerComponent() {
   const backUrl = '/dashboard/expenses'
 
   return (
-    <div className="p-4 md:p-8 max-w-[1440px] mx-auto">
+    <div className="px-4 py-8 sm:p-8 max-w-[1440px] mx-auto">
       {/* Header */}
       <div className="flex justify-between items-start gap-4 mb-5 md:mb-8">
         <div>
@@ -177,10 +177,10 @@ function ExpensesPageInnerComponent() {
             <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf] shadow-[0_0_0_4px_rgba(45,212,191,0.2)] inline-block" />
             Dashboard
           </p>
-          <h1 className="text-[24px] md:text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
+          <h1 className="text-3xl sm:text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
             Gastos
           </h1>
-          <p className="text-[13px] md:text-[15px] text-slate-500 mt-1">
+          <p className="text-[14px] sm:text-[15px] text-slate-500 mt-1">
             {loading ? '...' : `${total} gasto${total !== 1 ? 's' : ''}`} · {yearLabel}
           </p>
         </div>
@@ -216,11 +216,11 @@ function ExpensesPageInnerComponent() {
       <ExpenseKPIs summary={summary} />
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-2.5 mb-5">
+      <div className="flex flex-wrap gap-2 mb-6">
         <select
           value={filterType}
           onChange={e => handleFilterType(e.target.value as ExpenseType | '')}
-          className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
+          className="flex-1 min-w-[140px] sm:flex-none px-3 py-2.5 rounded-xl border border-slate-200 text-[13px] bg-white focus:outline-none focus:border-landing-navy"
         >
           <option value="">Todos los tipos</option>
           <option value="property">De propiedad</option>
@@ -230,7 +230,7 @@ function ExpensesPageInnerComponent() {
         <select
           value={filterCategory}
           onChange={e => handleFilterCategory(e.target.value as ExpenseCategory | '')}
-          className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
+          className="flex-1 min-w-[140px] sm:flex-none px-3 py-2.5 rounded-xl border border-slate-200 text-[13px] bg-white focus:outline-none focus:border-landing-navy"
         >
           <option value="">Todas las categorías</option>
           {EXPENSE_CATEGORY_OPTIONS.map(o => (
@@ -241,7 +241,7 @@ function ExpensesPageInnerComponent() {
         <select
           value={filterStatus}
           onChange={e => handleFilterStatus(e.target.value as ExpenseStatus | '')}
-          className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
+          className="flex-1 min-w-[140px] sm:flex-none px-3 py-2.5 rounded-xl border border-slate-200 text-[13px] bg-white focus:outline-none focus:border-landing-navy"
         >
           <option value="">Todos los estados</option>
           <option value="confirmed">Confirmados</option>
@@ -251,7 +251,7 @@ function ExpensesPageInnerComponent() {
         <select
           value={filterPayment}
           onChange={e => handleFilterPayment(e.target.value as ExpensePaymentStatus | '')}
-          className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
+          className="flex-1 min-w-[140px] sm:flex-none px-3 py-2.5 rounded-xl border border-slate-200 text-[13px] bg-white focus:outline-none focus:border-landing-navy"
         >
           <option value="">Todos los pagos</option>
           <option value="paid">Pagados</option>
