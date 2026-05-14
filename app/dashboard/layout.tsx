@@ -34,6 +34,7 @@ import {
   Eye,
   ShieldCheck,
   Building2,
+  Bot,
 } from "lucide-react";
 import { TENANT_ROLE_PERMISSIONS, type TenantRole } from "@/lib/permissions";
 
@@ -58,6 +59,7 @@ const mobileNavMore = [
   { name: "Métodos de pago", href: "/dashboard/settings/payment-methods", icon: CreditCard, resource: "settings",  action: "edit" },
   { name: "Proveedores",     href: "/dashboard/settings/providers",      icon: UserCog,    resource: "settings",    action: "edit" },
   { name: "Cuentas",         href: "/dashboard/settings/accounts",       icon: Wallet,     resource: "finances",    action: "view" },
+  { name: "Uso IA",          href: "/dashboard/settings/ai-usage",      icon: Bot,        resource: "settings",    action: "view" },
 ] as const;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -118,13 +120,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* MOBILE OVERLAY */}
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-landing-ink/30 backdrop-blur-sm lg:hidden"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
-      )}
 
       {/* SIDEBAR (Desktop) */}
       <DashboardSidebar
@@ -135,17 +130,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* MAIN CONTENT AREA */}
       <div className={cn(
-        "transition-all duration-300 ease-in-out min-h-screen flex flex-col",
+        "transition-all duration-300 ease-in-out min-h-screen w-full flex flex-col",
         collapsed ? "lg:pl-[72px]" : "lg:pl-[248px]"
       )}>
         <DashboardTopbar
-          onMenuClick={() => setMobileSidebarOpen(true)}
+          onMenuClick={() => {}}
           profile={profile}
           onSignOut={handleSignOut}
         />
 
-        <main className="flex-1 pb-24 lg:pb-8 max-w-[1440px] mx-auto w-full">
-          {children}
+        <main className="flex-1 w-full max-w-full px-4 sm:px-8 pb-24 lg:pb-8">
+          <div className="w-full max-w-[1440px] mx-auto">
+            {children}
+          </div>
         </main>
 
         {/* Sidebar Toggle Button (Floating) */}
@@ -162,44 +159,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </button>
       </div>
 
-      {/* MOBILE SIDEBAR (slide-in from left) */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-landing-rule-soft transform transition-transform duration-300 lg:hidden",
-        mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="h-[72px] flex items-center justify-between px-5 border-b border-landing-rule-soft">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-landing-navy-tint rounded-lg flex items-center justify-center">
-              <span className="text-landing-navy font-bold text-sm">H</span>
-            </div>
-            <span className="font-bold text-landing-navy">Hospyia</span>
-          </div>
-          <button onClick={() => setMobileSidebarOpen(false)} className="p-2 text-landing-ink-mute hover:text-landing-ink">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <nav className="p-3 flex flex-col gap-1 overflow-y-auto">
-          {[...mobileNavMain, ...mobileNavMore].filter(isPermitted).map(item => {
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={withYear(item.href)}
-                onClick={() => setMobileSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
-                  active
-                    ? "bg-landing-navy text-white"
-                    : "text-landing-ink-soft hover:bg-landing-bg-deep hover:text-landing-ink"
-                )}
-              >
-                <item.icon className="h-[18px] w-[18px] shrink-0" />
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
-      </aside>
 
       {/* BOTTOM NAV (Mobile) */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-landing-rule-soft lg:hidden safe-area-pb">

@@ -21,6 +21,7 @@ import {
   Receipt,
   Landmark,
   Wallet,
+  Bot,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { can, type TenantRole, TENANT_ROLE_PERMISSIONS } from "@/lib/permissions";
@@ -51,6 +52,7 @@ const navigation: NavItem[] = [
   { name: "Métodos de pago",  href: "/dashboard/settings/payment-methods",   icon: CreditCard,   resource: "settings", action: "edit" },
   { name: "Proveedores",      href: "/dashboard/settings/providers",          icon: UserCog,      resource: "settings", action: "edit" },
   { name: "Cuentas",          href: "/dashboard/settings/accounts",           icon: Wallet,       resource: "finances", action: "view" },
+  { name: "Uso IA",           href: "/dashboard/settings/ai-usage",           icon: Bot,          resource: "settings", action: "view" },
 ];
 
 interface SidebarProps {
