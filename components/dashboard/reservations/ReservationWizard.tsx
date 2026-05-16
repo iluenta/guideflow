@@ -480,7 +480,7 @@ export function ReservationWizard({
       {/* ─── STEP 0: Datos básicos ─── */}
       {step === 0 && (
         <div className="bg-white border border-[#eef2f7] rounded-2xl p-6 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Propiedad <span className="text-rose-500">*</span></Label>
               <Select
@@ -533,7 +533,7 @@ export function ReservationWizard({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Email <span className="text-slate-400 font-normal">(opcional)</span></Label>
               <Input
@@ -553,7 +553,7 @@ export function ReservationWizard({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>País <span className="text-slate-400 font-normal">(opcional)</span></Label>
               <Input
@@ -575,7 +575,7 @@ export function ReservationWizard({
 
           <hr className="border-[#eef2f7]" />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Check-in <span className="text-rose-500">*</span></Label>
               <Input
@@ -643,7 +643,7 @@ export function ReservationWizard({
             ) : (
               <>
                 {grossCharges.length > 0 && (
-                  <div className="grid grid-cols-[1fr_80px_100px_32px] gap-3 px-4 py-2 bg-[#fafbfc] border-b border-[#eef2f7]">
+                  <div className="hidden sm:grid grid-cols-[1fr_80px_100px_32px] gap-3 px-4 py-2 bg-[#fafbfc] border-b border-[#eef2f7]">
                     <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">Concepto</span>
                     <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400 text-right">IVA %</span>
                     <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400 text-right">Importe</span>
@@ -652,7 +652,7 @@ export function ReservationWizard({
                 )}
 
                 {charges.map((c, idx) => c.included_in_gross !== false && (
-                  <div key={idx} className="grid grid-cols-[1fr_80px_100px_32px] gap-3 items-center px-4 py-2.5 border-b border-[#eef2f7] last:border-b-0">
+                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_80px_100px_32px] gap-3 items-center px-4 py-3 sm:py-2.5 border-b border-[#eef2f7] last:border-b-0">
                     <div className="flex gap-2 min-w-0">
                       <Select
                         value={c.charge_type}
@@ -965,12 +965,12 @@ export function ReservationWizard({
           )}
 
           {/* Financial summary */}
-          <div className="grid grid-cols-3 bg-white border border-[#eef2f7] rounded-2xl overflow-hidden">
-            <div className="p-4 border-r border-[#eef2f7]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 bg-white border border-[#eef2f7] rounded-2xl overflow-hidden">
+            <div className="p-4 border-b sm:border-b-0 sm:border-r border-[#eef2f7]">
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400 mb-2">Bruto</p>
               <p className="text-[20px] font-bold text-slate-800">€{fmt(form.gross_amount)}</p>
             </div>
-            <div className="p-4 border-r border-[#eef2f7]">
+            <div className="p-4 border-b sm:border-b-0 sm:border-r border-[#eef2f7]">
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400 mb-2">Comisiones</p>
               <p className="text-[20px] font-bold text-rose-600">-€{fmt(totalCommissions)}</p>
             </div>
@@ -999,7 +999,7 @@ export function ReservationWizard({
 
             {withPayment && (
               <div className="space-y-4 pt-4 border-t border-[#eef2f7]">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Método de pago</Label>
                     <Select
@@ -1031,7 +1031,7 @@ export function ReservationWizard({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Importe (€)</Label>
                     <Input
@@ -1102,7 +1102,7 @@ export function ReservationWizard({
       )}
 
       {/* Navigation */}
-      <div className="flex justify-between mt-6">
+      <div className="flex justify-between mt-10 mb-10">
         <Button
           variant="outline"
           className="rounded-full"
@@ -1182,7 +1182,7 @@ function CommissionBlock({
   return (
     <div className="space-y-3">
       <p className="text-[13px] font-semibold text-slate-700">{label}</p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-[11px] text-slate-400">% sobre bruto</Label>
           <div className="relative">
@@ -1218,7 +1218,7 @@ function CommissionBlock({
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-[11px] text-slate-400">IVA sobre comisión</Label>
           <div className="relative">

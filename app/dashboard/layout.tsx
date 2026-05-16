@@ -111,7 +111,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-landing-bg font-poppins">
+    <div className="min-h-screen bg-landing-bg font-poppins flex flex-col">
       <GlobalErrorHandler />
 
       {process.env.NODE_ENV === 'development' && (
@@ -130,7 +130,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* MAIN CONTENT AREA */}
       <div className={cn(
-        "transition-all duration-300 ease-in-out min-h-screen w-full flex flex-col",
+        "transition-all duration-300 ease-in-out flex-1 w-full flex flex-col min-h-0",
         collapsed ? "lg:pl-[72px]" : "lg:pl-[248px]"
       )}>
         <DashboardTopbar

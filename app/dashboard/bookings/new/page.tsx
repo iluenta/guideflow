@@ -109,13 +109,13 @@ export default async function NewBookingPage({ searchParams }: Props) {
   }
 
   return (
-    <div className="p-8 max-w-[1440px] mx-auto">
+    <div className="p-4 sm:p-8 max-w-[1440px] mx-auto">
       <div className="mb-8">
         <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2.5 mb-2.5">
           <span className="w-[7px] h-[7px] rounded-full bg-[#2dd4bf] shadow-[0_0_0_4px_rgba(45,212,191,0.2)] inline-block" />
           Reservas
         </p>
-        <h1 className="text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
+        <h1 className="text-[28px] sm:text-[36px] font-bold tracking-[-0.03em] text-[#1e3a8a] leading-[1.05]">
           {isEditing ? 'Editar reserva' : 'Nueva reserva'}
         </h1>
         <p className="text-[15px] text-slate-500 mt-2">
