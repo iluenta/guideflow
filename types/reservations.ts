@@ -14,6 +14,7 @@ export type ProviderType =
   | 'supplies'
   | 'marketing'
   | 'management'
+  | 'mortgage'
   | 'other'
 
 export interface ProviderService {

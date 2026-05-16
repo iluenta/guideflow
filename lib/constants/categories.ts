@@ -15,6 +15,7 @@ export const EXPENSE_CATEGORIES = [
   { value: 'supplies',    label: 'Materiales y suministros' },
   { value: 'marketing',   label: 'Marketing y fotografía' },
   { value: 'management',  label: 'Comisiones de gestión' },
+  { value: 'mortgage',    label: 'Hipoteca' },
   { value: 'other',       label: 'Otros' },
 ] as const
 

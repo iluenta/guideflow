@@ -34,6 +34,7 @@ const TYPE_COLORS: Partial<Record<ProviderType, { bg: string; color: string }>> 
   supplies:    { bg: '#fff8e1', color: '#f57f17' },
   marketing:   { bg: '#fbe9e7', color: '#bf360c' },
   management:  { bg: '#ede7f6', color: '#4527a0' },
+  mortgage:    { bg: '#e0e7ff', color: '#3730a3' },
   other:       { bg: '#f1f4f8', color: '#475569' },
 }
 const DEFAULT_COLOR = { bg: '#f1f4f8', color: '#475569' }

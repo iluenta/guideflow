@@ -649,6 +649,7 @@ function getNextPeriodDate(date: Date, frequency: string): Date {
   const next = new Date(date)
   if (frequency === 'monthly')   next.setMonth(next.getMonth() + 1)
   if (frequency === 'quarterly') next.setMonth(next.getMonth() + 3)
+  if (frequency === 'biannual')  next.setMonth(next.getMonth() + 6)
   if (frequency === 'annual')    next.setFullYear(next.getFullYear() + 1)
   return next
 }

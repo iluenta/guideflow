@@ -663,9 +663,10 @@ export async function getProjection(): Promise<ProjectionDataPoint[]> {
       const monthOfYear = tpl.month_of_year as number | null
 
       let applies = false
-      if (freq === 'monthly') applies = true
+      if (freq === 'monthly')   applies = true
       if (freq === 'quarterly') applies = month % 3 === start.getMonth() % 3
-      if (freq === 'annual')   applies = monthOfYear !== null ? month === (monthOfYear - 1) : month === start.getMonth()
+      if (freq === 'biannual')  applies = month % 6 === start.getMonth() % 6
+      if (freq === 'annual')    applies = monthOfYear !== null ? month === (monthOfYear - 1) : month === start.getMonth()
 
       if (applies) {
         const vat = Math.round((tpl.estimated_amount ?? 0) * (tpl.vat_pct ?? 0)) / 100

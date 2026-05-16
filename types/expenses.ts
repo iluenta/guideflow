@@ -4,12 +4,12 @@ export type ExpenseCategory =
   | 'cleaning' | 'laundry' | 'checkin' | 'maintenance'
   | 'utilities' | 'wifi' | 'streaming' | 'community'
   | 'insurance' | 'ibi' | 'supplies' | 'marketing'
-  | 'management' | 'other'
+  | 'management' | 'mortgage' | 'other'
 
 export type ExpenseStatus = 'estimated' | 'confirmed'
 export type ExpensePaymentStatus = 'pending' | 'paid'
 export type ExpenseType = 'reservation' | 'property'
-export type RecurringFrequency = 'monthly' | 'quarterly' | 'annual'
+export type RecurringFrequency = 'monthly' | 'quarterly' | 'biannual' | 'annual'
 export type RecurringAmountType = 'fixed' | 'estimated'
 export type VatPct = 0 | 4 | 10 | 21
 
@@ -29,6 +29,7 @@ export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   supplies:   'Materiales',
   marketing:  'Marketing',
   management: 'Gestión',
+  mortgage:   'Hipoteca',
   other:      'Otros',
 }
 

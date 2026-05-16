@@ -115,98 +115,105 @@ export function RecurringTemplateForm({ template, onClose, onSaved }: RecurringT
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-6">
           {/* Propiedad + Nombre */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Propiedad *</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Propiedad *</label>
               <select
                 value={propertyId}
                 onChange={e => setPropertyId(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
               >
-                <option value="">Seleccionar...</option>
+                <option value="">Seleccionar propiedad...</option>
                 {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Nombre *</label>
+            <div className="space-y-1.5">
+              <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Nombre *</label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required
-                placeholder="WiFi casa, Seguro hogar..."
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-landing-navy"
+                placeholder="Ej: Seguro Hogar, WiFi..."
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
               />
             </div>
           </div>
 
           {/* Categoría */}
-          <div>
-            <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Categoría *</label>
+          <div className="space-y-1.5">
+            <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Categoría *</label>
             <select
               value={category}
               onChange={e => setCategory(e.target.value as ExpenseCategory)}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
             >
               {EXPENSE_CATEGORY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
 
           {/* Proveedor */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Proveedor</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Proveedor</label>
               <select
                 value={providerId}
                 onChange={e => { setProviderId(e.target.value); if (e.target.value) setProviderOverride('') }}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
               >
-                <option value="">Sin proveedor</option>
+                <option value="">Sin proveedor asignado</option>
                 {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             {!providerId && (
-              <div>
-                <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Proveedor (texto)</label>
+              <div className="space-y-1.5">
+                <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Proveedor (otro)</label>
                 <input
                   type="text"
                   value={providerOverride}
                   onChange={e => setProviderOverride(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-landing-navy"
+                  placeholder="Nombre del proveedor..."
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
                 />
               </div>
             )}
           </div>
 
           {/* Tipo importe + importe */}
-          <div>
-            <label className="block text-[12px] font-medium text-slate-600 mb-2">Tipo de importe</label>
-            <div className="flex gap-2 mb-3">
-              {(['fixed', 'estimated'] as RecurringAmountType[]).map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setAmountType(t)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    amountType === t ? 'bg-landing-navy text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {t === 'fixed' ? 'Fijo' : 'Estimado'}
-                </button>
-              ))}
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Tipo de importe</label>
+              <div className="flex p-1 bg-slate-100 rounded-xl">
+                {(['fixed', 'estimated'] as RecurringAmountType[]).map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setAmountType(t)}
+                    className={`flex-1 py-2 rounded-lg text-[13px] font-semibold transition-all ${
+                      amountType === t ? 'bg-white text-landing-navy shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {t === 'fixed' ? 'Fijo' : 'Estimado'}
+                  </button>
+                ))}
+              </div>
             </div>
+
             {amountType === 'estimated' && (
-              <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-3">
-                Se generará con este importe como referencia. Deberás confirmar con el importe real al recibir la factura.
-              </p>
+              <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                <p className="text-[12px] text-amber-700 leading-relaxed">
+                  <strong>Nota:</strong> Los gastos estimados se generan con el importe de referencia y deben confirmarse manualmente al recibir la factura real.
+                </p>
+              </div>
             )}
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="block text-[12px] font-medium text-slate-600 mb-1.5">
-                  {amountType === 'fixed' ? 'Importe (€)' : 'Importe estimado (€)'}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-1 space-y-1.5">
+                <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">
+                  {amountType === 'fixed' ? 'Importe (€)' : 'Estimado (€)'}
                 </label>
                 <input
                   type="number"
@@ -215,132 +222,132 @@ export function RecurringTemplateForm({ template, onClose, onSaved }: RecurringT
                   value={estimatedAmount}
                   onChange={e => setEstimatedAmount(e.target.value)}
                   required
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-landing-navy"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] font-mono bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
                 />
               </div>
-              <div>
-                <label className="block text-[12px] font-medium text-slate-600 mb-1.5">IVA</label>
+              <div className="space-y-1.5">
+                <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">IVA %</label>
                 <select
                   value={vatPct}
                   onChange={e => setVatPct(Number(e.target.value) as VatPct)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
                 >
                   {[0, 4, 10, 21].map(v => <option key={v} value={v}>{v}%</option>)}
                 </select>
               </div>
-              <div className="flex items-end pb-2.5">
-                <label className="flex items-center gap-2 text-[12px] text-slate-600 cursor-pointer">
+              <div className="flex items-center sm:pt-6">
+                <label className="flex items-center gap-3 p-3 w-full rounded-xl border border-slate-100 bg-slate-50/50 cursor-pointer hover:bg-slate-50 transition-colors">
                   <input
                     type="checkbox"
                     checked={isVatDeductible}
                     onChange={e => setIsVatDeductible(e.target.checked)}
-                    className="w-4 h-4 rounded accent-landing-navy"
+                    className="w-4 h-4 rounded border-slate-300 text-landing-navy focus:ring-landing-navy"
                   />
-                  IVA deducible
+                  <span className="text-[13px] font-medium text-slate-700">Deducible</span>
                 </label>
               </div>
             </div>
           </div>
 
           {/* Forma de pago + auto-pago */}
-          <div className="space-y-3">
-            <div>
-              <label className="block text-[12px] font-medium text-slate-600 mb-1.5">
-                Forma de pago habitual
-              </label>
-              <select
-                value={defaultPaymentMethod}
-                onChange={e => {
-                  setDefaultPaymentMethod(e.target.value)
-                  if (!e.target.value) setAutoMarkPaid(false)
-                }}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
-              >
-                <option value="">Sin especificar</option>
-                <option value="Domiciliación">Domiciliación</option>
-                <option value="Transferencia">Transferencia</option>
-                <option value="Tarjeta">Tarjeta</option>
-                <option value="Efectivo">Efectivo</option>
-                <option value="Otro">Otro</option>
-              </select>
-            </div>
-
-            {accounts.length > 0 && (
-              <div>
-                <label className="block text-[12px] font-medium text-slate-600 mb-1.5">
-                  Cuenta de cargo
-                </label>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Forma de pago</label>
                 <select
-                  value={defaultPaymentAccountId}
-                  onChange={e => setDefaultPaymentAccountId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
+                  value={defaultPaymentMethod}
+                  onChange={e => {
+                    setDefaultPaymentMethod(e.target.value)
+                    if (!e.target.value) setAutoMarkPaid(false)
+                  }}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
                 >
-                  <option value="">Sin asignar</option>
-                  {accounts.map(a => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
+                  <option value="">No especificada</option>
+                  <option value="Domiciliación">Domiciliación</option>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Tarjeta">Tarjeta</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Otro">Otro</option>
                 </select>
               </div>
-            )}
+              {accounts.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Cuenta cargo</label>
+                  <select
+                    value={defaultPaymentAccountId}
+                    onChange={e => setDefaultPaymentAccountId(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
+                  >
+                    <option value="">Sin cuenta asignada</option>
+                    {accounts.map(a => (
+                      <option key={a.id} value={a.id}>{a.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
 
             {amountType === 'fixed' && !!defaultPaymentMethod && (
-              <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200">
-                <div className="flex-1">
-                  <p className="text-[13px] font-medium text-slate-700">
-                    Marcar como pagado automáticamente al generar
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Actívalo si este gasto se paga solo (ej: domiciliación bancaria). No aplica a gastos estimados.
-                  </p>
-                </div>
+              <div className="flex items-start gap-3 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/50">
                 <input
                   type="checkbox"
                   checked={autoMarkPaid}
                   onChange={e => setAutoMarkPaid(e.target.checked)}
-                  className="w-4 h-4 mt-0.5 rounded accent-landing-navy shrink-0"
+                  className="w-4 h-4 mt-1 rounded border-slate-300 text-landing-navy focus:ring-landing-navy shrink-0"
                 />
+                <div className="space-y-1">
+                  <p className="text-[13px] font-bold text-landing-navy">
+                    Auto-pago al generar
+                  </p>
+                  <p className="text-[11px] text-slate-500 leading-normal">
+                    Marcar automáticamente como pagado al generarse el gasto. Útil para recibos domiciliados.
+                  </p>
+                </div>
               </div>
             )}
           </div>
 
           {/* Frecuencia */}
-          <div>
-            <label className="block text-[12px] font-medium text-slate-600 mb-2">Frecuencia</label>
-            <div className="flex gap-2 mb-3">
-              {(['monthly', 'quarterly', 'annual'] as RecurringFrequency[]).map(f => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setFrequency(f)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    frequency === f ? 'bg-landing-navy text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {f === 'monthly' ? 'Mensual' : f === 'quarterly' ? 'Trimestral' : 'Anual'}
-                </button>
-              ))}
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Frecuencia</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(['monthly', 'quarterly', 'biannual', 'annual'] as RecurringFrequency[]).map(f => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setFrequency(f)}
+                    className={`py-2 rounded-xl text-[12px] font-semibold transition-all border ${
+                      frequency === f 
+                        ? 'bg-landing-navy text-white border-landing-navy shadow-sm' 
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {f === 'monthly' ? 'Mensual' : f === 'quarterly' ? 'Trimestral' : f === 'biannual' ? 'Semestral' : 'Anual'}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[12px] font-medium text-slate-600 mb-1.5">
-                  Día del período (1-28)
-                </label>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Día ejecución (1-28)</label>
                 <input
                   type="number"
                   min={1}
                   max={28}
                   value={dayOfPeriod}
                   onChange={e => setDayOfPeriod(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-landing-navy"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
                 />
               </div>
               {frequency === 'annual' && (
-                <div>
-                  <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Mes del año</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Mes ejecución</label>
                   <select
                     value={monthOfYear}
                     onChange={e => setMonthOfYear(Number(e.target.value))}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-landing-navy"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
                   >
                     {MONTHS.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
                   </select>
@@ -350,52 +357,53 @@ export function RecurringTemplateForm({ template, onClose, onSaved }: RecurringT
           </div>
 
           {/* Fechas */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Fecha de inicio *</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div className="space-y-1.5">
+              <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Fecha inicio *</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={e => setStartDate(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-landing-navy"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
               />
             </div>
-            <div>
-              <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Fecha de fin (opcional)</label>
+            <div className="space-y-1.5">
+              <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Fecha fin (opcional)</label>
               <input
                 type="date"
                 value={endDate}
                 onChange={e => setEndDate(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-landing-navy"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all"
               />
             </div>
           </div>
 
           {/* Notas */}
-          <div>
-            <label className="block text-[12px] font-medium text-slate-600 mb-1.5">Notas</label>
+          <div className="space-y-1.5 pt-2">
+            <label className="block text-[12px] font-bold text-[#1e3a8a] uppercase tracking-wider">Observaciones</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-landing-navy resize-none"
+              rows={3}
+              placeholder="Detalles adicionales sobre la periodicidad o el gasto..."
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[14px] bg-slate-50 focus:bg-white focus:outline-none focus:border-landing-navy transition-all resize-none"
             />
           </div>
 
-          {/* Footer */}
-          <div className="flex gap-3 pt-2">
+          {/* Footer Actions */}
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className="w-full sm:flex-1 py-3.5 rounded-xl border border-slate-200 text-[14px] font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 py-2.5 rounded-xl bg-landing-navy text-white text-sm font-semibold hover:bg-landing-navy-soft disabled:opacity-60"
+              className="w-full sm:flex-1 py-3.5 rounded-xl bg-[#1e3a8a] text-white text-[14px] font-bold hover:bg-[#15296b] shadow-lg shadow-blue-900/10 disabled:opacity-50 transition-all"
             >
               {saving ? 'Guardando...' : template ? 'Guardar cambios' : 'Crear plantilla'}
             </button>
