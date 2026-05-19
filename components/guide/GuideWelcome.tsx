@@ -42,7 +42,7 @@ interface GuideWelcomeProps {
     propertyId?: string;
     themeId?: string;
     context?: any[];
-    sections?: any[];
+
     manuals?: any[];
     disabledLanguage?: boolean;
     latitude?: number | null;
@@ -190,7 +190,6 @@ export function GuideWelcome({
     propertyId,
     themeId = 'modern_v2',
     context = [],
-    sections = [],
     manuals = [],
     disabledLanguage = false,
     latitude,

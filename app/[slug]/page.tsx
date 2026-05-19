@@ -1,4 +1,4 @@
-import { getPropertyBySlug, getGuideSections, getPropertyManuals, getPropertyRecommendations, getPropertyFaqs } from '@/app/actions/properties'
+import { getPropertyBySlug, getPropertyManuals, getPropertyRecommendations, getPropertyFaqs } from '@/app/actions/properties'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { validateAccessToken } from '@/lib/security'
@@ -88,27 +88,12 @@ const CRITICAL_UI_STRINGS = [
 
 /** Extracts all user-visible translatable strings from guide data (mirrors GuideViewContainer eager prefetch). */
 function extractGuideTexts(
-    sections: any[],
     faqs: any[],
     recommendations: any[],
     manuals: any[],
     context: any[]
 ): string[] {
     const texts: string[] = [];
-
-    sections?.forEach((s: any) => {
-        if (s.title) texts.push(s.title);
-        const d = s.data;
-        if (!d) return;
-        if (typeof d.content === 'string' && d.content.trim()) texts.push(d.content);
-        if (typeof d.text === 'string' && d.text.trim()) texts.push(d.text);
-        if (typeof d.address === 'string' && d.address.trim()) texts.push(d.address);
-        if (Array.isArray(d.items)) d.items.forEach((item: any) => {
-            if (typeof item === 'string') texts.push(item);
-            if (typeof item?.text === 'string') texts.push(item.text);
-            if (typeof item?.label === 'string') texts.push(item.label);
-        });
-    });
 
     faqs?.forEach((f: any) => {
         if (f.question) texts.push(f.question);
@@ -303,7 +288,6 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     // Antes: datos → traducciones (secuencial)
     // Ahora: datos + traducciones al mismo tiempo
     const [
-        sections,
         manuals,
         recommendations,
         faqs,
@@ -311,7 +295,6 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
         { data: branding },
         initialTranslations
     ] = await Promise.all([
-        getGuideSections(property.id),
         getPropertyManuals(property.id),
         getPropertyRecommendations(property.id),
         getPropertyFaqs(property.id),
@@ -330,7 +313,7 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
     let allTranslations = initialTranslations;
     if (initialLanguage !== 'es') {
         const contentTexts = extractGuideTexts(
-            sections, faqs ?? [], recommendations ?? [], manuals ?? [], context ?? []
+            faqs ?? [], recommendations ?? [], manuals ?? [], context ?? []
         );
         if (contentTexts.length > 0) {
             const contentTranslations = await TranslationService.fetchCachedBatch(
@@ -390,7 +373,6 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
             <GuideViewContainer
                 property={property}
                 branding={branding}
-                sections={sections}
                 manuals={manuals}
                 recommendations={recommendations}
                 faqs={faqs}

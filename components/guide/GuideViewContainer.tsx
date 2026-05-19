@@ -77,7 +77,6 @@ function ViewSkeleton() {
 interface GuideViewContainerProps {
     property: any;
     branding?: any;
-    sections: any[];
     manuals: any[];
     recommendations: any[];
     faqs?: any[];
@@ -94,7 +93,6 @@ interface GuideViewContainerProps {
 export function GuideViewContainer({
     property,
     branding,
-    sections,
     manuals,
     recommendations,
     faqs = [],
@@ -258,11 +256,11 @@ export function GuideViewContainer({
     }, [cacheKey]);
 
     useEffect(() => {
-        if (property && sections && manuals) {
-            const dataToCache = { property, branding, sections, manuals, recommendations, faqs, context, timestamp: Date.now() };
+        if (property && manuals) {
+            const dataToCache = { property, branding, manuals, recommendations, faqs, context, timestamp: Date.now() };
             localStorage.setItem(cacheKey, JSON.stringify(dataToCache));
         }
-    }, [property, branding, sections, manuals, recommendations, faqs, context, cacheKey]);
+    }, [property, branding, manuals, recommendations, faqs, context, cacheKey]);
 
     // Eager prefetch: batch-translate all guide content on mount so individual views
     // find cache hits instead of triggering separate on-demand translation requests.
@@ -270,21 +268,6 @@ export function GuideViewContainer({
         if (language === 'es' || !accessToken) return;
 
         const texts: string[] = [];
-
-        // Custom guide sections (SectionRenderer)
-        sections?.forEach(s => {
-            if (s.title) texts.push(s.title);
-            const d = s.data;
-            if (!d) return;
-            if (typeof d.content === 'string' && d.content.trim()) texts.push(d.content);
-            if (typeof d.text === 'string' && d.text.trim()) texts.push(d.text);
-            if (typeof d.address === 'string' && d.address.trim()) texts.push(d.address);
-            if (Array.isArray(d.items)) d.items.forEach((item: any) => {
-                if (typeof item === 'string') texts.push(item);
-                if (typeof item?.text === 'string') texts.push(item.text);
-                if (typeof item?.label === 'string') texts.push(item.label);
-            });
-        });
 
         // FAQs (ManualsView → HowToAccordion)
         faqs?.forEach(f => {
@@ -405,7 +388,7 @@ export function GuideViewContainer({
 
         // Fire all chunks in parallel
         Promise.all(chunks.map(translateChunk));
-    // sections/faqs/recommendations/manuals are stable SSR props — intentionally omitted from deps
+    // faqs/recommendations/manuals are stable SSR props — intentionally omitted from deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [language, property.id, accessToken]);
 
@@ -492,7 +475,6 @@ export function GuideViewContainer({
                     propertyId={property.id}
                     themeId={themeId}
                     context={displayContext}
-                    sections={sections}
                     manuals={displayManuals}
                     disabledLanguage={!!tokenLanguage}
                     latitude={property.latitude}
@@ -525,7 +507,6 @@ export function GuideViewContainer({
                      propertyId={property.id}
                      themeId={themeId}
                      context={displayContext}
-                     sections={sections}
                      manuals={displayManuals}
                      disabledLanguage={!!tokenLanguage}
                      property={property}
@@ -542,8 +523,7 @@ export function GuideViewContainer({
             case 'rules': {
                 const rulesData = context?.find((c: any) => c.category === 'rules')?.content || {};
                 const rulesCheckinData = context?.find((c: any) => c.category === 'checkin')?.content || {};
-                const rulesSection = sections.find(s => s.title.toLowerCase().includes('normas') || s.title.toLowerCase().includes('reglas'));
-                return <RulesView onBack={handleBack} rulesData={rulesData} checkinData={rulesCheckinData} oldRules={rulesSection?.data?.text} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
+                return <RulesView onBack={handleBack} rulesData={rulesData} checkinData={rulesCheckinData} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
             }
             case 'manuals':
                 return <ManualsView onBack={handleBack} manuals={manuals} faqs={faqs} currentLanguage={language} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} themeId={themeId} />;
@@ -594,7 +574,7 @@ export function GuideViewContainer({
                             </div>
                         </header>
                         <div className="relative z-10 bg-beige">
-                            <MenuGrid onNavigate={handleNavigate} welcomeData={welcomeData} imageUrl={property.main_image_url} currentLanguage={language} accessToken={accessToken} propertyId={property.id} manuals={displayManuals} recommendations={displayRecommendations} context={displayContext} sections={sections} />
+                            <MenuGrid onNavigate={handleNavigate} welcomeData={welcomeData} imageUrl={property.main_image_url} currentLanguage={language} accessToken={accessToken} propertyId={property.id} manuals={displayManuals} recommendations={displayRecommendations} context={displayContext} />
                         </div>
                         <div className="px-6 pb-24 text-center opacity-30">
                             <p className="text-[9px] text-navy uppercase font-black tracking-[0.4em] flex flex-wrap items-center justify-center gap-x-2">
@@ -627,7 +607,6 @@ export function GuideViewContainer({
                         propertyId={property.id}
                         themeId={themeId}
                         context={displayContext}
-                        sections={sections}
                         manuals={displayManuals}
                         disabledLanguage={!!tokenLanguage}
                     />
@@ -666,7 +645,6 @@ export function GuideViewContainer({
                         manuals={displayManuals}
                         recommendations={displayRecommendations}
                         context={displayContext}
-                        sections={sections}
                         themeId={themeId}
                     />
                     <ContactModal

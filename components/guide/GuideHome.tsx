@@ -38,7 +38,7 @@ interface GuideHomeProps {
     propertyId?: string;
     themeId?: string;
     context?: any[];
-    sections?: any[];
+
     manuals?: any[];
     disabledLanguage?: boolean;
     property?: { full_address?: string };
@@ -75,7 +75,6 @@ export function GuideHome({
     propertyId,
     themeId = 'modern',
     context = [],
-    sections = [],
     manuals = [],
     disabledLanguage = false,
     property,
@@ -85,11 +84,8 @@ export function GuideHome({
 
     const hasCheckin = !!context?.find(c => c.category === 'checkin')?.content?.steps?.length;
 
-    // Evaluate if there are actual rules text inside the section
-    const rulesSection = sections?.find(s => s.type === 'rules');
     const rulesContext = context?.find(c => c.category === 'rules')?.content;
-    const hasRulesContext = !!(rulesContext?.rules_items?.length > 0 || rulesContext?.quiet_hours || rulesContext?.checkout_time);
-    const hasRules = !!(rulesSection?.content && rulesSection.content.length > 5) || hasRulesContext;
+    const hasRules = !!(rulesContext?.rules_items?.length > 0 || rulesContext?.quiet_hours || rulesContext?.checkout_time);
     const hasManuals = manuals && manuals.length > 0;
 
     // Dynamic Translations

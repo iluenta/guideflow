@@ -45,11 +45,6 @@ function sanitizeProperty(property: any): Partial<Property> {
     return safe;
 }
 
-function sanitizeGuideSection(section: any): Partial<GuideSection> {
-    if (!section) return section;
-    const { tenant_id: _t, ...safe } = section;
-    return safe;
-}
 
 function sanitizeRecommendation(rec: any) {
     if (!rec) return rec;
@@ -87,17 +82,6 @@ export type Property = {
     updated_at: string
 }
 
-export type GuideSection = {
-    id: string
-    property_id: string
-    tenant_id: string
-    order_index: number
-    title: string
-    content_type: 'text' | 'image' | 'video' | 'map' | 'ai_chat' | 'recommendation'
-    data: any
-    created_at: string
-    updated_at: string
-}
 
 export async function getProperties() {
     const supabase = await createClient()
@@ -626,26 +610,6 @@ export async function saveManual(manualId: string, propertyId: string, updates: 
     revalidatePath(`/dashboard/properties/${currentPropId}`)
 }
 
-// Guide Sections Actions
-export async function getGuideSections(propertyId: string) {
-    const supabase = await createClient()
-
-    const currentPropId = sanitizeUUID(propertyId)
-    if (!currentPropId) return []
-
-    const { data, error } = await supabase
-        .from('guide_sections')
-        .select('*')
-        .eq('property_id', currentPropId)
-        .order('order_index', { ascending: true })
-
-    if (error) {
-        console.error('Error fetching sections:', error.message)
-        return []
-    }
-
-    return (data || []).map(sanitizeGuideSection)
-}
 
 export async function getPropertyRecommendations(propertyId: string) {
     const supabase = await createClient()
@@ -690,89 +654,6 @@ export async function getPropertyFaqs(propertyId: string) {
     })
 }
 
-export async function saveGuideSection(propertyId: string, section: Partial<GuideSection>) {
-    const supabase = await createClient()
-    const { tenant_id, tenant_role } = await requireProfile(supabase)
-    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
-        throw new Error('No tienes permisos para editar la guía')
-    }
-    if (!tenant_id) throw new Error('Usuario sin tenant')
-
-    const currentPropId = sanitizeUUID(propertyId)
-    const currentTenantId = sanitizeUUID(tenant_id)
-    if (!currentPropId || !currentTenantId) throw new Error('IDs requeridos')
-
-    const { data, error } = await supabase
-        .from('guide_sections')
-        .upsert({
-            ...section,
-            property_id: currentPropId,
-            tenant_id: currentTenantId
-        })
-        .select()
-        .single()
-
-    if (error) {
-        console.error('[SECTION] Error saving:', error.message)
-        throw new Error('Error al guardar la sección')
-    }
-
-    revalidatePath(`/dashboard/properties/${propertyId}`)
-    return data as GuideSection
-}
-
-export async function deleteGuideSection(sectionId: string, propertyId: string) {
-    const supabase = await createClient()
-    const { tenant_id, tenant_role } = await requireProfile(supabase)
-    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
-        throw new Error('No tienes permisos para editar la guía')
-    }
-
-    const currentSectionId = sanitizeUUID(sectionId)
-    const currentPropId = sanitizeUUID(propertyId)
-    if (!currentSectionId || !currentPropId) throw new Error('IDs requeridos')
-
-    const { error } = await supabase
-        .from('guide_sections')
-        .delete()
-        .eq('id', currentSectionId)
-        .eq('tenant_id', tenant_id)
-
-    if (error) {
-        console.error('[SECTION] Error deleting:', error.message)
-        throw new Error('Error al eliminar la sección')
-    }
-
-    revalidatePath(`/dashboard/properties/${propertyId}`)
-}
-
-export async function updateSectionsOrder(propertyId: string, sectionIds: string[]) {
-    const supabase = await createClient()
-    const { tenant_id, tenant_role } = await requireProfile(supabase)
-    if (!can(tenant_role as TenantRole, 'properties', 'edit')) {
-        throw new Error('No tienes permisos para editar la guía')
-    }
-    const currentPropId = sanitizeUUID(propertyId)
-    const currentTenantId = sanitizeUUID(tenant_id)
-    if (!currentPropId || !currentTenantId) throw new Error('IDs requeridos')
-
-    const updates = sectionIds.map((id, index) => ({
-        id: sanitizeUUID(id) || id, // Fallback safe
-        order_index: index,
-        tenant_id: currentTenantId
-    }))
-
-    const { error } = await supabase
-        .from('guide_sections')
-        .upsert(updates)
-
-    if (error) {
-        console.error('[SECTION] Error updating order:', error.message)
-        throw new Error('Error al actualizar el orden de secciones')
-    }
-
-    revalidatePath(`/dashboard/properties/${currentPropId}`)
-}
 
 
 /**

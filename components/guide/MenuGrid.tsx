@@ -36,7 +36,6 @@ interface MenuGridProps {
     manuals?: any[];
     recommendations?: any[];
     context?: any[];
-    sections?: any[];
 }
 
 export function MenuGrid({
@@ -49,7 +48,6 @@ export function MenuGrid({
     manuals = [],
     recommendations = [],
     context = [],
-    sections = []
 }: MenuGridProps) {
     const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('afternoon');
     const [currentTime, setCurrentTime] = useState('');
@@ -143,8 +141,7 @@ export function MenuGrid({
     const hasWifi = !!context?.find(c => c.category === 'tech')?.content?.wifi_ssid;
     const rulesContext = context?.find(c => c.category === 'rules')?.content;
     const hasRules = !!(rulesContext?.rules_items?.length > 0 || rulesContext?.quiet_hours || rulesContext?.checkout_time) ||
-        !!context?.find(c => c.category === 'checkin')?.content ||
-        !!sections?.find(s => s.title?.toLowerCase().includes('normas') || s.title?.toLowerCase().includes('reglas'));
+        !!context?.find(c => c.category === 'checkin')?.content;
     const hasManuals = manuals.length > 0;
     const hasCheckin = !!context?.find(c => c.category === 'checkin')?.content?.steps?.length;
 

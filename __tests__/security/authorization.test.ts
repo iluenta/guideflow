@@ -291,62 +291,6 @@ describe('Authorization and Tenant Isolation Tests', () => {
     });
   });
 
-  describe('Guide Sections Access Control', () => {
-    it('debería filtrar secciones por tenant_id', async () => {
-      const { getGuideSections } = await import('@/app/actions/properties');
-
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValueOnce({
-          data: [
-            {
-              id: 'section-1',
-              property_id: 'prop-1',
-              tenant_id: 'tenant-1-id',
-            },
-          ],
-          error: null,
-        }),
-      });
-
-      const sections = await getGuideSections('prop-1');
-
-      expect(sections.length).toBeGreaterThanOrEqual(0);
-    });
-
-    it('debería validar tenant_id al crear secciones', async () => {
-      const { saveGuideSection } = await import('@/app/actions/properties');
-
-      mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: user1 },
-        error: null,
-      });
-
-      mockSupabase.from.mockReturnValueOnce({
-        upsert: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValueOnce({
-          data: {
-            id: 'section-1',
-            property_id: 'prop-1',
-            tenant_id: 'tenant-1-id',
-            title: 'Test Section',
-          },
-          error: null,
-        }),
-      });
-
-      const section = await saveGuideSection('prop-1', {
-        title: 'Test Section',
-        content_type: 'text',
-        data: { text: 'Test content' },
-      } as any);
-
-      expect(section.tenant_id).toBe('tenant-1-id');
-    });
-  });
-
   describe('RLS Policies', () => {
     it('debería verificar que RLS está habilitado en tablas críticas', () => {
       // Verificar que las tablas tienen RLS habilitado
@@ -356,7 +300,6 @@ describe('Authorization and Tenant Isolation Tests', () => {
         'tenants',
         'guest_access_tokens',
         'property_manuals',
-        'guide_sections',
       ];
 
       // Este test verifica que el código asume RLS está habilitado

@@ -22,9 +22,8 @@ export function BottomNav({
     manuals = [],
     recommendations = [],
     context = [],
-    sections = [],
     themeId = 'modern_v2'
-}: BottomNavProps & { propertyId?: string, manuals?: any[], recommendations?: any[], context?: any[], sections?: any[] }) {
+}: BottomNavProps & { propertyId?: string, manuals?: any[], recommendations?: any[], context?: any[] }) {
 
     const t = getGuideTheme(themeId);
 
@@ -38,8 +37,7 @@ export function BottomNav({
 
     const hasManuals = manuals.length > 0;
     const rulesContext = context?.find(c => c.category === 'rules')?.content;
-    const hasRules = !!(rulesContext?.rules_items?.length > 0 || rulesContext?.quiet_hours || rulesContext?.checkout_time) ||
-        !!sections?.find(s => s.type === 'rules' || s.title?.toLowerCase().includes('normas'));
+    const hasRules = !!(rulesContext?.rules_items?.length > 0 || rulesContext?.quiet_hours || rulesContext?.checkout_time);
     const hasInfo = hasManuals || hasRules;
     const hasEat = recommendations.filter(r => {
         const type = (r.type || '').toLowerCase();

@@ -8,7 +8,7 @@ interface RulesViewProps {
     onBack: () => void;
     rulesData?: any;
     checkinData?: any;
-    oldRules?: string;
+
     currentLanguage?: string;
     onLanguageChange?: (lang: string) => void;
     accessToken?: string;
@@ -124,7 +124,6 @@ export function RulesView({
     onBack,
     rulesData,
     checkinData,
-    oldRules,
     currentLanguage = 'es',
     onLanguageChange,
     accessToken,
