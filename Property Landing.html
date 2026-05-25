@@ -1,0 +1,2509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Villa Olivar — Apartamento de lujo en Málaga · Hospyia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="image-slot.js"></script>
+<style>
+:root {
+  /* default palette: Navy Boutique */
+  --brand: #1e3a8a;
+  --brand-deep: #15296b;
+  --brand-soft: #3b5bbd;
+  --accent: #2dd4bf;
+
+  --bg: #fafbfc;
+  --bg-deep: #f1f4f8;
+  --bg-card: #ffffff;
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --ink-mute: #94a3b8;
+  --rule: #e2e8f0;
+  --rule-soft: #eef2f7;
+
+  --display: "Poppins", "Helvetica Neue", sans-serif;
+  --serif: "Fraunces", "Georgia", serif;
+  --sans: "Poppins", "Helvetica Neue", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+}
+
+/* Palette variants */
+[data-palette="coastal"] {
+  --brand: #0369a1;
+  --brand-deep: #075985;
+  --brand-soft: #0ea5e9;
+  --accent: #fbbf24;
+}
+[data-palette="warmsand"] {
+  --brand: #8a5a2b;
+  --brand-deep: #6b4520;
+  --brand-soft: #c08552;
+  --accent: #d4a574;
+  --bg: #fdfaf4;
+  --bg-deep: #f5ede0;
+  --rule: #e8dcc5;
+  --rule-soft: #f0e6d2;
+}
+[data-palette="forest"] {
+  --brand: #14532d;
+  --brand-deep: #0c3a1f;
+  --brand-soft: #166534;
+  --accent: #a3e635;
+  --bg: #f7faf6;
+  --bg-deep: #ecf2e7;
+  --rule: #d9e6d2;
+  --rule-soft: #e8efe3;
+}
+[data-palette="ink"] {
+  --brand: #18181b;
+  --brand-deep: #09090b;
+  --brand-soft: #3f3f46;
+  --accent: #f59e0b;
+}
+
+/* Typography variant */
+[data-type="editorial"] .display-font,
+[data-type="editorial"] h1,
+[data-type="editorial"] h2,
+[data-type="editorial"] h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+[data-type="editorial"] h1, [data-type="editorial"] h2 {
+  font-weight: 400;
+}
+
+/* Radius variant */
+[data-radius="sharp"] {
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+  --r-xl: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body { overflow-x: hidden; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
+
+/* ——— Top Bar ——— */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(250,251,252,0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--rule-soft);
+}
+.topbar .wrap {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+}
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  color: var(--brand);
+}
+.brand-mark {
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.brand-mark svg { width: 100%; height: 100%; }
+.brand small {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  font-weight: 400;
+  margin-top: 1px;
+}
+.topbar-actions {
+  display: flex; align-items: center; gap: 16px;
+  font-size: 14px; color: var(--ink-soft);
+}
+.topbar-actions a {
+  color: inherit; text-decoration: none;
+}
+.topbar-actions a:hover { color: var(--ink); }
+.lang-toggle {
+  display: flex;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.lang-toggle button {
+  padding: 5px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink-mute);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+.lang-toggle button.active {
+  background: var(--brand);
+  color: #fff;
+}
+
+/* ——— Hero ——— */
+.hero {
+  padding: 32px 0 0;
+}
+.hero-meta-row {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  margin-bottom: 20px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.hero-title-block { flex: 1; min-width: 0; }
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin-bottom: 12px;
+}
+.hero-eyebrow::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+}
+h1.property-name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(40px, 5.5vw, 64px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  color: var(--brand);
+  margin-bottom: 14px;
+  text-wrap: pretty;
+}
+.hero-loc {
+  display: flex; gap: 16px; align-items: center;
+  color: var(--ink-soft);
+  font-size: 15px;
+  flex-wrap: wrap;
+}
+.hero-loc .sep { color: var(--ink-mute); }
+.hero-loc .rating {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.hero-loc .star { color: var(--accent); }
+.hero-actions {
+  display: flex; gap: 10px;
+}
+.btn-icon {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  font-size: 13px; font-weight: 500;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: all 0.2s;
+}
+.btn-icon:hover { border-color: var(--brand); color: var(--brand); }
+.btn-icon svg { width: 16px; height: 16px; }
+
+/* Gallery */
+.gallery {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  height: 540px;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  background: var(--bg-deep);
+  position: relative;
+}
+.gallery > * {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-deep);
+}
+.gallery-main {
+  grid-row: 1 / 3;
+  cursor: pointer;
+}
+.gallery img,
+.gallery image-slot {
+  width: 100%; height: 100%; display: block;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(.2,.8,.2,1);
+}
+.gallery > div:hover img {
+  transform: scale(1.04);
+}
+.gallery-view-all {
+  position: absolute;
+  bottom: 20px; right: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 10px 18px;
+  border-radius: var(--r-md);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  font-family: var(--sans);
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--ink);
+  z-index: 5;
+  box-shadow: 0 8px 24px -8px rgba(0,0,0,0.15);
+}
+.gallery-view-all:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+/* ——— Main Content Grid ——— */
+.main {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 64px;
+  padding: 56px 0 100px;
+  align-items: start;
+}
+
+.section-block {
+  padding: 36px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.section-block:last-child { border-bottom: none; }
+.section-block:first-child { padding-top: 0; }
+.section-head {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  margin-bottom: 24px;
+  gap: 20px;
+}
+h2.section-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--brand);
+}
+
+/* Property summary */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.summary-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+}
+.summary-icon {
+  width: 36px; height: 36px;
+  background: var(--bg-deep);
+  border-radius: var(--r-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--brand);
+  flex-shrink: 0;
+}
+.summary-icon svg { width: 18px; height: 18px; }
+.summary-item small {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-mute);
+  font-family: var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.summary-item strong {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.description {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+  max-width: 620px;
+  text-wrap: pretty;
+}
+.description p + p { margin-top: 14px; }
+.description b { color: var(--ink); font-weight: 500; }
+
+.read-more {
+  margin-top: 16px;
+  background: none;
+  border: none;
+  color: var(--brand);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* Amenities */
+.amenities {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 24px;
+}
+.amenity {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0;
+  font-size: 15px;
+  color: var(--ink);
+}
+.amenity-icon {
+  width: 32px; height: 32px;
+  background: var(--bg-deep);
+  border-radius: var(--r-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--brand);
+  flex-shrink: 0;
+}
+.amenity-icon svg { width: 16px; height: 16px; }
+
+/* Map placeholder */
+.map-block {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  background: var(--bg-deep);
+  height: 320px;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.map-svg { width: 100%; height: 100%; display: block; }
+.map-pin {
+  position: absolute;
+  top: 45%; left: 52%;
+  transform: translate(-50%, -100%);
+  z-index: 2;
+}
+.map-pin-shape {
+  width: 36px; height: 36px;
+  background: var(--brand);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px -4px rgba(15,23,42,0.3);
+}
+.map-pin-shape::before {
+  content: ""; width: 14px; height: 14px;
+  background: var(--bg-card);
+  border-radius: 50%;
+  transform: rotate(45deg);
+}
+.map-pin-pulse {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: var(--brand);
+  opacity: 0.3;
+  animation: ping 2s infinite;
+  z-index: -1;
+}
+@keyframes ping {
+  0% { transform: scale(0.5); opacity: 0.5; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.map-address {
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  display: flex; align-items: center; gap: 8px;
+}
+.map-address strong { color: var(--ink); font-weight: 600; }
+
+/* Reviews */
+.reviews-summary {
+  display: flex; align-items: center; gap: 32px;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: var(--bg-deep);
+  border-radius: var(--r-lg);
+}
+.reviews-score {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 56px;
+  line-height: 1;
+  color: var(--brand);
+  letter-spacing: -0.02em;
+}
+.reviews-stars {
+  display: flex; gap: 2px;
+  color: var(--accent);
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+.reviews-meta {
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+.reviews-bars {
+  flex: 1;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 6px 12px;
+  font-size: 12px;
+  align-items: center;
+  max-width: 280px;
+}
+.review-bar-label { color: var(--ink-soft); }
+.review-bar-track {
+  height: 4px;
+  background: var(--rule);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.review-bar-fill {
+  height: 100%;
+  background: var(--brand);
+  border-radius: 2px;
+}
+.review-bar-val {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink);
+}
+
+.reviews-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+.review {
+  padding: 24px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  background: var(--bg-card);
+}
+.review-head {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px;
+}
+.review-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 14px;
+}
+.review-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.review-date {
+  font-size: 12px;
+  color: var(--ink-mute);
+  font-family: var(--mono);
+}
+.review-stars { color: var(--accent); font-size: 12px; margin-bottom: 8px; }
+.review-text {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* Host */
+.host {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  padding: 28px;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  align-items: center;
+}
+.host-avatar {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 28px;
+  position: relative;
+}
+.host-avatar .badge {
+  position: absolute;
+  bottom: -2px; right: -2px;
+  width: 24px; height: 24px;
+  background: var(--accent);
+  color: var(--brand-deep);
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.host-name {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.host-tag {
+  font-size: 13px;
+  color: var(--ink-mute);
+  font-family: var(--mono);
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+.host-bio {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+.host-stats {
+  display: flex; gap: 24px;
+  font-size: 13px;
+}
+.host-stat strong {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--brand);
+}
+.host-stat small {
+  color: var(--ink-mute);
+  font-size: 11px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* House rules */
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.rule {
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.rule-icon {
+  width: 32px; height: 32px;
+  background: var(--bg-deep);
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--brand);
+  flex-shrink: 0;
+}
+.rule-icon svg { width: 16px; height: 16px; }
+.rule strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.rule small { color: var(--ink-soft); font-size: 13px; }
+
+/* ——— Booking Widget ——— */
+.booking-wrap {
+  position: sticky;
+  top: 92px;
+}
+.booking-widget {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-xl);
+  padding: 28px;
+  box-shadow: 0 12px 40px -16px rgba(15,23,42,0.12);
+}
+.booking-price {
+  display: flex; align-items: baseline; gap: 8px;
+  margin-bottom: 4px;
+}
+.booking-price .num {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 32px;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.booking-price .unit {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+.booking-price-meta {
+  font-size: 13px;
+  color: var(--ink-mute);
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.booking-price-meta .star { color: var(--accent); }
+
+.booking-form-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.bf-field {
+  padding: 12px 14px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+}
+.bf-field:hover { background: var(--bg-deep); }
+.bf-field + .bf-field { border-left: 1px solid var(--rule); }
+.bf-field.bf-guests {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--rule);
+  border-left: none;
+}
+.bf-label {
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 2px;
+  display: block;
+}
+.bf-value {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.bf-value.placeholder { color: var(--ink-mute); font-weight: 400; }
+
+.btn-reserve {
+  width: 100%;
+  padding: 16px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-md);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-reserve:hover { background: var(--brand-deep); transform: translateY(-1px); }
+.btn-reserve:disabled {
+  background: var(--rule);
+  color: var(--ink-mute);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.booking-note {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-mute);
+  margin-top: 14px;
+}
+
+.booking-breakdown {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  display: none;
+  flex-direction: column; gap: 10px;
+  font-size: 14px;
+}
+.booking-breakdown.shown { display: flex; }
+.bb-row { display: flex; justify-content: space-between; color: var(--ink-soft); }
+.bb-row .label u { text-decoration: underline; text-underline-offset: 3px; }
+.bb-row.total {
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  color: var(--ink);
+  font-weight: 600;
+  font-family: var(--display);
+}
+.bb-row.total .amount {
+  font-size: 18px;
+  letter-spacing: -0.015em;
+}
+
+.booking-promo {
+  display: flex;
+  margin-top: 14px;
+  border: 1px dashed var(--rule);
+  border-radius: var(--r-sm);
+  padding: 4px;
+}
+.booking-promo input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  outline: none;
+}
+.booking-promo input::placeholder { color: var(--ink-mute); }
+.booking-promo button {
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-family: var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ——— Calendar Dropdown ——— */
+.calendar-popup {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  z-index: 30;
+  box-shadow: 0 16px 50px -16px rgba(15,23,42,0.2);
+  display: none;
+}
+.calendar-popup.shown { display: block; }
+.calendar-months {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+.cal-month {
+  font-size: 13px;
+}
+.cal-month-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.cal-month-title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.cal-nav {
+  background: none; border: 1px solid var(--rule);
+  border-radius: 50%;
+  width: 28px; height: 28px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.cal-nav:hover { border-color: var(--brand); color: var(--brand); }
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+.cal-dow {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--ink-mute);
+  letter-spacing: 0.05em;
+  padding: 6px 0;
+  text-transform: uppercase;
+}
+.cal-day {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 50%;
+  color: var(--ink);
+  position: relative;
+  transition: background 0.1s;
+}
+.cal-day:hover:not(.disabled):not(.empty) { background: var(--bg-deep); }
+.cal-day.empty { cursor: default; }
+.cal-day.disabled {
+  color: var(--ink-mute);
+  text-decoration: line-through;
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.cal-day.start, .cal-day.end {
+  background: var(--brand);
+  color: #fff;
+  font-weight: 600;
+}
+.cal-day.in-range {
+  background: var(--bg-deep);
+  border-radius: 0;
+  color: var(--brand);
+}
+.cal-day.start { border-radius: 50% 0 0 50%; }
+.cal-day.end { border-radius: 0 50% 50% 0; }
+.cal-day.start.end { border-radius: 50%; }
+
+.calendar-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+.cal-legend {
+  display: flex; gap: 16px;
+  font-size: 11px;
+  color: var(--ink-mute);
+  font-family: var(--mono);
+  letter-spacing: 0.05em;
+}
+.cal-legend span {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.cal-legend i {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.cal-legend i.avail { background: var(--bg-deep); border: 1px solid var(--rule); }
+.cal-legend i.blocked { background: var(--rule); }
+.cal-legend i.selected { background: var(--brand); }
+.cal-actions { display: flex; gap: 8px; }
+.cal-clear {
+  background: none; border: none;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.cal-close {
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--r-md);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Guests popup */
+.guests-popup {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0; right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  z-index: 30;
+  box-shadow: 0 16px 50px -16px rgba(15,23,42,0.2);
+  display: none;
+}
+.guests-popup.shown { display: block; }
+.guest-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.guest-row:last-child { border-bottom: none; }
+.guest-label strong {
+  display: block; font-size: 14px; color: var(--ink); font-weight: 600;
+}
+.guest-label small { color: var(--ink-mute); font-size: 12px; }
+.guest-counter { display: flex; align-items: center; gap: 12px; }
+.guest-counter button {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  background: var(--bg-card);
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: var(--sans);
+  display: flex; align-items: center; justify-content: center;
+}
+.guest-counter button:disabled {
+  opacity: 0.3; cursor: not-allowed;
+}
+.guest-counter button:not(:disabled):hover { border-color: var(--brand); color: var(--brand); }
+.guest-counter span {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 14px;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* ——— FAQ ——— */
+.faq-list {
+  display: grid;
+  gap: 0;
+}
+.faq-item {
+  border-top: 1px solid var(--rule);
+  padding: 20px 0;
+  cursor: pointer;
+}
+.faq-item:last-child { border-bottom: 1px solid var(--rule); }
+.faq-q {
+  display: flex; justify-content: space-between;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--brand);
+  gap: 20px;
+}
+.faq-q-icon {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--bg-deep);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  color: var(--brand);
+  flex-shrink: 0;
+  transition: transform 0.3s;
+}
+.faq-item.open .faq-q-icon {
+  background: var(--brand); color: #fff;
+  transform: rotate(45deg);
+}
+.faq-a {
+  max-height: 0;
+  overflow: hidden;
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  transition: max-height 0.3s, margin-top 0.3s;
+}
+.faq-item.open .faq-a {
+  max-height: 200px;
+  margin-top: 10px;
+}
+
+/* ——— Payment Modal ——— */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.modal-overlay.shown { display: flex; opacity: 1; }
+.modal {
+  background: var(--bg-card);
+  border-radius: var(--r-xl);
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  color: var(--ink-soft);
+  z-index: 2;
+}
+.modal-close:hover { background: var(--bg-deep); }
+.modal-form {
+  padding: 36px 32px;
+}
+.modal-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin-bottom: 8px;
+}
+.modal-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  margin-bottom: 24px;
+}
+.form-row { margin-bottom: 14px; }
+.form-row.split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-row label {
+  font-size: 11px;
+  font-family: var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 6px;
+  display: block;
+}
+.form-row input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-row input:focus { border-color: var(--brand); }
+.payment-methods {
+  display: flex; gap: 8px; margin-top: 8px;
+}
+.payment-method {
+  flex: 1;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  background: var(--bg-card);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+.payment-method.active {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 4%, white);
+  color: var(--brand);
+}
+.payment-method svg { width: 22px; height: 14px; }
+
+.card-wrap {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: 14px;
+  background: var(--bg);
+  display: flex; align-items: center; gap: 12px;
+}
+.card-wrap input { border: none; background: transparent; padding: 0; }
+.card-num { flex: 1; }
+.card-exp { width: 70px; text-align: center; }
+.card-cvc { width: 50px; text-align: center; }
+.card-brand {
+  width: 30px; height: 20px;
+  background: linear-gradient(135deg, #1a1f71, #5b76d4);
+  border-radius: 3px;
+}
+
+.modal-side {
+  background: var(--bg-deep);
+  padding: 36px 28px;
+  border-radius: 0 var(--r-xl) var(--r-xl) 0;
+}
+.modal-side h4 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.modal-side .summary-thumb {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: var(--rule);
+  border-radius: var(--r-md);
+  margin-bottom: 16px;
+  background-image: linear-gradient(135deg, var(--brand-soft), var(--brand));
+  position: relative;
+  overflow: hidden;
+  display: flex; align-items: flex-end;
+  padding: 16px;
+  color: #fff;
+}
+.modal-side .summary-thumb strong {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.modal-side .summary-thumb::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.4), transparent 60%);
+}
+.modal-side .bb-row { font-size: 13px; padding: 6px 0; }
+.modal-side .bb-row.total {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+.modal-cta {
+  width: 100%;
+  padding: 14px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-md);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: background 0.2s;
+}
+.modal-cta:hover { background: var(--brand-deep); }
+.secure-row {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--ink-mute);
+  font-family: var(--mono);
+  letter-spacing: 0.05em;
+}
+
+/* Success */
+.modal-success {
+  display: none;
+  grid-column: 1 / -1;
+  padding: 64px 40px;
+  text-align: center;
+}
+.modal-success.shown { display: block; }
+.modal-success .check {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--brand-deep);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.modal-success h3 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--brand);
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+.modal-success p {
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+/* ——— Footer ——— */
+footer {
+  background: var(--ink);
+  color: rgba(255,255,255,0.7);
+  padding: 60px 0 32px;
+  margin-top: 60px;
+}
+footer .wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 32px;
+}
+footer h4 {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+.footer-brand {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.footer-tagline {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  max-width: 280px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+footer ul { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+footer a { color: rgba(255,255,255,0.7); text-decoration: none; }
+footer a:hover { color: #fff; }
+.powered {
+  grid-column: 1 / -1;
+  padding-top: 24px;
+  margin-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex; justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.4);
+}
+.powered .brand-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: rgba(255,255,255,0.7);
+}
+.powered .brand-pill strong { color: #fff; font-family: var(--display); font-weight: 700; letter-spacing: -0.01em; font-size: 13px; }
+
+/* ——— Tweaks Panel ——— */
+#tweaks-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 80;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  width: 280px;
+  box-shadow: 0 20px 50px -10px rgba(0,0,0,0.2);
+  display: none;
+  font-family: var(--sans);
+}
+#tweaks-panel.shown { display: block; }
+#tweaks-panel h5 {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 12px;
+  font-weight: 500;
+  display: flex; justify-content: space-between;
+}
+#tweaks-panel h5 button {
+  background: none; border: none;
+  color: var(--ink-mute);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.tweak-row { margin-bottom: 14px; }
+.tweak-row > label {
+  font-size: 11px;
+  color: var(--ink-soft);
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.tweak-swatches { display: flex; gap: 6px; }
+.tweak-swatch {
+  flex: 1;
+  aspect-ratio: 1;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+  cursor: pointer;
+  position: relative;
+}
+.tweak-swatch.active::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+}
+.tweak-segment {
+  display: flex;
+  background: var(--bg-deep);
+  border-radius: var(--r-sm);
+  padding: 2px;
+}
+.tweak-segment button {
+  flex: 1;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-radius: 4px;
+}
+.tweak-segment button.active {
+  background: var(--bg-card);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+/* ——— Responsive ——— */
+@media (max-width: 980px) {
+  .main { grid-template-columns: 1fr; }
+  .booking-wrap { position: static; }
+  .gallery { grid-template-columns: 1fr 1fr; height: 380px; }
+  .gallery-main { grid-row: 1 / 2; grid-column: 1 / -1; }
+  .summary { grid-template-columns: repeat(2, 1fr); }
+  .amenities { grid-template-columns: 1fr; }
+  .reviews-list { grid-template-columns: 1fr; }
+  .rules-grid { grid-template-columns: 1fr; }
+  .host { grid-template-columns: 1fr; text-align: center; }
+  .host-avatar { margin: 0 auto; }
+  .host-stats { justify-content: center; }
+  .modal { grid-template-columns: 1fr; }
+  .modal-side { border-radius: 0 0 var(--r-xl) var(--r-xl); }
+  footer .wrap { grid-template-columns: 1fr; }
+  .reviews-summary { flex-direction: column; align-items: flex-start; gap: 16px; }
+}
+</style>
+</head>
+<body data-palette="navy" data-type="modern" data-radius="soft">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 64 64" fill="none">
+          <path d="M32 6 C19 6 9 16 9 28 C9 41 22 53 32 60 C42 53 55 41 55 28 C55 16 45 6 32 6 Z" stroke="currentColor" stroke-width="4.5" stroke-linejoin="round" fill="none"/>
+          <path d="M22 34 L29 41 L46 26" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="48" cy="20" r="3" fill="var(--accent)"/>
+        </svg>
+      </div>
+      <div>
+        <span>Villa Olivar</span>
+        <small>Málaga · ES</small>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <a href="#about">La casa</a>
+      <a href="#amenities">Servicios</a>
+      <a href="#location">Ubicación</a>
+      <a href="#reviews">Reseñas</a>
+      <div class="lang-toggle">
+        <button class="active">ES</button>
+        <button>EN</button>
+        <button>FR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-meta-row">
+      <div class="hero-title-block">
+        <div class="hero-eyebrow">Apartamento boutique · Centro histórico</div>
+        <h1 class="property-name">Villa Olivar</h1>
+        <div class="hero-loc">
+          <span class="rating"><span class="star">★</span> 4.94 <span style="color: var(--ink-mute); font-weight: 400">(127 reseñas)</span></span>
+          <span class="sep">·</span>
+          <span>Málaga, Andalucía</span>
+          <span class="sep">·</span>
+          <span>Hasta 4 huéspedes · 2 dormitorios</span>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+          Compartir
+        </button>
+        <button class="btn-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          Guardar
+        </button>
+      </div>
+    </div>
+
+    <!-- Gallery -->
+    <div class="gallery">
+      <div class="gallery-main">
+        <image-slot id="prop-img-1" placeholder="Foto principal" shape="rect">
+          <div style="width:100%;height:100%;background:linear-gradient(135deg,#3b5bbd 0%,#15296b 100%);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-family:var(--mono);font-size:11px;letter-spacing:0.15em">FOTO PRINCIPAL</div>
+        </image-slot>
+      </div>
+      <div>
+        <image-slot id="prop-img-2" placeholder="Foto 2" shape="rect">
+          <div style="width:100%;height:100%;background:linear-gradient(135deg,#5d7bd1 0%,#2a4ca8 100%);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-family:var(--mono);font-size:11px">02</div>
+        </image-slot>
+      </div>
+      <div>
+        <image-slot id="prop-img-3" placeholder="Foto 3" shape="rect">
+          <div style="width:100%;height:100%;background:linear-gradient(135deg,#8b9fdc 0%,#3b5bbd 100%);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-family:var(--mono);font-size:11px">03</div>
+        </image-slot>
+      </div>
+      <div>
+        <image-slot id="prop-img-4" placeholder="Foto 4" shape="rect">
+          <div style="width:100%;height:100%;background:linear-gradient(135deg,#b8c5e8 0%,#5d7bd1 100%);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-family:var(--mono);font-size:11px">04</div>
+        </image-slot>
+      </div>
+      <div>
+        <image-slot id="prop-img-5" placeholder="Foto 5" shape="rect">
+          <div style="width:100%;height:100%;background:linear-gradient(135deg,#1e3a8a 0%,#0c1e5c 100%);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-family:var(--mono);font-size:11px">05</div>
+        </image-slot>
+      </div>
+      <button class="gallery-view-all">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Ver las 24 fotos
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN -->
+<section class="main wrap">
+  <div class="content-col">
+
+    <!-- About -->
+    <div class="section-block" id="about">
+      <div class="section-head">
+        <div>
+          <div style="font-family:var(--mono);font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:8px">Apartamento entero · Anfitrión Sofía</div>
+          <h2 class="section-title">Un refugio andaluz a un paso de la Alcazaba.</h2>
+        </div>
+      </div>
+      <div class="summary">
+        <div class="summary-item">
+          <div class="summary-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <div>
+            <small>Huéspedes</small>
+            <strong>4 personas</strong>
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16M2 8h18a2 2 0 012 2v10M2 17h20M6 8v9"/></svg>
+          </div>
+          <div>
+            <small>Dormitorios</small>
+            <strong>2 dormitorios</strong>
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2M3 10h18v8a3 3 0 01-3 3H6a3 3 0 01-3-3v-8z"/></svg>
+          </div>
+          <div>
+            <small>Baños</small>
+            <strong>2 baños</strong>
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
+          </div>
+          <div>
+            <small>Tamaño</small>
+            <strong>92 m²</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="description">
+        <p>Villa Olivar es un apartamento boutique de dos dormitorios en el corazón del centro histórico de Málaga, a 4 minutos andando de la <b>Alcazaba</b> y a 6 del Museo Picasso.</p>
+        <p>El piso ha sido reformado en 2024 con un cuidado especial por los detalles: <b>suelos de microcemento</b>, viga vista, cocina abierta con isla, y una pequeña terraza interior con olivo donde desayunar sin ruido.</p>
+        <p>Ideal para parejas, familias pequeñas o viajeros de trabajo: WiFi de fibra (600 Mbps), aire acondicionado en cada habitación, lavadora y un escritorio con monitor 4K para días de remote work.</p>
+      </div>
+      <button class="read-more">Leer descripción completa →</button>
+    </div>
+
+    <!-- Amenities -->
+    <div class="section-block" id="amenities">
+      <div class="section-head">
+        <h2 class="section-title">Lo que ofrece este alojamiento</h2>
+      </div>
+      <div class="amenities">
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg></span>
+          WiFi fibra 600 Mbps
+        </div>
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 14.5l5-5M12 22a10 10 0 100-20 10 10 0 000 20z"/></svg></span>
+          Aire acondicionado A/C
+        </div>
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9a9 9 0 1118 0"/><circle cx="12" cy="13" r="6"/><circle cx="12" cy="13" r="2"/></svg></span>
+          Lavadora-secadora
+        </div>
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M22 9h-4a3 3 0 000 6h4"/></svg></span>
+          Estación de trabajo + 4K
+        </div>
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M2 12h20"/></svg></span>
+          Terraza con olivo
+        </div>
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 2v11a4 4 0 008 0V2M5 2h14"/></svg></span>
+          Cocina equipada
+        </div>
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></span>
+          Check-in autónomo
+        </div>
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+          24/7 HostBot
+        </div>
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></span>
+          Anfitrión local 24h
+        </div>
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="14" r="3"/><circle cx="18" cy="14" r="3"/><path d="M9 14h6M6 11V7l3-3h6l3 3v4"/></svg></span>
+          Parking en la zona
+        </div>
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></span>
+          Smart TV 55" + Netflix
+        </div>
+        <div class="amenity">
+          <span class="amenity-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+          Centro histórico
+        </div>
+      </div>
+    </div>
+
+    <!-- Location -->
+    <div class="section-block" id="location">
+      <div class="section-head">
+        <h2 class="section-title">¿Dónde se encuentra?</h2>
+      </div>
+      <div class="map-block">
+        <svg class="map-svg" viewBox="0 0 800 320" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="800" height="320" fill="var(--bg-deep)"/>
+          <!-- abstract streets -->
+          <g stroke="var(--rule)" stroke-width="1" fill="none">
+            <path d="M0,80 L800,100"/>
+            <path d="M0,160 L800,180"/>
+            <path d="M0,240 L800,220"/>
+            <path d="M200,0 L220,320"/>
+            <path d="M400,0 L420,320"/>
+            <path d="M600,0 L580,320"/>
+          </g>
+          <g stroke="var(--brand-soft)" stroke-width="2" fill="none" opacity="0.4">
+            <path d="M0,140 Q200,130 400,160 T800,140"/>
+            <path d="M50,200 L350,205 L380,260 L750,255"/>
+          </g>
+          <g fill="var(--brand-soft)" opacity="0.15">
+            <rect x="120" y="60" width="60" height="40" rx="3"/>
+            <rect x="240" y="120" width="80" height="50" rx="3"/>
+            <rect x="450" y="80" width="70" height="60" rx="3"/>
+            <rect x="600" y="170" width="90" height="50" rx="3"/>
+            <rect x="100" y="200" width="80" height="60" rx="3"/>
+          </g>
+          <!-- water -->
+          <path d="M0,290 Q400,300 800,290 L800,320 L0,320 Z" fill="var(--brand-soft)" opacity="0.15"/>
+        </svg>
+        <div class="map-pin">
+          <div class="map-pin-pulse"></div>
+          <div class="map-pin-shape"></div>
+        </div>
+      </div>
+      <div class="map-address">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <strong>Centro histórico, Málaga.</strong> La dirección exacta se compartirá tras la reserva.
+      </div>
+    </div>
+
+    <!-- House Rules -->
+    <div class="section-block">
+      <div class="section-head">
+        <h2 class="section-title">Información práctica</h2>
+      </div>
+      <div class="rules-grid">
+        <div class="rule">
+          <span class="rule-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+          <div>
+            <strong>Check-in 16:00</strong>
+            <small>Acceso autónomo con caja fuerte</small>
+          </div>
+        </div>
+        <div class="rule">
+          <span class="rule-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+          <div>
+            <strong>Check-out 11:00</strong>
+            <small>Late check-out bajo disponibilidad</small>
+          </div>
+        </div>
+        <div class="rule">
+          <span class="rule-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg></span>
+          <div>
+            <strong>No se permiten fiestas</strong>
+            <small>Comunidad de vecinos tranquila</small>
+          </div>
+        </div>
+        <div class="rule">
+          <span class="rule-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M12 2v20"/></svg></span>
+          <div>
+            <strong>Mascotas bienvenidas</strong>
+            <small>Con suplemento de 25 €</small>
+          </div>
+        </div>
+        <div class="rule">
+          <span class="rule-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></span>
+          <div>
+            <strong>No fumar</strong>
+            <small>Aplicable también en la terraza</small>
+          </div>
+        </div>
+        <div class="rule">
+          <span class="rule-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l3 12h12l3-12M8 6V4a4 4 0 018 0v2"/></svg></span>
+          <div>
+            <strong>Cancelación flexible</strong>
+            <small>Reembolso 100% hasta 7 días antes</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews -->
+    <div class="section-block" id="reviews">
+      <div class="section-head">
+        <h2 class="section-title">Lo que dicen los huéspedes</h2>
+      </div>
+      <div class="reviews-summary">
+        <div>
+          <div class="reviews-score">4.94</div>
+          <div class="reviews-stars">★★★★★</div>
+          <div class="reviews-meta">127 reseñas verificadas</div>
+        </div>
+        <div class="reviews-bars">
+          <span class="review-bar-label">Limpieza</span>
+          <div class="review-bar-track"><div class="review-bar-fill" style="width:99%"></div></div>
+          <span class="review-bar-val">4.95</span>
+
+          <span class="review-bar-label">Comunicación</span>
+          <div class="review-bar-track"><div class="review-bar-fill" style="width:100%"></div></div>
+          <span class="review-bar-val">5.0</span>
+
+          <span class="review-bar-label">Ubicación</span>
+          <div class="review-bar-track"><div class="review-bar-fill" style="width:96%"></div></div>
+          <span class="review-bar-val">4.8</span>
+
+          <span class="review-bar-label">Precio-calidad</span>
+          <div class="review-bar-track"><div class="review-bar-fill" style="width:97%"></div></div>
+          <span class="review-bar-val">4.9</span>
+        </div>
+      </div>
+      <div class="reviews-list">
+        <div class="review">
+          <div class="review-head">
+            <div class="review-avatar">M</div>
+            <div>
+              <div class="review-name">Marta L.</div>
+              <div class="review-date">MAYO 2026 · 3 NOCHES</div>
+            </div>
+          </div>
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">Un apartamento precioso, con un gusto exquisito. El detalle del HostBot respondiendo en segundos cuando preguntamos por sitios para cenar nos sorprendió muchísimo. Volveremos.</div>
+        </div>
+        <div class="review">
+          <div class="review-head">
+            <div class="review-avatar">J</div>
+            <div>
+              <div class="review-name">James K.</div>
+              <div class="review-date">ABRIL 2026 · 5 NIGHTS</div>
+            </div>
+          </div>
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">Perfect location, immaculate flat. The digital guide in English with everything we needed (WiFi, codes, recommendations) made everything stress-free. Highly recommended.</div>
+        </div>
+        <div class="review">
+          <div class="review-head">
+            <div class="review-avatar">C</div>
+            <div>
+              <div class="review-name">Claire R.</div>
+              <div class="review-date">ABRIL 2026 · 2 NUITS</div>
+            </div>
+          </div>
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">Un séjour parfait à Málaga. L'appartement est encore plus beau que sur les photos, et la terrasse avec l'olivier est un petit havre de paix.</div>
+        </div>
+        <div class="review">
+          <div class="review-head">
+            <div class="review-avatar">D</div>
+            <div>
+              <div class="review-name">Diego F.</div>
+              <div class="review-date">MARZO 2026 · 4 NOCHES</div>
+            </div>
+          </div>
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">Vine por trabajo y me quedé encantado. El escritorio con monitor 4K es un detalle que marca la diferencia. Cocina muy bien equipada y todo súper limpio.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Host -->
+    <div class="section-block">
+      <div class="section-head">
+        <h2 class="section-title">Anfitrión: Sofía</h2>
+      </div>
+      <div class="host">
+        <div class="host-avatar">
+          S
+          <span class="badge">✓</span>
+        </div>
+        <div>
+          <div class="host-name">Sofía Martínez</div>
+          <div class="host-tag">SUPERHOST · IDENTIDAD VERIFICADA</div>
+          <div class="host-bio">Nací en Málaga y llevo 6 años cuidando este apartamento como si fuera para un amigo. Si necesitas algo durante tu estancia, escríbeme — respondo siempre en menos de una hora.</div>
+          <div class="host-stats">
+            <div class="host-stat">
+              <strong>127</strong>
+              <small>Reseñas</small>
+            </div>
+            <div class="host-stat">
+              <strong>4.94</strong>
+              <small>Valoración</small>
+            </div>
+            <div class="host-stat">
+              <strong>6 años</strong>
+              <small>Como anfitriona</small>
+            </div>
+            <div class="host-stat">
+              <strong>&lt; 1h</strong>
+              <small>Respuesta</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="section-block">
+      <div class="section-head">
+        <h2 class="section-title">Preguntas frecuentes</h2>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-q"><span>¿Cómo es el check-in?</span><span class="faq-q-icon">+</span></div>
+          <div class="faq-a">Check-in autónomo desde las 16:00. Recibirás 24h antes un código personal para una caja fuerte junto a la puerta del edificio, junto con la guía digital del apartamento.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span>¿Puedo cancelar mi reserva?</span><span class="faq-q-icon">+</span></div>
+          <div class="faq-a">Sí. Hasta 7 días antes del check-in obtienes reembolso del 100%. Entre 7 y 2 días, 50%. Las últimas 48h no son reembolsables.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span>¿Aceptan mascotas?</span><span class="faq-q-icon">+</span></div>
+          <div class="faq-a">Sí, hasta dos mascotas pequeñas/medianas con un suplemento de 25€ por estancia. Indícanos su nombre y raza al reservar.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span>¿Hay parking en la zona?</span><span class="faq-q-icon">+</span></div>
+          <div class="faq-a">El centro histórico es zona peatonal. El parking público más cercano (Alcazaba, 90 m) tiene precio fijo de 22€/día. Podemos reservártelo.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span>¿Cómo funciona el HostBot?</span><span class="faq-q-icon">+</span></div>
+          <div class="faq-a">Es un asistente con IA disponible 24/7 dentro de tu guía digital. Sabe todo sobre el apartamento, los electrodomésticos y el barrio. Responde en cualquier idioma en segundos.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOOKING WIDGET -->
+  <aside class="booking-wrap">
+    <div class="booking-widget">
+      <div class="booking-price">
+        <span class="num" id="price-per-night">128€</span>
+        <span class="unit">/ noche</span>
+      </div>
+      <div class="booking-price-meta">
+        <span class="star">★</span> 4.94 · 127 reseñas · <span style="color:var(--brand);font-weight:500">Reembolsable</span>
+      </div>
+
+      <div class="booking-form-fields">
+        <div class="bf-field" id="bf-checkin" style="position: relative;">
+          <span class="bf-label">Llegada</span>
+          <div class="bf-value placeholder" id="ci-label">Selecciona fecha</div>
+        </div>
+        <div class="bf-field" id="bf-checkout">
+          <span class="bf-label">Salida</span>
+          <div class="bf-value placeholder" id="co-label">Selecciona fecha</div>
+        </div>
+        <div class="bf-field bf-guests" id="bf-guests" style="position: relative;">
+          <span class="bf-label">Huéspedes</span>
+          <div class="bf-value" id="guests-label">2 adultos</div>
+        </div>
+
+        <!-- Calendar Popup -->
+        <div class="calendar-popup" id="calendar-popup">
+          <div class="calendar-months" id="cal-months"></div>
+          <div class="calendar-foot">
+            <div class="cal-legend">
+              <span><i class="avail"></i>Disponible</span>
+              <span><i class="blocked"></i>Ocupado</span>
+              <span><i class="selected"></i>Tu reserva</span>
+            </div>
+            <div class="cal-actions">
+              <button class="cal-clear" id="cal-clear">Borrar fechas</button>
+              <button class="cal-close" id="cal-close">Confirmar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guests Popup -->
+        <div class="guests-popup" id="guests-popup">
+          <div class="guest-row">
+            <div class="guest-label"><strong>Adultos</strong><small>+13 años</small></div>
+            <div class="guest-counter" data-type="adults">
+              <button class="dec">−</button>
+              <span class="val">2</span>
+              <button class="inc">+</button>
+            </div>
+          </div>
+          <div class="guest-row">
+            <div class="guest-label"><strong>Niños</strong><small>2–12 años</small></div>
+            <div class="guest-counter" data-type="children">
+              <button class="dec" disabled>−</button>
+              <span class="val">0</span>
+              <button class="inc">+</button>
+            </div>
+          </div>
+          <div class="guest-row">
+            <div class="guest-label"><strong>Bebés</strong><small>menores de 2</small></div>
+            <div class="guest-counter" data-type="infants">
+              <button class="dec" disabled>−</button>
+              <span class="val">0</span>
+              <button class="inc">+</button>
+            </div>
+          </div>
+          <div class="guest-row">
+            <div class="guest-label"><strong>Mascotas</strong><small>+25 € · máx. 2</small></div>
+            <div class="guest-counter" data-type="pets">
+              <button class="dec" disabled>−</button>
+              <span class="val">0</span>
+              <button class="inc">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-reserve" id="btn-reserve" disabled>
+        Selecciona fechas
+      </button>
+      <div class="booking-note">No se cobrará nada todavía</div>
+
+      <div class="booking-breakdown" id="breakdown">
+        <div class="bb-row"><span class="label"><u id="bd-nights-label">128€ × 0 noches</u></span><span class="amount" id="bd-base">0€</span></div>
+        <div class="bb-row"><span class="label"><u>Tarifa de limpieza</u></span><span class="amount">45€</span></div>
+        <div class="bb-row"><span class="label"><u>Tarifa de servicio</u></span><span class="amount" id="bd-service">0€</span></div>
+        <div class="bb-row"><span class="label"><u>Tasa turística</u></span><span class="amount" id="bd-tax">0€</span></div>
+        <div class="bb-row total"><span class="label">Total</span><span class="amount" id="bd-total">0€</span></div>
+      </div>
+
+      <div class="booking-promo">
+        <input type="text" placeholder="Código promocional" />
+        <button>Aplicar</button>
+      </div>
+    </div>
+  </aside>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="footer-brand">Villa Olivar</div>
+      <div class="footer-tagline">Apartamento boutique en el centro histórico de Málaga.</div>
+      <div style="font-family:var(--mono);font-size:11px;letter-spacing:0.08em;color:rgba(255,255,255,0.4)">REGISTRO TURÍSTICO · VFT/MA/12345</div>
+    </div>
+    <div>
+      <h4>La casa</h4>
+      <ul>
+        <li><a href="#about">Sobre el apartamento</a></li>
+        <li><a href="#amenities">Servicios</a></li>
+        <li><a href="#location">Ubicación</a></li>
+        <li><a href="#reviews">Reseñas</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Contacto</h4>
+      <ul>
+        <li><a href="/cdn-cgi/l/email-protection#ddb5b2b1bc9dabb4b1b1bcb2b1b4abbcaff3beb2b0"><span class="__cf_email__" data-cfemail="eb8384878aab9d8287878a8487829d8a99c5888486">[email&#160;protected]</span></a></li>
+        <li><a href="tel:+34666555444">+34 666 555 444</a></li>
+        <li><a href="#">WhatsApp 24/7</a></li>
+      </ul>
+    </div>
+    <div class="powered">
+      <span>© 2026 VILLA OLIVAR · MÁLAGA</span>
+      <span class="brand-pill">
+        <svg width="14" height="14" viewBox="0 0 64 64" fill="none">
+          <path d="M32 6 C19 6 9 16 9 28 C9 41 22 53 32 60 C42 53 55 41 55 28 C55 16 45 6 32 6 Z" stroke="#5eead4" stroke-width="5" stroke-linejoin="round" fill="none"/>
+          <path d="M22 34 L29 41 L46 26" stroke="#5eead4" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+        Powered by <strong>Hospyia</strong>
+      </span>
+    </div>
+  </div>
+</footer>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="modal-close" id="modal-close">×</button>
+    <div class="modal-form" id="modal-form">
+      <div class="modal-eyebrow">Reserva en 2 minutos</div>
+      <h3 class="modal-title">Confirma tu reserva</h3>
+
+      <div class="form-row split">
+        <div>
+          <label>Nombre</label>
+          <input type="text" placeholder="María" required />
+        </div>
+        <div>
+          <label>Apellidos</label>
+          <input type="text" placeholder="González" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Email</label>
+        <input type="email" placeholder="tu@email.com" required />
+      </div>
+      <div class="form-row">
+        <label>Teléfono</label>
+        <input type="tel" placeholder="+34 600 000 000" />
+      </div>
+
+      <div class="form-row" style="margin-top: 28px;">
+        <label>Método de pago</label>
+        <div class="payment-methods">
+          <div class="payment-method active" data-pm="card">
+            <svg viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="1" width="22" height="14" rx="2"/><path d="M1 5h22"/></svg>
+            Tarjeta
+          </div>
+          <div class="payment-method" data-pm="apple">
+             Apple Pay
+          </div>
+          <div class="payment-method" data-pm="google">
+            G Pay
+          </div>
+          <div class="payment-method" data-pm="bizum">
+            Bizum
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row" id="card-row">
+        <label>Datos de la tarjeta</label>
+        <div class="card-wrap">
+          <div class="card-brand"></div>
+          <input class="card-num" type="text" placeholder="1234 5678 9012 3456" maxlength="19" />
+          <input class="card-exp" type="text" placeholder="MM/AA" maxlength="5" />
+          <input class="card-cvc" type="text" placeholder="CVC" maxlength="3" />
+        </div>
+      </div>
+
+      <button class="modal-cta" id="modal-cta">
+        Pagar <span id="modal-total">0€</span>
+      </button>
+      <div class="secure-row">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        PAGO SEGURO · STRIPE · SSL CIFRADO
+      </div>
+    </div>
+
+    <div class="modal-side">
+      <h4>Resumen de tu estancia</h4>
+      <div class="summary-thumb">
+        <strong>Villa Olivar<br/>Málaga, ES</strong>
+      </div>
+      <div class="bb-row"><span>Fechas</span><span id="mod-dates">—</span></div>
+      <div class="bb-row"><span>Huéspedes</span><span id="mod-guests">—</span></div>
+      <div style="margin-top:16px;border-top:1px solid var(--rule);padding-top:14px">
+        <div class="bb-row"><span id="mod-base-label">— × 0</span><span id="mod-base">0€</span></div>
+        <div class="bb-row"><span>Limpieza</span><span>45€</span></div>
+        <div class="bb-row"><span>Servicio</span><span id="mod-service">0€</span></div>
+        <div class="bb-row"><span>Tasa turística</span><span id="mod-tax">0€</span></div>
+      </div>
+      <div class="bb-row total" style="font-family:var(--display);font-weight:700;font-size:18px;color:var(--ink)"><span>Total</span><span id="mod-total-side">0€</span></div>
+    </div>
+
+    <div class="modal-success" id="modal-success">
+      <div class="check">✓</div>
+      <h3>¡Reserva confirmada!</h3>
+      <p>Te hemos enviado un email con el resumen de la reserva y la guía digital del apartamento. ¡Nos vemos en Málaga!</p>
+    </div>
+  </div>
+</div>
+
+<!-- TWEAKS PANEL -->
+<div id="tweaks-panel">
+  <h5>● Personalización de la propiedad <button id="tweaks-close">×</button></h5>
+  <div class="tweak-row">
+    <label>Paleta</label>
+    <div class="tweak-swatches" id="palette-swatches">
+      <div class="tweak-swatch active" data-palette="navy" style="background:#1e3a8a" title="Navy boutique"></div>
+      <div class="tweak-swatch" data-palette="coastal" style="background:#0369a1" title="Coastal"></div>
+      <div class="tweak-swatch" data-palette="warmsand" style="background:#8a5a2b" title="Warm sand"></div>
+      <div class="tweak-swatch" data-palette="forest" style="background:#14532d" title="Forest"></div>
+      <div class="tweak-swatch" data-palette="ink" style="background:#18181b" title="Ink"></div>
+    </div>
+  </div>
+  <div class="tweak-row">
+    <label>Tipografía</label>
+    <div class="tweak-segment" id="type-seg">
+      <button class="active" data-type="modern">Moderna</button>
+      <button data-type="editorial">Editorial</button>
+    </div>
+  </div>
+  <div class="tweak-row">
+    <label>Bordes</label>
+    <div class="tweak-segment" id="radius-seg">
+      <button class="active" data-radius="soft">Suaves</button>
+      <button data-radius="sharp">Nítidos</button>
+    </div>
+  </div>
+  <div class="tweak-row" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--rule)">
+    <label style="margin-bottom:8px">Precio por noche</label>
+    <div style="display:flex;align-items:center;gap:8px">
+      <input id="tw-price" type="range" min="60" max="400" value="128" step="1" style="flex:1" />
+      <span id="tw-price-val" style="font-family:var(--mono);font-size:12px;color:var(--ink);min-width:48px;text-align:right">128€</span>
+    </div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ——— TWEAK STATE ———
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "palette": "warmsand",
+  "type": "editorial",
+  "radius": "sharp",
+  "price": 135
+}/*EDITMODE-END*/;
+
+let state = { ...TWEAK_DEFAULTS };
+let ci = null, co = null;
+let guests = { adults: 2, children: 0, infants: 0, pets: 0 };
+const CLEANING = 45;
+const SERVICE_PCT = 0.08;
+const TAX_PER_NIGHT_PER_ADULT = 0.85;
+
+function applyState() {
+  document.body.setAttribute('data-palette', state.palette);
+  document.body.setAttribute('data-type', state.type);
+  document.body.setAttribute('data-radius', state.radius);
+  document.getElementById('price-per-night').textContent = state.price + '€';
+  document.getElementById('tw-price').value = state.price;
+  document.getElementById('tw-price-val').textContent = state.price + '€';
+  // update active swatch
+  document.querySelectorAll('#palette-swatches .tweak-swatch').forEach(s => {
+    s.classList.toggle('active', s.dataset.palette === state.palette);
+  });
+  document.querySelectorAll('#type-seg button').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === state.type);
+  });
+  document.querySelectorAll('#radius-seg button').forEach(b => {
+    b.classList.toggle('active', b.dataset.radius === state.radius);
+  });
+  updatePrice();
+}
+
+function persist(edits) {
+  state = { ...state, ...edits };
+  applyState();
+  window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+}
+
+applyState();
+
+// Edit mode protocol
+window.addEventListener('message', (e) => {
+  if (!e.data) return;
+  if (e.data.type === '__activate_edit_mode') document.getElementById('tweaks-panel').classList.add('shown');
+  if (e.data.type === '__deactivate_edit_mode') document.getElementById('tweaks-panel').classList.remove('shown');
+});
+window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+
+document.getElementById('tweaks-close').addEventListener('click', () => {
+  document.getElementById('tweaks-panel').classList.remove('shown');
+  window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+});
+
+document.querySelectorAll('#palette-swatches .tweak-swatch').forEach(s => {
+  s.addEventListener('click', () => persist({ palette: s.dataset.palette }));
+});
+document.querySelectorAll('#type-seg button').forEach(b => {
+  b.addEventListener('click', () => persist({ type: b.dataset.type }));
+});
+document.querySelectorAll('#radius-seg button').forEach(b => {
+  b.addEventListener('click', () => persist({ radius: b.dataset.radius }));
+});
+document.getElementById('tw-price').addEventListener('input', (e) => {
+  persist({ price: parseInt(e.target.value) });
+});
+
+// ——— CALENDAR ———
+let viewYear, viewMonth;
+const today = new Date(); today.setHours(0,0,0,0);
+
+// Generate some blocked dates randomly (deterministic)
+const blocked = new Set();
+function seedBlocked() {
+  const s = new Date(today); s.setDate(s.getDate() + 8);
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(s); d.setDate(d.getDate() + i);
+    blocked.add(d.toISOString().slice(0,10));
+  }
+  const s2 = new Date(today); s2.setDate(s2.getDate() + 35);
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(s2); d.setDate(d.getDate() + i);
+    blocked.add(d.toISOString().slice(0,10));
+  }
+  const s3 = new Date(today); s3.setDate(s3.getDate() + 60);
+  for (let i = 0; i < 9; i++) {
+    const d = new Date(s3); d.setDate(d.getDate() + i);
+    blocked.add(d.toISOString().slice(0,10));
+  }
+}
+seedBlocked();
+
+const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DOWS = ['L','M','X','J','V','S','D'];
+
+function key(d) { return d.toISOString().slice(0,10); }
+function fmt(d) {
+  if (!d) return '';
+  return d.getDate() + ' ' + MONTHS_ES[d.getMonth()].slice(0,3).toLowerCase() + '.';
+}
+function fmtLong(d) {
+  if (!d) return '—';
+  return d.getDate() + ' ' + MONTHS_ES[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function buildMonth(y, m) {
+  const first = new Date(y, m, 1);
+  // First day adjusted to Monday-start
+  let firstDow = first.getDay(); firstDow = (firstDow + 6) % 7;
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  let html = '<div class="cal-month"><div class="cal-month-head">';
+  html += '<button class="cal-nav cal-prev" data-dir="-1">‹</button>';
+  html += '<div class="cal-month-title">' + MONTHS_ES[m] + ' ' + y + '</div>';
+  html += '<button class="cal-nav cal-next" data-dir="1">›</button>';
+  html += '</div><div class="cal-grid">';
+  for (const d of DOWS) html += '<div class="cal-dow">'+d+'</div>';
+  for (let i = 0; i < firstDow; i++) html += '<div class="cal-day empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d);
+    const k = key(date);
+    const isPast = date < today;
+    const isBlocked = blocked.has(k);
+    const classes = ['cal-day'];
+    if (isPast || isBlocked) classes.push('disabled');
+    if (ci && key(ci) === k) classes.push('start');
+    if (co && key(co) === k) classes.push('end');
+    if (ci && co && date > ci && date < co) classes.push('in-range');
+    html += '<div class="'+classes.join(' ')+'" data-date="'+k+'">'+d+'</div>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function renderCalendar() {
+  let html = buildMonth(viewYear, viewMonth);
+  const next = new Date(viewYear, viewMonth + 1, 1);
+  html += buildMonth(next.getFullYear(), next.getMonth());
+  document.getElementById('cal-months').innerHTML = html;
+}
+
+function openCalendar() {
+  if (!viewYear) {
+    viewYear = today.getFullYear();
+    viewMonth = today.getMonth();
+  }
+  renderCalendar();
+  document.getElementById('calendar-popup').classList.add('shown');
+  document.getElementById('guests-popup').classList.remove('shown');
+}
+
+function closeCalendar() {
+  document.getElementById('calendar-popup').classList.remove('shown');
+}
+
+document.getElementById('bf-checkin').addEventListener('click', openCalendar);
+document.getElementById('bf-checkout').addEventListener('click', openCalendar);
+document.getElementById('cal-close').addEventListener('click', closeCalendar);
+
+document.getElementById('cal-clear').addEventListener('click', () => {
+  ci = null; co = null;
+  document.getElementById('ci-label').textContent = 'Selecciona fecha';
+  document.getElementById('ci-label').classList.add('placeholder');
+  document.getElementById('co-label').textContent = 'Selecciona fecha';
+  document.getElementById('co-label').classList.add('placeholder');
+  updatePrice();
+  renderCalendar();
+});
+
+document.getElementById('cal-months').addEventListener('click', (e) => {
+  if (e.target.classList.contains('cal-prev')) {
+    if (viewMonth === 0) { viewMonth = 11; viewYear--; }
+    else viewMonth--;
+    renderCalendar();
+    return;
+  }
+  if (e.target.classList.contains('cal-next')) {
+    if (viewMonth === 11) { viewMonth = 0; viewYear++; }
+    else viewMonth++;
+    renderCalendar();
+    return;
+  }
+  if (e.target.classList.contains('cal-day') && !e.target.classList.contains('disabled') && !e.target.classList.contains('empty')) {
+    const d = new Date(e.target.dataset.date + 'T00:00:00');
+    if (!ci || (ci && co)) {
+      ci = d; co = null;
+    } else if (d > ci) {
+      // Check no blocked dates between
+      let cursor = new Date(ci);
+      let hasBlocked = false;
+      cursor.setDate(cursor.getDate() + 1);
+      while (cursor < d) {
+        if (blocked.has(key(cursor))) { hasBlocked = true; break; }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      if (hasBlocked) { ci = d; co = null; }
+      else co = d;
+    } else {
+      ci = d; co = null;
+    }
+    document.getElementById('ci-label').textContent = ci ? fmt(ci) : 'Selecciona fecha';
+    document.getElementById('ci-label').classList.toggle('placeholder', !ci);
+    document.getElementById('co-label').textContent = co ? fmt(co) : 'Selecciona fecha';
+    document.getElementById('co-label').classList.toggle('placeholder', !co);
+    renderCalendar();
+    updatePrice();
+  }
+});
+
+// ——— GUESTS ———
+const MAXES = { adults: 4, children: 4, infants: 2, pets: 2 };
+
+document.getElementById('bf-guests').addEventListener('click', (e) => {
+  if (e.target.closest('.guests-popup')) return;
+  document.getElementById('guests-popup').classList.toggle('shown');
+  document.getElementById('calendar-popup').classList.remove('shown');
+});
+
+document.querySelectorAll('.guest-counter').forEach(c => {
+  const type = c.dataset.type;
+  c.querySelector('.inc').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (guests[type] < MAXES[type] && (guests.adults + guests.children) < 4 || type === 'infants' || type === 'pets') {
+      if (guests[type] < MAXES[type]) {
+        guests[type]++;
+        updateGuestUI();
+      }
+    }
+  });
+  c.querySelector('.dec').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const min = type === 'adults' ? 1 : 0;
+    if (guests[type] > min) {
+      guests[type]--;
+      updateGuestUI();
+    }
+  });
+});
+
+function updateGuestUI() {
+  document.querySelectorAll('.guest-counter').forEach(c => {
+    const type = c.dataset.type;
+    c.querySelector('.val').textContent = guests[type];
+    const min = type === 'adults' ? 1 : 0;
+    c.querySelector('.dec').disabled = guests[type] <= min;
+    c.querySelector('.inc').disabled = guests[type] >= MAXES[type];
+  });
+  let label = guests.adults + ' adulto' + (guests.adults > 1 ? 's' : '');
+  if (guests.children) label += ', ' + guests.children + ' niño' + (guests.children > 1 ? 's' : '');
+  if (guests.infants) label += ', ' + guests.infants + ' bebé' + (guests.infants > 1 ? 's' : '');
+  if (guests.pets) label += ', ' + guests.pets + ' mascota' + (guests.pets > 1 ? 's' : '');
+  document.getElementById('guests-label').textContent = label;
+  updatePrice();
+}
+
+// Close popups when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#bf-checkin') && !e.target.closest('#bf-checkout') && !e.target.closest('#calendar-popup')) {
+    document.getElementById('calendar-popup').classList.remove('shown');
+  }
+  if (!e.target.closest('#bf-guests') && !e.target.closest('#guests-popup')) {
+    document.getElementById('guests-popup').classList.remove('shown');
+  }
+});
+
+// ——— PRICING ———
+
+function updatePrice() {
+  const price = state.price;
+  let nights = 0;
+  if (ci && co) {
+    nights = Math.round((co - ci) / (1000 * 60 * 60 * 24));
+  }
+  const base = price * nights;
+  const service = Math.round(base * SERVICE_PCT);
+  const tax = nights > 0 ? Math.round(nights * (guests.adults + guests.children) * TAX_PER_NIGHT_PER_ADULT) : 0;
+  const petFee = guests.pets * 25;
+  const total = base + (nights > 0 ? CLEANING : 0) + service + tax + petFee;
+
+  document.getElementById('bd-nights-label').textContent = price + '€ × ' + nights + ' noche' + (nights !== 1 ? 's' : '');
+  document.getElementById('bd-base').textContent = base + '€';
+  document.getElementById('bd-service').textContent = service + '€';
+  document.getElementById('bd-tax').textContent = tax + '€';
+  document.getElementById('bd-total').textContent = total + '€';
+
+  const breakdown = document.getElementById('breakdown');
+  const reserveBtn = document.getElementById('btn-reserve');
+  if (nights > 0) {
+    breakdown.classList.add('shown');
+    reserveBtn.disabled = false;
+    reserveBtn.textContent = 'Reservar — ' + total + '€';
+  } else {
+    breakdown.classList.remove('shown');
+    reserveBtn.disabled = true;
+    reserveBtn.textContent = ci ? 'Selecciona salida' : 'Selecciona fechas';
+  }
+
+  // Update modal pricing
+  document.getElementById('mod-base-label').textContent = price + '€ × ' + nights + ' noche' + (nights !== 1 ? 's' : '');
+  document.getElementById('mod-base').textContent = base + '€';
+  document.getElementById('mod-service').textContent = service + '€';
+  document.getElementById('mod-tax').textContent = tax + '€';
+  document.getElementById('mod-total-side').textContent = total + '€';
+  document.getElementById('modal-total').textContent = total + '€';
+  document.getElementById('mod-dates').textContent = ci ? (fmt(ci) + ' → ' + fmt(co)) : '—';
+  let glabel = guests.adults + (guests.children ? '+' + guests.children : '') + ' huésped' + ((guests.adults+guests.children) > 1 ? 'es' : '');
+  if (guests.pets) glabel += ' + ' + guests.pets + ' 🐾';
+  document.getElementById('mod-guests').textContent = glabel;
+}
+
+// ——— MODAL ———
+document.getElementById('btn-reserve').addEventListener('click', () => {
+  document.getElementById('modal').classList.add('shown');
+});
+document.getElementById('modal-close').addEventListener('click', () => {
+  document.getElementById('modal').classList.remove('shown');
+  // reset success state
+  document.getElementById('modal-form').style.display = '';
+  document.querySelector('.modal-side').style.display = '';
+  document.getElementById('modal-success').classList.remove('shown');
+});
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target.id === 'modal') {
+    document.getElementById('modal-close').click();
+  }
+});
+document.getElementById('modal-cta').addEventListener('click', () => {
+  document.getElementById('modal-form').style.display = 'none';
+  document.querySelector('.modal-side').style.display = 'none';
+  document.getElementById('modal-success').classList.add('shown');
+});
+
+// Payment method picker
+document.querySelectorAll('.payment-method').forEach(pm => {
+  pm.addEventListener('click', () => {
+    document.querySelectorAll('.payment-method').forEach(x => x.classList.remove('active'));
+    pm.classList.add('active');
+    const isCard = pm.dataset.pm === 'card';
+    document.getElementById('card-row').style.display = isCard ? '' : 'none';
+  });
+});
+
+// Card formatting
+document.querySelector('.card-num').addEventListener('input', (e) => {
+  let v = e.target.value.replace(/\D/g, '').slice(0, 16);
+  e.target.value = v.replace(/(.{4})/g, '$1 ').trim();
+});
+document.querySelector('.card-exp').addEventListener('input', (e) => {
+  let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+  if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+  e.target.value = v;
+});
+
+// FAQ
+document.querySelectorAll('.faq-item').forEach(item => {
+  item.addEventListener('click', () => item.classList.toggle('open'));
+});
+
+// Smooth scrolling
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', (e) => {
+    const id = a.getAttribute('href');
+    if (id === '#') return;
+    const el = document.querySelector(id);
+    if (el) {
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+
+updateGuestUI();
+</script>
+
+</body>
+</html>

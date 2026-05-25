@@ -2,7 +2,7 @@
 
 import { Property, updatePropertyStatus } from '@/app/actions/properties'
 import { Button } from '@/components/ui/button'
-import { MapPin, Users, Bed, Bath, Share2, Edit2, MoreHorizontal, FileEdit, Archive, Globe, Loader2, UserPlus, Building2 } from 'lucide-react'
+import { MapPin, Users, Bed, Bath, Share2, Edit2, MoreHorizontal, FileEdit, Archive, Globe, Loader2, UserPlus, Building2, LayoutTemplate } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -163,18 +163,28 @@ export function PropertyListItem({ property, onStatusChange }: PropertyListItemP
                             </>
                         )}
 
+                        <DropdownMenuItem
+                            onSelect={() => router.push(`/dashboard/properties/${property.id}/landing`)}
+                            className="rounded-xl p-2.5 focus:bg-landing-navy-tint focus:text-landing-navy cursor-pointer"
+                        >
+                            <LayoutTemplate className="h-4 w-4 mr-3" />
+                            <span className="font-bold text-xs uppercase tracking-wider">Landing de Reserva</span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator className="bg-landing-rule-soft" />
+
                         <DropdownMenuItem onClick={() => handleStatusChange('active')} className="rounded-xl p-2.5 focus:bg-landing-mint-tint focus:text-landing-mint-deep cursor-pointer">
                             <Globe className="h-4 w-4 mr-3" />
                             <span className="font-bold text-xs uppercase tracking-wider">Activar</span>
                         </DropdownMenuItem>
-                        
+
                         <DropdownMenuItem onClick={() => handleStatusChange('draft')} className="rounded-xl p-2.5 focus:bg-landing-amber-tint focus:text-landing-amber cursor-pointer">
                             <FileEdit className="h-4 w-4 mr-3" />
                             <span className="font-bold text-xs uppercase tracking-wider">Borrador</span>
                         </DropdownMenuItem>
 
                         <DropdownMenuSeparator className="bg-landing-rule-soft" />
-                        
+
                         <DropdownMenuItem onClick={() => handleStatusChange('archived')} className="rounded-xl p-2.5 focus:bg-landing-rose-tint focus:text-landing-rose cursor-pointer">
                             <Archive className="h-4 w-4 mr-3" />
                             <span className="font-bold text-xs uppercase tracking-wider">Archivar</span>

@@ -31,6 +31,7 @@ export async function saveWizardStep(
             guests: stepData.guests,
             beds: stepData.beds,
             baths: stepData.baths,
+            floor: stepData.floor || null,
             has_parking: stepData.has_parking,
             parking_number: stepData.parking_number,
             has_access_code: stepData.has_access_code,
