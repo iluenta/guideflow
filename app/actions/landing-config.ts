@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createServerAdminClient } from '@/lib/supabase/server-admin';
 import { PropertyLanding, Property } from '@/lib/types/property';
 import { requireProfile } from '@/lib/supabase/get-tenant-id';
 import { can, type TenantRole } from '@/lib/permissions';
@@ -40,12 +41,17 @@ export async function getPropertyLandingBySlug(
     return null;
   }
 
-  // 3. Obtener fechas bloqueadas (reservas confirmadas/pending)
-  const { data: reservations, error: resError } = await supabase
+  // 3. Obtener fechas bloqueadas (reservas confirmadas/checked_in/checked_out).
+  // Usamos el cliente admin (service role) porque la tabla reservations tiene RLS
+  // de aislamiento de tenant — un visitante anónimo no tiene sesión y la query
+  // con el cliente anon devolvería 0 filas aunque la landing sea pública.
+  // Solo seleccionamos los rangos de fechas, sin datos personales del huésped.
+  const adminClient = createServerAdminClient();
+  const { data: reservations, error: resError } = await adminClient
     .from('reservations')
     .select('checkin_date, checkout_date')
     .eq('property_id', property.id)
-    .in('status', ['confirmed', 'checked_out']);
+    .in('status', ['confirmed', 'checked_in', 'checked_out']);
 
   if (resError) {
     console.error('Error fetching reservations for blocked dates:', resError);
@@ -72,8 +78,8 @@ export async function getPropertyLandingBySlug(
     // end (checkout_date) is intentionally NOT added → available for next check-in
   });
 
-  // 4. Fetch dynamic price periods (public read — RLS policy ppp_public_select)
-  const { data: periodsData } = await supabase
+  // 4. Fetch dynamic price periods (admin client — consistente con la query de reservas)
+  const { data: periodsData } = await adminClient
     .from('property_price_periods')
     .select('*')
     .eq('property_id', property.id)
