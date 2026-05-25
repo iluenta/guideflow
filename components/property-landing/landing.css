@@ -148,6 +148,9 @@ h2.lp-section-title { font-size: 24px; font-weight: 700; letter-spacing: -.02em;
 .lp-cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; border-radius: 50%; transition: background .1s; }
 .lp-cal-day:hover:not(.disabled) { background: var(--bg-deep); }
 .lp-cal-day.disabled { color: var(--ink-mute); text-decoration: line-through; cursor: not-allowed; opacity: .4; }
+/* Host-blocked: red background, strikethrough, not-allowed cursor */
+.lp-cal-day.host-blocked { background: #fee2e2; color: #b91c1c; text-decoration: line-through; cursor: not-allowed; opacity: .8; border-radius: 50%; }
+.lp-cal-day.host-blocked:hover { background: #fecaca; }
 .lp-cal-day.start, .lp-cal-day.end { background: var(--brand); color: white; font-weight: 600; }
 .lp-cal-day.in-range { background: var(--bg-deep); border-radius: 0; color: var(--brand); }
 .lp-cal-day.start { border-radius: 50% 0 0 50%; }
@@ -161,6 +164,7 @@ h2.lp-section-title { font-size: 24px; font-weight: 700; letter-spacing: -.02em;
 .lp-cal-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .lp-cal-dot.avail { background: var(--bg-deep); border: 1px solid var(--rule); }
 .lp-cal-dot.blocked { background: var(--rule); }
+.lp-cal-dot.host-blocked { background: #fca5a5; border: 1px solid #f87171; }
 .lp-cal-dot.selected { background: var(--brand); }
 
 /* ─── Guests popup ───────────────────────────────────────────────────────────── */

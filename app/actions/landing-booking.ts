@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createServerAdminClient } from '@/lib/supabase/server-admin';
 import { ReservationRequest } from '@/lib/types/property';
 import { sendReservationConfirmation } from '@/lib/email/resend';
 
@@ -61,6 +62,19 @@ export async function createPublicBooking(
 
     if (conflicts && conflicts.length > 0) {
       return { success: false, error: 'Las fechas seleccionadas ya no están disponibles' };
+    }
+
+    // 2b. Validar que no hay períodos bloqueados por el host en el rango
+    const adminClient = createServerAdminClient();
+    const { data: blockedConflicts } = await adminClient
+      .from('property_blocked_periods')
+      .select('id, reason')
+      .eq('property_id', input.propertyId)
+      .lt('start_date', checkOutStr)
+      .gt('end_date', checkInStr);      // end_date inclusive → gt en lugar de gte
+
+    if (blockedConflicts && blockedConflicts.length > 0) {
+      return { success: false, error: 'La propiedad no está disponible en las fechas seleccionadas' };
     }
 
     // 3. Calcular precios en SERVIDOR (nunca confiar en el cliente)

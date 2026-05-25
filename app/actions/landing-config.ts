@@ -6,6 +6,8 @@ import { PropertyLanding, Property } from '@/lib/types/property';
 import { requireProfile } from '@/lib/supabase/get-tenant-id';
 import { can, type TenantRole } from '@/lib/permissions';
 import type { PricePeriod, PriceException } from '@/lib/types/pricing';
+import { BLOCK_REASON_LABELS } from '@/lib/types/blocked-periods';
+import type { BlockedPeriod } from '@/lib/types/blocked-periods';
 
 /**
  * Obtener configuración de landing por slug (pública)
@@ -13,7 +15,16 @@ import type { PricePeriod, PriceException } from '@/lib/types/pricing';
  */
 export async function getPropertyLandingBySlug(
   slug: string
-): Promise<{ property: Property; landing: PropertyLanding; blockedDates: string[]; pricePeriods: PricePeriod[] } | null> {
+): Promise<{
+  property: Property;
+  landing: PropertyLanding;
+  blockedDates: string[];
+  /** Dates closed by the host (obras, limpieza, vacaciones…) */
+  hostBlockedDates: string[];
+  /** "YYYY-MM-DD" → tooltip label */
+  hostBlockedLabels: Record<string, string>;
+  pricePeriods: PricePeriod[];
+} | null> {
   const supabase = await createClient();
 
   // 1. Obtener propiedad por slug
@@ -78,7 +89,30 @@ export async function getPropertyLandingBySlug(
     // end (checkout_date) is intentionally NOT added → available for next check-in
   });
 
-  // 4. Fetch dynamic price periods (admin client — consistente con la query de reservas)
+  // 4. Host-blocked periods (obras, limpieza, vacaciones…)
+  const { data: blockedPeriodsData } = await adminClient
+    .from('property_blocked_periods')
+    .select('start_date, end_date, reason, notes')
+    .eq('property_id', property.id);
+
+  const hostBlockedSet   = new Set<string>();
+  const hostBlockedLabels: Record<string, string> = {};
+
+  blockedPeriodsData?.forEach((bp: Pick<BlockedPeriod, 'start_date' | 'end_date' | 'reason' | 'notes'>) => {
+    // Expand inclusive range
+    const label = BLOCK_REASON_LABELS[bp.reason] + (bp.notes ? ` · ${bp.notes}` : '');
+    let current = bp.start_date;
+    while (current <= bp.end_date) {
+      hostBlockedSet.add(current);
+      hostBlockedLabels[current] = label;
+      // Advance one day via string arithmetic
+      const d = new Date(current + 'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate() + 1);
+      current = d.toISOString().split('T')[0];
+    }
+  });
+
+  // 5. Fetch dynamic price periods (admin client — consistente con queries anteriores)
   const { data: periodsData } = await adminClient
     .from('property_price_periods')
     .select('*')
@@ -94,6 +128,8 @@ export async function getPropertyLandingBySlug(
     property,
     landing,
     blockedDates: Array.from(blockedDates),
+    hostBlockedDates: Array.from(hostBlockedSet),
+    hostBlockedLabels,
     pricePeriods,
   };
 }

@@ -19,7 +19,18 @@ import { ReservationModal, type ModalFormData } from './ReservationModal';
 interface Props {
   property: Property;
   landing: PropertyLanding;
+  /** Dates occupied by confirmed reservations (shown grey, strikethrough). */
   blockedDates: string[];
+  /**
+   * Dates voluntarily closed by the host (obras, limpieza, vacaciones…).
+   * Shown red in the calendar.
+   */
+  hostBlockedDates?: string[];
+  /**
+   * Optional tooltip labels for host-blocked dates.
+   * Map of "YYYY-MM-DD" → reason label.
+   */
+  hostBlockedLabels?: Map<string, string>;
   /**
    * Dynamic price periods fetched from property_price_periods.
    * When present, BookingWidget uses day-by-day pricing instead of the flat
@@ -37,8 +48,11 @@ interface Props {
  * – Calculates price breakdown via useMemo.
  * – Owns ReservationModal (shows/hides it internally).
  */
-export function BookingWidget({ property, landing, blockedDates, pricePeriods, onReservationSubmit }: Props) {
-  const blockedSet = useMemo(() => new Set(blockedDates), [blockedDates]);
+export function BookingWidget({ property, landing, blockedDates, hostBlockedDates, hostBlockedLabels, pricePeriods, onReservationSubmit }: Props) {
+  const blockedSet     = useMemo(() => new Set(blockedDates), [blockedDates]);
+  const hostBlockedSet = useMemo(() => new Set(hostBlockedDates ?? []), [hostBlockedDates]);
+  // Combined set used for range-conflict validation
+  const allBlockedSet  = useMemo(() => new Set([...blockedDates, ...(hostBlockedDates ?? [])]), [blockedDates, hostBlockedDates]);
 
   // ── Calendar state ──────────────────────────────────────────────────────────
   const [calOpen, setCalOpen] = useState(false);
@@ -107,8 +121,8 @@ export function BookingWidget({ property, landing, blockedDates, pricePeriods, o
       return;
     }
 
-    // Validate no blocked dates in range [checkIn+1, date-1]
-    if (hasBlockedInRange(checkIn, date, blockedSet)) {
+    // Validate no blocked dates (reservations + host-blocked) in range [checkIn+1, date-1]
+    if (hasBlockedInRange(checkIn, date, allBlockedSet)) {
       // Reset — treat the new date as a fresh checkIn
       setCheckIn(date);
       setCheckOut(null);
@@ -289,6 +303,8 @@ export function BookingWidget({ property, landing, blockedDates, pricePeriods, o
                     month={calMonth} year={calYear}
                     checkIn={checkIn} checkOut={checkOut} hovered={hovered}
                     blocked={blockedSet}
+                    hostBlocked={hostBlockedSet}
+                    hostBlockedLabels={hostBlockedLabels}
                     onSelectDate={handleSelectDate}
                     onDayHover={setHovered}
                     onPrev={prevMonth}
@@ -297,6 +313,8 @@ export function BookingWidget({ property, landing, blockedDates, pricePeriods, o
                     month={month2} year={year2}
                     checkIn={checkIn} checkOut={checkOut} hovered={hovered}
                     blocked={blockedSet}
+                    hostBlocked={hostBlockedSet}
+                    hostBlockedLabels={hostBlockedLabels}
                     onSelectDate={handleSelectDate}
                     onDayHover={setHovered}
                     onNext={nextMonth}
@@ -306,6 +324,9 @@ export function BookingWidget({ property, landing, blockedDates, pricePeriods, o
                   <div className="lp-cal-legend">
                     <span><i className="lp-cal-dot avail" />Disponible</span>
                     <span><i className="lp-cal-dot blocked" />Ocupado</span>
+                    {hostBlockedSet.size > 0 && (
+                      <span><i className="lp-cal-dot host-blocked" />Cerrado</span>
+                    )}
                     <span><i className="lp-cal-dot selected" />Tu reserva</span>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>

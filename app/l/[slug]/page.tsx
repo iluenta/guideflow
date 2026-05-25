@@ -41,13 +41,15 @@ export default async function LandingPage({ params }: Props) {
     notFound();
   }
 
-  const { property, landing, blockedDates, pricePeriods } = data;
+  const { property, landing, blockedDates, hostBlockedDates, hostBlockedLabels, pricePeriods } = data;
 
   return (
     <LandingPageClient
       property={property}
       landing={landing}
       initialBlockedDates={blockedDates}
+      hostBlockedDates={hostBlockedDates}
+      hostBlockedLabels={hostBlockedLabels}
       pricePeriods={pricePeriods}
     />
   );

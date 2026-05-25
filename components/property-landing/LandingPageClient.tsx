@@ -21,10 +21,16 @@ interface Props {
   property: Property;
   landing: PropertyLanding;
   initialBlockedDates: string[];
+  hostBlockedDates?: string[];
+  hostBlockedLabels?: Record<string, string>;
   pricePeriods?: PricePeriod[];
 }
 
-export function LandingPageClient({ property, landing, initialBlockedDates, pricePeriods }: Props) {
+export function LandingPageClient({ property, landing, initialBlockedDates, hostBlockedDates, hostBlockedLabels, pricePeriods }: Props) {
+  // Convert hostBlockedLabels plain object → Map (once, on mount)
+  const hostBlockedLabelsMap = hostBlockedLabels
+    ? new Map(Object.entries(hostBlockedLabels))
+    : undefined;
   const galleryImages = landing.gallery?.length
     ? landing.gallery
     : property.main_image_url ? [property.main_image_url] : [];
@@ -123,6 +129,8 @@ export function LandingPageClient({ property, landing, initialBlockedDates, pric
             property={property}
             landing={landing}
             blockedDates={initialBlockedDates}
+            hostBlockedDates={hostBlockedDates}
+            hostBlockedLabels={hostBlockedLabelsMap}
             pricePeriods={pricePeriods}
             onReservationSubmit={(result) => {
               console.log('[LandingPageClient] Booking result:', result);
@@ -174,6 +182,8 @@ export function LandingPageClient({ property, landing, initialBlockedDates, pric
             property={property}
             landing={landing}
             blockedDates={initialBlockedDates}
+            hostBlockedDates={hostBlockedDates}
+            hostBlockedLabels={hostBlockedLabelsMap}
             pricePeriods={pricePeriods}
             onReservationSubmit={(result) => {
               if (result.success) closeSheet();

@@ -9,7 +9,18 @@ interface Props {
   checkIn: Date | null;
   checkOut: Date | null;
   hovered: Date | null;
+  /** Dates with confirmed reservations — shown with strikethrough (grey). */
   blocked: Set<string>;
+  /**
+   * Dates closed by the host (obras, limpieza, vacaciones…).
+   * Shown in red and disabled. Title attribute used for tooltip.
+   */
+  hostBlocked?: Set<string>;
+  /**
+   * Optional tooltip labels for hostBlocked dates.
+   * Map of "YYYY-MM-DD" → human-readable reason (e.g. "🏗️ Obras · Reforma baño").
+   */
+  hostBlockedLabels?: Map<string, string>;
   onSelectDate: (d: Date) => void;
   onDayHover: (d: Date | null) => void;
   minDate?: Date;
@@ -19,7 +30,13 @@ interface Props {
   onNext?: () => void;
 }
 
-export function Calendar({ month, year, checkIn, checkOut, hovered, blocked, onSelectDate, onDayHover, minDate, onPrev, onNext }: Props) {
+export function Calendar({
+  month, year,
+  checkIn, checkOut, hovered,
+  blocked, hostBlocked, hostBlockedLabels,
+  onSelectDate, onDayHover,
+  minDate, onPrev, onNext,
+}: Props) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const cutoff = minDate ?? today;
@@ -65,29 +82,47 @@ export function Calendar({ month, year, checkIn, checkOut, hovered, blocked, onS
           if (!date) return <div key={`e-${i}`} />;
 
           const str = dateToString(date);
-          const isBlocked = blocked.has(str);
-          const isPast    = isBefore(date, cutoff);
-          const isStart   = checkIn ? sameDay(date, checkIn) : false;
-          const isEnd     = effectiveEnd ? sameDay(date, effectiveEnd) : false;
-          const inRange   = checkIn && effectiveEnd && !sameDay(checkIn, effectiveEnd)
+
+          // ── Determine state ──────────────────────────────────────────────
+          const isReserved    = blocked.has(str);
+          const isHostBlocked = hostBlocked?.has(str) ?? false;
+          const isPast        = isBefore(date, cutoff);
+          const disabled      = isReserved || isHostBlocked || isPast;
+
+          const isStart  = checkIn ? sameDay(date, checkIn) : false;
+          const isEnd    = effectiveEnd ? sameDay(date, effectiveEnd) : false;
+          const inRange  = checkIn && effectiveEnd && !sameDay(checkIn, effectiveEnd)
             ? date > checkIn && date < effectiveEnd
             : false;
-          const disabled  = isBlocked || isPast;
 
+          // ── CSS classes ──────────────────────────────────────────────────
           let cls = 'lp-cal-day';
-          if (disabled) cls += ' disabled';
-          if (isStart)           cls += ' start';
-          if (isEnd && !isStart) cls += ' end';
-          if (isStart && isEnd)  cls += ' single';
-          if (inRange)           cls += ' in-range';
+          if (isHostBlocked)              cls += ' host-blocked';
+          else if (isReserved)            cls += ' disabled';
+          else if (isPast)                cls += ' disabled';
+          if (isStart)                    cls += ' start';
+          if (isEnd && !isStart)          cls += ' end';
+          if (isStart && isEnd)           cls += ' single';
+          if (inRange)                    cls += ' in-range';
+
+          // ── Tooltip ──────────────────────────────────────────────────────
+          let title: string | undefined;
+          if (isHostBlocked) {
+            title = hostBlockedLabels?.get(str) ?? 'Cerrado';
+          } else if (isReserved) {
+            title = 'Ocupado';
+          }
 
           return (
             <div
               key={str}
               className={cls}
+              title={title}
               onClick={() => !disabled && onSelectDate(date)}
               onMouseEnter={() => !disabled && onDayHover(date)}
               onMouseLeave={() => onDayHover(null)}
+              aria-disabled={disabled}
+              aria-label={title ?? dateToString(date)}
             >
               {date.getDate()}
             </div>

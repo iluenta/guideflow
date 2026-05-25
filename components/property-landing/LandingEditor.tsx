@@ -11,6 +11,7 @@ import {
   FormToggle, FormTextarea, FormRepeater, FormGallery,
 } from './FormFields';
 import { PricingEditor } from './pricing/PricingEditor';
+import { BlockedPeriodsEditor } from './pricing/BlockedPeriodsEditor';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -304,6 +305,11 @@ export function LandingEditor({ propertyId, tenantId, propertyName, propertySlug
           {/* ── Temporadas dinámicas ── */}
           <FormSection title="Temporadas y excepciones">
             <PricingEditor propertyId={propertyId} />
+          </FormSection>
+
+          {/* ── Períodos cerrados ── */}
+          <FormSection title="Períodos cerrados">
+            <BlockedPeriodsEditor propertyId={propertyId} />
           </FormSection>
 
           {/* ── Diseño ── */}
