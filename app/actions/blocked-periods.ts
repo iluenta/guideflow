@@ -224,3 +224,38 @@ export async function deleteBlockedPeriod(periodId: string): Promise<void> {
 
   revalidatePath(`/dashboard/properties/${current.property_id}/landing`);
 }
+
+// ─── Dashboard: fetch for a date range ───────────────────────────────────────
+
+/**
+ * Fetch blocked periods that overlap with [monthFrom, monthTo] for the
+ * authenticated user's tenant. Used by the dashboard calendar.
+ */
+export async function getBlockedPeriodsInRange(params: {
+  month_from: string;   // "YYYY-MM-DD"
+  month_to:   string;   // "YYYY-MM-DD"
+  property_id?: string;
+}): Promise<BlockedPeriod[]> {
+  const supabase = await createClient();
+  const profile  = await requireProfile(supabase);
+
+  let query = supabase
+    .from('property_blocked_periods')
+    .select('*')
+    .eq('tenant_id', profile.tenant_id)
+    // Overlap: period starts before month ends AND period ends after month starts
+    .lte('start_date', params.month_to)
+    .gte('end_date',   params.month_from)
+    .order('start_date', { ascending: true });
+
+  if (params.property_id) {
+    query = query.eq('property_id', params.property_id);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('[blocked-periods] getBlockedPeriodsInRange error:', error);
+    return [];
+  }
+  return data ?? [];
+}

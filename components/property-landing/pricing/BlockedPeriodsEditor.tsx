@@ -87,7 +87,7 @@ function PeriodRow({
         </div>
         {period.notes && (
           <div style={{ fontSize: 11, color: '#374151', marginTop: 3, fontStyle: 'italic' }}>
-            "{period.notes}"
+            &ldquo;{period.notes}&rdquo;
           </div>
         )}
       </div>

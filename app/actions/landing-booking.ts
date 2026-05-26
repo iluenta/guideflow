@@ -85,6 +85,14 @@ export async function createPublicBooking(
       return { success: false, error: 'La estancia debe ser de al menos 1 noche' };
     }
 
+    const minStay = landing.policies?.minStay ?? 1;
+    if (nights < minStay) {
+      return {
+        success: false,
+        error: `La estancia mínima es de ${minStay} noche${minStay !== 1 ? 's' : ''}`,
+      };
+    }
+
     const basePrice = landing.price_per_night * nights;
     const cleaningFee = Number(landing.cleaning_fee || 0);
     const serviceFee = Math.round(basePrice * (Number(landing.service_fee_pct || 8) / 100));

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -12,12 +12,56 @@ interface Props {
   fullAddress?: string;
 }
 
+/**
+ * Opens the best maps app for the current platform.
+ *
+ * We prefer the full text address as the destination query so that Google/Apple
+ * Maps displays the correct place name instead of reverse-geocoding the
+ * coordinates and potentially matching a nearby wrong property.
+ * Coordinates are used as fallback when no address is available.
+ */
+function openDirections(lat: number, lng: number, address?: string) {
+  // Use address text when available; it yields a more accurate name match.
+  const destination = address
+    ? encodeURIComponent(address)
+    : `${lat},${lng}`;
+
+  const ua = navigator.userAgent;
+  const isIOS     = /iP(hone|ad|od)/.test(ua);
+  const isAndroid = /Android/.test(ua);
+
+  if (isIOS) {
+    // Apple Maps — daddr accepts both address strings and "lat,lng"
+    window.open(
+      `https://maps.apple.com/?daddr=${destination}&dirflg=d`,
+      '_blank', 'noopener',
+    );
+  } else if (isAndroid) {
+    // geo: URI with label; Android prompts the user to choose their maps app
+    window.open(
+      `geo:${lat},${lng}?q=${destination}`,
+      '_blank', 'noopener',
+    );
+  } else {
+    // Desktop → Google Maps directions with address as destination
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${destination}`,
+      '_blank', 'noopener',
+    );
+  }
+}
+
 export function Location({ show, latitude, longitude, city, fullAddress }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   const hasCoords = typeof latitude === 'number' && typeof longitude === 'number';
+
+  const handleDirections = useCallback(() => {
+    if (!hasCoords) return;
+    openDirections(latitude!, longitude!, fullAddress || city);
+  }, [hasCoords, latitude, longitude, fullAddress, city]);
 
   useEffect(() => {
     if (!show || !hasCoords || !containerRef.current) return;
@@ -82,9 +126,38 @@ export function Location({ show, latitude, longitude, city, fullAddress }: Props
               </div>
             )}
           </div>
-          <p style={{ fontSize: 12, color: 'var(--ink-mute)', marginTop: 10 }}>
-            La dirección exacta se comparte tras la confirmación de la reserva.
-          </p>
+
+          {/* Directions row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, gap: 12, flexWrap: 'wrap' }}>
+            <p style={{ fontSize: 12, color: 'var(--ink-mute)', margin: 0 }}>
+              La dirección exacta se comparte tras la confirmación de la reserva.
+            </p>
+            <button
+              onClick={handleDirections}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 16px',
+                background: 'var(--brand)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 'var(--r-md)',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              {/* Map pin icon (inline SVG, no extra deps) */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              Cómo llegar
+            </button>
+          </div>
         </>
       ) : (
         <div style={{ borderRadius: 'var(--r-lg)', height: 200, background: 'var(--bg-deep)', border: '1px solid var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-mute)', fontSize: 14 }}>

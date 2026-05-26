@@ -102,7 +102,18 @@ export default function StepAccess({ value }: { value?: string }) {
                                 lat={geocodingResult.lat}
                                 lng={geocodingResult.lng}
                                 onPositionChange={(lat, lng) => {
+                                    // Update geocodingResult so the map re-renders at the new position
                                     setGeocodingResult(prev => prev ? { ...prev, lat, lng } : null)
+                                    // Also persist the new coordinates into the wizard state so
+                                    // saveWizardStep picks them up when the user clicks "Siguiente"
+                                    setData((prev: any) => ({
+                                        ...prev,
+                                        access: {
+                                            ...prev.access,
+                                            latitude: lat,
+                                            longitude: lng,
+                                        }
+                                    }))
                                 }}
                             />
                         </div>

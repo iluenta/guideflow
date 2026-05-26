@@ -18,6 +18,9 @@ import { ReservationDrawer } from '@/components/dashboard/reservations/Reservati
 import { getReservations, getReservation } from '@/app/actions/reservations'
 import { getPaymentMethods, getChannels } from '@/app/actions/reservation-settings'
 import { getProperties } from '@/app/actions/properties'
+import { getBlockedPeriodsInRange } from '@/app/actions/blocked-periods'
+import type { BlockedPeriod } from '@/lib/types/blocked-periods'
+import { BLOCK_REASON_LABELS } from '@/lib/types/blocked-periods'
 import { useUserProfile } from '@/hooks/use-user-profile'
 import { can, type TenantRole } from '@/lib/permissions'
 import type {
@@ -80,12 +83,13 @@ export default function CalendarPage() {
     setMonth(globalYear === now.getFullYear() ? now.getMonth() : 0)
   }, [globalYear]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [reservations, setReservations] = useState<ReservationListItem[]>([])
-  const [channels, setChannels] = useState<ChannelSetting[]>([])
-  const [properties, setProperties] = useState<{ id: string; name: string }[]>([])
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodSetting[]>([])
-  const [filterProperty, setFilterProperty] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [reservations, setReservations]       = useState<ReservationListItem[]>([])
+  const [blockedPeriods, setBlockedPeriods]   = useState<BlockedPeriod[]>([])
+  const [channels, setChannels]               = useState<ChannelSetting[]>([])
+  const [properties, setProperties]           = useState<{ id: string; name: string }[]>([])
+  const [paymentMethods, setPaymentMethods]   = useState<PaymentMethodSetting[]>([])
+  const [filterProperty, setFilterProperty]   = useState('')
+  const [loading, setLoading]                 = useState(true)
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectedReservation, setSelectedReservation] = useState<ReservationWithDetails | null>(null)
@@ -102,18 +106,24 @@ export default function CalendarPage() {
 
   useEffect(() => {
     setLoading(true)
-    // Traer reservas que estén ACTIVAS en algún día del mes:
-    // checkin_date <= último día del mes  AND  checkout_date >= primer día del mes
-    // Esto incluye reservas que empezaron el mes anterior (ej: 27/06–05/07 en julio)
     const firstOfMonth = isoDate(year, month, 1)
     const lastOfMonth  = isoDate(year, month, daysInMonth(year, month))
-    getReservations({
-      checkout_from: firstOfMonth,   // checkout_date >= 1º del mes
-      date_to:       lastOfMonth,    // checkin_date  <= último del mes
-      property_id: filterProperty || undefined,
-      per_page: 200,
-    }).then(({ reservations: rows }) => {
+
+    Promise.all([
+      getReservations({
+        checkout_from: firstOfMonth,
+        date_to:       lastOfMonth,
+        property_id:   filterProperty || undefined,
+        per_page:      200,
+      }),
+      getBlockedPeriodsInRange({
+        month_from:  firstOfMonth,
+        month_to:    lastOfMonth,
+        property_id: filterProperty || undefined,
+      }),
+    ]).then(([{ reservations: rows }, periods]) => {
       setReservations(rows)
+      setBlockedPeriods(periods)
       setLoading(false)
     })
   }, [year, month, filterProperty])
@@ -175,6 +185,12 @@ export default function CalendarPage() {
   const reservationsForDay = (day: number): ReservationListItem[] => {
     const date = isoDate(year, month, day)
     return reservations.filter(r => r.checkin_date <= date && r.checkout_date > date)
+  }
+
+  /** Blocked periods that cover a given day (start_date and end_date inclusive). */
+  const blockedForDay = (day: number): BlockedPeriod[] => {
+    const date = isoDate(year, month, day)
+    return blockedPeriods.filter(p => p.start_date <= date && p.end_date >= date)
   }
 
   const cells: (number | null)[] = [
@@ -283,6 +299,10 @@ export default function CalendarPage() {
             {c.name}
           </span>
         ))}
+        <span className="flex items-center gap-1.5 text-[12px] text-slate-600">
+          <span className="w-3 h-3 rounded-sm inline-block bg-red-200 border border-red-300" />
+          Cerrado
+        </span>
       </div>
 
       {/* Desktop: Calendar grid */}
@@ -302,10 +322,14 @@ export default function CalendarPage() {
             <div key={weekIdx} className="grid grid-cols-7 border-b border-[#eef2f7] last:border-b-0" style={{ minHeight: 100 }}>
               {cells.slice(weekIdx * 7, weekIdx * 7 + 7).map((day, dayIdx) => {
                 const dayReservations = day ? reservationsForDay(day) : []
+                const dayBlocked      = day ? blockedForDay(day) : []
+                const hasBlocked      = dayBlocked.length > 0
                 return (
                   <div
                     key={dayIdx}
-                    className={`p-2 border-r border-[#eef2f7] last:border-r-0 min-h-[100px] ${!day ? 'bg-[#fafbfc]' : ''}`}
+                    className={`p-2 border-r border-[#eef2f7] last:border-r-0 min-h-[100px] ${
+                      !day ? 'bg-[#fafbfc]' : hasBlocked ? 'bg-red-50' : ''
+                    }`}
                   >
                     {day && (
                       <>
@@ -315,7 +339,21 @@ export default function CalendarPage() {
                           {day}
                         </span>
                         <div className="space-y-0.5">
-                          {dayReservations.slice(0, 4).map(r => {
+                          {/* Blocked periods (shown first, in red) */}
+                          {dayBlocked.map(p => {
+                            const isStart = p.start_date === isoDate(year, month, day)
+                            return (
+                              <div
+                                key={p.id}
+                                className="w-full text-left text-red-800 text-[10px] font-medium px-1.5 py-0.5 truncate rounded bg-red-200 border border-red-300"
+                                title={`${BLOCK_REASON_LABELS[p.reason]}${p.notes ? ` · ${p.notes}` : ''}`}
+                              >
+                                {isStart ? BLOCK_REASON_LABELS[p.reason] : '—'}
+                              </div>
+                            )
+                          })}
+                          {/* Reservations */}
+                          {dayReservations.slice(0, 3).map(r => {
                             const color = r.channel ? getChannelColor(r.channel.code) : getChannelColor('manual')
                             const isCheckin = r.checkin_date === isoDate(year, month, day)
                             return (
@@ -330,8 +368,8 @@ export default function CalendarPage() {
                               </button>
                             )
                           })}
-                          {dayReservations.length > 4 && (
-                            <p className="text-[10px] text-slate-400 font-mono">+{dayReservations.length - 4}</p>
+                          {dayReservations.length > 3 && (
+                            <p className="text-[10px] text-slate-400 font-mono">+{dayReservations.length - 3}</p>
                           )}
                         </div>
                       </>

@@ -7,7 +7,7 @@ import type { Property, PropertyLanding } from '@/lib/types/property';
 import type { Guests } from '@/lib/types/booking';
 import {
   isBefore, sameDay, formatDate, formatGuestLabel,
-  calculateNights, calculatePriceBreakdown, hasBlockedInRange,
+  calculateNights, calculatePriceBreakdown, hasBlockedInRange, addDays,
 } from '@/lib/landing/utils';
 import { calculateDynamicBreakdown } from '@/lib/pricing/calculator';
 import type { PricePeriod } from '@/lib/types/pricing';
@@ -49,10 +49,12 @@ interface Props {
  * – Owns ReservationModal (shows/hides it internally).
  */
 export function BookingWidget({ property, landing, blockedDates, hostBlockedDates, hostBlockedLabels, pricePeriods, onReservationSubmit }: Props) {
-  const blockedSet     = useMemo(() => new Set(blockedDates), [blockedDates]);
-  const hostBlockedSet = useMemo(() => new Set(hostBlockedDates ?? []), [hostBlockedDates]);
-  // Combined set used for range-conflict validation
-  const allBlockedSet  = useMemo(() => new Set([...blockedDates, ...(hostBlockedDates ?? [])]), [blockedDates, hostBlockedDates]);
+  // Merge reservations + host-blocked into a single unavailable set.
+  // Guests don't need to know the reason — all unavailable days look the same.
+  const blockedSet = useMemo(
+    () => new Set([...blockedDates, ...(hostBlockedDates ?? [])]),
+    [blockedDates, hostBlockedDates],
+  );
 
   // ── Calendar state ──────────────────────────────────────────────────────────
   const [calOpen, setCalOpen] = useState(false);
@@ -69,6 +71,16 @@ export function BookingWidget({ property, landing, blockedDates, hostBlockedDate
 
   // ── Modal state ─────────────────────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
+
+  // ── Min stay ────────────────────────────────────────────────────────────────
+  const minStay = landing.policies?.minStay ?? 1;
+
+  // Earliest selectable checkout when the user is picking the end date.
+  // If minStay = 3, checkout must be at least checkIn + 3 days.
+  const minCheckoutDate = useMemo(
+    () => (checkIn && selectingEnd ? addDays(checkIn, minStay) : null),
+    [checkIn, selectingEnd, minStay],
+  );
 
   // ── Derived: price breakdown (memoized) ─────────────────────────────────────
   const nights = useMemo(
@@ -122,10 +134,17 @@ export function BookingWidget({ property, landing, blockedDates, hostBlockedDate
     }
 
     // Validate no blocked dates (reservations + host-blocked) in range [checkIn+1, date-1]
-    if (hasBlockedInRange(checkIn, date, allBlockedSet)) {
+    if (hasBlockedInRange(checkIn, date, blockedSet)) {
       // Reset — treat the new date as a fresh checkIn
       setCheckIn(date);
       setCheckOut(null);
+      return;
+    }
+
+    // Enforce minimum stay
+    const selectedNights = calculateNights(checkIn, date);
+    if (selectedNights < minStay) {
+      // Don't close — user needs to pick a later date; calendar already disables earlier ones
       return;
     }
 
@@ -133,7 +152,7 @@ export function BookingWidget({ property, landing, blockedDates, hostBlockedDate
     setCheckOut(date);
     setSelectingEnd(false);
     setCalOpen(false);
-  }, [checkIn, selectingEnd, blockedSet]);
+  }, [checkIn, selectingEnd, blockedSet, minStay]);
 
   const clearDates = useCallback(() => {
     setCheckIn(null);
@@ -158,8 +177,8 @@ export function BookingWidget({ property, landing, blockedDates, hostBlockedDate
   // ── Show/hide modal ─────────────────────────────────────────────────────────
 
   const showModal = useCallback(() => {
-    if (checkIn && checkOut) setModalOpen(true);
-  }, [checkIn, checkOut]);
+    if (checkIn && checkOut && nights >= minStay) setModalOpen(true);
+  }, [checkIn, checkOut, nights, minStay]);
 
   const closeModal = useCallback(() => setModalOpen(false), []);
 
@@ -303,8 +322,7 @@ export function BookingWidget({ property, landing, blockedDates, hostBlockedDate
                     month={calMonth} year={calYear}
                     checkIn={checkIn} checkOut={checkOut} hovered={hovered}
                     blocked={blockedSet}
-                    hostBlocked={hostBlockedSet}
-                    hostBlockedLabels={hostBlockedLabels}
+                    minDate={minCheckoutDate ?? undefined}
                     onSelectDate={handleSelectDate}
                     onDayHover={setHovered}
                     onPrev={prevMonth}
@@ -313,8 +331,7 @@ export function BookingWidget({ property, landing, blockedDates, hostBlockedDate
                     month={month2} year={year2}
                     checkIn={checkIn} checkOut={checkOut} hovered={hovered}
                     blocked={blockedSet}
-                    hostBlocked={hostBlockedSet}
-                    hostBlockedLabels={hostBlockedLabels}
+                    minDate={minCheckoutDate ?? undefined}
                     onSelectDate={handleSelectDate}
                     onDayHover={setHovered}
                     onNext={nextMonth}
@@ -323,11 +340,13 @@ export function BookingWidget({ property, landing, blockedDates, hostBlockedDate
                 <div className="lp-cal-foot">
                   <div className="lp-cal-legend">
                     <span><i className="lp-cal-dot avail" />Disponible</span>
-                    <span><i className="lp-cal-dot blocked" />Ocupado</span>
-                    {hostBlockedSet.size > 0 && (
-                      <span><i className="lp-cal-dot host-blocked" />Cerrado</span>
-                    )}
+                    <span><i className="lp-cal-dot blocked" />No disponible</span>
                     <span><i className="lp-cal-dot selected" />Tu reserva</span>
+                    {minStay > 1 && (
+                      <span style={{ color: 'var(--brand)', fontWeight: 600 }}>
+                        Mín. {minStay} noche{minStay !== 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
@@ -361,10 +380,14 @@ export function BookingWidget({ property, landing, blockedDates, hostBlockedDate
           {/* Reserve button */}
           <button
             className="lp-btn-reserve"
-            disabled={!checkIn || !checkOut}
+            disabled={!checkIn || !checkOut || nights < minStay}
             onClick={showModal}
           >
-            {checkIn && checkOut ? 'Reservar ahora' : 'Selecciona fechas'}
+            {!checkIn || !checkOut
+              ? 'Selecciona fechas'
+              : nights < minStay
+                ? `Mínimo ${minStay} noches`
+                : 'Reservar ahora'}
           </button>
           <p className="lp-book-note">Sin comisiones · Pago al anfitrión</p>
 
