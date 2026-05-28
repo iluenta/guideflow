@@ -47,11 +47,12 @@ export async function createPublicBooking(
     const checkOutStr = checkOutDate.toISOString().split('T')[0];
 
     // 2. Validar disponibilidad (Protección estricta de solapamiento)
+    // Incluir todas las reservas activas; excluir sólo cancelled y no_show.
     const { data: conflicts, error: conflictError } = await supabase
       .from('reservations')
       .select('id')
       .eq('property_id', input.propertyId)
-      .in('status', ['confirmed', 'checked_out'])
+      .in('status', ['confirmed', 'checked_in', 'checked_out', 'pending'])
       .lt('checkin_date', checkOutStr)
       .gt('checkout_date', checkInStr);
 
@@ -254,7 +255,7 @@ export async function getBlockedDates(propertyId: string): Promise<string[]> {
       .from('reservations')
       .select('checkin_date, checkout_date')
       .eq('property_id', propertyId)
-      .in('status', ['confirmed', 'checked_out']);
+      .in('status', ['confirmed', 'checked_in', 'checked_out', 'pending']);
 
     const blocked = new Set<string>();
 

@@ -115,6 +115,8 @@ export default function CalendarPage() {
         date_to:       lastOfMonth,
         property_id:   filterProperty || undefined,
         per_page:      200,
+        // Excluir canceladas y no-shows: no ocupan días en el calendario
+        status: ['confirmed', 'checked_in', 'checked_out', 'pending'],
       }),
       getBlockedPeriodsInRange({
         month_from:  firstOfMonth,

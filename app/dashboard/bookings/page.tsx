@@ -193,10 +193,27 @@ export default function BookingsPage() {
     openDrawer(viewId)
   }, [viewId, loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // KPI totals from current list
-  const grossTotal = reservations.reduce((s, r) => s + r.gross_amount, 0)
-  const netTotal = reservations.reduce((s, r) => s + r.net_amount, 0)
-  const pendingTotal = reservations.reduce((s, r) => s + Math.max(0, round2(r.net_amount - r.total_received)), 0)
+  // ── KPI totals ────────────────────────────────────────────────────────────────
+  // When showing a specific cancelled/no_show tab, ALL rows are "cancelled" by
+  // design, so we treat the full list as active (badge would be meaningless).
+  const isCancelledView = statusTab === 'cancelled' || statusTab === 'no_show'
+
+  const activeRes    = isCancelledView ? reservations : reservations.filter(r => r.status !== 'cancelled' && r.status !== 'no_show')
+  const cancelledRes = isCancelledView ? []           : reservations.filter(r => r.status === 'cancelled' || r.status === 'no_show')
+
+  // Active totals (shown as main KPI values)
+  const grossTotal   = activeRes.reduce((s, r) => s + r.gross_amount, 0)
+  const netTotal     = activeRes.reduce((s, r) => s + r.net_amount, 0)
+  const pendingTotal = activeRes.reduce((s, r) => s + Math.max(0, round2(r.net_amount - r.total_received)), 0)
+
+  // Cancelled totals (shown as inline badge)
+  const cancelledCount   = cancelledRes.length
+  const cancelledGross   = cancelledRes.reduce((s, r) => s + r.gross_amount, 0)
+  const cancelledNet     = cancelledRes.reduce((s, r) => s + r.net_amount, 0)
+  const cancelledPending = cancelledRes.reduce((s, r) => s + Math.max(0, round2(r.net_amount - r.total_received)), 0)
+
+  // Active count (total from server minus cancelled in current page)
+  const activeCount = isCancelledView ? total : total - cancelledCount
 
   return (
     <div className="p-4 md:p-8 max-w-[1440px] mx-auto">
@@ -236,10 +253,31 @@ export default function BookingsPage() {
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 bg-white border border-[#eef2f7] rounded-[18px] mb-6 overflow-hidden shadow-sm">
-        <KPI label="Reservas" value={String(total)} sub="en el filtro actual" />
-        <KPI label="Ingresos brutos" value={`€${fmt(grossTotal)}`} sub="total bruto" />
-        <KPI label="Neto estimado" value={`€${fmt(netTotal)}`} sub="después de comisiones" />
-        <KPI label="Pendiente cobro" value={`€${fmt(pendingTotal)}`} sub="sin cobrar" valueClass="pending" />
+        <KPI
+          label="Reservas"
+          value={String(activeCount)}
+          sub="en el filtro actual"
+          cancelledBadge={cancelledCount > 0 ? `${cancelledCount} cancelada${cancelledCount !== 1 ? 's' : ''}` : undefined}
+        />
+        <KPI
+          label="Ingresos brutos"
+          value={`€${fmt(grossTotal)}`}
+          sub="total bruto"
+          cancelledBadge={cancelledGross > 0 ? `-€${fmt(cancelledGross)}` : undefined}
+        />
+        <KPI
+          label="Neto estimado"
+          value={`€${fmt(netTotal)}`}
+          sub="después de comisiones"
+          cancelledBadge={cancelledNet > 0 ? `-€${fmt(cancelledNet)}` : undefined}
+        />
+        <KPI
+          label="Pendiente cobro"
+          value={`€${fmt(pendingTotal)}`}
+          sub="sin cobrar"
+          valueClass="pending"
+          cancelledBadge={cancelledPending > 0 ? `-€${fmt(cancelledPending)}` : undefined}
+        />
       </div>
 
       {/* Toolbar */}
@@ -838,14 +876,38 @@ export default function BookingsPage() {
   )
 }
 
-function KPI({ label, value, sub, valueClass }: { label: string; value: string; sub: string; valueClass?: string }) {
+function KPI({
+  label, value, sub, valueClass, cancelledBadge,
+}: {
+  label: string
+  value: string
+  sub: string
+  valueClass?: string
+  /** Optional amount/count from cancelled reservations — shown as a subtle badge. */
+  cancelledBadge?: string
+}) {
   return (
-    <div className="px-3 py-3 md:px-5 md:py-4 border-r border-b md:border-b-0 border-[#eef2f7] last:border-r-0 [&:nth-child(2n)]:border-r-0 md:[&:nth-child(2n)]:border-r">
-      <p className="font-mono text-[9px] md:text-[10px] uppercase tracking-[0.12em] text-slate-400 mb-1 md:mb-2">{label}</p>
-      <p className={`text-[18px] md:text-[24px] font-bold tracking-[-0.025em] leading-none ${valueClass === 'pending' ? 'text-amber-600' : 'text-slate-800'}`}>
-        {value}
-      </p>
-      <p className="text-[10px] md:text-[11px] text-slate-400 mt-1 md:mt-1.5 font-mono tracking-[0.04em] hidden md:block">{sub}</p>
+    <div className="px-3 py-3 md:px-5 md:py-4 border-r border-b md:border-b-0 border-[#eef2f7] last:border-r-0 [&:nth-child(2n)]:border-r-0 md:[&:nth-child(2n)]:border-r flex flex-col justify-between">
+      <div>
+        <p className="font-mono text-[9px] md:text-[10px] uppercase tracking-[0.12em] text-slate-400 mb-1 md:mb-2">{label}</p>
+        <p className={`text-[18px] md:text-[24px] font-bold tracking-[-0.025em] leading-none ${valueClass === 'pending' ? 'text-amber-600' : 'text-slate-800'}`}>
+          {value}
+        </p>
+        <p className="text-[10px] md:text-[11px] text-slate-400 mt-1 md:mt-1.5 font-mono tracking-[0.04em] hidden md:block">{sub}</p>
+      </div>
+
+      {/* Cancelled badge — only rendered when there are cancelled reservations */}
+      {cancelledBadge && (
+        <div className="mt-2 md:mt-3 flex items-center gap-1 w-fit">
+          <span className="inline-flex items-center gap-1 bg-rose-50 border border-rose-100 text-rose-500 text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded-full tracking-wide whitespace-nowrap">
+            {/* Ban icon */}
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+            </svg>
+            {cancelledBadge}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
