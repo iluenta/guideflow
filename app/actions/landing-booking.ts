@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createServerAdminClient } from '@/lib/supabase/server-admin';
 import { ReservationRequest } from '@/lib/types/property';
 import { sendReservationConfirmation } from '@/lib/email/resend';
+import { calculateDynamicBreakdown } from '@/lib/pricing/calculator';
+import type { PricePeriod, PriceException } from '@/lib/types/pricing';
 
 /**
  * Crear reserva desde landing pública
@@ -94,7 +96,21 @@ export async function createPublicBooking(
       };
     }
 
-    const basePrice = landing.price_per_night * nights;
+    // Fetch dynamic price periods for accurate base price calculation
+    const { data: periodsData } = await adminClient
+      .from('property_price_periods')
+      .select('*')
+      .eq('property_id', input.propertyId)
+      .order('start_date', { ascending: true });
+
+    const activePeriods: PricePeriod[] = (periodsData ?? []).map(row => ({
+      ...row,
+      exceptions: (row.exceptions as PriceException[]) ?? [],
+    }));
+
+    const basePrice = activePeriods.length > 0
+      ? calculateDynamicBreakdown(checkInDate, checkOutDate, activePeriods, landing.price_per_night).baseTotal
+      : landing.price_per_night * nights;
     const cleaningFee = Number(landing.cleaning_fee || 0);
     const serviceFee = Math.round(basePrice * (Number(landing.service_fee_pct || 8) / 100));
     const touristTax = nights * (input.guests.adults + input.guests.children) * Number(landing.tourist_tax_per_night || 0);
@@ -135,8 +151,8 @@ export async function createPublicBooking(
         total_sale_commission_vat: 0,
         total_pay_commission: 0,
         total_pay_commission_vat: 0,
-        status: 'confirmed',
-        notes: `Reserva directa | ${input.guests.adults}A ${input.guests.children}N ${input.guests.infants}B ${input.guests.pets}M`,
+        status: 'pending',
+        notes: `Pre-reserva directa | ${input.guests.adults}A ${input.guests.children}N ${input.guests.infants}B ${input.guests.pets}M`,
       })
       .select()
       .single();
@@ -147,51 +163,35 @@ export async function createPublicBooking(
     }
 
     // 6. Insertar los desgloses en reservation_charges para historial detallado
+    const baseCharge = (name: string, charge_type: string, amount: number, sort_order: number) => ({
+      tenant_id: property.tenant_id,
+      reservation_id: reservation.id,
+      name,
+      charge_type,
+      amount,
+      vat_pct: 0,
+      vat_amount: 0,
+      is_refundable: false,
+      included_in_gross: true,
+      beneficiary: 'owner',
+      sort_order,
+    })
+
     const chargesToInsert = [
-      {
-        tenant_id: property.tenant_id,
-        reservation_id: reservation.id,
-        charge_type: 'accommodation',
-        amount: basePrice,
-        description: `Hospedaje (${nights} noches)`,
-      },
-      {
-        tenant_id: property.tenant_id,
-        reservation_id: reservation.id,
-        charge_type: 'cleaning',
-        amount: cleaningFee,
-        description: 'Gastos de limpieza',
-      },
+      baseCharge(`Hospedaje (${nights} noches)`, 'accommodation', basePrice, 1),
+      baseCharge('Gastos de limpieza', 'cleaning', cleaningFee, 2),
     ];
 
     if (serviceFee > 0) {
-      chargesToInsert.push({
-        tenant_id: property.tenant_id,
-        reservation_id: reservation.id,
-        charge_type: 'custom',
-        amount: serviceFee,
-        description: 'Gastos de gestión',
-      });
+      chargesToInsert.push(baseCharge('Gastos de gestión', 'custom', serviceFee, 3));
     }
 
     if (touristTax > 0) {
-      chargesToInsert.push({
-        tenant_id: property.tenant_id,
-        reservation_id: reservation.id,
-        charge_type: 'custom',
-        amount: touristTax,
-        description: 'Tasa turística',
-      });
+      chargesToInsert.push(baseCharge('Tasa turística', 'custom', touristTax, 4));
     }
 
     if (petFee > 0) {
-      chargesToInsert.push({
-        tenant_id: property.tenant_id,
-        reservation_id: reservation.id,
-        charge_type: 'custom',
-        amount: petFee,
-        description: 'Suplemento de mascota',
-      });
+      chargesToInsert.push(baseCharge('Suplemento de mascota', 'custom', petFee, 5));
     }
 
     const { error: chargesError } = await supabase
@@ -202,26 +202,10 @@ export async function createPublicBooking(
       console.error('Error inserting reservation charges:', chargesError);
     }
 
-    // 7. Simular el cobro de la reserva registrando un pago
-    const { error: paymentError } = await supabase
-      .from('reservation_payments')
-      .insert({
-        tenant_id: property.tenant_id,
-        reservation_id: reservation.id,
-        amount: grossAmount,
-        method: 'stripe',
-        reference: `STRIPE_MOCK_${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-        notes: `Cobro simulado de ${grossAmount}€ mediante landing pública`,
-      });
-
-    if (paymentError) {
-      console.error('Error inserting reservation payments:', paymentError);
-    }
-
-    // 8. Enviar email de confirmación
+    // 7. Enviar email de pre-reserva al huésped
     try {
       await sendReservationConfirmation({
-        reservation,
+        reservation: { ...reservation, guest_phone: reservation.guest_phone ?? undefined },
         property,
         landing,
         guests: input.guests,

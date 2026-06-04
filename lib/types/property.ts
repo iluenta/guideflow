@@ -50,10 +50,13 @@ export interface PropertyLanding {
   show_reviews: boolean;
   
   policies: {
-    checkIn: string;
-    checkOut: string;
-    cancellation: string;
     minStay: number;
+    /** Custom house rules shown as cards in the landing */
+    extraRules?: { title: string; note: string }[];
+    /** Legacy fields kept for backwards compatibility with existing DB data */
+    checkIn?: string;
+    checkOut?: string;
+    cancellation?: string;
   };
   
   faqs: { question: string; answer: string }[];
@@ -70,9 +73,14 @@ export interface PropertyLanding {
   reviews_rating?: number;
   reviews_count?: number;
   reviews_list?: { author: string; country?: string; date: string; text: string }[];
+  // Per-platform ratings (Booking, Airbnb, Google…)
+  platform_ratings?: { platform: string; rating: number; count: number }[];
 
   // Property size in m² (migration 072)
   size_sqm?: number;
+
+  // Tourist registration number shown in footer
+  tourist_registration?: string;
 
   created_at?: string;
   updated_at?: string;

@@ -1,4 +1,5 @@
 export type DisplayStatus =
+  | 'pending'      // Pre-reserva — pendiente de confirmación del host
   | 'upcoming'     // Próxima — checkin en el futuro
   | 'in_progress'  // En curso — huésped dentro ahora mismo
   | 'overdue'      // Sin cerrar — checkout pasado, no finalizada
@@ -11,11 +12,12 @@ export function getDisplayStatus(reservation: {
   checkin_date: string
   checkout_date: string
 }): DisplayStatus {
+  if (reservation.status === 'pending')     return 'pending'
   if (reservation.status === 'cancelled')   return 'cancelled'
   if (reservation.status === 'no_show')     return 'no_show'
   if (reservation.status === 'checked_out') return 'finished'
 
-  // confirmed (y legacy pending/checked_in): derivar de fechas
+  // confirmed / checked_in: derivar de fechas
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -33,6 +35,7 @@ export const DISPLAY_STATUS_CONFIG: Record<DisplayStatus, {
   color: string
   dot: string
 }> = {
+  pending:     { label: 'Pendiente',   bg: '#fdf4ff', color: '#7e22ce', dot: '#a855f7' },
   upcoming:    { label: 'Próxima',     bg: '#eef2fb', color: '#1e3a8a', dot: '#3b82f6' },
   in_progress: { label: 'En curso',    bg: '#ecfdf5', color: '#047857', dot: '#10b981' },
   overdue:     { label: 'Sin cerrar',  bg: '#fff7ed', color: '#c2410c', dot: '#f97316' },
@@ -64,6 +67,8 @@ export function buildStatusFilter(displayStatus: DisplayStatus): {
       return { status: 'cancelled' }
     case 'no_show':
       return { status: 'no_show' }
+    case 'pending':
+      return { status: 'pending' }
   }
 }
 
@@ -72,9 +77,11 @@ export function getAvailableActions(reservation: {
   status: string
   checkin_date: string
   checkout_date: string
-}): Array<'finalizar' | 'cancelar' | 'no_show'> {
+}): Array<'confirmar' | 'finalizar' | 'cancelar' | 'no_show'> {
   const ds = getDisplayStatus(reservation)
   switch (ds) {
+    case 'pending':
+      return ['confirmar', 'cancelar']
     case 'upcoming':
     case 'in_progress':
       return ['finalizar', 'cancelar', 'no_show']

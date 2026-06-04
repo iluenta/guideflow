@@ -39,6 +39,52 @@ function buildPropertyLine(propertyInfo: any): string[] {
     return [`[PROPIEDAD]: "${propertyInfo.name}". Ciudad: ${propertyInfo.city}. Planta: ${propertyInfo.floor || 'N/A'}. Capacidad: ${propertyInfo.guests} huéspedes. Habitaciones: ${propertyInfo.beds}. Baños: ${propertyInfo.baths}.`];
 }
 
+// Type → context label. Pharmacies and vets are NOT urgency services.
+const CONTACT_TYPE_LABEL: Record<string, string> = {
+    guardia:      'SERVICIOS_EMERGENCIA',
+    policia:      'SERVICIOS_EMERGENCIA',
+    bomberos:     'SERVICIOS_EMERGENCIA',
+    salud:        'SERVICIOS_MEDICOS',
+    farmacia:     'FARMACIAS',
+    veterinario:  'SERVICIOS_VETERINARIOS',
+    taxi:         'SERVICIOS_TRANSPORTE',
+    mantenimiento:'SERVICIOS_MANTENIMIENTO',
+};
+
+function formatContact(c: any): string {
+    const dist = c.distance && c.distance !== '0 km' ? ` (${c.distance})` : '';
+    const phone = c.phone ? ` — ☎ ${c.phone}` : '';
+    const placeId = c.google_place_id;
+    const isValidId = placeId && placeId.length >= 10 && placeId.length <= 200 && !(/(.{8,})\1{2,}/.test(placeId));
+    const link = isValidId ? ` [[MAP_PLACE:${placeId}]]` : '';
+    return `- ${c.name}${dist}${phone}${link}`;
+}
+
+function buildContactsBlock(content: any): string {
+    const contacts: any[] = content?.emergency_contacts || content?.contacts || [];
+    if (!contacts.length) return `[INFO_CONTACTS]: ${JSON.stringify(content)}`;
+
+    // Group by label
+    const groups: Record<string, any[]> = {};
+    for (const c of contacts) {
+        const label = CONTACT_TYPE_LABEL[c.type?.toLowerCase() ?? ''] ?? 'OTROS_CONTACTOS';
+        if (!groups[label]) groups[label] = [];
+        groups[label].push(c);
+    }
+
+    // Also include host/support contact fields
+    const hostLines: string[] = [];
+    if (content.support_name || content.support_mobile) {
+        hostLines.push(`[CONTACTO_ANFITRION]: ${content.support_name || ''} ${content.support_mobile ? '— WhatsApp/móvil: ' + content.support_mobile : ''} ${content.support_phone ? '— Tel: ' + content.support_phone : ''}`.trim());
+    }
+
+    const blocks = Object.entries(groups).map(([label, items]) =>
+        `[${label}]:\n${items.map(formatContact).join('\n')}`
+    );
+
+    return [...hostLines, ...blocks].join('\n\n');
+}
+
 function buildStructuredContextLines(
     criticalContext: Array<{ category: string; content: any }> | null,
     brandRegex: RegExp,
@@ -47,11 +93,8 @@ function buildStructuredContextLines(
     return (criticalContext || []).map((c: any) => {
         const label = c.category === 'notes' ? 'NOTAS_ANFITRION' : `INFO_${c.category.toUpperCase()}`;
 
-        if (c.category === 'contacts' && (
-            String(c.content).toLowerCase().includes('hospital') ||
-            String(c.content).toLowerCase().includes('clinic')
-        )) {
-            return `[SOLO_EMERGENCIAS_MEDICAS]: ${String(JSON.stringify(c.content)).replace(brandRegex, '').replace(modelNumberRegex, '')}`;
+        if (c.category === 'contacts') {
+            return buildContactsBlock(c.content);
         }
 
         let contentString = '';
@@ -60,7 +103,8 @@ function buildStructuredContextLines(
                 contentString = `Dirección: ${c.content.full_address || c.content.address || ''}. Parking: ${c.content.parking?.info || 'N/A'}. Transp: ${c.content.from_airport?.instructions || 'N/A'}`;
             } else if (c.category === 'tech') {
                 let techStr = '';
-                if (c.content.wifi_ssid) techStr += `Red WiFi: \`${c.content.wifi_ssid}\`. Contraseña WiFi: [REDACTADO]. `;
+                if (c.content.wifi_ssid) techStr += `Red WiFi: \`${c.content.wifi_ssid}\`. `;
+                if (c.content.wifi_password) techStr += `Contraseña WiFi: \`${c.content.wifi_password}\`. `;
                 if (c.content.router_notes) techStr += `Notas Router: ${c.content.router_notes}. `;
                 contentString = techStr.trim() || JSON.stringify(c.content);
             } else {
@@ -125,7 +169,13 @@ function buildRecommendationLines(
     return Object.entries(grouped).map(([cat, items]) => {
         const catLabel = CATEGORY_LABEL_MAP[cat] || 'RECOMENDACIONES_LOCALES';
         const itemLines = items.map((r: any) => {
-            const placeId = r.google_place_id || r.metadata?.google_place_id;
+            const rawPlaceId: string | undefined = r.google_place_id || r.metadata?.google_place_id;
+            // Validate: real Google Place IDs are 27–200 chars with no repeated segments
+            const isValidPlaceId = rawPlaceId &&
+                rawPlaceId.length >= 10 &&
+                rawPlaceId.length <= 200 &&
+                !/(.{8,})\1{2,}/.test(rawPlaceId);   // reject IDs with 3+ repeated chunks
+            const placeId = isValidPlaceId ? rawPlaceId : undefined;
             let namePart: string;
             if (placeId) {
                 namePart = `[${r.name}](maps_place:${placeId})`;
@@ -195,6 +245,16 @@ function buildRAGChunkLines(
 
 // ─── Exportación principal ────────────────────────────────────────────────────
 
+function buildApplianceManualsBlock(manuals: PropertyContext['applianceManuals']): string[] {
+    if (!manuals?.length) return [];
+    return manuals.map(m => {
+        const parts: string[] = [];
+        if (m.notes) parts.push(`INSTRUCCIONES DEL ANFITRIÓN: ${m.notes}`);
+        if (m.excerpt) parts.push(m.excerpt);
+        return `[MANUAL_APARATO|${m.applianceName}]:\n${parts.join('\n\n')}`;
+    });
+}
+
 export function buildFormattedContext(
     ctx: PropertyContext,
     params: ChatContextParams
@@ -204,6 +264,8 @@ export function buildFormattedContext(
     const modelNumberRegex = createModelNumberRegex();
 
     return [
+        // All appliance manuals (notes + excerpt) go FIRST — bypasses RAG ranking issues
+        ...buildApplianceManualsBlock(ctx.applianceManuals),
         ...buildPropertyLine(ctx.propertyInfo),
         ...buildStructuredContextLines(ctx.criticalContext, brandRegex, modelNumberRegex),
         ...buildInventoryLines(ctx.criticalContext, brandRegex, modelNumberRegex),

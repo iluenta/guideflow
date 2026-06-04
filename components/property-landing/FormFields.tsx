@@ -288,6 +288,156 @@ export function FormRepeater({ label, items, onChange }: RepeaterProps) {
   );
 }
 
+// ─── FormRulesRepeater (Normas personalizadas) ────────────────────────────────
+
+export interface HouseRule { title: string; note: string; }
+
+interface RulesRepeaterProps {
+  items: HouseRule[];
+  onChange: (items: HouseRule[]) => void;
+}
+
+export function FormRulesRepeater({ items, onChange }: RulesRepeaterProps) {
+  const add    = () => onChange([...items, { title: '', note: '' }]);
+  const remove = (i: number) => onChange(items.filter((_, j) => j !== i));
+  const update = (i: number, field: keyof HouseRule, value: string) => {
+    const next = [...items];
+    next[i] = { ...next[i], [field]: value };
+    onChange(next);
+  };
+
+  return (
+    <div>
+      {items.map((item, i) => (
+        <div key={i} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 14, marginBottom: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Norma {i + 1}</span>
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '0 4px' }}
+              aria-label="Eliminar norma"
+            >
+              ×
+            </button>
+          </div>
+          <input
+            placeholder="Título (ej: No se permiten fiestas)"
+            value={item.title}
+            onChange={e => update(i, 'title', e.target.value)}
+            style={{ ...inputStyle(), marginBottom: 8 }}
+          />
+          <input
+            placeholder="Nota opcional (ej: Comunidad de vecinos tranquila)"
+            value={item.note}
+            onChange={e => update(i, 'note', e.target.value)}
+            style={{ ...inputStyle() }}
+          />
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={add}
+        style={{ width: '100%', padding: '8px 0', background: 'transparent', border: '1.5px dashed #d1d5db', borderRadius: 8, color: '#6b7280', fontSize: 13, cursor: 'pointer', transition: 'border-color .15s, color .15s' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#6366f1'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#6b7280'; }}
+      >
+        + Añadir norma
+      </button>
+    </div>
+  );
+}
+
+// ─── FormPlatformRatingsRepeater ──────────────────────────────────────────────
+
+export interface PlatformRating { platform: string; rating: number; count: number; }
+
+const PLATFORM_SUGGESTIONS = [
+  'Booking.com', 'Airbnb', 'Google', 'TripAdvisor', 'Expedia', 'VRBO', 'Google Maps',
+];
+
+interface PlatformRatingsProps {
+  items: PlatformRating[];
+  onChange: (items: PlatformRating[]) => void;
+}
+
+export function FormPlatformRatingsRepeater({ items, onChange }: PlatformRatingsProps) {
+  const add    = () => onChange([...items, { platform: '', rating: 9.0, count: 0 }]);
+  const remove = (i: number) => onChange(items.filter((_, j) => j !== i));
+  const update = <K extends keyof PlatformRating>(i: number, field: K, value: PlatformRating[K]) => {
+    const next = [...items];
+    next[i] = { ...next[i], [field]: value };
+    onChange(next);
+  };
+
+  return (
+    <div>
+      {items.map((item, i) => (
+        <div key={i} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 14, marginBottom: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Plataforma {i + 1}</span>
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '0 4px' }}
+            >×</button>
+          </div>
+          {/* Platform name with suggestions */}
+          <div style={{ marginBottom: 8 }}>
+            <input
+              list={`platform-suggestions-${i}`}
+              placeholder="Nombre de la plataforma"
+              value={item.platform}
+              onChange={e => update(i, 'platform', e.target.value)}
+              style={{ ...inputStyle(), width: '100%' }}
+            />
+            <datalist id={`platform-suggestions-${i}`}>
+              {PLATFORM_SUGGESTIONS.map(s => <option key={s} value={s} />)}
+            </datalist>
+          </div>
+          {/* Rating + Count */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div>
+              <label style={{ fontSize: 11, color: '#6b7280', display: 'block', marginBottom: 4 }}>Puntuación</label>
+              <input
+                type="number"
+                min={0}
+                max={10}
+                step={0.1}
+                placeholder="9.2"
+                value={item.rating || ''}
+                onChange={e => update(i, 'rating', parseFloat(e.target.value) || 0)}
+                style={{ ...inputStyle(), width: '100%' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: '#6b7280', display: 'block', marginBottom: 4 }}>Nº reseñas</label>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                placeholder="1840"
+                value={item.count || ''}
+                onChange={e => update(i, 'count', parseInt(e.target.value) || 0)}
+                style={{ ...inputStyle(), width: '100%' }}
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={add}
+        style={{ width: '100%', padding: '8px 0', background: 'transparent', border: '1.5px dashed #d1d5db', borderRadius: 8, color: '#6b7280', fontSize: 13, cursor: 'pointer', transition: 'border-color .15s, color .15s' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#6366f1'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#6b7280'; }}
+      >
+        + Añadir plataforma
+      </button>
+    </div>
+  );
+}
+
 // ─── FormGallery ─────────────────────────────────────────────────────────────
 
 const BUCKET = 'property-images';

@@ -57,9 +57,13 @@ export async function updateSession(request: NextRequest) {
         if (!error && data) {
             user = data.user
         }
-    } catch (e) {
-        // En caso de error (e.g. Refresh Token Not Found), user queda null
-        // y el middleware redirigirá si es una ruta protegida.
+    } catch (e: unknown) {
+        // Ignorar errores de red (proxy corporativo en local, Edge Runtime no admite CA extra).
+        // user queda null → el middleware redirige rutas protegidas a login.
+        const msg = e instanceof Error ? e.message : String(e)
+        if (!msg.includes('fetch failed') && !msg.includes('certificate')) {
+            console.error('[middleware] getUser error:', msg)
+        }
     }
 
     // 2. Proteger rutas sin sesión

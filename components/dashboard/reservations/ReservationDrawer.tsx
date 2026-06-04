@@ -203,9 +203,10 @@ export function ReservationDrawer({
   const allowedNextStatuses = availableActions
     .filter(a => a !== 'cancelar' || canCancel)
     .map(a => {
-      if (a === 'finalizar') return { value: 'checked_out' as ReservationStatus, label: 'Finalizar' }
-      if (a === 'cancelar')  return { value: 'cancelled'  as ReservationStatus, label: 'Cancelar' }
-      return                        { value: 'no_show'    as ReservationStatus, label: 'No show' }
+      if (a === 'confirmar') return { value: 'confirmed'  as ReservationStatus, label: 'Confirmar reserva', primary: true }
+      if (a === 'finalizar') return { value: 'checked_out' as ReservationStatus, label: 'Finalizar', primary: false }
+      if (a === 'cancelar')  return { value: 'cancelled'  as ReservationStatus, label: 'Cancelar', primary: false }
+      return                        { value: 'no_show'    as ReservationStatus, label: 'No show', primary: false }
     })
 
   // El anfitrión recibe el neto (bruto - comisiones). La barra refleja cuánto
@@ -296,8 +297,21 @@ export function ReservationDrawer({
               </Button>
             )}
 
-            {/* Botón cambio de estado — para reservas no finalizadas */}
-            {allowedNextStatuses.length > 0 && canEdit && (
+            {/* Confirmar reserva — botón primario visible para pre-reservas */}
+            {allowedNextStatuses.filter(s => s.primary).map(s => (
+              <Button
+                key={s.value}
+                size="sm"
+                disabled={statusLoading}
+                className="rounded-full text-[12px] h-8 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                onClick={() => handleStatusChange(s.value)}
+              >
+                ✓ {s.label}
+              </Button>
+            ))}
+
+            {/* Dropdown para el resto de transiciones */}
+            {allowedNextStatuses.filter(s => !s.primary).length > 0 && canEdit && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -310,7 +324,7 @@ export function ReservationDrawer({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="z-[300]">
-                  {allowedNextStatuses.map(s => (
+                  {allowedNextStatuses.filter(s => !s.primary).map(s => (
                     <DropdownMenuItem key={s.value} onClick={() => handleStatusChange(s.value)}>
                       {s.label}
                     </DropdownMenuItem>

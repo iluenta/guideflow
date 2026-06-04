@@ -121,7 +121,8 @@ Analiza el mensaje del huésped (y el contexto reciente si se proporciona) y dev
 }
 
 VALORES PERMITIDOS para "intent":
-- "emergency": incendio, humo, olor a gas, fuga, inundación, emergencia médica
+- "emergency": SOLO situaciones de peligro inmediato para la vida o la propiedad: incendio, humo, olor a gas, fuga de gas, inundación activa, pérdida de conocimiento, sospecha de infarto o ictus, dificultad respiratoria severa, herida grave con sangrado.
+  ⛔ NO es emergency: dolor de cabeza, náuseas, mareo leve, resfriado, fiebre baja, dolor de estómago, cansancio, alergia leve, picadura. Estos son "standard".
 - "error_code": el huésped menciona un código de error de aparato (E1, F3, etc.)
 - "appliance_problem": electrodoméstico roto, no funciona, no enciende, hace ruido, avería.
   IMPORTANTE: Si el huésped NO identifica el aparato concreto (ej: "oigo un ruido raro", "algo hace ruido", "hay un pitido", "viene de arriba"), clasifica igualmente como appliance_problem. El asistente hará las preguntas de diagnóstico.
@@ -168,6 +169,9 @@ EJEMPLOS:
 - "me apetece un café fuera" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"cafe","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "[CONTEXTO RECIENTE]: me apetece un café / [ÚLTIMO MENSAJE]: quiero fuera" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"cafe","detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "[CONTEXTO RECIENTE]: tengo hambre / [ÚLTIMO MENSAJE]: ¿qué opciones tienes?" → {"intent":"recommendation_food","detectedTask":null,"foodSubtype":"general","detectedErrorCode":null,"isGenericFood":true,"confidence":"high"}
+- "me duele la cabeza" → {"intent":"standard","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "tengo fiebre" → {"intent":"standard","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
+- "hay humo en la cocina" → {"intent":"emergency","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "oigo un ruido raro en la cocina" → {"intent":"appliance_problem","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "del frigorífico" → {"intent":"appliance_problem","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}
 - "[CONTEXTO RECIENTE]: oigo un ruido / [ÚLTIMO MENSAJE]: no, viene de arriba" → {"intent":"appliance_problem","detectedTask":null,"foodSubtype":null,"detectedErrorCode":null,"isGenericFood":false,"confidence":"high"}

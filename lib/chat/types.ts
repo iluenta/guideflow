@@ -26,6 +26,8 @@ export interface PropertyContext {
     usedFallbackRecs: boolean;
     detectedTypes: string[];
     foodCatsInDB: string[];
+    /** All appliance manuals fetched directly (bypasses RAG similarity ranking). */
+    applianceManuals: { applianceName: string; notes: string; excerpt: string }[];
 }
 
 export interface IntentFlags {

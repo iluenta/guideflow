@@ -18,6 +18,9 @@ yarn-error.log*
 
 # env files
 .env*
+
+# Local dev corporate CA certificate (machine-specific)
+corporate-ca.pem
 .env*.local
 !.env.example
 
@@ -41,6 +44,9 @@ Thumbs.db
 .vscode/
 .idea/
 .claude/
+.codex/
+.mcp.json
+AGENTS.md
 *.swp
 *.swo
 *~
@@ -66,15 +72,34 @@ scraped_debug.html
 tsc-output.log
 test-results.json
 analysis_output.txt
+build_err.txt
+results/
+scratch/
+*.output
 
 # Scripts de stress test y herramientas de desarrollo interno
 # (contienen datos de propiedades reales y tokens de test)
 scripts/chat-stress-test/
+scripts/manual-quality-test/
+scripts/validate-chat-property.ts
+scripts/validation-reports/
 
 # Ficheros de debug y scripts internos
 debug_db_v2.js
 proxy.ts
 run_git.ps1
 
+# Prototipos/exportaciones y capturas locales
+/*.html
+/*.jsx
+/test-*.png
+/guia-*.png
+/*-tab.png
+/verify-dashboard.png
+/phone.jpg
+
 # MCP / Playwright logs
 .playwright-mcp/
+
+# Supabase local CLI state
+supabase/.temp/

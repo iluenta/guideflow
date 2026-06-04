@@ -259,11 +259,19 @@ export async function syncManualToRAG(
             .single()
 
         const hostNotes = manual?.metadata?.notes || ''
+        const hasHostNotes = hostNotes.trim().length > 0
 
-        // ✅ SECURITY FIX: Do NOT include hostNotes in embeddings as they often contain 
-        // sensitive info like temporary access codes or private instructions.
-        // We only embed the manual content itself (enriched with safe derived facts).
-        const enrichedManual = enrichTVManual(manualContent, hostNotes)
+        // Enrich TV manuals with streaming app access info
+        let enrichedManual = enrichTVManual(manualContent, hostNotes)
+
+        // Prepend host notes as a clearly labelled section so the AI uses them
+        // with highest priority over generic manual content.
+        // Notes for appliances are operational instructions (detergent, programs, tips)
+        // and safe to embed — unlike access/contacts context which may have codes.
+        if (hasHostNotes) {
+            enrichedManual = `## INSTRUCCIONES DEL ANFITRIÓN\n${hostNotes.trim()}\n\n---\n\n${enrichedManual}`
+        }
+
         const augmentedContent = enrichedManual
 
         // 1. Delete old embeddings for this manual
@@ -288,7 +296,10 @@ export async function syncManualToRAG(
                     appliance: applianceName,
                     brand: brand,
                     model: model || '',
-                    chunk_index: index
+                    chunk_index: index,
+                    // Mark as enriched so context-builder labels it [GUÍA_PERSONALIZADA_ANFITRIÓN]
+                    // giving it highest priority over generic [GUÍA_TÉCNICA] chunks
+                    enriched: hasHostNotes,
                 }
             }
         }))

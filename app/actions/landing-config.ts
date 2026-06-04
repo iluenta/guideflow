@@ -58,14 +58,28 @@ export async function getPropertyLandingBySlug(
   // con el cliente anon devolvería 0 filas aunque la landing sea pública.
   // Solo seleccionamos los rangos de fechas, sin datos personales del huésped.
   const adminClient = createServerAdminClient();
-  const { data: reservations, error: resError } = await adminClient
-    .from('reservations')
-    .select('checkin_date, checkout_date')
-    .eq('property_id', property.id)
-    .in('status', ['confirmed', 'checked_in', 'checked_out']);
 
-  if (resError) {
-    console.error('Error fetching reservations for blocked dates:', resError);
+  // Wrap in a timeout so a flaky corporate proxy doesn't stall the page for 90s.
+  // Uses PromiseLike to accept Supabase's PostgrestFilterBuilder.
+  async function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T | null> {
+    return Promise.race([
+      Promise.resolve(promise),
+      new Promise<null>(resolve => setTimeout(() => resolve(null), ms)),
+    ]);
+  }
+
+  const reservationsResult = await withTimeout(
+    adminClient
+      .from('reservations')
+      .select('checkin_date, checkout_date')
+      .eq('property_id', property.id)
+      .in('status', ['confirmed', 'checked_in', 'checked_out', 'pending']),
+    8000,
+  );
+
+  const reservations = reservationsResult?.data ?? null;
+  if (reservationsResult?.error) {
+    console.error('Error fetching reservations for blocked dates:', reservationsResult.error);
   }
 
   // Block checkin_date...(checkout_date - 1) inclusive.
@@ -90,10 +104,14 @@ export async function getPropertyLandingBySlug(
   });
 
   // 4. Host-blocked periods (obras, limpieza, vacaciones…)
-  const { data: blockedPeriodsData } = await adminClient
-    .from('property_blocked_periods')
-    .select('start_date, end_date, reason, notes')
-    .eq('property_id', property.id);
+  const blockedPeriodsResult = await withTimeout(
+    adminClient
+      .from('property_blocked_periods')
+      .select('start_date, end_date, reason, notes')
+      .eq('property_id', property.id),
+    8000,
+  );
+  const blockedPeriodsData = blockedPeriodsResult?.data ?? null;
 
   const hostBlockedSet   = new Set<string>();
   const hostBlockedLabels: Record<string, string> = {};
@@ -113,11 +131,15 @@ export async function getPropertyLandingBySlug(
   });
 
   // 5. Fetch dynamic price periods (admin client — consistente con queries anteriores)
-  const { data: periodsData } = await adminClient
-    .from('property_price_periods')
-    .select('*')
-    .eq('property_id', property.id)
-    .order('start_date', { ascending: true });
+  const periodsResult = await withTimeout(
+    adminClient
+      .from('property_price_periods')
+      .select('*')
+      .eq('property_id', property.id)
+      .order('start_date', { ascending: true }),
+    8000,
+  );
+  const periodsData = periodsResult?.data ?? null;
 
   const pricePeriods: PricePeriod[] = (periodsData ?? []).map(row => ({
     ...row,
@@ -244,21 +266,31 @@ export async function updatePropertyLandingConfig(
   }
 
   // 5. Actualizar (con upsert para crearla si no existía)
-  const { data, error } = await supabase
-    .from('property_landings')
-    .upsert({
-      property_id: propertyId,
-      tenant_id: property.tenant_id,
-      ...updates,
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
+  // Fields that require migration 075 — stripped on first attempt if DB is behind.
+  const migration075Fields = ['platform_ratings', 'tourist_registration'] as const;
+
+  async function doUpsert(payload: Record<string, unknown>) {
+    return supabase
+      .from('property_landings')
+      .upsert({ property_id: propertyId, tenant_id: property!.tenant_id, ...payload, updated_at: new Date().toISOString() })
+      .select()
+      .single();
+  }
+
+  let { data, error } = await doUpsert(updates);
+
+  // PGRST204 = column not found (migration 075 not yet applied). Retry without new fields.
+  if (error?.code === 'PGRST204') {
+    console.warn('[landing-config] Column missing — retrying without migration-075 fields. Run migration 075 in Supabase Dashboard.');
+    const fallback = { ...updates };
+    migration075Fields.forEach(f => delete (fallback as Record<string, unknown>)[f]);
+    ({ data, error } = await doUpsert(fallback));
+  }
 
   if (error) {
     console.error('Error updating property landing config:', error);
     throw error;
   }
-  
+
   return data;
 }

@@ -1,7 +1,7 @@
 interface Props {
   name?: string;
   bio?: string;
-  email: string;
+  email?: string;
   phone?: string;
 }
 
@@ -10,30 +10,93 @@ function initials(name: string) {
   return (p[0][0] + (p[1]?.[0] ?? '')).toUpperCase();
 }
 
-/** Host profile section: avatar, name, bio, and contact links. */
-export function Host({ name, bio, email, phone }: Props) {
+/** Host profile section: navy background, orange avatar, bio + family link. */
+export function Host({ name, bio }: Props) {
   if (!name) return null;
+
+  const firstName = name.trim().split(' ')[0];
 
   return (
     <div className="lp-section">
       <h2 className="lp-section-title">Anfitrión</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 24, padding: 28, background: 'white', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', alignItems: 'center' }}>
-        <div style={{ position: 'relative' }}>
-          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--brand)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 28 }}>
-            {initials(name)}
+      <div style={{
+        padding: '32px 28px',
+        background: '#0F172A',
+        borderRadius: 'var(--r-lg)',
+        color: 'white',
+      }}>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+          {/* Orange avatar */}
+          <div style={{ flexShrink: 0 }}>
+            <div style={{
+              width: 72,
+              height: 72,
+              borderRadius: '50%',
+              background: 'var(--accent)',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+              fontSize: 26,
+              letterSpacing: '-.01em',
+              fontFamily: '"Fraunces", Georgia, serif',
+            }}>
+              {initials(name)}
+            </div>
           </div>
-          <div style={{ position: 'absolute', bottom: -2, right: -2, width: 24, height: 24, background: 'var(--accent)', borderRadius: '50%', border: '2px solid var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>
-            ✓
-          </div>
-        </div>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--ink)', marginBottom: 12 }}>{name}</div>
-          {bio && (
-            <p style={{ fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.55, marginBottom: 14 }}>{bio}</p>
-          )}
-          <div style={{ display: 'flex', gap: 20, fontSize: 13 }}>
-            <a href={`mailto:${email}`} style={{ color: 'var(--brand)', textDecoration: 'none' }}>✉ {email}</a>
-            {phone && <a href={`tel:${phone}`} style={{ color: 'var(--brand)', textDecoration: 'none' }}>📞 {phone}</a>}
+
+          {/* Info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontFamily: '"Fraunces", Georgia, serif',
+              fontSize: 22,
+              fontWeight: 700,
+              color: 'white',
+              letterSpacing: '-.02em',
+              marginBottom: 4,
+            }}>
+              {name}
+            </div>
+            <div style={{
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: '.08em',
+              textTransform: 'uppercase',
+              color: 'rgba(255,255,255,.4)',
+              marginBottom: bio ? 14 : 0,
+            }}>
+              Anfitrión verificado
+            </div>
+
+            {bio && (
+              <p style={{
+                fontSize: 14,
+                color: 'rgba(255,255,255,.7)',
+                lineHeight: 1.65,
+                margin: '0 0 16px',
+              }}>
+                {bio}
+              </p>
+            )}
+
+            {/* "Name y Familia →" link */}
+            <a
+              href="#contact"
+              style={{
+                fontFamily: '"Fraunces", Georgia, serif',
+                fontStyle: 'italic',
+                fontSize: 15,
+                fontWeight: 600,
+                color: 'var(--accent)',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              {firstName} y su familia →
+            </a>
           </div>
         </div>
       </div>

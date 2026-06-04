@@ -201,7 +201,7 @@ export function BookingWidget({ property, landing, blockedDates, hostBlockedDate
           phone: formData.contact.telefono,
           country: formData.contact.pais || undefined,
         },
-        paymentMethod: formData.paymentMethod,
+        paymentMethod: (formData.paymentMethod as import('@/lib/types/booking').PaymentMethod) ?? 'card',
       });
     } catch {
       return { success: false, error: 'Error de conexión. Inténtalo de nuevo.' };
@@ -419,6 +419,7 @@ export function BookingWidget({ property, landing, blockedDates, hostBlockedDate
           coverImage={galleryImages[0]}
           pricePerNight={landing.price_per_night}
           nights={nights}
+          dynamicBreakdown={dynamicResult?.breakdown}
         />
       )}
     </>

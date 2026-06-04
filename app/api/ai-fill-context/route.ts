@@ -51,6 +51,22 @@ async function detectZoneType(lat: number, lng: number, placesKey: string): Prom
     if (count >= 15) return { type: 'metropolis', walkRadius: 1000, driveRadius: 5000, label: 'gran ciudad', preferCar: false };
     if (count >= 8) return { type: 'city', walkRadius: 1800, driveRadius: 8000, label: 'ciudad', preferCar: false };
     if (count >= 3) return { type: 'town', walkRadius: 4000, driveRadius: 15000, label: 'pueblo', preferCar: true };
+
+    // ZERO_RESULTS in 800m = not a walkable dense area (preferCar always true here).
+    // Re-check at 3km to pick the right zone type (affects review thresholds) but
+    // never set preferCar=false — if you can't walk to a restaurant in 800m, you drive.
+    if (count === 0) {
+      try {
+        const url2 = `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
+          `?location=${lat},${lng}&radius=3000&type=restaurant&key=${placesKey}`;
+        const data2 = await fetch(url2).then(r => r.json());
+        const count2: number = data2.results?.length ?? 0;
+        // preferCar: true in both cases — area is not walkable (failed 800m test)
+        if (count2 >= 10) return { type: 'city', walkRadius: 2000, driveRadius: 10000, label: 'ciudad costera', preferCar: true };
+        if (count2 >= 4)  return { type: 'town', walkRadius: 4000, driveRadius: 15000, label: 'pueblo turístico', preferCar: true };
+      } catch { /* ignore, fall through to rural */ }
+    }
+
     return { type: 'rural', walkRadius: 6000, driveRadius: 30000, label: 'zona rural', preferCar: true };
   } catch (e) {
     logger.warn('[ZONE] Detection failed, defaulting to city:', e);
@@ -85,7 +101,7 @@ const SINGLE_CAT_MAP: Record<string, { placeType: string; keywords: string[] }> 
   restaurantes: { placeType: 'restaurant', keywords: ['restaurante', 'cocina local', 'gastronomía'] },
   italiano: { placeType: 'restaurant', keywords: ['restaurante italiano', 'pizzería'] },
   mediterraneo: { placeType: 'restaurant', keywords: ['restaurante mediterráneo', 'mariscos'] },
-  hamburguesas: { placeType: 'restaurant', keywords: ['hamburguesas', 'burger gourmet'] },
+  hamburguesas: { placeType: 'restaurant', keywords: ['hamburguesería', 'hamburguesas', 'burger gourmet', 'smash burger'] },
   asiatico: { placeType: 'restaurant', keywords: ['restaurante asiático', 'sushi', 'japonés'] },
   alta_cocina: { placeType: 'restaurant', keywords: ['restaurante gourmet', 'fine dining'] },
   internacional: { placeType: 'restaurant', keywords: ['restaurante mexicano', 'indio', 'árabe'] },
@@ -123,25 +139,9 @@ function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
   let minReviews: number;
   let minRating: number;
 
-  switch (zone.type) {
-    case 'metropolis':
-      minReviews = isNatureOrCulture ? 60 : 100;
-      minRating = 4.0;
-      break;
-    case 'city':
-      minReviews = isNatureOrCulture ? 40 : 60;
-      minRating = 3.9;
-      break;
-    case 'town':
-      minReviews = isNatureOrCulture ? 15 : 25;
-      minRating = 3.7;
-      break;
-    case 'rural':
-    default:
-      minReviews = isNatureOrCulture ? 8 : 12;
-      minRating = 3.5;
-      break;
-  }
+  // IGM handles quality ranking — these are sanity-only thresholds to reject spam/ghost listings
+  minReviews = isNatureOrCulture ? 5 : 10;
+  minRating  = 3.0;
 
   if ((place.user_ratings_total || 0) < minReviews) return false;
   if ((place.rating || 0) < minRating) return false;
@@ -171,22 +171,37 @@ function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
   return true;
 }
 
-const KNOWN_CHAINS = new Set([
-  'mercadona', 'lidl', 'aldi', 'carrefour', 'dia', 'eroski', 'consum',
-  'spar', 'eurospar', 'superspar', 'coviran', 'covirán', 'charter',
-  'supercor', 'el corte inglés', 'alcampo', 'hipercor', 'simply',
-  'primark', 'zara', 'mango', 'h&m', 'ikea', 'leroy merlin',
-]);
+// ── Índice Google-Michelin 2.0 (Tourism-adapted) ─────────────────────────────
+// Designed for tourist destinations where review volume ≠ local population.
+// Key insight: 300 reviews = statistical critical mass for a coastal resort.
+//   <100 reviews → still low evidence; 300+ → high confidence
 
-function scorePlace(place: any, distanceMeters: number): number {
-  const rating = place.rating ?? 0;
-  const reviews = place.user_ratings_total ?? 0;
-  const roadMeters = distanceMeters * 1.6; // road correction for more accurate distance scoring
-  const distScore = Math.max(0, 1 - roadMeters / 5000);
-  const nameNorm = (place.name || '').toLowerCase().trim();
-  const isKnownChain = [...KNOWN_CHAINS].some(c => nameNorm.includes(c));
-  const chainBonus = isKnownChain ? 0.08 : 0;
-  return (0.40 * (rating / 5)) + (0.40 * (Math.log1p(reviews) / Math.log1p(5000))) + (0.20 * distScore) + chainBonus;
+function scoreIGM(place: any, distanceMeters: number, _zone: ZoneInfo): number {
+  const R = place.rating ?? 0;
+  const N = place.user_ratings_total ?? 0;
+
+  // N_CRITICAL: reviews needed for full confidence in a tourist destination
+  const N_CRITICAL = 300;
+
+  // Bayesian-corrected rating (weight=100 — stricter than the default 50)
+  // Pulls low-sample ratings toward the global mean (4.2) more aggressively
+  const Rc = (N * R + 100 * 4.2) / (N + 100);
+
+  // Confidence factor F = min(1, N / 300)
+  // 88 reviews → F=0.29  |  300 reviews → F=1.0  |  1000 reviews → F=1.0
+  const F = Math.min(1, N / N_CRITICAL);
+
+  // Excellence bonus — more granular than before, rewards sustained high ratings
+  const B = R >= 4.8 ? 0.30 : R >= 4.7 ? 0.20 : R >= 4.6 ? 0.10 : R >= 4.5 ? 0.05 : 0;
+
+  // IGM 2.0: Rc weighted by confidence, bonus added separately
+  const igm = Rc * (0.6 + 0.4 * F) + B;
+
+  // Distance modifier (20% weight) — closer is better among equal-IGM places
+  const roadMeters = distanceMeters * 1.4;
+  const distScore = Math.max(0, 1 - roadMeters / 12_000);
+
+  return igm * (0.8 + 0.2 * distScore);
 }
 
 // ── UTILS ───────────────────────────────────────────────────────────────────
@@ -344,22 +359,34 @@ async function searchWithFallback(params: {
   }
 
   // Priorizar los mas cercanos y filtrar por un radio útil
-  // Naturaleza/cultura: siempre limitar a distancia peatonal/ciclable (máx 4km) — no tiene sentido
-  // recomendar un embalse a 10km cuando hay parques más cercanos.
+  // Naturaleza/cultura: siempre limitar a distancia peatonal/ciclable (máx 4km)
+  // Comida/ocio: máximo 12km aunque la zona sea rural — nadie quiere un restaurante a 73 min en coche
   const isNatureOrCultureCat = ['naturaleza', 'cultura'].includes(catLabel.toLowerCase());
   const isUtilityCat = ['supermercados', 'compras'].includes(catLabel.toLowerCase());
+  const MAX_FOOD_DISTANCE = 12000; // 12km — ~15-20 min en coche, razonable para cenas
   const distanceLimit = isNatureOrCultureCat
     ? Math.min(zone.walkRadius, 4000)
     : isUtilityCat
       ? (zone.preferCar ? zone.driveRadius : Math.min(zone.driveRadius, 5000))
-      : zone.preferCar ? zone.driveRadius : Math.min(zone.walkRadius, 2000);
+      : zone.preferCar
+        ? Math.min(zone.driveRadius, MAX_FOOD_DISTANCE)   // cap para town/rural
+        : Math.min(zone.walkRadius, 2000);
+
+  // IGM minimum threshold: only candidates with enough statistical confidence reach Gemini.
+  // This prevents high-rated-but-few-reviews places (e.g. 4.8★ / 88 reviews) from being
+  // selected by Gemini which uses raw rating, not IGM.
+  // Threshold 3.5 requires roughly: city zone → ~100 reviews at 4.5★ OR ~200 reviews at 4.2★
+  // IGM 2.0 threshold: ~150 reviews at 4.5★ OR ~300 reviews at 4.2★ needed to pass
+  const IGM_MIN_THRESHOLD = 3.8;
+  const isUtilityOrNature = ['supermercados', 'compras', 'cultura', 'naturaleza'].includes(catLabel.toLowerCase());
 
   const finalResult = collected
     .filter(r => r.realDistanceMeters != null && r.realDistanceMeters <= distanceLimit)
-    .sort((a, b) => scorePlace(b, b.realDistanceMeters ?? 9999) - scorePlace(a, a.realDistanceMeters ?? 9999))
+    .filter(r => isUtilityOrNature || scoreIGM(r, r.realDistanceMeters ?? 9999, zone) >= IGM_MIN_THRESHOLD)
+    .sort((a, b) => scoreIGM(b, b.realDistanceMeters ?? 9999, zone) - scoreIGM(a, a.realDistanceMeters ?? 9999, zone))
     .slice(0, neededCount * 2);
 
-  logger.warn(`[SCORED:${catLabel}] top${finalResult.length}: ${finalResult.slice(0, 5).map((r: any) => `"${r.name}"(${Math.round(r.realDistanceMeters)}m,${r.rating}★,${r.user_ratings_total}rev,score=${scorePlace(r, r.realDistanceMeters).toFixed(3)})`).join(' | ')}`);
+  logger.warn(`[SCORED:${catLabel}] top${finalResult.length}: ${finalResult.slice(0, 5).map((r: any) => `"${r.name}"(${Math.round(r.realDistanceMeters)}m,${r.rating}★,${r.user_ratings_total}rev,IGM=${scoreIGM(r, r.realDistanceMeters, zone).toFixed(3)})`).join(' | ')}`);
 
   return finalResult;
 }
@@ -367,6 +394,8 @@ async function searchWithFallback(params: {
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN HANDLER
 // ═══════════════════════════════════════════════════════════════════════════
+export const maxDuration = 60; // Google Places + Gemini can take 20-40s
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -644,7 +673,7 @@ export async function POST(req: Request) {
           .map(([cat, places]) => {
             const quota = TODOS_QUOTA[cat]?.quota ?? 2;
             if (!places.length) {
-              return `[${cat.toUpperCase()}]: Sin resultados de Google. Usa conocimiento de ${property.city}.`;
+              return `[${cat.toUpperCase()}]: Sin resultados de Google. NO incluyas ningún sitio de esta categoría.`;
             }
             // Pasar exactamente quota candidatos — ya elegidos por el scorer, Gemini solo genera descripción
             const selected = places.slice(0, quota);
@@ -655,7 +684,10 @@ export async function POST(req: Request) {
             return `[${cat.toUpperCase()}] — USA EXACTAMENTE estos ${quota} sitios, en este orden, sin sustituir ninguno:\n${lines}`;
           })
           .join('\n\n')
-        : allPlacesResults.slice(0, 18).map(r =>
+        // For single-category: send ALL candidates so Gemini can pick the
+        // category-relevant ones (e.g. only burger joints from a mixed list).
+        // Slicing to 18 by general score loses niche places (few reviews but on-category).
+        : allPlacesResults.map(r =>
           `- ${r.name} (${r.vicinity ?? r.formatted_address ?? ''}) | Rating: ${r.rating ?? 'N/A'} | ${r.realDistance ?? 'desconocida'} | ID: ${r.place_id} | Tipos: ${(r.types || []).slice(0, 3).join(',')} | Abierto ahora: ${r.opening_hours?.open_now ?? 'desconocido'}`
       ).join('\n');
 
@@ -677,14 +709,28 @@ CUOTAS OBLIGATORIAS — respeta EXACTAMENTE estas cantidades:
 TOTAL: ${numRequested} recomendaciones.
 ` : '';
 
+      const CATEGORY_VARIETY_HINTS: Record<string, string> = {
+        italiano:     'Asegura VARIEDAD: máximo 3 pizzerías del total; el resto deben ser restaurantes italianos de cocina variada (pasta, carnes, mariscos, trattoria). No selecciones solo pizzerías aunque sean las mejor puntuadas.',
+        hamburguesas: 'Asegura VARIEDAD: incluye smash burgers, hamburgueserías artesanas y opciones diferentes. Evita seleccionar solo la misma franquicia o el mismo estilo.',
+        tapas:        'Asegura VARIEDAD: mezcla bares de tapas tradicionales, tabernas, y bares con ambiente diferente. No solo bares genéricos de la misma calle.',
+        restaurantes: 'Asegura VARIEDAD de cocinas y estilos: no más de 2 del mismo tipo de cocina (ej. no 3 restaurantes mediterráneos).',
+        asiatico:     'Asegura VARIEDAD: incluye sushi, cocina china, tailandesa o vietnamita si hay opciones. No selecciones solo restaurantes de sushi.',
+        mediterraneo: 'Asegura VARIEDAD: mezcla chiringuitos, restaurantes de mariscos, cocina andaluza y mediterránea. No solo el mismo tipo.',
+      };
+      const varietyHint = CATEGORY_VARIETY_HINTS[selectedCat] ?? '';
+
       const singleCatBlock = !isTodos ? `
-⚠️ CATEGORÍA ÚNICA: Solo genera recomendaciones de tipo "${selectedCat}". PROHIBIDO incluir restaurantes, supermercados, cafeterías ni cualquier otro tipo. Si el listado de Places está vacío o tiene pocos sitios relevantes, genera ÚNICAMENTE sitios de la categoría "${selectedCat}" usando tu conocimiento de ${property.city}. Máximo 6 resultados.
+⚠️ CATEGORÍA ÚNICA: "${selectedCat}". Solo incluye sitios cuya especialidad principal sea "${selectedCat}". PROHIBIDO incluir restaurantes genéricos, cafeterías, kebabs, tacos, ni negocios cuyo nombre o especialidad principal no sea "${selectedCat}".
+${varietyHint ? `🎨 VARIEDAD: ${varietyHint}` : ''}
+📊 LÍMITE: Máximo ${numRequested} resultados. Si hay más candidatos relevantes, elige los ${numRequested} MEJORES por calidad, variedad y cercanía. Prioriza los más cercanos con mejor valoración (≥4.5★ preferiblemente).
+⛔ PROHIBIDO ABSOLUTO: Inventar, completar o añadir sitios que NO aparezcan en el listado de Google Places. Si el listado tiene 3 sitios relevantes, genera exactamente 3. Si está vacío, devuelve {"recommendations":[]}.
+⛔ NO uses tu conocimiento general para añadir sitios. Cada elemento del JSON debe corresponder EXACTAMENTE a un sitio del listado.
 ` : '';
 
       const prompt = `Anfitrión experto en ${property.city}. Guía de "${property.name}".
 
 LUGARES GOOGLE PLACES:
-${placesContext || `Sin datos. Usa conocimiento de ${property.city}.`}
+${placesContext || `Sin datos de Google Places. Devuelve {"recommendations":[]}.`}
 
 ${todosBlock}${singleCatBlock}
 
@@ -1030,6 +1076,19 @@ JSON:`;
       ];
 
       if (placesKey && lat && lng) {
+        const fetchWithTimeout = async (url: string, ms = 8000) => {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), ms);
+          try {
+            const r = await fetch(url, { signal: ctrl.signal });
+            return await r.json();
+          } catch {
+            return { status: 'TIMEOUT', results: [] };
+          } finally {
+            clearTimeout(timer);
+          }
+        };
+
         const searchPromises = [
           { keyword: 'Hospital Público SAS Universitario' },
           { keyword: 'Centro de Salud Público SAS' },
@@ -1040,7 +1099,7 @@ JSON:`;
         ].map(item => {
           const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
             `?location=${lat},${lng}&rankby=distance&keyword=${encodeURIComponent(item.keyword)}&language=es&key=${placesKey}`;
-          return fetch(url).then(r => r.json());
+          return fetchWithTimeout(url);
         });
 
         const searchResults = await Promise.all(searchPromises);
@@ -1051,7 +1110,7 @@ JSON:`;
           try {
             const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json` +
               `?place_id=${c.place_id}&fields=name,formatted_phone_number,vicinity,geometry,types&language=es&key=${placesKey}`;
-            const dd = await fetch(detailsUrl).then(r => r.json());
+            const dd = await fetchWithTimeout(detailsUrl, 6000);
             const r = dd.result || {};
             let distance = '';
             let distanceValue = 999;

@@ -99,7 +99,17 @@ export async function validateChatRequest(
 
     // ── Path A: sin token (host o stress test) ───────────────────────────────
     if (!accessToken) {
-        if (!isStressTest && legacyPropertyId) {
+        // Stress test: early-return with full property access (no user session needed)
+        if (isStressTest && legacyPropertyId) {
+            const haltCheck = await checkHaltStatus(supabase, legacyPropertyId);
+            propertyTier = haltCheck.propertyTier;
+            tenantId = haltCheck.tenantId;
+            return {
+                validated: { propertyId: legacyPropertyId, propertyTier, tenantId, messages, lastMessage, language, guestSessionId, accessToken, ip },
+            };
+        }
+
+        if (legacyPropertyId) {
             const haltCheck = await checkHaltStatus(supabase, legacyPropertyId);
             propertyTier = haltCheck.propertyTier;
             tenantId = haltCheck.tenantId;

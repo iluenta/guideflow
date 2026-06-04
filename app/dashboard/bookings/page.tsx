@@ -46,6 +46,7 @@ const CHANNEL_STYLES: Record<string, { bg: string; color: string; dot: string }>
 
 const STATUS_TABS: { value: string; label: string }[] = [
   { value: 'all',         label: 'Todas' },
+  { value: 'pending',     label: 'Pendientes' },
   { value: 'upcoming',    label: 'Próximas' },
   { value: 'in_progress', label: 'En curso' },
   { value: 'overdue',     label: 'Sin cerrar' },

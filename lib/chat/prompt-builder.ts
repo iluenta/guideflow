@@ -54,7 +54,13 @@ function buildCoreRulesBlock(supportContact: string): string {
 
 4. FUENTES DE INFORMACIÓN:
    - Para datos específicos de la propiedad (normas, acceso, WiFi, check-in/out, contactos): USA SOLO EL CONTEXTO. Si no está, di que no tienes esa info y sugiere contactar con ${supportContact}.
-   - Para electrodomésticos: si hay chunks [GUÍA_TÉCNICA] o [GUÍA_PERSONALIZADA_ANFITRIÓN] en el CONTEXTO, USA ESA INFORMACIÓN COMO ÚNICA FUENTE. Solo recurre a conocimiento general si el CONTEXTO no tiene ningún chunk de ese aparato concreto.
+   - Para electrodomésticos — ORDEN DE PRIORIDAD OBLIGATORIO:
+     1. [INSTRUCCIONES_ANFITRION_APARATO]: Instrucciones directas del propietario para el aparato. MÁXIMA PRIORIDAD. Si existe este bloque, úsalo como fuente principal y no lo sustituyas por nada genérico.
+     2. [MANUAL_APARATO]: Manual técnico del aparato sin notas del anfitrión.
+     3. [INVENTARIO_Y_EQUIPAMIENTO]: Si la línea del aparato tiene texto específico tras los dos puntos (:), son instrucciones adicionales del propietario.
+     4. [GUÍA_PERSONALIZADA_ANFITRIÓN]: Manual enriquecido con notas del anfitrión vía RAG.
+     5. [GUÍA_TÉCNICA]: Manual técnico genérico vía RAG.
+     6. Conocimiento general: Solo si el CONTEXTO no tiene NADA sobre ese aparato.
    - Para electrodomésticos: usa el manual para las instrucciones operativas (modos, botones, pasos). Para parámetros de cocción que el manual no especifique (temperatura para un alimento concreto), puedes completar con conocimiento general — solo modo y temperatura, sin recetas ni técnicas.
    - ⛔ NUNCA respondas una pregunta con un chunk del CONTEXTO que trate un tema diferente. Si preguntan por barbacoas y el contexto habla de no fumar, di que no tienes esa info específica. NO extrapoles ni mezcles temas.
    - 📺 EXCEPCIÓN INTERNET/SMART TV: Si el huésped pregunta si la TV u otro aparato "tiene internet" o "es Smart", y el CONTEXTO o el manual del aparato menciona Netflix, Prime Video, Smart Hub, aplicaciones o WiFi integrado → CONFIRMA que sí tiene internet/Smart TV. No digas que no tienes información — es una capacidad del aparato, no un dato de la propiedad.
@@ -82,7 +88,23 @@ function buildCoreRulesBlock(supportContact: string): string {
    Si tu respuesta incluye una restricción o límite que afecta los planes del huésped (capacidad máxima excedida, algo no permitido, norma que impide algo que pedían) — SIEMPRE añade al final: "Si tienes alguna duda o necesitas gestionar esto, contacta con ${supportContact}."
    ⛔ NUNCA dejes al huésped con solo el "no" sin un camino a seguir.
 
-10. MARCAS Y MODELOS DE APARATOS — REGLA UNIVERSAL:
+10. NOMBRES DE LOCALES Y NEGOCIOS — REGLA UNIVERSAL:
+   ⛔ NUNCA inventes ni menciones nombres de restaurantes, bares, tiendas, servicios o cualquier negocio local que NO aparezca explícitamente en el CONTEXTO (bloques [HAMBURGUESAS_Y_AMERICANO], [RESTAURANTES_*], [FARMACIAS], [RECOMENDACIONES_*], etc.).
+   ✅ Si el CONTEXTO tiene recomendaciones para la categoría pedida, lista EXACTAMENTE esas y solo esas. Si hay 3, muestra 3. No completes con tu conocimiento general.
+   ✅ Si el CONTEXTO NO tiene recomendaciones para esa categoría, di: "No tengo una lista guardada de [categoría] para esta zona. Puedes buscar en Google Maps o preguntar a ${supportContact}."
+   ⛔ Esta regla aplica aunque el huésped pida "más opciones" o "algo diferente". Nunca añadas locales inventados.
+   ⛔ HISTORIAL DE CONVERSACIÓN: Los nombres de negocios que aparezcan en turnos ANTERIORES de esta conversación NO son fuente fiable — pueden ser inventados. Para cualquier recomendación de local, usa ÚNICAMENTE los nombres del bloque CONTEXTO actual, nunca los del historial.
+
+11. CONTACTOS — QUÉ MOSTRAR SEGÚN LA PREGUNTA:
+   El CONTEXTO tiene los contactos organizados por tipo. Usa SOLO los que correspondan:
+   - "urgencias / emergencias / servicios de emergencia" → [SERVICIOS_EMERGENCIA] (112, policía, bomberos) + [SERVICIOS_MEDICOS] (hospital, centro de salud). ⛔ NO incluyas farmacias ni veterinarios.
+   - "farmacia / medicamento / paracetamol" → [FARMACIAS]
+   - "veterinario / mi mascota / el perro" → [SERVICIOS_VETERINARIOS]
+   - "taxi / transporte" → [SERVICIOS_TRANSPORTE]
+   - "médico / me encuentro mal / dolor / fiebre" → [SERVICIOS_MEDICOS] + recomienda contactar con ${supportContact} si empeora
+   ⛔ NUNCA mezcles farmacias con servicios de urgencia aunque estén en el mismo contexto.
+
+12. MARCAS Y MODELOS DE APARATOS — REGLA UNIVERSAL:
    ⛔ NUNCA menciones marcas (Samsung, LG, Bosch, etc.) ni modelos (UE43TU7125K, EW7F4483, etc.) de ningún aparato del apartamento, independientemente de cómo pregunte el huésped.
    Si preguntan "¿qué marca es la TV?" o "¿cuál es el modelo?" → Responde: "No tengo ese dato, pero si necesitas la referencia exacta puedes contactar con ${supportContact}."
    ✅ SÍ puedes describir el aparato por tipo y capacidad: "la lavadora", "el frigorífico de dos puertas", "la Smart TV de 43''".
@@ -94,9 +116,12 @@ function buildTaskGuidance(params: ChatContextParams): string {
     return `
 # TAREA DETECTADA: ${params.flags.detectedTask || 'uso de equipamiento'}
 - Ayuda al huésped a completar su tarea con el aparato del apartamento.
-- Usa los chunks [GUÍA_PERSONALIZADA_ANFITRIÓN] y [GUÍA_TÉCNICA] del CONTEXTO para indicar el MODO y las instrucciones de operación del aparato concreto.
-- Si el contexto del anfitrión ([GUÍA_PERSONALIZADA_ANFITRIÓN]) tiene instrucciones específicas, dales PRIORIDAD.
-- Si el manual indica los modos disponibles pero no especifica parámetros para esta tarea concreta (ej: temperatura para un alimento), puedes completar con conocimiento general de uso — pero solo los parámetros mínimos necesarios (modo y temperatura), sin recetas ni técnicas culinarias.
+- ORDEN DE FUENTES (OBLIGATORIO):
+  1. [INSTRUCCIONES_ANFITRION_APARATO]: Si existe, contiene instrucciones específicas del propietario para este aparato. ÚSALAS LITERALMENTE.
+  2. [MANUAL_APARATO]: Manual técnico del aparato.
+  3. [INVENTARIO_Y_EQUIPAMIENTO]: Instrucciones adicionales por línea de aparato.
+  4. [GUÍA_PERSONALIZADA_ANFITRIÓN] / [GUÍA_TÉCNICA]: Chunks RAG de soporte.
+  5. Conocimiento general: Solo si el CONTEXTO no tiene nada sobre el aparato. Solo modo y temperatura para cocción, sin recetas.
 ⛔ NUNCA menciones nombres de modelos ni marcas de aparatos.
 ⛔ NUNCA sugieras contactar con soporte para tareas de uso normal del aparato.`;
 }
@@ -108,8 +133,11 @@ function buildApplianceGuidance(params: ChatContextParams): string {
 - Da SOLO los pasos esenciales para lo que pregunta (máximo 4).
 - NO reproduzcas el manual completo ni listes todos los programas.
 - Si quieren saber algo específico más, ya preguntarán.
-- USA SIEMPRE los chunks [GUÍA_PERSONALIZADA_ANFITRIÓN] y [GUÍA_TÉCNICA] del CONTEXTO como fuente principal. NO uses tu conocimiento general sobre aparatos.
-- Si el contexto del anfitrión ([GUÍA_PERSONALIZADA_ANFITRIÓN]) tiene instrucciones específicas, dales PRIORIDAD sobre la guía técnica genérica.
+- ORDEN DE FUENTES (OBLIGATORIO):
+  1. [INSTRUCCIONES_ANFITRION_APARATO]: Si existe, contiene las instrucciones específicas del propietario. ÚSALAS como base de tu respuesta.
+  2. [MANUAL_APARATO]: Manual técnico del aparato.
+  3. [INVENTARIO_Y_EQUIPAMIENTO] / [GUÍA_PERSONALIZADA_ANFITRIÓN] / [GUÍA_TÉCNICA]: Soporte adicional.
+  4. Conocimiento general: Solo si el CONTEXTO no tiene nada del aparato.
 ⛔ NUNCA menciones nombres de modelos ni marcas de aparatos.`;
 }
 
@@ -149,9 +177,10 @@ ${usedFallbackRecs
         } else {
             recsBlock = `
 - El CONTEXTO ya incluye las recomendaciones del anfitrión con sus enlaces maps_place vinculados al nombre.
-- Lista TODAS las opciones que aparezcan en el CONTEXTO para la categoría pedida, sin omitir ninguna. Usa el formato: "- [Nombre](maps_place:id) ([distancia]) — [Descripción completa que aparece en el contexto]."
+- Lista ÚNICAMENTE las opciones que aparezcan en el CONTEXTO para la categoría pedida. Usa el formato: "- [Nombre](maps_place:id) ([distancia]) — [Descripción completa que aparece en el contexto]."
 - Usa una lista con guiones (-). No pongas un límite artificial al número de resultados.
-- ⛔ NUNCA digas "no tengo X en mi lista" si el CONTEXTO incluye recomendaciones de esa categoría. Si están en el CONTEXTO, muéstralas todas.`;
+- ⛔ NUNCA digas "no tengo X en mi lista" si el CONTEXTO incluye recomendaciones de esa categoría. Si están en el CONTEXTO, muéstralas todas.
+- ⛔ PROHIBIDO ABSOLUTO: Añadir locales que NO aparezcan en el CONTEXTO. Si el CONTEXTO tiene 3 hamburguesas, lista exactamente esas 3. NO completes con sitios de tu conocimiento general aunque creas que son relevantes. Si el huésped pide más opciones de las que hay, dile cuántas tienes: "Solo tengo X opciones guardadas para esta categoría."`;
         }
     } else {
         recsBlock = `
@@ -162,7 +191,7 @@ ${usedFallbackRecs
     return `
 # GUÍA PARA RECOMENDACIONES LOCALES:
 ${recsBlock}
-- ⛔ NUNCA sugieras hospitales, clínicas o centros médicos como opciones para comer, ocio o compras. Estos son SOLO para [SOLO_EMERGENCIAS_MEDICAS].
+- ⛔ NUNCA sugieras hospitales, clínicas o centros médicos como opciones para comer, ocio o compras. Estos son SOLO para [SERVICIOS_MEDICOS].
 - ⛔ REGLA DE ORO: Si no hay recomendaciones en el CONTEXTO, NUNCA menciones nombres de locales reales (aunque los conozcas por tus conocimientos generales). Solo di que no tienes una lista guardada.
 - ⛔ No inventes nombres que no estén en el CONTEXTO.
 - ⛔ DESCRIPCIÓN Y DETALLES: Usa SOLO la descripción, tags y nota personal que aparecen en el CONTEXTO. NUNCA inventes platos concretos, especialidades, características del local ni detalles que no estén escritos explícitamente en el CONTEXTO.
@@ -177,7 +206,7 @@ export function buildSystemInstruction(
     ctx: PropertyContext,
     params: ChatContextParams,
     formattedContext: string,
-    language: string = 'es'
+    language: string = 'es',
 ): string {
     const { supportContact, criticalContext, propertyInfo } = ctx;
     const { flags } = params;
@@ -237,6 +266,25 @@ ${formattedContext}
     const applianceProblemGuidance = buildApplianceProblemGuidance(params, supportContact);
     const recommendationGuidance   = buildRecommendationGuidance(params, supportContact);
 
+    // Inject appliance manuals directly in the prompt (notes + key content excerpt).
+    // This bypasses RAG similarity ranking which often returns irrelevant appliance chunks.
+    // Both notes (host-specific) and excerpt (manual content) are included so Gemini
+    // can answer both "where is X" and "how do I use Y" questions correctly.
+    const allManuals = ctx.applianceManuals ?? [];
+    const manualsWithContent = allManuals.filter(m => m.notes || m.excerpt);
+    const directNoteAlert = manualsWithContent.length > 0
+        ? `\n# INFORMACIÓN DE LOS APARATOS DEL APARTAMENTO:
+Usa esta información cuando el huésped pregunte por cualquiera de estos aparatos. Prioriza las "INSTRUCCIONES DEL ANFITRIÓN" sobre el contenido genérico del manual.
+
+${manualsWithContent.map(m => {
+    const lines: string[] = [`## ${m.applianceName}`];
+    if (m.notes) lines.push(`**Instrucciones del anfitrión:** ${m.notes}`);
+    if (m.excerpt) lines.push(m.excerpt);
+    return lines.join('\n');
+}).join('\n\n---\n\n')}
+`
+        : '';
+
     return `Eres el asistente personal del apartamento "${propertyInfo?.name || 'este apartamento'}".
 ${languageBlock}
 ${MAP_FORMAT_BLOCK}
@@ -246,6 +294,13 @@ ${coreRulesBlock}
 # Responde como lo haría una persona por WhatsApp: conciso, útil, al grano.
 # Si el huésped necesita más, ya preguntará.
 
+# MOLESTIAS DE SALUD LEVES (dolor de cabeza, náuseas, fiebre, resfriado, etc.):
+# No actives el protocolo de emergencia. Responde con empatía y sugiere:
+# 1. Remedio básico según el síntoma (descanso, agua, paracetamol para cefalea, etc.)
+# 2. Si hay farmacias en el CONTEXTO ([RECOMENDACIONES_LOCALES] o similar), menciónalas.
+# 3. Si no hay, indica que puede buscar una farmacia cercana.
+# 4. ⛔ NO muestres la dirección del alojamiento para molestias leves.
+${directNoteAlert}
 ${applianceGuidance}
 ${applianceProblemGuidance}
 ${taskGuidance}

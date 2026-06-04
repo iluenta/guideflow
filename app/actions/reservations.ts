@@ -5,6 +5,8 @@ import { can, type TenantRole } from '@/lib/permissions'
 import { requireProfile } from '@/lib/supabase/get-tenant-id'
 import { revalidatePath } from 'next/cache'
 import { round2, calcNights, isReservationLocked } from '@/lib/reservations/commission-utils'
+import { sendReservationConfirmed, sendReservationCancelled } from '@/lib/email/resend'
+import { createServerAdminClient } from '@/lib/supabase/server-admin'
 import type {
   Reservation,
   ReservationCharge,
@@ -650,6 +652,72 @@ export async function updateReservationStatus(
   if (error) return { error: error.message }
 
   revalidatePath('/dashboard/bookings')
+
+  // Send notification email to guest on confirm or cancel
+  if (status === 'confirmed' || status === 'cancelled') {
+    try {
+      const admin = createServerAdminClient()
+      const { data: res, error: resErr } = await admin
+        .from('reservations')
+        .select('id, guest_name, guest_email, guest_phone, guests_count, checkin_date, checkout_date, gross_amount, property_id')
+        .eq('id', id)
+        .single()
+
+      if (resErr) console.error('[updateReservationStatus] reservation fetch error:', resErr)
+
+      if (res?.guest_email) {
+        const { data: property } = await admin
+          .from('properties')
+          .select('name, full_address, city')
+          .eq('id', res.property_id)
+          .single()
+
+        const { data: landing } = await admin
+          .from('property_landings')
+          .select('contact_email, contact_phone')
+          .eq('property_id', res.property_id)
+          .single()
+
+        if (property && landing) {
+          const checkin  = new Date(res.checkin_date  + 'T00:00:00')
+          const checkout = new Date(res.checkout_date + 'T00:00:00')
+          // Individual guest breakdown not stored in reservations — use guests_count as adults
+          const guests = {
+            adults:   res.guests_count ?? 1,
+            children: 0,
+            infants:  0,
+            pets:     0,
+          }
+
+          if (status === 'confirmed') {
+            await sendReservationConfirmed({
+              reservation: { id: res.id, guest_name: res.guest_name, guest_email: res.guest_email, guest_phone: res.guest_phone ?? undefined },
+              property: { name: property.name, full_address: property.full_address ?? undefined, city: property.city ?? undefined },
+              landing:  { contact_email: landing.contact_email, contact_phone: landing.contact_phone ?? undefined },
+              guests,
+              checkin,
+              checkout,
+              total: res.gross_amount,
+            })
+          } else {
+            await sendReservationCancelled({
+              reservation: { id: res.id, guest_name: res.guest_name, guest_email: res.guest_email, guest_phone: res.guest_phone ?? undefined },
+              property: { name: property.name, full_address: property.full_address ?? undefined, city: property.city ?? undefined },
+              landing:  { contact_email: landing.contact_email, contact_phone: landing.contact_phone ?? undefined },
+              guests,
+              checkin,
+              checkout,
+              total: res.gross_amount,
+            })
+          }
+        }
+      }
+    } catch (emailErr) {
+      // Email failure must not block the status update
+      console.error('[updateReservationStatus] email error:', emailErr)
+    }
+  }
+
   return {}
 }
 

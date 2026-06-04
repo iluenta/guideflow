@@ -46,6 +46,7 @@ export async function POST(req: Request) {
         const params = buildChatContextParams(intent, flags, propertyContext);
         const formattedContext = buildFormattedContext(propertyContext, params);
 
+
         // 5. Construir system instruction
         const systemInstruction = buildSystemInstruction(propertyContext, params, formattedContext, language);
 

@@ -8,7 +8,8 @@ import type { PropertyLanding } from '@/lib/types/property';
 import { LandingPreviewClient } from './LandingPreviewClient';
 import {
   FormSection, FormTextInput, FormNumberInput, FormSelect,
-  FormToggle, FormTextarea, FormRepeater, FormGallery,
+  FormToggle, FormTextarea, FormRepeater, FormRulesRepeater, FormGallery,
+  FormPlatformRatingsRepeater,
 } from './FormFields';
 import { PricingEditor } from './pricing/PricingEditor';
 import { BlockedPeriodsEditor } from './pricing/BlockedPeriodsEditor';
@@ -56,7 +57,7 @@ const DEFAULT: Config = {
   tourist_tax_per_night: 0, pet_fee_flat: 0,
   palette: 'warm', typography: 'modern', border_radius: 'soft',
   show_calendar: true, show_pricing: true, show_location: true, show_reviews: true,
-  policies: { checkIn: '15:00', checkOut: '11:00', cancellation: 'Cancelación gratuita hasta 48h antes', minStay: 1 },
+  policies: { checkIn: '', checkOut: '', cancellation: '', minStay: 1, extraRules: [] },
   faqs: [], gallery: [],
   host_name: '', host_bio: '',
   landing_amenities: [],
@@ -247,6 +248,12 @@ export function LandingEditor({ propertyId, tenantId, propertyName, propertySlug
               placeholder="Ej: Apartamento de lujo frente al mar"
               maxLength={120}
             />
+            <FormTextInput
+              label="Número de registro turístico"
+              value={(config as any).tourist_registration ?? ''}
+              onChange={v => set('tourist_registration' as any, v)}
+              placeholder="Ej: VFT/MA/12345"
+            />
             <FormTextarea
               label="Descripción"
               value={config.custom_description ?? ''}
@@ -299,6 +306,7 @@ export function LandingEditor({ propertyId, tenantId, propertyName, propertySlug
               <FormNumberInput label="Gestión (%)" value={config.service_fee_pct} onChange={v => set('service_fee_pct', v)} min={0} max={100} suffix="%" />
               <FormNumberInput label="Tasa turística / noche / pers." value={config.tourist_tax_per_night} onChange={v => set('tourist_tax_per_night', v)} min={0} suffix="€" />
               <FormNumberInput label="Suplemento mascotas" value={config.pet_fee_flat} onChange={v => set('pet_fee_flat', v)} min={0} suffix="€" />
+              <FormNumberInput label="Estancia mínima (noches)" value={config.policies.minStay} onChange={v => setPolicy('minStay', v)} min={1} step={1} />
             </div>
           </FormSection>
 
@@ -359,14 +367,12 @@ export function LandingEditor({ propertyId, tenantId, propertyName, propertySlug
             <FormToggle label="Reseñas de huéspedes" value={config.show_reviews} onChange={v => set('show_reviews', v)} />
           </FormSection>
 
-          {/* ── Políticas ── */}
-          <FormSection title="Políticas y normas">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <FormSelect label="Hora de entrada" value={config.policies.checkIn} onChange={v => setPolicy('checkIn', v)} options={CHECK_IN_TIMES.map(t => ({ value: t, label: t }))} />
-              <FormSelect label="Hora de salida" value={config.policies.checkOut} onChange={v => setPolicy('checkOut', v)} options={CHECK_OUT_TIMES.map(t => ({ value: t, label: t }))} />
-            </div>
-            <FormNumberInput label="Estancia mínima (noches)" value={config.policies.minStay} onChange={v => setPolicy('minStay', v)} min={1} step={1} />
-            <FormTextarea label="Política de cancelación" value={config.policies.cancellation} onChange={v => setPolicy('cancellation', v)} rows={2} />
+          {/* ── Normas ── */}
+          <FormSection title="Normas de la casa">
+            <FormRulesRepeater
+              items={config.policies.extraRules ?? []}
+              onChange={v => setPolicy('extraRules', v)}
+            />
           </FormSection>
 
           {/* ── Amenities (informacional) ── */}
@@ -413,25 +419,22 @@ export function LandingEditor({ propertyId, tenantId, propertyName, propertySlug
 
           {/* ── Reseñas ── */}
           <FormSection title="Reseñas">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-              <FormNumberInput
-                label="Puntuación media"
-                value={config.reviews_rating ?? 0}
-                onChange={v => set('reviews_rating', Math.min(5, Math.max(0, v)))}
-                min={0} max={5} step={0.01}
-                help="0 = ocultar puntuación"
-              />
-              <FormNumberInput
-                label="Número de reseñas"
-                value={config.reviews_count ?? 0}
-                onChange={v => set('reviews_count', v)}
-                min={0} step={1}
+            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 12 }}>
+              Añade la puntuación de cada plataforma. El icono se detecta automáticamente por nombre.
+            </div>
+            <FormPlatformRatingsRepeater
+              items={config.platform_ratings ?? []}
+              onChange={v => set('platform_ratings', v)}
+            />
+            <div style={{ paddingTop: 16, borderTop: '1px solid #f0f0f0', marginTop: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>
+                Opiniones de huéspedes
+              </div>
+              <ReviewsEditor
+                items={config.reviews_list ?? []}
+                onChange={v => set('reviews_list', v)}
               />
             </div>
-            <ReviewsEditor
-              items={config.reviews_list ?? []}
-              onChange={v => set('reviews_list', v)}
-            />
           </FormSection>
 
           {/* ── FAQs ── */}

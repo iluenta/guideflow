@@ -1,3 +1,5 @@
+'use client';
+
 interface Props {
   title: string;
   subtitle?: string;
@@ -7,19 +9,57 @@ interface Props {
   reviewCount?: number;
   maxGuests?: number;
   beds?: number;
+  baths?: number;
+  sizeSqm?: number;
 }
 
-/** Hero section: eyebrow, title, meta (rating, location, capacity). */
+/** Splits "VeraTespera" → ["Vera","tespera"] or "Villa Sol" → ["Villa","Sol"] */
+function splitTitle(title: string): { first: string; rest: string } {
+  const spaceIdx = title.indexOf(' ');
+  if (spaceIdx > 0) return { first: title.slice(0, spaceIdx), rest: title.slice(spaceIdx + 1) };
+  const camel = title.match(/^([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)([A-ZÁÉÍÓÚÑ].*)$/);
+  if (camel) return { first: camel[1], rest: camel[2].charAt(0).toLowerCase() + camel[2].slice(1) };
+  return { first: title, rest: '' };
+}
+
 export function Hero({ title, subtitle, city, country, rating, reviewCount, maxGuests, beds }: Props) {
+  const { first, rest } = splitTitle(title);
+
   return (
     <section className="lp-hero">
       <div className="lp-wrap">
         <div className="lp-hero-head">
           <div style={{ flex: 1, minWidth: 0 }}>
-            {subtitle && (
-              <div className="lp-hero-eyebrow">{subtitle}</div>
-            )}
-            <h1 className="lp-title">{title}</h1>
+            {subtitle && <div className="lp-hero-eyebrow">{subtitle}</div>}
+
+            {/* Split title: serif navy + italic accent */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{
+                fontFamily: '"Fraunces", Georgia, serif',
+                fontSize: 'clamp(48px, 7vw, 80px)',
+                fontWeight: 700,
+                color: 'var(--ink)',
+                letterSpacing: '-.03em',
+                lineHeight: 1,
+              }}>
+                {first}
+              </div>
+              {rest && (
+                <div style={{
+                  fontFamily: '"Fraunces", Georgia, serif',
+                  fontSize: 'clamp(42px, 6.5vw, 74px)',
+                  fontWeight: 700,
+                  fontStyle: 'italic',
+                  color: 'var(--accent)',
+                  letterSpacing: '-.02em',
+                  lineHeight: 1,
+                  marginTop: -6,
+                }}>
+                  {rest}
+                </div>
+              )}
+            </div>
+
             <div className="lp-hero-meta">
               {(rating ?? 0) > 0 && (
                 <>

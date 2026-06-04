@@ -69,12 +69,12 @@ export async function getBlockedDatesForProperty(
 ): Promise<BlockedDateRange> {
   const admin = createServerAdminClient();
 
-  // 1. Reservation dates (confirmed + checked_in + checked_out)
+  // 1. Reservation dates (all active statuses including pending pre-reservas)
   const { data: reservations } = await admin
     .from('reservations')
     .select('checkin_date, checkout_date')
     .eq('property_id', propertyId)
-    .in('status', ['confirmed', 'checked_in', 'checked_out']);
+    .in('status', ['confirmed', 'checked_in', 'checked_out', 'pending']);
 
   const reservedSet = new Set<string>();
   reservations?.forEach(r => {

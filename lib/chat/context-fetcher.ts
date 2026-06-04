@@ -10,6 +10,28 @@ import type { ClassifiedIntent } from '@/lib/ai/services/intent-classifier';
 
 type SupabaseClient = ReturnType<typeof import('@/lib/supabase/edge').createEdgeAdminClient>;
 
+// ─── Fetch all appliance manuals (excerpt + optional host notes) ──────────────
+
+async function fetchApplianceManuals(
+    supabase: SupabaseClient,
+    propertyId: string,
+): Promise<PropertyContext['applianceManuals']> {
+    const { data } = await supabase
+        .from('property_manuals')
+        .select('appliance_name, manual_content, metadata')
+        .eq('property_id', propertyId)
+
+    if (!data) return []
+
+    return data
+        .filter((row: any) => row.manual_content?.trim())
+        .map((row: any) => ({
+            applianceName: row.appliance_name as string,
+            notes: (row.metadata?.notes as string | undefined)?.trim() ?? '',
+            excerpt: row.manual_content as string,   // full content — no truncation
+        }))
+}
+
 // ─── Umbrales dinámicos por intent ───────────────────────────────────────────
 
 function getMatchParams(flags: IntentResult['flags']): { threshold: number; count: number } {
@@ -78,6 +100,7 @@ export async function fetchPropertyContext(
         { data: propertyInfo },
         { data: propertyBranding },
         { data: criticalContext },
+        manualsWithNotes,
     ] = await Promise.all([
         supabase.rpc('match_all_context', {
             query_embedding: questionEmbedding,
@@ -91,6 +114,7 @@ export async function fetchPropertyContext(
             .select('category, content')
             .eq('property_id', propertyId)
             .in('category', ['tech', 'rules', 'access', 'contacts', 'notes', 'inventory', 'welcome', 'checkin']),
+        fetchApplianceManuals(supabase, propertyId),
     ]);
 
     if (ragResult.error) console.error('[CHAT-V2 RPC ERROR]', ragResult.error);
@@ -100,10 +124,49 @@ export async function fetchPropertyContext(
     const detectedTypes = buildDetectedTypes(intent);
     const isGenericFoodSearch = intent.intent === 'recommendation_food' && intent.isGenericFood;
 
+    // Also trigger recommendation loading when food/local keywords appear in the query,
+    // even if the intent classifier fell back to 'standard' (e.g. follow-up turns like
+    // "dame las hamburguesas de nuevo" or "otra vez las pizzerías").
+    // Keyword → food category mapping (mirrors APPLIANCE_HINTS but for food)
+    const FOOD_KEYWORD_CATEGORY: Array<{ keywords: string[]; types: string[] }> = [
+        { keywords: ['hamburgu', 'burger', 'hamburguesería'], types: ['hamburguesas', 'hamburguesa', 'burger'] },
+        { keywords: ['pizza', 'pizzer', 'italiano', 'italiana'], types: ['italiano', 'italiana', 'italian'] },
+        { keywords: ['asiátic', 'asiatico', 'sushi', 'japonés', 'japones', 'chino'], types: ['asiatico', 'asiático'] },
+        { keywords: ['mediterr', 'paella', 'marisco'], types: ['mediterraneo', 'mediterráneo'] },
+        { keywords: ['tapas', 'pintxos', 'pinchos', 'taberna'], types: ['tapas', 'taberna', 'tapas_bar'] },
+        { keywords: ['desayun', 'brunch', 'cafeter'], types: ['desayuno', 'cafe'] },
+        { keywords: ['supermercado', 'mercadona', 'lidl', 'compra'], types: ['supermercados'] },
+        { keywords: ['farmacia', 'medicamento', 'pastilla'], types: ['farmacia'] },
+    ];
+    const FOOD_TRIGGER_WORDS = [
+        'restauran', 'comer', 'cenar', 'sitio', 'lugar', 'recomendaci',
+        'donde', 'dónde', 'local', 'chiringuito', 'bar ',
+        // all category keywords too
+        ...FOOD_KEYWORD_CATEGORY.flatMap(c => c.keywords),
+    ];
+    const queryLower = ragQuery.toLowerCase();
+    const hasFoodKeyword = FOOD_TRIGGER_WORDS.some(w => queryLower.includes(w));
+
+    // Detect specific food category and set detectedTypes so context is filtered correctly
+    if (hasFoodKeyword && detectedTypes.length === 0) {
+        for (const cat of FOOD_KEYWORD_CATEGORY) {
+            if (cat.keywords.some(kw => queryLower.includes(kw))) {
+                detectedTypes.push(...cat.types);
+                break;
+            }
+        }
+    }
+
+    // Promote flag so context-builder includes the recommendation blocks
+    if (hasFoodKeyword && !flags.isRecommendationQuery) {
+        flags.isRecommendationQuery = true;
+    }
+    const shouldLoadRecs = flags.isRecommendationQuery || hasFoodKeyword;
+
     let directRecommendations: any[] = [];
     let usedFallbackRecs = false;
 
-    if (flags.isRecommendationQuery) {
+    if (shouldLoadRecs) {
         const recsQuery = supabase
             .from('property_recommendations')
             .select('name, type, description, distance, personal_note, price_range, google_place_id, address, metadata')
@@ -168,5 +231,6 @@ export async function fetchPropertyContext(
         usedFallbackRecs,
         detectedTypes,
         foodCatsInDB,
+        applianceManuals: manualsWithNotes ?? [],
     };
 }

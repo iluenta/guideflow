@@ -1,41 +1,58 @@
-import { Playfair_Display, Oswald, Nunito, Cormorant_Garamond, Jost } from 'next/font/google'
+import localFont from 'next/font/local';
 
-// Nota: display: 'swap' permite que el texto sea visible mientras carga la fuente
-// En entornos corporativos con proxy SSL, las fuentes pueden fallar en build time
-// pero Next.js las cachea después del primer download exitoso
-
-export const playfair = Playfair_Display({
-  subsets: ["latin"],
+export const playfair = localFont({
+  src: [
+    { path: '../public/fonts/playfair-400.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/playfair-500.woff2', weight: '500', style: 'normal' },
+    { path: '../public/fonts/playfair-600.woff2', weight: '600', style: 'normal' },
+    { path: '../public/fonts/playfair-700.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-playfair',
   display: 'swap',
-  preload: true,
 });
 
-export const oswald = Oswald({
-  subsets: ["latin"],
+export const oswald = localFont({
+  src: [
+    { path: '../public/fonts/oswald-300.woff2', weight: '300', style: 'normal' },
+    { path: '../public/fonts/oswald-400.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/oswald-500.woff2', weight: '500', style: 'normal' },
+    { path: '../public/fonts/oswald-600.woff2', weight: '600', style: 'normal' },
+    { path: '../public/fonts/oswald-700.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-oswald',
   display: 'swap',
-  preload: true,
 });
 
-export const nunito = Nunito({
-  subsets: ["latin"],
+export const nunito = localFont({
+  src: [
+    { path: '../public/fonts/nunito-400.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/nunito-500.woff2', weight: '500', style: 'normal' },
+    { path: '../public/fonts/nunito-600.woff2', weight: '600', style: 'normal' },
+    { path: '../public/fonts/nunito-700.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-nunito',
   display: 'swap',
-  preload: true,
 });
 
-export const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
+export const cormorant = localFont({
+  src: [
+    { path: '../public/fonts/cormorant-300.woff2', weight: '300', style: 'normal' },
+    { path: '../public/fonts/cormorant-400.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/cormorant-500.woff2', weight: '500', style: 'normal' },
+    { path: '../public/fonts/cormorant-600.woff2', weight: '600', style: 'normal' },
+    { path: '../public/fonts/cormorant-700.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-cormorant',
-  weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
-  preload: true,
 });
 
-export const jost = Jost({
-  subsets: ["latin"],
+export const jost = localFont({
+  src: [
+    { path: '../public/fonts/jost-400.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/jost-500.woff2', weight: '500', style: 'normal' },
+    { path: '../public/fonts/jost-600.woff2', weight: '600', style: 'normal' },
+    { path: '../public/fonts/jost-700.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-jost',
   display: 'swap',
-  preload: true,
 });

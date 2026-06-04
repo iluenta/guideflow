@@ -70,6 +70,7 @@ h1.lp-title {
 
 /* ─── Main layout: 2 columnas — contenido izq, widget sticky der ────────────── */
 .lp-main { display: grid; grid-template-columns: 1fr 360px; gap: 56px; padding: 48px 0 80px; align-items: start; }
+.lp-widget-sidebar { align-self: stretch; }
 .lp-section { padding: 28px 0; border-bottom: 1px solid var(--rule); }
 .lp-section:last-child { border-bottom: none; }
 .lp-section:first-child { padding-top: 0; }
@@ -213,10 +214,23 @@ h2.lp-section-title { font-size: 24px; font-weight: 700; letter-spacing: -.02em;
 .lp-success p { color: var(--ink-soft); font-size: 14px; line-height: 1.6; max-width: 380px; margin: 0 auto; }
 
 /* ─── Footer ─────────────────────────────────────────────────────────────────── */
-.lp-footer { background: var(--ink); color: rgba(255,255,255,.65); padding: 48px 0 24px; margin-top: 48px; }
-.lp-footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; font-size: 13px; }
-.lp-footer-brand { font-weight: 700; font-size: 16px; color: white; }
-.lp-footer-contact a { color: var(--accent); text-decoration: none; }
+/* ─── Footer ─────────────────────────────────────────────────────────────────── */
+.lp-footer { background: #0f172a; color: rgba(255,255,255,.6); margin-top: 48px; }
+.lp-footer-body { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 48px; padding: 56px 0 40px; }
+.lp-footer-brand { font-weight: 700; font-size: 20px; color: white; margin-bottom: 8px; }
+.lp-footer-tagline { font-size: 13px; line-height: 1.5; margin-bottom: 16px; color: rgba(255,255,255,.5); }
+.lp-footer-reg { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.35); }
+.lp-footer-col-title { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: rgba(255,255,255,.4); margin-bottom: 16px; }
+.lp-footer-nav { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.lp-footer-nav a { color: rgba(255,255,255,.75); text-decoration: none; font-size: 14px; transition: color .15s; }
+.lp-footer-nav a:hover { color: white; }
+.lp-footer-contact-list { display: flex; flex-direction: column; gap: 10px; }
+.lp-footer-contact-list a { color: rgba(255,255,255,.75); text-decoration: none; font-size: 14px; transition: color .15s; }
+.lp-footer-contact-list a:hover { color: white; }
+.lp-footer-wa { display: inline-flex; align-items: center; gap: 6px; }
+.lp-footer-bottom { border-top: 1px solid rgba(255,255,255,.08); padding: 20px 0; display: flex; justify-content: space-between; align-items: center; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.3); }
+.lp-footer-powered { display: inline-flex; align-items: center; gap: 6px; }
+.lp-footer-powered strong { color: rgba(255,255,255,.6); font-weight: 700; }
 
 /* ─── Sticky bottom bar (mobile only, always visible) ────────────────────────── */
 .lp-bottom-bar {
@@ -259,7 +273,8 @@ h2.lp-section-title { font-size: 24px; font-weight: 700; letter-spacing: -.02em;
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
 @media (min-width: 901px) {
-  /* Desktop: hide mobile-only elements */
+  /* Desktop: show widget sidebar, hide mobile-only elements */
+  .lp-widget-sidebar { display: block !important; }
   .lp-bottom-bar { display: none !important; }
   .lp-mobile-sheet { display: none !important; }
 }
@@ -275,15 +290,32 @@ h2.lp-section-title { font-size: 24px; font-weight: 700; letter-spacing: -.02em;
   .lp-rules { grid-template-columns: repeat(2, 1fr); }
   .lp-modal { grid-template-columns: 1fr; }
   .lp-modal-side { display: none; }
-  .lp-cal-popup { min-width: auto; left: -8px; right: -8px; }
+  /* En móvil el popup fluye en el documento (no absolute) para que el sheet
+     con overflow-y:auto pueda hacer scroll y mostrar el segundo mes completo. */
+  .lp-cal-popup {
+    position: static;
+    min-width: auto;
+    border-radius: var(--r-md);
+    margin-top: 8px;
+    box-shadow: none;
+    border: 1px solid var(--rule);
+  }
   .lp-cal-months { grid-template-columns: 1fr; }
   /* Show mobile bottom bar + sheet */
   .lp-bottom-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .lp-mobile-sheet { display: flex; }
   /* Extra bottom padding so footer isn't hidden behind bar */
+  .lp-footer-body { grid-template-columns: 1fr; gap: 32px; padding: 40px 0 32px; }
+  .lp-footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
   .lp-footer { padding-bottom: 80px; }
   /* Prevent body scroll when sheet is open */
   body.lp-sheet-open { overflow: hidden; }
+  /* Calendar footer: stack legend on top, buttons below */
+  .lp-cal-foot { flex-direction: column; align-items: stretch; gap: 12px; }
+  .lp-cal-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+  .lp-cal-foot > div:last-child { display: flex; gap: 8px; }
+  .lp-cal-foot > div:last-child button:first-child { flex: 1; }
+  .lp-cal-foot > div:last-child button:last-child { flex: 2; }
 }
 
 @media (max-width: 640px) {
