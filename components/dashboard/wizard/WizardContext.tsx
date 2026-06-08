@@ -949,6 +949,7 @@ export function WizardProvider({
                         return { ...prev, dining: [...kept, ...rawRecs] };
                     } else {
                         // Modo categoría individual: AÑADIR nuevos, deduplicando por place_id o nombre
+                        // contra TODO prev.dining — un local no debe aparecer repetido en varias secciones
                         const existingIds = new Set(prev.dining.map((r: any) => r.google_place_id).filter(Boolean));
                         const existingNames = new Set(prev.dining.map((r: any) => (r.name || '').toLowerCase().trim()));
                         const newRecs = rawRecs.filter((r: any) => {
@@ -957,6 +958,8 @@ export function WizardProvider({
                             if (existingNames.has(nameKey)) return false;
                             return true;
                         });
+                        console.log(`[WIZARD:${category}] API devolvió ${rawRecs.length}, ya existían ${rawRecs.length - newRecs.length} en otras secciones, nuevos añadidos: ${newRecs.length}`,
+                            { dropped: rawRecs.filter((r: any) => !newRecs.includes(r)).map((r: any) => r.name) });
                         return { ...prev, dining: [...prev.dining, ...newRecs] };
                     }
                 });

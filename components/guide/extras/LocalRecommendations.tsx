@@ -90,7 +90,16 @@ export function LocalRecommendations({
             }
         } as Recommendation
 
-        const existingIdx = recommendations.findIndex(r => r.id === recToSave.id && r.id !== undefined)
+        // Match priority: DB id → Google Place ID → name
+        // AI-generated recs may lack a DB id until the step is saved,
+        // so google_place_id and name are used as fallbacks to prevent duplicates.
+        const existingIdx = recommendations.findIndex(r => {
+            if (recToSave.id && r.id) return r.id === recToSave.id;
+            if (recToSave.google_place_id && r.google_place_id) {
+                return r.google_place_id === recToSave.google_place_id;
+            }
+            return r.name && r.name === recToSave.name;
+        });
 
         if (existingIdx >= 0) {
             const newRecs = [...recommendations]

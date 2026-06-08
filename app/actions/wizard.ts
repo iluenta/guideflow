@@ -117,10 +117,20 @@ export async function saveWizardStep(
             .eq('property_id', currentPropId)
             .eq('tenant_id', currentTenantId)
 
-        // 2. Insertar nuevos
-        if (stepData && stepData.length > 0) {
+        // 2. Insertar nuevos (deduplicados por google_place_id → name)
+        const seenKeys = new Set<string>();
+        const uniqueRecs = (stepData || []).filter((rec: any) => {
+            const key = (rec.google_place_id as string | undefined)?.trim()
+                     || (rec.name as string | undefined)?.toLowerCase().trim()
+                     || null;
+            if (!key || seenKeys.has(key)) return false;
+            seenKeys.add(key);
+            return true;
+        });
+
+        if (uniqueRecs.length > 0) {
             const { error } = await supabase.from('property_recommendations').insert(
-                stepData.map((rec: any) => {
+                uniqueRecs.map((rec: any) => {
                     const metadata = rec.metadata || {};
                     return {
                         property_id: currentPropId,

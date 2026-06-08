@@ -67,10 +67,13 @@ async function detectZoneType(lat: number, lng: number, placesKey: string): Prom
       } catch { /* ignore, fall through to rural */ }
     }
 
-    return { type: 'rural', walkRadius: 6000, driveRadius: 30000, label: 'zona rural', preferCar: true };
+    // ZERO_RESULTS in both 800m and 3km = small town or coastal area with sparse restaurants
+    // (common for beach towns like Vera). Default to 'town' with coastal profile, not 'rural'.
+    logger.debug('[ZONE] ZERO_RESULTS in both checks → defaulting to town_coastal');
+    return { type: 'town', walkRadius: 4000, driveRadius: 15000, label: 'pueblo costero', preferCar: true };
   } catch (e) {
-    logger.warn('[ZONE] Detection failed, defaulting to city:', e);
-    return { type: 'city', walkRadius: 2000, driveRadius: 8000, label: 'ciudad', preferCar: false };
+    logger.warn('[ZONE] Detection failed, defaulting to town_coastal:', e);
+    return { type: 'town', walkRadius: 4000, driveRadius: 15000, label: 'pueblo costero', preferCar: true };
   }
 }
 
@@ -91,29 +94,129 @@ const TODOS_QUOTA: Record<string, { quota: number; placeType: string; keywords: 
   supermercados: { quota: 2, placeType: 'supermarket', keywords: ['supermercado', 'supermarket', 'mercadona', 'consum', 'lidl', 'spar'] },
   restaurantes: { quota: 2, placeType: 'restaurant', keywords: ['restaurante popular', 'cocina local'] },
   desayuno: { quota: 2, placeType: 'cafe', keywords: ['cafetería', 'desayuno', 'brunch'] },
-  tapas: { quota: 2, placeType: 'bar', keywords: ['bar tapas', 'pinchos', 'vinos'] },
-  cultura: { quota: 2, placeType: 'tourist_attraction', keywords: ['monumento', 'museo', 'qué ver'] },
-  naturaleza: { quota: 2, placeType: 'park', keywords: ['parque', 'jardín', 'zona verde'] },
+  tapas: { quota: 2, placeType: 'bar', keywords: ['bar tapas', 'taberna bodega', 'chiringuito', 'tapas raciones'] },
+  cultura: { quota: 2, placeType: 'tourist_attraction', keywords: ['museo', 'castillo monumento', 'qué ver visitar'] },
+  naturaleza: { quota: 2, placeType: 'tourist_attraction', keywords: ['playa', 'sierra montaña', 'parque natural', 'cueva gruta', 'mirador panoramico'] },
   ocio_nocturno: { quota: 2, placeType: 'night_club', keywords: ['bar copas', 'música', 'ocio nocturno'] },
 };
 
 const SINGLE_CAT_MAP: Record<string, { placeType: string; keywords: string[] }> = {
   restaurantes: { placeType: 'restaurant', keywords: ['restaurante', 'cocina local', 'gastronomía'] },
-  italiano: { placeType: 'restaurant', keywords: ['restaurante italiano', 'pizzería'] },
-  mediterraneo: { placeType: 'restaurant', keywords: ['restaurante mediterráneo', 'mariscos'] },
-  hamburguesas: { placeType: 'restaurant', keywords: ['hamburguesería', 'hamburguesas', 'burger gourmet', 'smash burger'] },
-  asiatico: { placeType: 'restaurant', keywords: ['restaurante asiático', 'sushi', 'japonés'] },
+  italiano: { placeType: 'restaurant', keywords: ['restaurante italiano', 'pizzería', 'pizzeria', 'trattoria', 'ristorante'] },
+  // 'mediterraneo': strictly specialised in Mediterranean cuisine — paella, fresh fish,
+  // seafood, chiringuitos. The BEST paella at 60km is worth the trip (destination dining).
+  mediterraneo: { placeType: 'restaurant', keywords: [
+    'paella arroces',          // rice specialists — core of Mediterranean cuisine
+    'marisqueria pescados',    // seafood restaurants
+    'chiringuito playa',       // beach chiringuitos with fresh fish
+    'restaurante mediterraneo', // explicit Mediterranean label
+    'espeto fritura',          // grilled sardines / fried fish — Andalusian coast specialty
+    'mariscos frescos pescado', // fresh seafood — finds port restaurants like Escánez
+  ]},
+  hamburguesas: { placeType: 'restaurant', keywords: [
+    'hamburgueseria',   // hamburguesería (without accent for broader match)
+    'burger',           // catches "Burger House", "Smash Burger", etc.
+    'smash burger',     // artisan smash burgers
+    'grill house',      // grill houses often specialise in burgers
+    'burger gastrobar', // gastro burger variant
+    'hamburguesas gourmet', // gourmet burger variant
+  ]},
+  asiatico: { placeType: 'restaurant', keywords: ['restaurante asiático', 'sushi', 'japonés', 'comida china', 'thai food', 'comida tailandesa', 'vietnamita', 'cocina asiática', 'ramen'] },
   alta_cocina: { placeType: 'restaurant', keywords: ['restaurante gourmet', 'fine dining'] },
   internacional: { placeType: 'restaurant', keywords: ['restaurante mexicano', 'indio', 'árabe'] },
   desayuno: { placeType: 'cafe', keywords: ['cafetería', 'desayuno', 'brunch', 'specialty coffee'] },
   cafe: { placeType: 'cafe', keywords: ['café espresso', 'specialty', 'cafetería'] },
-  tapas: { placeType: 'bar', keywords: ['bar tapas', 'pinchos', 'vinos'] },
+  tapas: { placeType: 'bar', keywords: [
+    'bar tapas',           // classic tapas bar
+    'tapas',               // tapas specialist
+    'taberna',             // traditional tavern
+    'bodega',              // wine bar / traditional bodega
+    'tasca',               // classic Spanish tasca
+    'raciones',            // local raciones bars
+    'bar raciones',        // raciones bar
+    'chiringuito',         // beach bar with tapas (key for coastal areas)
+    'pinchos pintxos',     // Basque-style tapas
+    'raciones mariscos',   // seafood raciones — typical Almería specialty
+    'bar local tradicional', // authentic local bars
+  ]},
   compras: { placeType: 'shopping_mall', keywords: ['centro comercial', 'tiendas moda', 'boutique'] },
   supermercados: { placeType: 'supermarket', keywords: ['supermercado', 'mercadona', 'carrefour', 'lidl'] },
-  cultura: { placeType: 'museum', keywords: ['museo arte', 'monumento histórico', 'qué ver'] },
-  naturaleza: { placeType: 'park', keywords: ['parque', 'jardín', 'naturaleza'] },
-  ocio: { placeType: 'tourist_attraction', keywords: ['ocio', 'entretenimiento', 'actividades'] },
-  relax: { placeType: 'spa', keywords: ['spa', 'wellness', 'masajes', 'yoga'] },
+  cultura: { placeType: 'tourist_attraction', keywords: [
+    'museo',                   // museums of all types
+    'monumento',               // monuments
+    'castillo fortaleza',      // castles, fortresses
+    'patrimonio historico',    // heritage sites
+    'yacimiento arqueologico', // archaeological sites
+    'iglesia catedral',        // churches, cathedrals (when historically significant)
+    'qué ver visitar',         // generic "what to see" — catches local highlights
+  ]},
+  // 'naturaleza': natural wonders a tourist visits for the landscape or geological phenomenon,
+  // whether freely accessible (beach, cape) or via guided visit (geode, cave system).
+  // Geological wonders like La Geoda de Pulpí or Las Cuevas de Sorbas are nature, not ocio —
+  // the tourist goes to SEE a natural phenomenon, not to DO an activity.
+  // 'naturaleza': ALL types of natural spaces — coastal, mountain, inland, desert.
+  // The tourist experience is visiting/contemplating a natural phenomenon,
+  // not doing an activity in it (activities → ocio).
+  // Ski resorts → ocio (you go TO SKI). Sierra Nevada as a mountain → naturaleza.
+  naturaleza: { placeType: 'tourist_attraction', keywords: [
+    // ── Coastal / water ──────────────────────────────────────────────────
+    'playa',                      // beaches
+    'cabo punta cala',            // capes, headlands, coves
+    'salinas laguna lago',        // salt flats, lagoons, lakes
+    'cascada rio nacimiento',     // waterfalls, rivers, springs
+    // ── Mountain / inland ────────────────────────────────────────────────
+    'sierra montaña',             // mountain ranges, peaks
+    'bosque pinar',               // forests, pine woods
+    'desierto badlands',          // desert landscapes (Tabernas, Bardenas)
+    'volcan caldera',             // volcanic landscapes (Canarias, etc.)
+    'embalse pantano',            // reservoirs, lakes
+    'parque nacional natural',    // national and natural parks
+    'reserva natural biosfera',   // nature reserves, biosphere reserves
+    // ── Geological / underground ─────────────────────────────────────────
+    'cueva gruta',                // caves, cave systems
+    'geoda formacion geologica',  // geological wonders
+    // ── Viewpoints / trails ──────────────────────────────────────────────
+    'mirador panoramico',         // scenic viewpoints
+    'senda sendero naturaleza',   // nature trails (non-guided)
+  ]},
+  // 'ocio': split into specific activity types so Google returns real leisure venues.
+  // Generic keywords like "ocio" or "entretenimiento" return town halls, offices and parks.
+  // Each keyword targets a distinct activity cluster:
+  //   - Facilities: bowling, karting, paintball, escape rooms, water parks, theme parks
+  //   - Water experiences: kayak, boat trips, diving, surfing
+  //   - Outdoor experiences: zip line, hiking tours, horse riding
+  // placeType: 'tourist_attraction' is the closest Google type for most of these;
+  // amusement_park covers theme/water parks; we run both via multiple keywords.
+  // ocio keywords are tagged with a tier:
+  //   commodity  → tourist goes to the NEAREST one (bowling, karting, escape room)
+  //                nobody drives 70km to bowl when there's one 15km away
+  //   destination → the SPECIFIC PLACE justifies the trip (boat trip along Cabo de Gata
+  //                calas, Oasys MiniHollywood, kayak in a unique coastal park)
+  // The tier controls distance cap and scoring — see OCIO_COMMODITY_KEYWORDS below.
+  ocio: { placeType: 'tourist_attraction', keywords: [
+    // ── COMMODITY: go to the nearest one ─────────────────────────────────
+    'bolera bowling',                  // bowling
+    'karting',                         // karting
+    'escape room',                     // escape rooms
+    'paintball',                       // paintball
+    'minigolf',                        // mini golf
+    'parque acuatico',                 // water parks (local)
+    'estacion esqui pistas ski',       // ski resorts (nearest to property)
+    // ── DESTINATION: the place itself is the reason for the trip ─────────
+    'parque tematico atracciones',     // unique theme parks (Oasys MiniHollywood)
+    'excursion barco',                 // boat trips along specific coastlines
+    'kayak',                           // kayak in specific natural areas
+    'buceo submarinismo',              // diving in specific spots
+    'surf',                            // surf schools
+    'actividades nauticas acuaticas',  // nautical activity companies
+    'turismo activo aventura',         // adventure tourism
+    'rutas a caballo equitacion',      // horse riding routes
+    'tirolina aventura',               // adventure parks
+  ]},
+  // 'relax': keywords must be specific enough to avoid hotels, hair salons and gyms.
+  // "masajes" alone pulls beauty salons; "spa" alone pulls hotels with spa amenity.
+  // Pairing with "terapeutico/centro/thalasso" forces dedicated wellness establishments.
+  relax: { placeType: 'spa', keywords: ['spa thalasso', 'centro spa', 'masajes terapeuticos', 'hammam baño arabe', 'centro bienestar wellness', 'termas'] },
 };
 
 const ALL_SLUGS = 'restaurantes, italiano, mediterraneo, hamburguesas, asiatico, alta_cocina, internacional, desayuno, cafe, tapas, compras, supermercados, cultura, naturaleza, ocio, relax';
@@ -126,10 +229,12 @@ const ALL_SLUGS = 'restaurantes, italiano, mediterraneo, hamburguesas, asiatico,
 // ═══════════════════════════════════════════════════════════════════════════
 // QUALITY FILTERS
 // ═══════════════════════════════════════════════════════════════════════════
-function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
-  // 1. Fotos obligatorias (señal de lugar documentado) 
-  // Excepto utilidades, cultura y naturaleza (muchos monumentos/parques no traen foto en Nearby Search)
-  const isUtility = ['supermercados', 'compras', 'cultura', 'naturaleza'].includes(catLabel.toLowerCase());
+function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string, forceRelaxed?: boolean): boolean {
+  // 1. Fotos obligatorias (señal de lugar documentado)
+  // Exento: utilidades, cultura, naturaleza (monumentos/parques sin foto son normales)
+  // Exento: ocio (pequeñas empresas locales como Karting Garrucha o VeraSurfing
+  //         raramente tienen fotos en Nearby Search aunque sean negocios legítimos)
+  const isUtility = ['supermercados', 'compras', 'cultura', 'naturaleza', 'ocio'].includes(catLabel.toLowerCase());
   if (!isUtility && (!place.photos || place.photos.length === 0)) return false;
 
   // 2. Umbrales adaptativos por zona y categoría
@@ -139,12 +244,44 @@ function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
   let minReviews: number;
   let minRating: number;
 
-  // IGM handles quality ranking — these are sanity-only thresholds to reject spam/ghost listings
-  minReviews = isNatureOrCulture ? 5 : 10;
-  minRating  = 3.0;
+  // For nature/culture: relax review count requirements since beaches, monuments and parks
+  // often have null or sparse ratings in Google Places.
+  // BUT: if a place has enough reviews to be statistically meaningful (≥50) and still
+  // scores below 3.5★, it's genuinely poor — reject it (e.g. a tourist train with 2.3★).
+  if (!isNatureOrCulture) {
+    // DYNAMIC THRESHOLDS based on zone density
+    if (zone.type === 'metropolis') {
+      // High competition → high bar
+      minReviews = 80;
+      minRating  = 4.2;
+    } else if (zone.type === 'city') {
+      minReviews = 50;
+      minRating  = 4.1;
+    } else if (zone.type === 'town' || zone.type === 'rural') {
+      // Low density → lower bar (fewer locals leave reviews)
+      minReviews = 15;
+      minRating  = 4.0;
+    } else {
+      // Default
+      minReviews = 30;
+      minRating  = 4.1;
+    }
 
-  if ((place.user_ratings_total || 0) < minReviews) return false;
-  if ((place.rating || 0) < minRating) return false;
+    // RESCUE MODE: if few results in niche categories (asiatica, internacional),
+    // relax thresholds to show *something* rather than blank screen
+    if (forceRelaxed && ['asiatica', 'internacional'].includes(cat)) {
+      minReviews = 15;
+      minRating  = 4.0;
+    }
+
+    if ((place.user_ratings_total || 0) < minReviews) return false;
+    if ((place.rating || 0) < minRating) return false;
+  } else {
+    // Nature/culture: only apply rating floor when there's enough evidence
+    const reviewCount = place.user_ratings_total || 0;
+    const rating = place.rating || 0;
+    if (reviewCount >= 50 && rating > 0 && rating < 3.5) return false;
+  }
 
   // 3. Blacklist de tipos genéricos o no experienciales
   const blacklist = [
@@ -159,14 +296,19 @@ function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
     'bank'               
   ];
 
-  // Si solo tiene tipos de la blacklist, descartar
-  // Nota: point_of_interest se permite para cultura/naturaleza porque muchos monumentos solo tienen ese tipo
+  // Si solo tiene tipos de la blacklist, descartar.
+  // point_of_interest: permitido para naturaleza/cultura (monumentos, playas) Y para ocio,
+  // porque la API de Google asigna solo ['point_of_interest','establishment'] a muchos
+  // negocios de actividades legítimos: kartings, escuelas de surf, clubs de buceo, etc.
   const types = place.types || [];
-  const hasRealType = types.some((t: string) => !blacklist.includes(t) && (isNatureOrCulture || t !== 'point_of_interest'));
+  const isOcio = cat === 'ocio';
+  const hasRealType = types.some((t: string) => !blacklist.includes(t) && (isNatureOrCulture || isOcio || t !== 'point_of_interest'));
   if (!hasRealType) return false;
 
   // 4. Distancia mínima para parques/naturaleza (evita jardines del propio edificio)
-  if (isNatureOrCulture && (place.realDistanceMeters || 0) < 150) return false;
+  // Only apply min-distance check when the distance is actually known
+  // (place.realDistanceMeters is undefined when called from addResults before enrichment)
+  if (isNatureOrCulture && place.realDistanceMeters != null && place.realDistanceMeters < 150) return false;
 
   return true;
 }
@@ -176,32 +318,194 @@ function isQualityPlace(place: any, zone: ZoneInfo, catLabel: string): boolean {
 // Key insight: 300 reviews = statistical critical mass for a coastal resort.
 //   <100 reviews → still low evidence; 300+ → high confidence
 
-function scoreIGM(place: any, distanceMeters: number, _zone: ZoneInfo): number {
-  const R = place.rating ?? 0;
-  const N = place.user_ratings_total ?? 0;
+// ── Scoring profiles per category ────────────────────────────────────────────
+// Each profile encodes what a tourist actually cares about in that category.
+//
+//  distNorm   : distance at which the score penalty reaches maximum (meters road-adjusted).
+//               Higher = more tolerant of distant places.
+//  distWeight : how much distance affects the final score (0 = ignore, 1 = only distance).
+//               Cultura/Naturaleza → tourist drives 40min for a castle; proximity irrelevant.
+//               Supermercados → nearest full-stock store wins almost always.
+//  excellenceBonus : whether the rating-excellence bump (4.6–4.8★) applies.
+//               Suppressed for supermarkets (chains are structurally rated lower due to
+//               volume; a 4.2★ Mercadona serves tourists better than a 4.6★ cooperative).
+//  chainBoost : name fragments of known brands that warrant an extra boost.
+//               Only meaningful for supermercados where brand = product range guarantee.
+//
+const SCORE_PROFILES: Record<string, {
+  distNorm: number; distWeight: number; excellenceBonus: boolean; chainBoost?: string[];
+}> = {
+  // ── Utilities: proximity wins, no excellence bias ─────────────────────────
+  supermercados: {
+    distNorm: 6_000, distWeight: 0.50, excellenceBonus: false,
+    chainBoost: ['mercadona', 'consum', 'lidl', 'carrefour', 'aldi', 'eroski', 'dia ', 'suma ', 'hipercor', 'el corte ingles'],
+  },
+  compras: {
+    // Tourists will drive ~15 min for a good market or outlet; quality matters more than proximity.
+    distNorm: 12_000, distWeight: 0.25, excellenceBonus: true,
+  },
+  // ── Food: each category has its own distance logic based on tourist behaviour ──
+  //
+  // DESTINATION food: tourist plans the meal, drives for the experience/quality.
+  // COMMODITY food:   tourist picks the best nearby option, won't drive 30km for it.
+  //
+  alta_cocina: {
+    // Pure destination: a tourist books a fine-dining or Michelin-starred experience
+    // regardless of distance — same logic as a famous museum.
+    // A great restaurant in Carboneras (35km) absolutely beats a mediocre one in Vera.
+    distNorm: 45_000, distWeight: 0.10, excellenceBonus: true,
+  },
+  mediterraneo: {
+    // DESTINATION dining: the best paella or espeto restaurant at 60km is worth the trip.
+    // Same logic as naturaleza — you go for the specific place, not the nearest option.
+    // A chiringuito in Carboneras, the best arroz con bogavante in the province — these
+    // are planned experiences regardless of distance.
+    distNorm: 45_000, distWeight: 0.10, excellenceBonus: true,
+  },
+  restaurantes: {
+    // Quality-driven: tourists on holiday choose the best available, will drive 25-30km.
+    // A great restaurant in a nearby town beats a mediocre one next door.
+    distNorm: 25_000, distWeight: 0.15, excellenceBonus: true,
+  },
+  tapas: {
+    // Commodity-local: tourists pick the best tapas bar within walking distance.
+    // Nobody drives 15-20km for tapas when there's a good bar nearby.
+    // distNorm=5km, distWeight=0.40: proximity is critical, but quality still matters.
+    distNorm: 5_000, distWeight: 0.40, excellenceBonus: false,
+  },
+  asiatico: {
+    // A good Asian restaurant (sushi, Thai) in a nearby city may justify 25km.
+    // Less destination than alta_cocina but more than pizza — a specific cuisine
+    // that tourists may actively seek out.
+    distNorm: 20_000, distWeight: 0.20, excellenceBonus: true,
+  },
+  internacional: {
+    // Commodity-ish: Mexican, Indian, Arab — tourists pick the nearest decent option.
+    distNorm: 15_000, distWeight: 0.25, excellenceBonus: true,
+  },
+  italiano: {
+    // Semi-commodity: a good gourmet pizza or tratoria can justify 8km.
+    // distNorm=8km, distWeight=0.30: moderate distance penalty, quality still matters.
+    distNorm: 8_000, distWeight: 0.30, excellenceBonus: true,
+  },
+  hamburguesas: {
+    // Pure commodity: tourists want the best burger within walking distance or quick drive.
+    // distNorm=4km, distWeight=0.50: proximity wins. A 4.6★ burger 12km away loses to 4.3★ at 800m.
+    distNorm: 4_000, distWeight: 0.50, excellenceBonus: false,
+  },
+  desayuno: {
+    // Commodity: morning coffee/breakfast — tourists want something close.
+    // A nice terrace café 5km away is fine; 20km is too far for breakfast.
+    distNorm: 10_000, distWeight: 0.30, excellenceBonus: true,
+  },
+  cafe: {
+    distNorm: 10_000, distWeight: 0.30, excellenceBonus: true,
+  },
+  ocio_nocturno: {
+    // Tourists need to get home safely — distance matters most of all food categories.
+    distNorm: 8_000, distWeight: 0.35, excellenceBonus: true,
+  },
+  // ── Experiential: quality/fame dominates, tourists drive for these ─────────
+  cultura: {
+    // Everything that survives the cultura filters (museums, castles, monuments) IS a
+    // destination — tourists drive 60min for a famous castle regardless of distance.
+    // distWeight=0.08: fame/reviews (N_CRITICAL=500) dominate; minor plaques with few
+    // reviews naturally score low even if they're nearby.
+    // distNorm=40km: gentle curve — a famous landmark at 35km barely loses to one at 5km.
+    distNorm: 40_000, distWeight: 0.08, excellenceBonus: true,
+  },
+  naturaleza: {
+    // All surviving naturaleza is destination: beaches, caves, geological wonders, capes.
+    // Nobody picks the nearest beach over Playa de los Muertos (40km, 5★).
+    // distWeight=0.10: quality/spectacle wins; distance barely penalizes.
+    // distNorm=45km: Playa de los Muertos (40km), Cala de Enmedio (45km) stay competitive.
+    distNorm: 45_000, distWeight: 0.10, excellenceBonus: true,
+  },
+  ocio: {
+    // Destination experiences: the specific place justifies the trip.
+    // Boat trips along Cabo de Gata, kayak in unique calas, Oasys MiniHollywood.
+    // Quality/uniqueness wins; distance is secondary (distWeight=0.12).
+    distNorm: 40_000, distWeight: 0.12, excellenceBonus: true,
+  },
+  ocio_commodity: {
+    // Commodity leisure: bowling, karting, escape room, paintball, minigolf.
+    // Tourist goes to the NEAREST acceptable option — same logic as supermercados.
+    // distWeight=0.50, distNorm=20km: Karting Garrucha at 8km beats Bowling Lorca at 46km.
+    distNorm: 20_000, distWeight: 0.50, excellenceBonus: false,
+  },
+  relax: {
+    // Spa/wellness is closer to commodity than destination: you go to the best nearby one,
+    // not to a specific spa 60km away. BUT a good hammam or thalasso at 25km is worth it.
+    // distNorm=25km: clear penalty beyond 25km. distWeight=0.25: proximity matters
+    // but quality still wins between comparable options (4.5★ spa 20km > 3.8★ spa 2km).
+    distNorm: 25_000, distWeight: 0.25, excellenceBonus: true,
+  },
+};
 
-  // N_CRITICAL: reviews needed for full confidence in a tourist destination
-  const N_CRITICAL = 300;
+const DEFAULT_PROFILE: { distNorm: number; distWeight: number; excellenceBonus: boolean; chainBoost?: string[] } = {
+  distNorm: 12_000, distWeight: 0.20, excellenceBonus: true
+};
 
-  // Bayesian-corrected rating (weight=100 — stricter than the default 50)
-  // Pulls low-sample ratings toward the global mean (4.2) more aggressively
-  const Rc = (N * R + 100 * 4.2) / (N + 100);
+// ── Scoring formula ──────────────────────────────────────────────────────────
+// Score = (Rating × 0.7) + (min(1, reviews/500) × 1.5) × distance_modifier
+//
+// Base score range: 0–5
+//   Rating contributes 70%  → max 3.5 (at 5★)
+//   Volume contributes 30%  → max 1.5 (at ≥500 reviews), capped to avoid
+//                             high-volume chains crushing good local restaurants
+//
+// Distance modifier: per-category profile (distNorm + distWeight).
+//   Each category defines how much distance penalizes the score.
+//   supermercados: 50% weight (proximity wins)
+//   alta_cocina:   10% weight (quality wins, distance barely penalizes)
+//
+// Chain boost (supermercados only): +0.5 for known full-stock chains (Mercadona,
+//   Consum, Lidl...) to offset the structural rating disadvantage of large chains.
+function scoreSimple(place: any, distanceMeters: number, catLabel?: string): number {
+  const rating = place.rating ?? 0;
+  const reviews = place.user_ratings_total ?? 0;
 
-  // Confidence factor F = min(1, N / 300)
-  // 88 reviews → F=0.29  |  300 reviews → F=1.0  |  1000 reviews → F=1.0
-  const F = Math.min(1, N / N_CRITICAL);
+  // Base score: rating-led, with review volume as a minor confidence bonus
+  // (capped at 500 reviews, scaled 0–0.5). A 4.5★ spot with few reviews should
+  // still be able to outrank a 4.3★ spot that simply has more volume — a high
+  // rating with modest reviews is a strong signal, not noise to be discounted.
+  const baseScore = (rating * 1.0) + (Math.min(1, reviews / 500) * 0.5);
 
-  // Excellence bonus — more granular than before, rewards sustained high ratings
-  const B = R >= 4.8 ? 0.30 : R >= 4.7 ? 0.20 : R >= 4.6 ? 0.10 : R >= 4.5 ? 0.05 : 0;
+  const profile = (catLabel && SCORE_PROFILES[catLabel]) ? SCORE_PROFILES[catLabel] : DEFAULT_PROFILE;
 
-  // IGM 2.0: Rc weighted by confidence, bonus added separately
-  const igm = Rc * (0.6 + 0.4 * F) + B;
+  // Chain boost for supermercados only
+  const chainBoost = profile.chainBoost?.some(c => (place.name || '').toLowerCase().includes(c)) ? 0.50 : 0;
 
-  // Distance modifier (20% weight) — closer is better among equal-IGM places
   const roadMeters = distanceMeters * 1.4;
-  const distScore = Math.max(0, 1 - roadMeters / 12_000);
+  const distScore = Math.max(0, 1 - roadMeters / profile.distNorm);
 
-  return igm * (0.8 + 0.2 * distScore);
+  return (baseScore + chainBoost) * (1 - profile.distWeight + profile.distWeight * distScore);
+}
+
+// ── Google Places (New) API — response normalizer ─────────────────────────────
+// Text Search (New) returns a different field schema than the legacy Nearby Search.
+// This adapter converts the new format to the shape our downstream code expects,
+// so all filters, scoring and Gemini context building work unchanged.
+function normalizeTextSearchResult(place: any): any {
+  return {
+    place_id:           place.id ?? '',
+    name:               place.displayName?.text ?? '',
+    vicinity:           place.shortFormattedAddress ?? place.formattedAddress ?? '',
+    formatted_address:  place.formattedAddress ?? '',
+    geometry: {
+      location: {
+        lat: place.location?.latitude  ?? null,
+        lng: place.location?.longitude ?? null,
+      }
+    },
+    rating:              place.rating ?? null,
+    user_ratings_total:  place.userRatingCount ?? 0,
+    types:               place.types ?? [],
+    photos:              place.photos ?? [],
+    opening_hours: place.currentOpeningHours
+      ? { open_now: place.currentOpeningHours.openNow }
+      : undefined,
+  };
 }
 
 // ── UTILS ───────────────────────────────────────────────────────────────────
@@ -256,6 +560,11 @@ async function searchWithFallback(params: {
   const seenIds = new Set<string>();
   const excludeSet = new Set(excludeNames.map(n => n.toLowerCase().trim()));
 
+  // RESCUE MODE: Niche cuisines in rural areas often have few options.
+  // We'll enable relaxed quality thresholds for asiatica/internacional to avoid blank screens.
+  const isNicheCuisine = ['asiatica', 'internacional'].includes(catLabel.toLowerCase());
+  const allowRelaxedQuality = isNicheCuisine;
+
   const addResults = (results: any[], extra: object = {}) => {
     for (const r of results) {
       if (seenIds.has(r.place_id)) continue;
@@ -273,15 +582,97 @@ async function searchWithFallback(params: {
 
       const isUtility = ['supermercados', 'compras'].includes(catLabel);
       const realDistance = formatDistance(realDistanceMeters, zone.preferCar, isUtility);
-      const isEssential = ['desayuno', 'restaurantes', 'tapas'].includes(catLabel);
-      const catLimit = isUtility ? 5000 : isEssential ? 1500 : 2500;
+      // ── Distance filtering moved to final ranking (distanceLimit per category) ──
+      // Don't prematurely reject here. Let quality/scoring gates work first.
 
-      if (realDistanceMeters > catLimit && !zone.preferCar) {
-        logger.debug(`[FILTER:${catLabel}] SKIP_DIST "${r.name}" ${Math.round(realDistanceMeters)}m > ${catLimit}m`);
-        continue;
+      // ── CATEGORY-SPECIFIC TAGGING — KEYWORD-BASED ONLY ────────────────────────
+      // Text Search classified places semantically. We trust that completely.
+      // We ONLY use Google types to filter structurally wrong places (nightclub vs food).
+      // We NEVER analyze place names. We tag ONLY for Gemini balance (which keyword found this).
+
+      if (catLabel === 'naturaleza') {
+        const types = (r.types || []) as string[];
+        const NON = new Set(['amusement_park', 'bowling_alley', 'lodging', 'restaurant', 'cafe', 'bar', 'store', 'supermarket', 'shopping_mall', 'gym', 'spa']);
+        if (types.some(t => NON.has(t))) {
+          logger.debug(`[FILTER:naturaleza] SKIP_STRUCTURE "${r.name}"`);
+          continue;
+        }
       }
 
-      if (!isQualityPlace(r, zone, catLabel)) {
+      if (catLabel === 'relax') {
+        const types = (r.types || []) as string[];
+        const WELLNESS = new Set(['spa', 'beauty_salon', 'health', 'physiotherapist']);
+        if (!types.some(t => WELLNESS.has(t))) {
+          logger.debug(`[FILTER:relax] SKIP_NOT_WELLNESS "${r.name}"`);
+          continue;
+        }
+      }
+
+      if (catLabel === 'ocio') {
+        const types = (r.types || []) as string[];
+        const LEISURE = new Set(['amusement_park', 'bowling_alley', 'aquarium', 'zoo', 'campground', 'tourist_attraction', 'point_of_interest']);
+        if (!types.some(t => LEISURE.has(t)) && !types.some(t => ['restaurant', 'bar', 'cafe', 'food'].includes(t))) {
+          logger.debug(`[FILTER:ocio] SKIP_NOT_LEISURE "${r.name}"`);
+          continue;
+        }
+        const sk = ((extra as any).searchKeyword || '').toLowerCase();
+        (r as any).gfActivityTier = OCIO_COMMODITY_KEYWORDS.has(sk) ? 'commodity' : 'destination';
+      }
+
+      if (catLabel === 'mediterraneo') {
+        const types = (r.types || []) as string[];
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // FILTRADO ESTRICTO POR CATEGORÍA PRINCIPAL
+        // Google ordena los types por relevancia. El primero (index 0) es el negocio real.
+        // ═══════════════════════════════════════════════════════════════════════════
+        const primaryType = types[0] || '';
+
+        // Lista negra: si el negocio es principalmente una tienda, RECHAZAR inmediatamente
+        const BLACKLISTED_PRIMARY_TYPES = [
+          'food_store',
+          'grocery_or_supermarket',
+          'store',
+          'market',
+          'wholesaler',
+          'establishment'
+        ];
+
+        if (BLACKLISTED_PRIMARY_TYPES.includes(primaryType)) {
+          logger.debug(`[FILTER:mediterraneo] SKIP_STORE "${r.name}" (primary type: ${primaryType})`);
+          continue;
+        }
+
+        // Comprobación obligatoria: debe ser restaurante, bar, o café
+        const isRealFoodService = types.includes('restaurant') || types.includes('bar') || types.includes('cafe');
+
+        if (!isRealFoodService) {
+          logger.debug(`[FILTER:mediterraneo] SKIP_NOT_FOOD "${r.name}" types=[${types.slice(0,2).join(',')}]`);
+          continue;
+        }
+
+        // Clasificación de subcategoría: usa el keyword de búsqueda que lo encontró Y el nombre del lugar
+        const sk = ((extra as any).searchKeyword || '').toLowerCase();
+        const nameLower = (r.name || '').toLowerCase();
+        (r as any).gfMedSubcat = (sk.includes('chiringuito') || nameLower.includes('chiringuito')) ? 'chiringuito' : 'restaurant';
+      }
+
+      if (catLabel === 'italiano') {
+        const sk = ((extra as any).searchKeyword || '').toLowerCase();
+        const nameLower = (r.name || '').toLowerCase();
+        (r as any).gfItalianoSubcat = (sk.includes('pizz') || sk.includes('pizza') || nameLower.includes('pizz') || nameLower.includes('pizza')) ? 'pizza' : 'italian';
+      }
+
+      if (catLabel === 'tapas') {
+        const sk = ((extra as any).searchKeyword || '').toLowerCase();
+        const nameLower = (r.name || '').toLowerCase();
+        const isSpecialistByNameOrKeyword = ['tapas', 'pintxos', 'taberna', 'bodega', 'chiringuito', 'tasca'].some(kw => 
+          sk.includes(kw) || nameLower.includes(kw)
+        );
+        (r as any).gfTapasSpecialist = isSpecialistByNameOrKeyword;
+      }
+
+      if (!isQualityPlace(r, zone, catLabel, allowRelaxedQuality)) {
         logger.debug(`[FILTER:${catLabel}] REJECT "${r.name}" quality check failed`);
         continue;
       }
@@ -306,7 +697,31 @@ async function searchWithFallback(params: {
 
       logger.debug(`[FILTER:${catLabel}] PASS "${r.name}" rating=${r.rating} dist=${Math.round(realDistanceMeters)}m`);
 
-      collected.push({ ...r, gfCategory: catLabel, realDistanceMeters, realDistance, ...extra });
+      // Tag ocio places with their tier based on which keyword found them
+      const gfActivityTier = (catLabel === 'ocio' && (extra as any).searchKeyword)
+        ? (OCIO_COMMODITY_KEYWORDS.has((extra as any).searchKeyword) ? 'commodity' : 'destination')
+        : undefined;
+
+      const catForScore = (catLabel === 'ocio' && gfActivityTier === 'commodity') ? 'ocio_commodity' : catLabel;
+      const score = scoreSimple(r, realDistanceMeters, catForScore);
+
+      // Collect all subcategory tags that were assigned in category-specific blocks
+      const subCategoryTags = {
+        gfMedSubcat: (r as any).gfMedSubcat,
+        gfItalianoSubcat: (r as any).gfItalianoSubcat,
+        gfTapasSpecialist: (r as any).gfTapasSpecialist,
+      };
+
+      collected.push({
+        ...r,
+        gfCategory: catLabel,
+        realDistanceMeters,
+        realDistance,
+        gfActivityTier,
+        score,
+        ...subCategoryTags,
+        ...extra
+      });
     }
   };
 
@@ -314,79 +729,156 @@ async function searchWithFallback(params: {
   // Para el resto, parar en cuanto hay suficientes resultados (optimización de coste)
   const exhaustAllKeywords = ['supermercados', 'compras'].includes(catLabel);
 
+  // Ocio tier: commodity activities (bowling, karting, escape room...) → nearest wins.
+  // Destination activities (boat trips, kayak, unique parks) → quality/uniqueness wins.
+  const OCIO_COMMODITY_KEYWORDS = new Set([
+    // Activities where you go to the nearest acceptable option
+    'bolera bowling', 'karting', 'escape room', 'paintball', 'minigolf', 'parque acuatico',
+    // Ski: you go to the nearest/best resort, not to a specific slope 200km away
+    // (unless it's THE famous resort of the region, which scoring will surface naturally)
+    'estacion esqui', 'pistas de ski', 'esqui ski',
+  ]);
+
+  // ── Google Places Text Search (New API) ──────────────────────────────────────
+  // Uses semantic matching: searches name + reviews + editorial descriptions.
+  // This finds "Restaurante Lua Puerto Rey" as Mediterranean because its reviews
+  // mention "arroces", "pescado fresco" — even though its name doesn't say so.
+  //
+  // locationRestriction = strict radius (commodity: burger, pizza, supermarket)
+  // locationBias        = soft bias (destination: Mediterranean, naturaleza, ocio)
+  //                       Allows results beyond the radius when highly relevant.
+  //
+  // Per-category radius matches our distanceLimit caps so irrelevant distant
+  // results are filtered before they even reach addResults.
+  const SEARCH_RADIUS_BY_CAT: Record<string, number> = {
+    // Commodity food — proximity wins, strict radius
+    supermercados:  15_000,
+    hamburguesas:   15_000,
+    desayuno:       12_000,
+    cafe:           12_000,
+    ocio_nocturno:   8_000,
+    italiano:       18_000,
+    internacional:  20_000,
+    compras:        20_000,
+    // Quality food — willing to drive, soft bias
+    tapas:          25_000,
+    asiatico:       25_000,
+    restaurantes:   30_000,
+    relax:          30_000,
+    // Destination food/experience — quality dominates, wide soft bias
+    alta_cocina:    50_000,
+    mediterraneo:   65_000,
+    cultura:        40_000,
+    naturaleza:     50_000,
+    ocio:           50_000,
+  };
+  // Text Search (New) API hard cap: 50,000m. Categories with larger distanceLimits
+  // (mediterraneo 65km, ocio_commodity 25km override) rely on our post-search filters.
+  const searchRadius = Math.min(SEARCH_RADIUS_BY_CAT[catLabel] ?? 20_000, 50_000);
+
+  // Note: Places API (New) searchText only allows a `circle` shape inside `locationBias` —
+  // `locationRestriction` requires a `rectangle` (viewport). The hard distanceLimit filter
+  // below (line ~837) already enforces strict proximity downstream, so locationBias is safe here.
+  const locationKey = 'locationBias';
+
+  const TEXT_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
+  const TEXT_SEARCH_FIELD_MASK = [
+    'places.id', 'places.displayName', 'places.location',
+    'places.rating', 'places.userRatingCount', 'places.types',
+    'places.photos', 'places.formattedAddress', 'places.shortFormattedAddress',
+  ].join(',');
+
   for (const keyword of keywords) {
     if (!exhaustAllKeywords && collected.length >= neededCount * 2) break;
 
-    // Nearby - radio andando
-    const isDistanceRank = rankMode === 'distance';
-    const walkUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
-      `?location=${lat},${lng}` +
-      (isDistanceRank ? `&rankby=distance` : `&radius=${zone.walkRadius}`) +
-      `&type=${placeType}&keyword=${encodeURIComponent(keyword)}&language=es&key=${placesKey}`;
-    const walkData = await fetch(walkUrl).then(r => r.json());
-    if (walkData.status !== 'OK' && walkData.status !== 'ZERO_RESULTS') {
-      logger.error(`[PLACES] ❌ Error Nearby(Walk) para "${keyword}": ${walkData.status} - ${walkData.error_message || 'N/A'}`);
-    }
-    logger.debug(`[PLACES] Keyword "${keyword}" (Walk) found ${walkData.results?.length ?? 0} results`);
-    addResults(walkData.results || [], { searchKeyword: keyword, radiusType: isDistanceRank ? 'distance-rank' : 'walk' });
+    // Build a natural language query: keyword + city for geographic context
+    const textQuery = cityName ? `${keyword} ${cityName}` : keyword;
 
-    // Si ya tenemos suficiente con el radio walk, no hacemos mas llamadas (salvo exhaustAllKeywords)
-    if (!exhaustAllKeywords && collected.length >= neededCount) break;
+    const requestBody = {
+      textQuery,
+      [locationKey]: {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius: searchRadius,
+        }
+      },
+      maxResultCount: 20,
+      languageCode: 'es',
+    };
 
-    // Nearby - radio coche si no tenemos suficiente
-    if (zone.driveRadius > zone.walkRadius) {
-      const driveUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
-        `?location=${lat},${lng}&radius=${zone.driveRadius}` +
-        `&type=${placeType}&keyword=${encodeURIComponent(keyword)}&language=es&key=${placesKey}`;
-      const driveData = await fetch(driveUrl).then(r => r.json());
-      if (driveData.status !== 'OK' && driveData.status !== 'ZERO_RESULTS') {
-        logger.error(`[PLACES] ❌ Error Nearby(Drive) para "${keyword}": ${driveData.status} - ${driveData.error_message || 'N/A'}`);
+    try {
+      const res = await fetch(TEXT_SEARCH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': placesKey,
+          'X-Goog-FieldMask': TEXT_SEARCH_FIELD_MASK,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        logger.error(`[PLACES] ❌ TextSearch "${keyword}": ${data.error.status} — ${data.error.message}`);
+        continue;
       }
-      addResults(driveData.results || [], { searchKeyword: keyword, radiusType: 'drive' });
-    }
 
-    // TextSearch - solo si absolutamente vacio tras todas las keywords
-    if (collected.length === 0 && keyword === keywords[keywords.length - 1]) {
-      const textQuery = neighborhood 
-        ? `${keyword} en ${neighborhood}, ${cityName}`
-        : `${keyword} en ${cityName}`;
-      const textUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json` +
-        `?query=${encodeURIComponent(textQuery)}&location=${lat},${lng}` +
-        `&radius=${zone.driveRadius}&language=es&key=${placesKey}`;
-      const textData = await fetch(textUrl).then(r => r.json());
-      addResults(textData.results || [], { searchKeyword: keyword, radiusType: 'textsearch' });
+      const normalized = (data.places || []).map(normalizeTextSearchResult);
+      logger.debug(`[PLACES] Keyword "${keyword}" found ${normalized.length} results`);
+      addResults(normalized, { searchKeyword: keyword, radiusType: 'textsearch_new' });
+
+    } catch (err) {
+      logger.error(`[PLACES] ❌ TextSearch fetch error for "${keyword}":`, err);
     }
   }
 
-  // Priorizar los mas cercanos y filtrar por un radio útil
-  // Naturaleza/cultura: siempre limitar a distancia peatonal/ciclable (máx 4km)
-  // Comida/ocio: máximo 12km aunque la zona sea rural — nadie quiere un restaurante a 73 min en coche
-  const isNatureOrCultureCat = ['naturaleza', 'cultura'].includes(catLabel.toLowerCase());
-  const isUtilityCat = ['supermercados', 'compras'].includes(catLabel.toLowerCase());
-  const MAX_FOOD_DISTANCE = 12000; // 12km — ~15-20 min en coche, razonable para cenas
-  const distanceLimit = isNatureOrCultureCat
-    ? Math.min(zone.walkRadius, 4000)
-    : isUtilityCat
-      ? (zone.preferCar ? zone.driveRadius : Math.min(zone.driveRadius, 5000))
-      : zone.preferCar
-        ? Math.min(zone.driveRadius, MAX_FOOD_DISTANCE)   // cap para town/rural
-        : Math.min(zone.walkRadius, 2000);
-
-  // IGM minimum threshold: only candidates with enough statistical confidence reach Gemini.
-  // This prevents high-rated-but-few-reviews places (e.g. 4.8★ / 88 reviews) from being
-  // selected by Gemini which uses raw rating, not IGM.
-  // Threshold 3.5 requires roughly: city zone → ~100 reviews at 4.5★ OR ~200 reviews at 4.2★
-  // IGM 2.0 threshold: ~150 reviews at 4.5★ OR ~300 reviews at 4.2★ needed to pass
-  const IGM_MIN_THRESHOLD = 3.8;
-  const isUtilityOrNature = ['supermercados', 'compras', 'cultura', 'naturaleza'].includes(catLabel.toLowerCase());
+  // ── Distance cap per category (final hard filter before scoring) ──────────
+  // Each cap reflects the maximum useful radius for a tourist in that category.
+  // Scoring profiles already penalize far places; this cap prevents absurd outliers
+  // (e.g. a beach 80km away ranking above a local park).
+  const cat = catLabel.toLowerCase();
+  const distanceLimit = (() => {
+    if (cat === 'supermercados') return zone.preferCar ? Math.min(zone.driveRadius, 15_000) : 5_000;
+    if (cat === 'compras')       return 20_000;  // tourists drive for markets/outlets
+    if (cat === 'cultura')       return 40_000;  // museum or castle up to ~40 min drive
+    if (cat === 'naturaleza')    return 45_000;  // geological wonders/caves can be 35-40km away (Cuevas de Sorbas, Geoda de Pulpí)
+    if (cat === 'ocio') {
+      // Commodity (bowling, karting, escape room): 25km max — nobody drives 70km to bowl
+      // Destination (boat trips, kayak, unique parks): 65km — the specific place justifies it
+      // Applied per-place after scoring using gfActivityTier tag
+      return 65_000; // hard cap; per-place commodity cap applied in post-filter below
+    }
+    if (cat === 'relax')         return 30_000;
+    // ── Food: per-category distance caps reflecting tourist behaviour ────────────
+    if (cat === 'alta_cocina')   return 50_000;  // destination dining — worth the full drive
+    if (cat === 'mediterraneo')  return 65_000;  // destination: best paella at 60km is worth the trip
+    if (cat === 'restaurantes')  return 30_000;  // quality destination, willing to drive
+    if (cat === 'tapas')         return 25_000;  // historic village bars worth 20-25km
+    if (cat === 'asiatico')      return 25_000;  // specific cuisine, moderate drive
+    if (cat === 'internacional') return 20_000;  // commodity-ish
+    if (cat === 'italiano')      return 18_000;  // nearest good pizza
+    if (cat === 'hamburguesas')  return 15_000;  // pure commodity
+    if (['desayuno','cafe'].includes(cat)) {
+      return zone.preferCar ? 12_000 : Math.min(zone.walkRadius, 2_000);
+    }
+    if (cat === 'ocio_nocturno') {
+      return zone.preferCar ? Math.min(zone.driveRadius, 8_000) : Math.min(zone.walkRadius, 2_000);
+    }
+    return zone.preferCar ? zone.driveRadius : Math.min(zone.walkRadius, 2_000);
+  })();
 
   const finalResult = collected
-    .filter(r => r.realDistanceMeters != null && r.realDistanceMeters <= distanceLimit)
-    .filter(r => isUtilityOrNature || scoreIGM(r, r.realDistanceMeters ?? 9999, zone) >= IGM_MIN_THRESHOLD)
-    .sort((a, b) => scoreIGM(b, b.realDistanceMeters ?? 9999, zone) - scoreIGM(a, a.realDistanceMeters ?? 9999, zone))
+    .filter(r => {
+      if (r.realDistanceMeters == null) return false;
+      // Ocio commodity (bowling, karting...): hard cap 25km — nobody drives 70km to bowl
+      if (cat === 'ocio' && r.gfActivityTier === 'commodity' && r.realDistanceMeters > 25_000) return false;
+      return r.realDistanceMeters <= distanceLimit;
+    })
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
     .slice(0, neededCount * 2);
 
-  logger.warn(`[SCORED:${catLabel}] top${finalResult.length}: ${finalResult.slice(0, 5).map((r: any) => `"${r.name}"(${Math.round(r.realDistanceMeters)}m,${r.rating}★,${r.user_ratings_total}rev,IGM=${scoreIGM(r, r.realDistanceMeters, zone).toFixed(3)})`).join(' | ')}`);
+  logger.warn(`[SCORED:${catLabel}] top${finalResult.length}: ${finalResult.slice(0, 5).map((r: any) => `"${r.name}"(${Math.round(r.realDistanceMeters)}m,${r.rating}★,${r.user_ratings_total}rev,Score=${scoreSimple(r, r.realDistanceMeters, catLabel).toFixed(3)})`).join(' | ')}`);
 
   return finalResult;
 }
@@ -668,6 +1160,10 @@ export async function POST(req: Request) {
         ? Object.values(TODOS_QUOTA).reduce((s, c) => s + c.quota, 0)
         : 6;
 
+      // Track place_ids already assigned to a category to avoid cross-category duplicates
+      // (e.g. "OH LA LA" appearing in both desayuno and ocio_nocturno → dedup kills 1 slot)
+      const selectedAcrossCategories = new Set<string>();
+
       const placesContext = isTodos
         ? Object.entries(groupedPlaces)
           .map(([cat, places]) => {
@@ -675,8 +1171,25 @@ export async function POST(req: Request) {
             if (!places.length) {
               return `[${cat.toUpperCase()}]: Sin resultados de Google. NO incluyas ningún sitio de esta categoría.`;
             }
-            // Pasar exactamente quota candidatos — ya elegidos por el scorer, Gemini solo genera descripción
-            const selected = places.slice(0, quota);
+            // Select quota places that haven't been used in a prior category
+            const selected: any[] = [];
+            for (const place of places) {
+              if (selected.length >= quota) break;
+              if (!selectedAcrossCategories.has(place.place_id)) {
+                selected.push(place);
+                selectedAcrossCategories.add(place.place_id);
+              }
+            }
+            // Fallback: if not enough unique places, fill from remaining (allows dup as last resort)
+            if (selected.length < quota) {
+              for (const place of places) {
+                if (selected.length >= quota) break;
+                if (!selected.some((s: any) => s.place_id === place.place_id)) {
+                  selected.push(place);
+                  selectedAcrossCategories.add(place.place_id);
+                }
+              }
+            }
             logger.warn(`[GEMINI_SENDS:${cat}] ${selected.map((r: any) => `"${r.name}"(${Math.round(r.realDistanceMeters)}m)`).join(', ')}`);
             const lines = selected.map((r: any) =>
               `  - ${r.name} (${r.vicinity ?? r.formatted_address ?? ''}) | Rating: ${r.rating ?? 'N/A'} | ${r.realDistance ?? 'desconocida'} | ID: ${r.place_id} | Tipos: ${(r.types || []).slice(0, 3).join(',')} | Abierto ahora: ${r.opening_hours?.open_now ?? 'desconocido'}`
@@ -685,11 +1198,90 @@ export async function POST(req: Request) {
           })
           .join('\n\n')
         // For single-category: send ALL candidates so Gemini can pick the
-        // category-relevant ones (e.g. only burger joints from a mixed list).
-        // Slicing to 18 by general score loses niche places (few reviews but on-category).
-        : allPlacesResults.map(r =>
-          `- ${r.name} (${r.vicinity ?? r.formatted_address ?? ''}) | Rating: ${r.rating ?? 'N/A'} | ${r.realDistance ?? 'desconocida'} | ID: ${r.place_id} | Tipos: ${(r.types || []).slice(0, 3).join(',')} | Abierto ahora: ${r.opening_hours?.open_now ?? 'desconocido'}`
-      ).join('\n');
+        // Single-category: pre-select the top numRequested*2 by IGM (already sorted).
+        // For 'italiano': balance pizza vs italian-restaurant subcategories so Gemini
+        // doesn't receive 12 pizzerias and return 6 pizza-only recommendations.
+        : (() => {
+            let preSelected: any[];
+
+            if (selectedCat === 'mediterraneo') {
+              // CORRECCIÓN: ORDENACIÓN MATEMÁTICA INAPELABLE Y CONTROL DE CALIDAD
+              // 1. Ordenar estrictamente por Score (el algoritmo técnico determina la prioridad)
+              const sortedByScore = [...allPlacesResults]
+                .sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0));
+
+              // 2. Balance de subcategorías MANTENIENDO la calidad: tomar mejores de cada tipo de todo el pool
+              const chiringuitos = sortedByScore.filter((r: any) => r.gfMedSubcat === 'chiringuito');
+              const restaurants  = sortedByScore.filter((r: any) => r.gfMedSubcat !== 'chiringuito');
+
+              // Split slots: prefer 5 best chiringuitos + 7 best restaurants
+              const targetTotal = numRequested * 2;
+              const targetChiring = 5;
+              const targetRest = 7;
+
+              const selectedChiring = chiringuitos.slice(0, targetChiring);
+              const selectedRest = restaurants.slice(0, targetRest);
+
+              let finalSelection = [...selectedChiring, ...selectedRest];
+
+              // Si falta de alguna de las categorías, rellenamos con la otra para alcanzar el target
+              if (finalSelection.length < Math.min(targetTotal, sortedByScore.length)) {
+                if (selectedChiring.length < chiringuitos.length && finalSelection.length < targetTotal) {
+                  const remainingChiring = chiringuitos.slice(targetChiring);
+                  const needed = targetTotal - finalSelection.length;
+                  finalSelection.push(...remainingChiring.slice(0, needed));
+                }
+                if (selectedRest.length < restaurants.length && finalSelection.length < targetTotal) {
+                  const remainingRest = restaurants.slice(targetRest);
+                  const needed = targetTotal - finalSelection.length;
+                  finalSelection.push(...remainingRest.slice(0, needed));
+                }
+              }
+
+              // Re-order by technical merit (Score descending)
+              preSelected = finalSelection.sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0));
+
+              logger.debug(`[MEDITERRANEO_BALANCE] ${selectedChiring.length} chiringuito + ${selectedRest.length} restaurant (filled to ${preSelected.length}) → candidates (sorted by Score)`);
+
+            } else if (selectedCat === 'tapas') {
+              // Prioritise tapas specialists (taberna, bodega, chiringuito, etc.)
+              // but include high-quality generic bars too — "Bar Pepe" can be the best
+              // tapas bar in town. Strategy: fill first half with specialists, rest with top IGM.
+              const specialists = allPlacesResults.filter((r: any) => r.gfTapasSpecialist);
+              const generics    = allPlacesResults.filter((r: any) => !r.gfTapasSpecialist);
+              const specialistSlots = Math.min(specialists.length, Math.ceil(numRequested * 0.6));
+              const genericSlots    = (numRequested * 2) - specialistSlots;
+              preSelected = [
+                ...specialists.slice(0, specialistSlots),
+                ...generics.slice(0, genericSlots),
+              ];
+              logger.debug(`[TAPAS_BALANCE] ${specialistSlots} specialist + ${Math.min(generics.length, genericSlots)} generic → ${preSelected.length} candidates`);
+
+            } else if (selectedCat === 'italiano') {
+              // Split into pizza specialists and full Italian restaurants
+              const pizzas   = allPlacesResults.filter((r: any) => r.gfItalianoSubcat === 'pizza');
+              const italians = allPlacesResults.filter((r: any) => r.gfItalianoSubcat !== 'pizza');
+              const slotsEach = Math.ceil(numRequested * 0.6); // up to 60% from each pool
+              const topPizzas   = pizzas.slice(0, slotsEach);
+              const topItalians = italians.slice(0, slotsEach);
+              // Interleave: pizza, italian, pizza, italian...
+              const interleaved: any[] = [];
+              const maxLen = Math.max(topPizzas.length, topItalians.length);
+              for (let i = 0; i < maxLen; i++) {
+                if (i < topPizzas.length)   interleaved.push(topPizzas[i]);
+                if (i < topItalians.length) interleaved.push(topItalians[i]);
+              }
+              preSelected = interleaved.slice(0, numRequested * 2);
+              logger.debug(`[ITALIANO_BALANCE] ${topPizzas.length} pizza + ${topItalians.length} italian → ${preSelected.length} candidates`);
+            } else {
+              preSelected = allPlacesResults.slice(0, numRequested * 2);
+            }
+
+            logger.debug(`[GEMINI_SENDS:${selectedCat}] ${preSelected.map((r: any) => `"${r.name}"(Score=${scoreSimple(r, r.realDistanceMeters, selectedCat).toFixed(2)})`).join(', ')}`);
+            return preSelected.map((r: any) =>
+                `- ${r.name} (${r.vicinity ?? r.formatted_address ?? ''}) | Rating: ${r.rating ?? 'N/A'} | ${r.realDistance ?? 'desconocida'} | ID: ${r.place_id} | Tipos: ${(r.types || []).slice(0, 3).join(',')}`
+            ).join('\n');
+        })();
 
       const existingNamesStr = (existingData?.existingNames || []).join(', ');
 
@@ -709,22 +1301,19 @@ CUOTAS OBLIGATORIAS — respeta EXACTAMENTE estas cantidades:
 TOTAL: ${numRequested} recomendaciones.
 ` : '';
 
-      const CATEGORY_VARIETY_HINTS: Record<string, string> = {
-        italiano:     'Asegura VARIEDAD: máximo 3 pizzerías del total; el resto deben ser restaurantes italianos de cocina variada (pasta, carnes, mariscos, trattoria). No selecciones solo pizzerías aunque sean las mejor puntuadas.',
-        hamburguesas: 'Asegura VARIEDAD: incluye smash burgers, hamburgueserías artesanas y opciones diferentes. Evita seleccionar solo la misma franquicia o el mismo estilo.',
-        tapas:        'Asegura VARIEDAD: mezcla bares de tapas tradicionales, tabernas, y bares con ambiente diferente. No solo bares genéricos de la misma calle.',
-        restaurantes: 'Asegura VARIEDAD de cocinas y estilos: no más de 2 del mismo tipo de cocina (ej. no 3 restaurantes mediterráneos).',
-        asiatico:     'Asegura VARIEDAD: incluye sushi, cocina china, tailandesa o vietnamita si hay opciones. No selecciones solo restaurantes de sushi.',
-        mediterraneo: 'Asegura VARIEDAD: mezcla chiringuitos, restaurantes de mariscos, cocina andaluza y mediterránea. No solo el mismo tipo.',
+      // Variety hints for specific categories only
+      const VARIETY_HINTS: Record<string, string> = {
+        italiano:     'Máximo 3 pizzerías; incluye también restaurantes italianos de cocina variada (pasta, carnes, mariscos).',
+        hamburguesas: 'Variedad de estilos: smash burgers, artesanas, diferentes propuestas.',
+        asiatico:     'Variedad: sushi, cocina china, tailandesa o vietnamita si hay opciones.',
+        mediterraneo: 'IMPORTANTÍSIMO: La lista ya está ordenada por calidad/confianza. MANTÉN EL ORDEN EXACTO. Incluye todos los del listado: chiringuitos restaurantes de pescado y cocina mediterránea. Ignora cualquier impulso de reordenar por nombre trendy o "Sea Club".',
       };
-      const varietyHint = CATEGORY_VARIETY_HINTS[selectedCat] ?? '';
+      const varietyHint = VARIETY_HINTS[selectedCat] ?? '';
 
       const singleCatBlock = !isTodos ? `
-⚠️ CATEGORÍA ÚNICA: "${selectedCat}". Solo incluye sitios cuya especialidad principal sea "${selectedCat}". PROHIBIDO incluir restaurantes genéricos, cafeterías, kebabs, tacos, ni negocios cuyo nombre o especialidad principal no sea "${selectedCat}".
-${varietyHint ? `🎨 VARIEDAD: ${varietyHint}` : ''}
-📊 LÍMITE: Máximo ${numRequested} resultados. Si hay más candidatos relevantes, elige los ${numRequested} MEJORES por calidad, variedad y cercanía. Prioriza los más cercanos con mejor valoración (≥4.5★ preferiblemente).
-⛔ PROHIBIDO ABSOLUTO: Inventar, completar o añadir sitios que NO aparezcan en el listado de Google Places. Si el listado tiene 3 sitios relevantes, genera exactamente 3. Si está vacío, devuelve {"recommendations":[]}.
-⛔ NO uses tu conocimiento general para añadir sitios. Cada elemento del JSON debe corresponder EXACTAMENTE a un sitio del listado.
+⚠️ Categoría: "${selectedCat}". Los candidatos del listado son los mejores pre-seleccionados para esta categoría.
+${varietyHint ? `Variedad: ${varietyHint}` : ''}
+⛔ PROHIBIDO inventar o añadir sitios que no estén en el listado. Si está vacío, devuelve {"recommendations":[]}.
 ` : '';
 
       const prompt = `Anfitrión experto en ${property.city}. Guía de "${property.name}".
@@ -735,9 +1324,9 @@ ${placesContext || `Sin datos de Google Places. Devuelve {"recommendations":[]}.
 ${todosBlock}${singleCatBlock}
 
 REGLAS CRÍTICAS:
-1. OBLIGATORIO: Los sitios listados bajo cada categoría han sido PRE-SELECCIONADOS por el sistema. Debes incluir TODOS y CADA UNO de ellos en el JSON de salida. NO los sustituyas ni los omitas. Tu única tarea es generar description, personal_note, best_time_slots, atmosphere y tags para cada uno.
-2. REGLA DEL ID Y NOMBRE: Si usas un sitio del listado de Google, COPIA su "ID" exactamente Y usa el nombre EXACTO tal como aparece en el listado (incluyendo barrio o sufijo). NUNCA uses el nombre genérico de una cadena si el listado muestra la sucursal específica. Ejemplo: si el listado dice "Lateral Paseo de Recoletos", escribe ese nombre completo en el JSON, no solo "Lateral". Si el listado está VACÍO, usa tu conocimiento y pon "google_place_id": null.
-3. PROHIBIDO: Inventar IDs. Prohibido añadir "(Inventado)" al nombre.
+1. OBLIGATORIO: Los sitios listados han sido PRE-SELECCIONADOS Y ORDENADOS POR CALIDAD/CONFIANZA. Debes incluir TODOS en el JSON **EN EL MISMO ORDEN EXACTO**. Tu única tarea es generar description, personal_note, best_time_slots, atmosphere y tags para cada uno. NO omitas, NO reordenes, NO sustituyas. Si una categoría no tiene lista o está vacía, omite esa categoría completamente.
+2. REGLA DEL ID Y NOMBRE: COPIA el "ID" y el nombre EXACTAMENTE tal como aparecen en el listado de Google Places (incluyendo barrio o sufijo). NUNCA uses el nombre genérico de una cadena. Si el listado de una categoría está VACÍO o marcado como "Sin resultados", OMITE esa categoría completamente — NO inventes sitios de tu conocimiento general.
+3. PROHIBIDO: Inventar IDs. Prohibido añadir "(Inventado)" al nombre. Prohibido reordenar por criterios como "nombre trendy" o "parece más moderno".
 4. PROHIBIDO usar la palabra "REALDISTANCE".
 5. "METROS" significa < 2 min andando. "MIN" son minutos.
 6. COMPLIANCE: NO generes ratings, niveles de precio ni horarios detallados. Ponlos como null.
@@ -813,26 +1402,29 @@ SOLO JSON:`;
         }));
 
         recommendations = parseRecs(result);
+        logger.warn(`[AI-FILL:${selectedCat}] Gemini devolvió ${recommendations.length} recomendaciones (parseadas)`);
 
-        // Descartar cualquier recomendación que no sea del tipo solicitado (Gemini puede colarse)
-        // Solo se descarta si claramente es otro tipo — si type es null/undefined lo aceptamos
-        const CATEGORY_ALIASES: Record<string, string[]> = {
-          naturaleza: ['naturaleza', 'nature', 'park', 'parque'],
-          cultura: ['cultura', 'culture', 'museum', 'monumento'],
-          ocio: ['ocio', 'ocio_nocturno', 'leisure', 'entertainment'],
-          restaurantes: ['restaurantes', 'restaurant'],
-          tapas: ['tapas', 'bar', 'tapas_bar'],
-          desayuno: ['desayuno', 'cafe', 'breakfast'],
-          supermercados: ['supermercados', 'supermarket'],
-          compras: ['compras', 'shopping'],
-        };
-        const validTypes = new Set(CATEGORY_ALIASES[selectedCat] || [selectedCat]);
-        recommendations = recommendations.filter(r => {
-          if (!r.type) return true; // sin tipo → aceptar
-          return validTypes.has(r.type.toLowerCase());
-        });
+        // Type filter for specific categories only.
+        // Generic categories (restaurantes, tapas, desayuno) don't filter — Gemini assigns
+        // cuisine-specific subtypes (mexicano, asiatico) that are correct but not in validTypes.
+        // Note: 'restaurantes' candidates are already filtered upstream by name keywords,
+        // so cuisine leakage is prevented before Gemini even sees them.
+        const GENERIC_CATS = new Set(['restaurantes', 'mediterraneo', 'tapas', 'desayuno', 'ocio_nocturno', 'ocio', 'supermercados', 'compras']);
+        if (!GENERIC_CATS.has(selectedCat)) {
+          const SPECIFIC_TYPE_ALIASES: Record<string, string[]> = {
+            italiano:     ['italiano', 'italiana', 'italian', 'pizza', 'mediterráneo'],
+            hamburguesas: ['hamburguesas', 'hamburguesa', 'burger'],
+            asiatico:     ['asiatico', 'asiático', 'asian', 'sushi', 'japones'],
+            alta_cocina:  ['alta_cocina', 'alta cocina', 'gourmet'],
+            internacional:['internacional', 'international'],
+            naturaleza:   ['naturaleza', 'nature', 'park', 'parque', 'tourist_attraction'],
+            cultura:      ['cultura', 'culture', 'museum', 'monumento', 'tourist_attraction'],
+          };
+          const validTypes = new Set(SPECIFIC_TYPE_ALIASES[selectedCat] || [selectedCat]);
+          recommendations = recommendations.filter(r => !r.type || validTypes.has(r.type.toLowerCase()));
+        }
 
-        // Forzar tipo correcto en todos los resultados que quedan
+        // Normalize type to the selected category slug
         recommendations = recommendations.map(r => ({ ...r, type: selectedCat }));
       }
 
@@ -943,7 +1535,19 @@ SOLO JSON:`;
         };
       }));
 
-      logger.debug(`[AI-FILL] ✅ Final recommendations ready. First 2 distances:`, recommendations.slice(0, 2).map(r => r.distance));
+      // ── Reject hallucinated places ─────────────────────────────────────
+      // If Gemini received few candidates it sometimes invents places from its training
+      // knowledge (e.g. returning bars when asked for ocio because it "knows" the area).
+      // Hard rule: any recommendation not verified against our Google Places results is dropped.
+      // Exception: isTodos mode is more lenient because category leakage is rare there.
+      if (!isTodos) {
+        const beforeHallucFilter = recommendations.length;
+        recommendations = recommendations.filter(r => r._verified);
+        const dropped = beforeHallucFilter - recommendations.length;
+        if (dropped > 0) logger.warn(`[AI-FILL] 🚫 Dropped ${dropped} hallucinated recommendation(s) not found in Places results: ${recommendations.length} quedan`);
+      }
+
+      logger.debug(`[AI-FILL] ✅ Final recommendations ready (${recommendations.length}). First 2 distances:`, recommendations.slice(0, 2).map(r => r.distance));
 
       // Deduplicar: preferido por google_place_id, secundario por nombre
       const seenIds = new Set();
@@ -961,6 +1565,7 @@ SOLO JSON:`;
         seenNames.add(nameKey);
         return true;
       });
+      logger.warn(`[AI-FILL:${selectedCat}] Tras dedup: ${recommendations.length} recomendaciones finales`);
 
       // ── Quality Report ─────────────────────────────────────────────────
       const activeQuota = isTodos ? TODOS_QUOTA : { [selectedCat]: { quota: 6, placeType: '', keywords: [] } };

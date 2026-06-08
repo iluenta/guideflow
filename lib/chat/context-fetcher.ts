@@ -175,7 +175,10 @@ export async function fetchPropertyContext(
         if (detectedTypes.length > 0) {
             recsQuery.in('type', detectedTypes).limit(50);
         } else {
-            recsQuery.order('type').limit(50);
+            // Generic food query: fetch all recommendations so every category appears
+            // in the qualification question. 50 was too low — alphabetical order cut off
+            // "italiano", "hamburguesas", "mediterráneo", "tapas" when property has 150+ recs.
+            recsQuery.order('type').limit(300);
         }
 
         const { data: recs } = await recsQuery;
