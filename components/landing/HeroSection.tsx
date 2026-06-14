@@ -24,7 +24,7 @@ export const HeroSection = () => {
 
             <div className="flex flex-col sm:flex-row items-center gap-4 mb-16">
               <a href="#beta" className="w-full sm:w-auto bg-landing-navy text-white px-10 py-4 rounded-full font-poppins font-bold text-[16px] hover:bg-landing-navy-soft transition-all text-center shadow-lg shadow-landing-navy/20">
-                Reservar plaza
+                Próximamente
               </a>
               <a href="#features" className="w-full sm:w-auto px-10 py-4 rounded-full font-poppins font-bold text-[16px] text-landing-navy border border-landing-rule hover:bg-white transition-all text-center">
                 Ver funciones

@@ -19,7 +19,8 @@
     "fresh": "npm run clean && npm run dev",
     "translation:stats": "npx tsx scripts/translation-maintenance.ts stats",
     "translation:cleanup": "npx tsx scripts/translation-maintenance.ts cleanup",
-    "fix-utf8": "node scripts/fix-utf8.js"
+    "fix-utf8": "node scripts/fix-utf8.js",
+    "invite": "cross-env NODE_EXTRA_CA_CERTS=./corporate-ca.pem node scripts/generate-invite.mjs"
   },
   "dependencies": {
     "@ctrl/tinycolor": "^4.2.0",

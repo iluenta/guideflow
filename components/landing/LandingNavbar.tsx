@@ -26,7 +26,7 @@ export const LandingNavbar = () => {
           <a href="#how" className="hover:text-landing-ink transition-colors">Cómo funciona</a>
           <a href="#faq" className="hover:text-landing-ink transition-colors">FAQ</a>
           <a href="#beta" className="bg-landing-navy text-white px-[18px] py-[10px] rounded-full font-poppins font-medium text-[14px] hover:bg-[#15296b] transition-all">
-            Unirme a la beta
+            Próximamente
           </a>
         </div>
       </div>
