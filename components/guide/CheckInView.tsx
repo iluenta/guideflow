@@ -76,13 +76,14 @@ function StepItem({
                 </p>
 
                 {step.image_url && (
-                    <div className="rounded-xl overflow-hidden border border-primary/5 shadow-inner bg-primary/[0.02] relative min-h-[160px] mb-4">
+                    <div className="rounded-xl overflow-hidden border border-primary/5 shadow-inner bg-primary/[0.02] mb-4 relative">
                         <Image
                             src={step.image_url}
                             alt={step.title}
-                            fill
+                            width={800}
+                            height={600}
                             sizes="(max-width: 768px) 100vw, 400px"
-                            className="object-cover"
+                            className="w-full h-auto"
                             loading="lazy"
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8 pointer-events-none">
