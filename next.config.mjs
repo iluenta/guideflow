@@ -44,11 +44,6 @@ const nextConfig = {
   experimental: {
     turbopackUseSystemTlsCerts: true,
   },
-  outputFileTracingRoot: 'C:/Proyectos/guideflow',
-  turbopack: {
-    // Ignorar directorios que no son código fuente para evitar rebuilds fantasma
-    resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'],
-  },
   env: {
     NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString(),
   },
