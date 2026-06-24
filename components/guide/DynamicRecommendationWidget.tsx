@@ -38,6 +38,12 @@ function getThirdAccent(themeId: string) {
     }
 }
 
+// ─── Tipos de desayuno/café — solo estos aparecen antes de las 12:00 ─────────
+const BREAKFAST_TYPES = new Set([
+    'desayuno', 'cafe', 'café', 'cafeteria', 'cafetería',
+    'panaderia', 'panadería', 'brunch',
+]);
+
 // ─── Categorías que NUNCA aparecen en el slot destacado ──────────────────────
 const EXPERIENCE_BLACKLIST = new Set([
     'supermercados', 'supermercado', 'supermarket',
@@ -262,7 +268,16 @@ export function DynamicRecommendationWidget({
     const { activeRec, isClosed } = useMemo(() => {
         if (!recommendations?.length) return { activeRec: null, isClosed: false };
 
-        const scored = recommendations
+        // Antes de las 12:00, sólo mostrar lugares de desayuno/café
+        let candidates = recommendations;
+        if (slot === 'mañana') {
+            const breakfastOnly = recommendations.filter(r =>
+                BREAKFAST_TYPES.has((r.type || r.category || '').toLowerCase())
+            );
+            if (breakfastOnly.length > 0) candidates = breakfastOnly;
+        }
+
+        const scored = candidates
             .map(rec => ({ rec, score: scoreRecommendation(rec, slot, today, hour, minute) }))
             .filter(s => s.score > -Infinity)
             .sort((a, b) => b.score - a.score);
