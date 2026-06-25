@@ -399,6 +399,7 @@ export function GuideViewContainer({
     const contactsData = displayContext?.find((c: any) => c.category === 'contacts')?.content || {};
 
     const welcomeData = displayContext?.find((c: any) => c.category === 'welcome')?.content;
+    const propertyAddress = displayContext?.find((c: any) => c.category === 'access')?.content?.full_address || property.full_address || '';
     const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', language, 'ui_label', accessToken, property.id);
     const { content: labelAsistencia } = useLocalizedContent('Asistencia', language, 'ui_label', accessToken, property.id);
     const { content: labelHostNameFallback } = useLocalizedContent('tu anfitrión', language, 'ui_label', accessToken, property.id);
@@ -711,6 +712,8 @@ export function GuideViewContainer({
                 onClose={() => setIsPrivacyModalOpen(false)}
                 language={language}
                 themeId={themeId}
+                address={propertyAddress}
+                nif="33977606M"
             />
         </>
     );

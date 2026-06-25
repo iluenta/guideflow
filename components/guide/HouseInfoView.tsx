@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Bed, Bath, Users, Info, MapPin, Phone, MessageSquare, Quote, CheckCircle2, Ruler, Layers, Car } from 'lucide-react';
+import { Bed, Bath, Users, Info, MapPin, Phone, MessageSquare, Quote, Ruler, Layers, Car } from 'lucide-react';
 import Image from 'next/image';
 import { PageHeader } from './PageHeader';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
@@ -52,9 +52,6 @@ function getThemeTokens(themeId: string) {
                 whatsBtnText: 'text-[#00E5FF]',
                 footerColor: 'text-[#555]',
                 quoteColor: 'text-[#00E5FF]/20',
-                detailBg: 'bg-[#0F0F0F] border border-[#333] rounded-full',
-                detailIcon: 'text-[#00E5FF]',
-                detailText: 'text-[#A1A1AA]',
             };
         case 'coastal':
             return {
@@ -82,9 +79,6 @@ function getThemeTokens(themeId: string) {
                 whatsBtnText: 'text-[#0EA5E9]',
                 footerColor: 'text-[#64748B]',
                 quoteColor: 'text-[#0EA5E9]/10',
-                detailBg: 'bg-[#F0F9FF] border border-[#E0F2FE] rounded-full',
-                detailIcon: 'text-[#0EA5E9]',
-                detailText: 'text-[#64748B]',
             };
         case 'warm':
             return {
@@ -112,9 +106,6 @@ function getThemeTokens(themeId: string) {
                 whatsBtnText: 'text-[#D4A054]',
                 footerColor: 'text-[#8C6B5D]',
                 quoteColor: 'text-[#D4A054]/15',
-                detailBg: 'bg-[#FFF8F0] border border-[#E8D5BE] rounded-full',
-                detailIcon: 'text-[#D4A054]',
-                detailText: 'text-[#8C6B5D]',
             };
         case 'luxury':
             return {
@@ -142,9 +133,6 @@ function getThemeTokens(themeId: string) {
                 whatsBtnText: 'text-[#C9A84C]',
                 footerColor: 'text-[#8A8070]',
                 quoteColor: 'text-[#C9A84C]/15',
-                detailBg: 'bg-[#F9F7F4] border border-[#D4C5A9] rounded-full',
-                detailIcon: 'text-[#C9A84C]',
-                detailText: 'text-[#8A8070]',
             };
         default: // modern
             return {
@@ -172,9 +160,6 @@ function getThemeTokens(themeId: string) {
                 whatsBtnText: 'text-[#18181B]',
                 footerColor: 'text-[#A1A1AA]',
                 quoteColor: 'text-[#E4E4E7]',
-                detailBg: 'bg-[#F4F4F5] border border-[#E4E4E7] rounded-full',
-                detailIcon: 'text-[#52525B]',
-                detailText: 'text-[#52525B]',
             };
     }
 }
@@ -196,7 +181,6 @@ export function HouseInfoView({
     const { content: labelHouseInfoTitle } = useLocalizedContent('Info Casa', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelMessageHost } = useLocalizedContent('Mensaje de los anfitriones', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelTheProperty } = useLocalizedContent('La propiedad', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: labelVerifiedDetails } = useLocalizedContent('Detalles verificados', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelContactHost } = useLocalizedContent('Llamar', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelWhatsApp } = useLocalizedContent('WhatsApp', currentLanguage, 'ui_label', accessToken, propertyId);
 
@@ -215,13 +199,10 @@ export function HouseInfoView({
         { icon: Bed, value: property.beds || 0, label: labelDormitorios, show: !!property.beds },
         { icon: Bath, value: property.baths || 0, label: labelBanos, show: !!property.baths },
         { icon: Users, value: property.guests || 0, label: labelGuests, show: !!property.guests },
-        { icon: Car, value: property.parking_number || 'P', label: labelParking, show: !!property.has_parking }
+        { icon: Car, value: property.parking_number || 'P', label: labelParking, show: !!property.has_parking },
+        { icon: Ruler, value: `${property.sqm || property.square_meters || 0} m²`, label: labelSqM, show: !!(property.sqm || property.square_meters) },
+        { icon: Layers, value: `${property.floor || property.floor_number || 0}`, label: labelFloor, show: !!(property.floor || property.floor_number) }
     ].filter(s => s.show);
-
-    const details = [
-        { icon: Ruler, text: `${property.sqm || property.square_meters || 0} m²`, label: labelSqM, show: !!(property.sqm || property.square_meters) },
-        { icon: Layers, text: `${property.floor || property.floor_number || 0}ª`, label: labelFloor, show: !!(property.floor || property.floor_number) }
-    ].filter(d => d.show);
 
     const hostName = welcomeData?.host_name || property.host_name || 'Anfitrión';
     const hostPhone = 
@@ -328,9 +309,16 @@ export function HouseInfoView({
                         <p className={cn('text-[10px] font-black uppercase tracking-[0.2em] mb-4 px-2', t.aboutHeadingColor)}>
                             {labelTheProperty}
                         </p>
-                        <div className={cn('grid gap-3 mb-4', stats.length === 4 ? 'grid-cols-2' : 'grid-cols-3')}>
+                        <div className="grid grid-cols-2 gap-3">
                             {stats.map((stat, i) => (
-                                <div key={i} className={cn('flex flex-col items-center text-center p-4', t.featureCard)}>
+                                <div
+                                    key={i}
+                                    className={cn(
+                                        'flex flex-col items-center text-center p-4',
+                                        t.featureCard,
+                                        i === stats.length - 1 && stats.length % 2 !== 0 && 'col-span-2'
+                                    )}
+                                >
                                     <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-3', t.featureIconBg, t.featureIconColor)}>
                                         <stat.icon size={20} />
                                     </div>
@@ -339,28 +327,8 @@ export function HouseInfoView({
                                 </div>
                             ))}
                         </div>
-
-                        {details.length > 0 && (
-                            <div className={cn('grid grid-cols-2 gap-3 py-3 px-6', t.detailBg)}>
-                                {details.map((detail, i) => (
-                                    <div key={i} className={cn('flex items-center gap-2 text-[13px] font-bold', i === 0 ? 'justify-start' : 'justify-center border-l border-current/10')}>
-                                        <detail.icon size={14} className={t.detailIcon} />
-                                        <span className={t.detailText}>{detail.text}</span>
-                                        <span className={cn('text-[10px] font-medium lowercase opacity-60', t.detailText)}>{detail.label}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
                     </motion.div>
                 )}
-
-                {/* Footer Check */}
-                <motion.div variants={item} className="flex items-center justify-center gap-2 py-4">
-                    <CheckCircle2 size={12} className="text-green-500" />
-                    <p className={cn('text-[10px] font-black tracking-[0.15em] uppercase text-green-600')}>
-                        {labelVerifiedDetails}
-                    </p>
-                </motion.div>
             </div>
         </motion.div>
     );

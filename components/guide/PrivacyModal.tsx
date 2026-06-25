@@ -11,12 +11,14 @@ interface PrivacyModalProps {
     onClose: () => void;
     language: string;
     themeId?: string;
+    address?: string;
+    nif?: string;
 }
 
 const CONTENT = {
     es: {
         title: "PRIVACIDAD DE TU GUÍA",
-        intro: "Hospyia Labs S.L. gestiona esta guía digital en nombre del anfitrión de tu alojamiento.",
+        intro: "Hospyia gestiona esta guía digital en nombre del anfitrión de tu alojamiento.",
         sections: [
             {
                 title: "QUÉ REGISTRAMOS",
@@ -49,17 +51,17 @@ const CONTENT = {
             },
             {
                 title: "TUS DERECHOS",
-                body: "Puedes ejercer tus derechos de acceso, rectificación, supresión, limitación y oposición escribiendo a privacidad@hospyia.com. También puedes presentar reclamación ante la Agencia Española de Protección de Datos (www.aepd.es) si consideras que tus derechos no han sido respetados."
+                body: "Puedes ejercer tus derechos de acceso, rectificación, supresión, limitación y oposición escribiendo a hola@hospyia.com. También puedes presentar reclamación ante la Agencia Española de Protección de Datos (www.aepd.es) si consideras que tus derechos no han sido respetados."
             },
             {
                 title: "RESPONSABLE DEL TRATAMIENTO",
-                body: "Hospyia Labs S.L.\n[Dirección]\nNIF: [NIF]\nEmail: privacidad@hospyia.com"
+                body: "Hospyia\n[Dirección]\nNIF: [NIF]\nEmail: hola@hospyia.com"
             }
         ]
     },
     en: {
         title: "GUIDE PRIVACY",
-        intro: "Hospyia Labs S.L. manages this digital guide on behalf of your accommodation host.",
+        intro: "Hospyia manages this digital guide on behalf of your accommodation host.",
         sections: [
             {
                 title: "WHAT WE RECORD",
@@ -92,20 +94,34 @@ const CONTENT = {
             },
             {
                 title: "YOUR RIGHTS",
-                body: "You can exercise your rights of access, rectification, deletion, limitation, and opposition by writing to privacidad@hospyia.com. You can also file a complaint with the Spanish Data Protection Agency (www.aepd.es) if you believe your rights have not been respected."
+                body: "You can exercise your rights of access, rectification, deletion, limitation, and opposition by writing to hola@hospyia.com. You can also file a complaint with the Spanish Data Protection Agency (www.aepd.es) if you believe your rights have not been respected."
             },
             {
                 title: "DATA CONTROLLER",
-                body: "Hospyia Labs S.L.\n[Address]\nNIF: [NIF]\nEmail: privacidad@hospyia.com"
+                body: "Hospyia\n[Address]\nNIF: [NIF]\nEmail: hola@hospyia.com"
             }
         ]
     }
 };
 
-export function PrivacyModal({ isOpen, onClose, language, themeId }: PrivacyModalProps) {
+export function PrivacyModal({ isOpen, onClose, language, themeId, address, nif }: PrivacyModalProps) {
     const t = getGuideTheme(themeId);
     const lang = (language === 'es' || language === 'en') ? language : 'es';
-    const content = CONTENT[lang as keyof typeof CONTENT];
+    const baseContent = CONTENT[lang as keyof typeof CONTENT];
+    const content = {
+        ...baseContent,
+        sections: baseContent.sections.map(section =>
+            (section.body?.includes('[Dirección]') || section.body?.includes('[Address]'))
+                ? {
+                    ...section,
+                    body: section.body
+                        .replace('[Dirección]', address || 'Dirección no disponible')
+                        .replace('[Address]', address || 'Address not available')
+                        .replace('[NIF]', nif || 'No disponible'),
+                }
+                : section
+        ),
+    };
 
     return (
         <AnimatePresence>
