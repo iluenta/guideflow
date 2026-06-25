@@ -9,6 +9,13 @@ import type { IntentResult } from './types';
 
 const getType = (r: any) => (r.type || r.category || 'general').toLowerCase();
 
+function truncateAtWordBoundary(text: string, maxLength: number): string {
+    if (text.length <= maxLength) return text;
+    const cut = text.slice(0, maxLength);
+    const lastSpace = cut.lastIndexOf(' ');
+    return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trimEnd() + '…';
+}
+
 // ─── buildChatContextParams ───────────────────────────────────────────────────
 
 export function buildChatContextParams(
@@ -60,7 +67,7 @@ function formatContact(c: any): string {
     return `- ${c.name}${dist}${phone}${link}`;
 }
 
-function buildContactsBlock(content: any): string {
+function buildContactsBlock(content: any, hostName?: string): string {
     const contacts: any[] = content?.emergency_contacts || content?.contacts || [];
     if (!contacts.length) return `[INFO_CONTACTS]: ${JSON.stringify(content)}`;
 
@@ -72,10 +79,15 @@ function buildContactsBlock(content: any): string {
         groups[label].push(c);
     }
 
-    // Also include host/support contact fields
+    // Also include host/support contact fields.
+    // Fallback: si no hay datos de soporte, usa el nombre y teléfono del anfitrión.
     const hostLines: string[] = [];
-    if (content.support_name || content.support_mobile) {
+    const hasSupportInfo = content.support_name || content.support_phone || content.support_mobile;
+    if (hasSupportInfo) {
         hostLines.push(`[CONTACTO_ANFITRION]: ${content.support_name || ''} ${content.support_mobile ? '— WhatsApp/móvil: ' + content.support_mobile : ''} ${content.support_phone ? '— Tel: ' + content.support_phone : ''}`.trim());
+    } else if (content.host_phone || content.host_mobile) {
+        const name = hostName || content.host_name || 'Anfitrión';
+        hostLines.push(`[CONTACTO_ANFITRION]: ${name} ${content.host_mobile ? '— WhatsApp/móvil: ' + content.host_mobile : ''} ${content.host_phone ? '— Tel: ' + content.host_phone : ''}`.trim());
     }
 
     const blocks = Object.entries(groups).map(([label, items]) =>
@@ -90,11 +102,13 @@ function buildStructuredContextLines(
     brandRegex: RegExp,
     modelNumberRegex: RegExp
 ): string[] {
+    const welcomeHostName = (criticalContext || []).find((c: any) => c.category === 'welcome')?.content?.host_name;
+
     return (criticalContext || []).map((c: any) => {
         const label = c.category === 'notes' ? 'NOTAS_ANFITRION' : `INFO_${c.category.toUpperCase()}`;
 
         if (c.category === 'contacts') {
-            return buildContactsBlock(c.content);
+            return buildContactsBlock(c.content, welcomeHostName);
         }
 
         let contentString = '';
@@ -190,10 +204,10 @@ function buildRecommendationLines(
             if (r.price_range) line += ` ${r.price_range}`;
             // Use editorial_summary from metadata if no host description
             const desc = r.description || r.metadata?.editorial_summary;
-            if (desc) line += `: ${desc.substring(0, 180)}`;
+            if (desc) line += `: ${truncateAtWordBoundary(desc, 220)}`;
             // Tags from metadata
             const tags: string[] = r.metadata?.tags || [];
-            if (tags.length > 0) line += ` [${tags.slice(0, 3).join(', ')}]`;
+            if (tags.length > 0) line += ` (Características: ${tags.slice(0, 3).join(', ')})`;
             if (r.personal_note) line += ` 💬 "${r.personal_note}"`;
             return line;
         }).join('\n');

@@ -180,7 +180,8 @@ ${usedFallbackRecs
 - Lista ÚNICAMENTE las opciones que aparezcan en el CONTEXTO para la categoría pedida. Usa el formato: "- [Nombre](maps_place:id) ([distancia]) — [Descripción completa que aparece en el contexto]."
 - Usa una lista con guiones (-). No pongas un límite artificial al número de resultados.
 - ⛔ NUNCA digas "no tengo X en mi lista" si el CONTEXTO incluye recomendaciones de esa categoría. Si están en el CONTEXTO, muéstralas todas.
-- ⛔ PROHIBIDO ABSOLUTO: Añadir locales que NO aparezcan en el CONTEXTO. Si el CONTEXTO tiene 3 hamburguesas, lista exactamente esas 3. NO completes con sitios de tu conocimiento general aunque creas que son relevantes. Si el huésped pide más opciones de las que hay, dile cuántas tienes: "Solo tengo X opciones guardadas para esta categoría."`;
+- ⛔ PROHIBIDO ABSOLUTO: Añadir locales que NO aparezcan en el CONTEXTO. Si el CONTEXTO tiene 3 hamburguesas, lista exactamente esas 3. NO completes con sitios de tu conocimiento general aunque creas que son relevantes. Si el huésped pide más opciones de las que hay, dile cuántas tienes: "Solo tengo X opciones guardadas para esta categoría."
+- 🔎 BÚSQUEDA POR NOMBRE PROPIO: Si el huésped pregunta por un local mencionando su NOMBRE PROPIO (ej: "info del restaurante Neptuno", "¿qué sabes de Casa Maria?"), NO te limites al bloque de categoría que esperarías. Busca ese nombre en TODOS los bloques del CONTEXTO (case-insensitive, coincidencia parcial vale). Si lo encuentras, responde con su info aunque esté en una categoría distinta a la que mencionó el huésped. Solo di que no tienes información si tras revisar TODO el CONTEXTO el nombre no aparece en ningún bloque.`;
         }
     } else {
         recsBlock = `
@@ -195,6 +196,7 @@ ${recsBlock}
 - ⛔ REGLA DE ORO: Si no hay recomendaciones en el CONTEXTO, NUNCA menciones nombres de locales reales (aunque los conozcas por tus conocimientos generales). Solo di que no tienes una lista guardada.
 - ⛔ No inventes nombres que no estén en el CONTEXTO.
 - ⛔ DESCRIPCIÓN Y DETALLES: Usa SOLO la descripción, tags y nota personal que aparecen en el CONTEXTO. NUNCA inventes platos concretos, especialidades, características del local ni detalles que no estén escritos explícitamente en el CONTEXTO.
+- ⛔ FORMATO DE TAGS: El CONTEXTO incluye las características de cada local como "(Características: tag1, tag2)". NUNCA copies esa anotación literal entre paréntesis o corchetes en tu respuesta. Intégralas de forma natural en la frase (ej: "...con vistas al mar y terraza" en vez de "[vistas al mar, terraza]").
 - ⛔ DIRECCIÓN: NUNCA escribas la dirección de un local. Si el huésped pregunta cómo llegar, dile que pulse el enlace del mapa del local.
 - ℹ️ HORARIOS, RESERVAS Y DISPONIBILIDAD: Para preguntas sobre horarios de apertura, si admiten reservas, o disponibilidad → di: "Puedes ver el horario actualizado directamente en [Nombre del local](maps_place:ID) en Google Maps 🕐" usando el enlace del CONTEXTO. NUNCA digas que no tienes información sobre horarios si el local está en el CONTEXTO.
 `;

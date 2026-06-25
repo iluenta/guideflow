@@ -271,6 +271,7 @@ const itemVars: Variants = {
 export function EmergencyView({
     onBack,
     contactsData,
+    hostName,
     currentLanguage = 'es',
     onLanguageChange,
     accessToken,
@@ -291,6 +292,11 @@ export function EmergencyView({
     const { content: labelLocalServices } = useLocalizedContent('Servicios Locales', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelOtherContacts } = useLocalizedContent('Otros Contactos', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelAsistencia } = useLocalizedContent('Asistencia', currentLanguage, 'ui_label', accessToken, propertyId);
+
+    // Fallback: si no hay teléfono de soporte informado, usa el del anfitrión.
+    const hasSupportPhone = !!(contactsData.support_phone || contactsData.support_mobile);
+    const displaySupportName = hasSupportPhone ? (contactsData.support_name || labelAsistencia) : (hostName || labelAsistencia);
+    const displaySupportPhone = contactsData.support_mobile || contactsData.support_phone || contactsData.host_mobile || contactsData.host_phone || '';
 
     const getMapsUrl = (name: string, address?: string, placeId?: string) => {
         const query = encodeURIComponent(address || name);
@@ -404,8 +410,8 @@ export function EmergencyView({
                     )}
                 </motion.div>
 
-                {/* Support Contact */}
-                {(contactsData.support_phone || contactsData.support_mobile) && (
+                {/* Support Contact (con fallback al anfitrión si no hay soporte informado) */}
+                {displaySupportPhone && (
                     <motion.div variants={itemVars} className="flex flex-col gap-3">
                         <h3 className="text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-widest">{labelDirectSupport}</h3>
                         <div className={cn('flex items-center justify-between', supportCardClass)}>
@@ -415,17 +421,17 @@ export function EmergencyView({
                                 </div>
                                 <div className="flex flex-col">
                                     <span className={cn('font-bold text-sm leading-tight', supportNameColor)}>
-                                        {contactsData.support_name || labelAsistencia}
+                                        {displaySupportName}
                                     </span>
                                     <span className={cn('text-[10px] font-bold uppercase tracking-wider mt-0.5', supportSubColor)}>{labelGuestSupport}</span>
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <a href={`https://wa.me/${(contactsData.support_mobile || contactsData.support_phone || '').replace(/\s+/g, '').replace('+', '')}`}
+                                <a href={`https://wa.me/${displaySupportPhone.replace(/\s+/g, '').replace('+', '')}`}
                                     target="_blank" rel="noopener noreferrer" className={waBtnClass}>
                                     {isCoastal ? <MessageCircle className="w-5 h-5" strokeWidth={2} /> : <MessageSquare className="w-4 h-4" strokeWidth={2} />}
                                 </a>
-                                <a href={`tel:${(contactsData.support_phone || contactsData.support_mobile || '').replace(/\s/g, '')}`} className={phoneBtnClass}>
+                                <a href={`tel:${displaySupportPhone.replace(/\s/g, '')}`} className={phoneBtnClass}>
                                     {isCoastal ? <Phone className="w-5 h-5" strokeWidth={2} /> : <Phone className="w-4 h-4" strokeWidth={2} />}
                                 </a>
                             </div>

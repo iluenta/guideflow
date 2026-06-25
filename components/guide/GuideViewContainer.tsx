@@ -536,9 +536,21 @@ export function GuideViewContainer({
                 if (contactsData.preferred_contact_id === 'support') {
                     prefName = contactsData.support_name || labelAsistencia;
                     prefPhone = contactsData.support_phone || contactsData.support_mobile || '';
+                } else if (contactsData.preferred_contact_id === 'host') {
+                    prefName = welcomeData?.host_name || contactsData.host_name || labelHostNameFallback;
+                    prefPhone = contactsData.host_mobile || contactsData.host_phone || '';
                 } else if (contactsData.custom_contacts) {
                     const cc = contactsData.custom_contacts.find((c: any) => c.id === contactsData.preferred_contact_id);
                     if (cc) { prefName = cc.name; prefPhone = cc.phone; }
+                }
+                // Fallback final: si no se ha podido resolver ningún teléfono (sin contacto
+                // configurado, o el preferido no tiene número), usa el anfitrión por defecto.
+                if (!prefPhone) {
+                    const fallbackPhone = contactsData.host_mobile || contactsData.host_phone || '';
+                    if (fallbackPhone) {
+                        prefName = welcomeData?.host_name || contactsData.host_name || labelHostNameFallback;
+                        prefPhone = fallbackPhone;
+                    }
                 }
                 const hasAccessCodeEnabled = property?.has_access_code === true;
                 const accessCodeProp = hasAccessCodeEnabled ? (property.access_code || accessData?.access_code || '') : '';

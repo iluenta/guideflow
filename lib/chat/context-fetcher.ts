@@ -196,14 +196,29 @@ export async function fetchPropertyContext(
             usedFallbackRecs = directRecommendations.length > 0;
         }
 
-        logger.debug('[CHAT-V2] Direct recs from DB processed');
+        logger.debug('[CHAT-V2] Direct recs from DB processed', {
+            intentIntent: intent.intent,
+            foodSubtype: intent.foodSubtype,
+            isGenericFood: intent.isGenericFood,
+            detectedTypes,
+            isGenericFoodSearch,
+            count: directRecommendations.length,
+            usedFallbackRecs,
+            hasNeptuno: directRecommendations.some((r: any) => /neptuno/i.test(r.name)),
+            isRecommendationQueryFlag: flags.isRecommendationQuery,
+        });
     }
 
     // ── Support contact ───────────────────────────────────────────────────────
+    // Fallback: si no hay nombre/teléfono de soporte informado, usa el nombre y teléfono del anfitrión.
     const contactsData = criticalContext?.find((c: any) => c.category === 'contacts')?.content;
+    const welcomeData = criticalContext?.find((c: any) => c.category === 'welcome')?.content;
     let supportContact = 'el personal de soporte';
     if (contactsData) {
-        const name = contactsData.support_name || 'Soporte';
+        const hasSupportInfo = contactsData.support_name || contactsData.support_phone || contactsData.support_mobile;
+        const name = hasSupportInfo
+            ? (contactsData.support_name || 'Soporte')
+            : (welcomeData?.host_name || contactsData.host_name || 'el anfitrión');
         const mobile = contactsData.support_mobile || contactsData.host_mobile || '';
         const phone = contactsData.support_phone || contactsData.host_phone || '';
         const parts: string[] = [];

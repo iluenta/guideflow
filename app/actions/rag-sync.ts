@@ -154,9 +154,13 @@ export async function syncWizardDataToRAG(propertyId: string, tenantId: string |
         metadata = { category: 'normas', type: 'reglas' }
     } else if (category === 'contacts') {
         const custom = (data.custom_contacts || []).map((cc: any) => `- ${cc.name}: ${cc.phone}`).join('\n')
+        // Fallback: si no hay soporte informado, usa el teléfono del anfitrión.
+        const hasSupportInfo = data.support_name || data.support_phone || data.support_mobile
+        const mainContactName = hasSupportInfo ? (data.support_name || '') : (data.host_name || '')
+        const mainContactPhone = hasSupportInfo ? (data.support_phone || data.support_mobile || '') : (data.host_phone || data.host_mobile || '')
         contentToEmbed = `[CONTACTOS DE SOPORTE Y EMERGENCIA]:\n` +
-            `Contacto principal: ${data.support_name || ''}\n` +
-            `Teléfono principal: ${data.support_phone || ''}\n` +
+            `Contacto principal: ${mainContactName}\n` +
+            `Teléfono principal: ${mainContactPhone}\n` +
             `Contactos adicionales:\n${custom}`
         metadata = { category: 'contactos', type: 'soporte' }
     } else if (category === 'tech') {

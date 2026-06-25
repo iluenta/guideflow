@@ -145,7 +145,7 @@ export function CheckInView({
     const { content: checkinAvailableLabel } = useLocalizedContent('Check-in disponible', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: addressLabel } = useLocalizedContent('Dirección', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: showOnMapLabel } = useLocalizedContent('Ver en mapa', currentLanguage, 'ui_label', accessToken, propertyId);
-    const { content: problemsLabel } = useLocalizedContent('¿Problemas para entrar? Contacta con', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: problemsLabel } = useLocalizedContent('Envía un mensaje para informarnos que has podido acceder', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: callLabel } = useLocalizedContent('Llamar', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: copiedLabel } = useLocalizedContent('Copiado', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: codeCopiedLabel } = useLocalizedContent('Código copiado al portapapeles', currentLanguage, 'ui_label', accessToken, propertyId);
@@ -180,13 +180,13 @@ export function CheckInView({
     if (!hasAccessCodeEnabled) accessCode = '';
 
     // Use preferred contact if available, fallback to hostName/emergency_phone
-    const displayContactName = preferredContactName || hostName;
     const displayContactPhone = preferredContactPhone || checkinData.emergency_phone;
 
     const handleWhatsApp = () => {
         if (!displayContactPhone) return;
         const cleanPhone = displayContactPhone.replace(/\s+/g, '').replace('+', '');
-        window.open(`https://wa.me/${cleanPhone}`, '_blank');
+        const prefilledText = encodeURIComponent('¡Hola! Te informo de que ya he podido acceder al apartamento 👍');
+        window.open(`https://wa.me/${cleanPhone}?text=${prefilledText}`, '_blank');
     };
 
     const handleCall = () => {
@@ -347,7 +347,7 @@ export function CheckInView({
                 {displayContactPhone && (
                     <motion.div variants={itemVars} className="p-5 bg-primary/[0.03] rounded-3xl border border-primary/[0.06] text-center">
                         <p className="text-primary/60 text-[11px] font-black uppercase tracking-widest mb-4">
-                            {problemsLabel} {displayContactName}
+                            {problemsLabel}
                         </p>
                         <div className="grid grid-cols-2 gap-3 max-w-[260px] mx-auto">
                             <button
