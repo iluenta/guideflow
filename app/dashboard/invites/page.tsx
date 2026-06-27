@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
+import { sendInviteEmailAction } from '@/app/actions/invites'
 
 interface Invitation {
   id: string
@@ -57,6 +58,7 @@ export default function InvitesPage() {
   const [email, setEmail]         = useState('')
   const [creating, setCreating]   = useState(false)
   const [createdInvite, setCreatedInvite] = useState<Invitation | null>(null)
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://hospyia.com'
 
@@ -122,15 +124,25 @@ export default function InvitesPage() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  function sendByEmail(invite: Invitation) {
-    const url  = inviteUrl(invite.code)
-    const name = recipient || 'amigo/a'
-    const subject = encodeURIComponent('Tu invitación para Recetario AI')
-    const body = encodeURIComponent(
-      `Hola ${name},\n\nAquí tienes tu enlace de descarga exclusivo para Recetario AI:\n\n${url}\n\nEste enlace es de un solo uso. Una vez abierto, se descargará el APK automáticamente.\n\n¡Que disfrutes cocinando! 🍳`
-    )
-    const to = email ? encodeURIComponent(email) : ''
-    window.open(`mailto:${to}?subject=${subject}&body=${body}`)
+  async function sendByEmail(invite: Invitation) {
+    if (!email.trim()) {
+      toast({ title: 'Falta el email', description: 'Indica un email de destinatario para poder enviarlo.', variant: 'destructive' })
+      return
+    }
+    setSendingEmail(true)
+    const result = await sendInviteEmailAction({
+      to: email,
+      recipientName: recipient,
+      code: invite.code,
+      url: inviteUrl(invite.code),
+    })
+    setSendingEmail(false)
+
+    if ('error' in result) {
+      toast({ title: 'Error', description: result.error, variant: 'destructive' })
+      return
+    }
+    toast({ title: 'Email enviado', description: `Invitación enviada a ${email}` })
   }
 
   async function remove(id: string) {
@@ -146,14 +158,14 @@ export default function InvitesPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8 pb-24 lg:pb-10">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Package className="w-5 h-5 text-landing-navy" />
-            <h1 className="text-2xl font-bold text-landing-ink tracking-tight">Invitaciones</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-landing-ink tracking-tight">Invitaciones</h1>
           </div>
           <p className="text-sm text-landing-ink-mute">
             Genera y gestiona enlaces de descarga únicos para Recetario AI
@@ -162,12 +174,12 @@ export default function InvitesPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={load}
-            className="p-2 rounded-lg text-landing-ink-mute hover:bg-landing-bg-deep transition-colors"
+            className="p-2 rounded-lg text-landing-ink-mute hover:bg-landing-bg-deep transition-colors shrink-0"
             title="Recargar"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
-          <Button onClick={openCreate} className="gap-2">
+          <Button onClick={openCreate} className="gap-2 flex-1 sm:flex-initial">
             <Plus className="w-4 h-4" />
             Nueva invitación
           </Button>
@@ -175,19 +187,19 @@ export default function InvitesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {[
           { label: 'Total',     value: stats.total,   icon: Link2,        color: 'text-landing-navy',  bg: 'bg-landing-navy-tint' },
           { label: 'Pendientes',value: stats.pending, icon: Clock,        color: 'text-amber-600',     bg: 'bg-amber-50' },
           { label: 'Usadas',    value: stats.used,    icon: CheckCircle2, color: 'text-emerald-600',   bg: 'bg-emerald-50' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className="bg-white rounded-2xl border border-landing-rule p-5 flex items-center gap-4">
-            <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
-              <Icon className={`w-5 h-5 ${color}`} />
+          <div key={label} className="bg-white rounded-2xl border border-landing-rule p-3 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
+              <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${color}`} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-landing-ink leading-none">{value}</p>
-              <p className="text-xs text-landing-ink-mute mt-1">{label}</p>
+              <p className="text-lg sm:text-2xl font-bold text-landing-ink leading-none">{value}</p>
+              <p className="text-[11px] sm:text-xs text-landing-ink-mute mt-1">{label}</p>
             </div>
           </div>
         ))}
@@ -222,33 +234,33 @@ export default function InvitesPage() {
               return (
                 <div
                   key={invite.id}
-                  className={`flex items-center gap-4 px-5 py-4 ${idx !== 0 ? 'border-t border-landing-rule' : ''} ${used ? 'bg-landing-bg/40' : ''}`}
+                  className={`flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-4 ${idx !== 0 ? 'border-t border-landing-rule' : ''} ${used ? 'bg-landing-bg/40' : ''}`}
                 >
                   {/* Status dot */}
                   <div className={`w-2 h-2 rounded-full shrink-0 ${used ? 'bg-landing-ink-mute/30' : 'bg-emerald-400'}`} />
 
                   {/* Info */}
                   <div className="flex-1 min-w-0 space-y-0.5">
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                       <span className="font-mono text-sm font-bold text-landing-ink">{invite.code}</span>
                       <Badge variant={used ? 'secondary' : 'default'} className="text-[10px] px-2 py-0">
                         {used ? 'Usada' : 'Pendiente'}
                       </Badge>
                       {invite.notes && (
-                        <span className="text-xs text-landing-ink-mute truncate max-w-[200px]">{invite.notes}</span>
+                        <span className="text-xs text-landing-ink-mute truncate max-w-[120px] sm:max-w-[200px]">{invite.notes}</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-[11px] text-landing-ink-mute">
-                      <span>{timeAgo(invite.created_at)}</span>
+                    <div className="flex items-center gap-2 sm:gap-3 text-[11px] text-landing-ink-mute">
+                      <span className="shrink-0">{timeAgo(invite.created_at)}</span>
                       {used && invite.used_at && (
                         <>
-                          <span>·</span>
-                          <span className="text-emerald-600">Descargada {timeAgo(invite.used_at)}</span>
-                          {invite.used_by_ip && <><span>·</span><span>{invite.used_by_ip}</span></>}
+                          <span className="shrink-0">·</span>
+                          <span className="text-emerald-600 truncate">Descargada {timeAgo(invite.used_at)}</span>
+                          {invite.used_by_ip && <><span className="shrink-0 hidden sm:inline">·</span><span className="hidden sm:inline">{invite.used_by_ip}</span></>}
                         </>
                       )}
                       {!used && (
-                        <><span>·</span><span className="truncate max-w-[280px] text-landing-ink-mute/60">{url}</span></>
+                        <><span className="shrink-0 hidden sm:inline">·</span><span className="hidden sm:inline truncate max-w-[200px] sm:max-w-[280px] text-landing-ink-mute/60">{url}</span></>
                       )}
                     </div>
                   </div>
@@ -411,9 +423,16 @@ export default function InvitesPage() {
 
               {/* Footer */}
               <div className="flex flex-col sm:flex-row gap-2 px-6 pb-6">
-                <Button variant="outline" onClick={() => sendByEmail(createdInvite)} className="gap-2 flex-1 h-10">
-                  <Send className="w-4 h-4" />
-                  Enviar por email
+                <Button
+                  variant="outline"
+                  onClick={() => sendByEmail(createdInvite)}
+                  disabled={sendingEmail || !email.trim()}
+                  title={!email.trim() ? 'Indica un email en el paso anterior para poder enviarlo' : undefined}
+                  className="gap-2 flex-1 h-10"
+                >
+                  {sendingEmail
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</>
+                    : <><Send className="w-4 h-4" /> Enviar por email</>}
                 </Button>
                 <Button onClick={() => { copy(createdInvite); closeDialog() }} className="gap-2 flex-1 h-10">
                   <Copy className="w-4 h-4" />

@@ -35,6 +35,7 @@ import {
   ShieldCheck,
   Building2,
   Bot,
+  Link2,
 } from "lucide-react";
 import { TENANT_ROLE_PERMISSIONS, type TenantRole } from "@/lib/permissions";
 
@@ -60,6 +61,7 @@ const mobileNavMore = [
   { name: "Proveedores",     href: "/dashboard/settings/providers",      icon: UserCog,    resource: "settings",    action: "edit" },
   { name: "Cuentas",         href: "/dashboard/settings/accounts",       icon: Wallet,     resource: "finances",    action: "view" },
   { name: "Uso IA",          href: "/dashboard/settings/ai-usage",      icon: Bot,        resource: "settings",    action: "view" },
+  { name: "Invitaciones",    href: "/dashboard/invites",                 icon: Link2,      resource: "settings",    action: "edit" },
 ] as const;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -200,10 +202,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           <VisuallyHidden.Root>
             <DrawerTitle>Más opciones</DrawerTitle>
           </VisuallyHidden.Root>
-          <div className="p-4 pb-8 space-y-1">
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 pb-2">
-              Más opciones
-            </p>
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 pt-4 pb-2">
+            Más opciones
+          </p>
+          <div className="px-4 pb-8 space-y-1 overflow-y-auto max-h-[65vh]">
             {visibleMore.map(item => {
               const active = isActive(item.href);
               return (

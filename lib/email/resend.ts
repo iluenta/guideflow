@@ -365,6 +365,57 @@ ${hostContact(landing)}
   if (error) console.error('[resend] confirmed email failed:', error)
 }
 
+// ─── Email de invitación APK (Recetario AI) ──────────────────────────────────
+
+type ApkInviteEmailParams = {
+  to: string
+  recipientName?: string | null
+  code: string
+  url: string
+}
+
+export async function sendApkInviteEmail({ to, recipientName, code, url }: ApkInviteEmailParams): Promise<void> {
+  const greetingName = recipientName?.trim() || 'amigo/a'
+
+  const body = `
+<p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#374151;">
+  Hola <strong>${greetingName}</strong>,
+</p>
+<p style="margin:0 0 28px;font-size:15px;line-height:1.7;color:#6b7280;">
+  Aquí tienes tu enlace de descarga exclusivo para <strong style="color:#374151;">Recetario AI</strong>.
+  Ábrelo desde tu móvil para descargar el APK automáticamente.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#faf8f5;border:1px solid #e8dfd4;border-radius:10px;margin-bottom:24px;">
+  <tr>
+    <td style="padding:20px 24px;text-align:center;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8B6F47;margin-bottom:8px;">Tu código</div>
+      <div style="font-size:22px;font-weight:700;color:#1f2937;letter-spacing:.15em;font-family:monospace;">${code}</div>
+    </td>
+  </tr>
+</table>
+<div style="text-align:center;margin-bottom:28px;">
+  <a href="${url}" style="display:inline-block;background:#8B6F47;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:600;">
+    Descargar Recetario AI →
+  </a>
+</div>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;margin-bottom:8px;">
+  <tr>
+    <td style="padding:14px 18px;font-size:13px;color:#92400e;line-height:1.6;">
+      ⚠️ Este enlace es de un solo uso. Una vez abierto, se descargará el APK automáticamente.
+    </td>
+  </tr>
+</table>`
+
+  const { error } = await resend.emails.send({
+    from:    SYSTEM_FROM,
+    to,
+    subject: 'Tu invitación para Recetario AI',
+    html:    emailShell('#8B6F47', 'Invitación', 'Recetario AI', code, body),
+  })
+
+  if (error) throw error
+}
+
 export async function sendReservationCancelled({
   reservation,
   property,
