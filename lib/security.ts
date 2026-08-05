@@ -78,6 +78,51 @@ export async function validateAccessToken(supabase: any, token: string, expected
 }
 
 /**
+ * Validates a check-in token (checkin_links) and checks temporal windows.
+ * Mirrors validateAccessToken but against the check-in module's own table —
+ * checkin_links is a distinct token space from guest_access_tokens (different
+ * purpose: guest self check-in submission vs. digital guide access).
+ */
+export async function validateCheckinToken(token: string, expectedPropertyId?: string) {
+    const { createEdgeAdminClient } = await import('./supabase/edge');
+    const supabaseAdmin = createEdgeAdminClient();
+
+    const { data: link, error } = await supabaseAdmin
+        .from('checkin_links')
+        .select('*, reservation:reservations(id, status, guests_count, checkin_date, checkout_date)')
+        .eq('access_token', token)
+        .single();
+
+    if (error || !link) {
+        logger.error('[SECURITY_LIB] Checkin token lookup failed:', error?.message || 'Not found');
+        return { valid: false, reason: 'invalid_token' } as const;
+    }
+
+    if (expectedPropertyId && link.property_id !== expectedPropertyId) {
+        logger.warn('[SECURITY_LIB] Checkin token property mismatch detected');
+        return { valid: false, reason: 'invalid_token' } as const;
+    }
+
+    if (!link.is_active) {
+        return { valid: false, reason: 'token_deactivated' } as const;
+    }
+
+    if (!link.reservation || ['cancelled', 'no_show'].includes(link.reservation.status)) {
+        return { valid: false, reason: 'invalid_token' } as const;
+    }
+
+    const now = new Date();
+    const from = link.valid_from ? new Date(link.valid_from) : null;
+    const until = link.valid_until ? new Date(link.valid_until) : null;
+
+    if (!from || !until) return { valid: false, reason: 'invalid_token' } as const;
+    if (now < from) return { valid: false, reason: 'too_early', availableFrom: from } as const;
+    if (now > until) return { valid: false, reason: 'expired', expiredAt: until } as const;
+
+    return { valid: true, link } as const;
+}
+
+/**
  * Logs suspicious activity to the database.
  */
 export async function logSuspiciousActivity(supabase: any, accessToken: string, activity: {

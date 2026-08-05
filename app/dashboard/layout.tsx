@@ -36,6 +36,7 @@ import {
   Building2,
   Bot,
   Link2,
+  FileCheck,
 } from "lucide-react";
 import { TENANT_ROLE_PERMISSIONS, type TenantRole } from "@/lib/permissions";
 
@@ -59,6 +60,7 @@ const mobileNavMore = [
   { name: "Canales",         href: "/dashboard/settings/channels",       icon: Radio,      resource: "settings",    action: "edit" },
   { name: "Métodos de pago", href: "/dashboard/settings/payment-methods", icon: CreditCard, resource: "settings",  action: "edit" },
   { name: "Proveedores",     href: "/dashboard/settings/providers",      icon: UserCog,    resource: "settings",    action: "edit" },
+  { name: "Check-in / SES",  href: "/dashboard/settings/checkin",        icon: FileCheck,  resource: "checkin",     action: "view" },
   { name: "Cuentas",         href: "/dashboard/settings/accounts",       icon: Wallet,     resource: "finances",    action: "view" },
   { name: "Uso IA",          href: "/dashboard/settings/ai-usage",      icon: Bot,        resource: "settings",    action: "view" },
   { name: "Invitaciones",    href: "/dashboard/invites",                 icon: Link2,      resource: "settings",    action: "edit" },

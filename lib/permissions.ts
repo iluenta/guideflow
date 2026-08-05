@@ -9,6 +9,7 @@ export const TENANT_ROLE_PERMISSIONS = {
     members:      { invite: true,  edit: true,  remove: true  },
     billing:      { view: true,  manage: true  },
     settings:     { view: true,  edit: true  },
+    checkin:      { generate_link: true,  view: true,  manage_settings: true },
   },
   admin: {
     properties:   { create: true,  edit: true,  delete: false, view: true  },
@@ -18,6 +19,7 @@ export const TENANT_ROLE_PERMISSIONS = {
     members:      { invite: false, edit: false, remove: false },
     billing:      { view: false, manage: false },
     settings:     { view: true,  edit: true  },
+    checkin:      { generate_link: true,  view: true,  manage_settings: true },
   },
   support: {
     properties:   { create: false, edit: false, delete: false, view: true  },
@@ -27,6 +29,7 @@ export const TENANT_ROLE_PERMISSIONS = {
     members:      { invite: false, edit: false, remove: false },
     billing:      { view: false, manage: false },
     settings:     { view: false, edit: false },
+    checkin:      { generate_link: false, view: true,  manage_settings: false },
   },
   viewer: {
     properties:   { create: false, edit: false, delete: false, view: true  },
@@ -36,6 +39,7 @@ export const TENANT_ROLE_PERMISSIONS = {
     members:      { invite: false, edit: false, remove: false },
     billing:      { view: false, manage: false },
     settings:     { view: false, edit: false },
+    checkin:      { generate_link: false, view: false, manage_settings: false },
   },
 } as const
 

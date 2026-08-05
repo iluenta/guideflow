@@ -416,6 +416,144 @@ export async function sendApkInviteEmail({ to, recipientName, code, url }: ApkIn
   if (error) throw error
 }
 
+// ─── Check-in online ──────────────────────────────────────────────────────────
+
+type CheckinCompletedParams = {
+  property: { name: string }
+  landing: { contact_email: string }
+  reservation: { id: string; checkin_date: string; checkout_date: string }
+  guestsCount: number
+}
+
+export async function sendCheckinCompleted({
+  property,
+  landing,
+  reservation,
+  guestsCount,
+}: CheckinCompletedParams): Promise<void> {
+  const ref = reservation.id.slice(0, 8).toUpperCase()
+  const checkin  = new Date(reservation.checkin_date  + 'T00:00:00')
+  const checkout = new Date(reservation.checkout_date + 'T00:00:00')
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hospyia.com'}/dashboard/bookings`
+
+  const body = `
+<p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#374151;">
+  El huésped ha completado el <strong>check-in online</strong> en <strong>${property.name}</strong>.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#faf8f5;border:1px solid #e8dfd4;border-radius:10px;margin-bottom:28px;">
+  <tr>
+    <td style="padding:20px 24px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td width="50%" style="padding-bottom:12px;vertical-align:top;">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px;">ENTRADA</div>
+            <div style="font-size:14px;font-weight:600;color:#1f2937;">${formatDate(checkin)}</div>
+          </td>
+          <td width="50%" style="padding-bottom:12px;vertical-align:top;">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px;">SALIDA</div>
+            <div style="font-size:14px;font-weight:600;color:#1f2937;">${formatDate(checkout)}</div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px;">HUÉSPEDES REGISTRADOS</div>
+            <div style="font-size:14px;font-weight:600;color:#1f2937;">${guestsCount}</div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:24px;">
+  <tr>
+    <td style="padding:14px 18px;font-size:13px;color:#1e40af;line-height:1.6;">
+      ℹ️ Los datos se comunicarán a SES Hospedajes automáticamente el día de la entrada. Recibirás otro aviso confirmando el resultado.
+    </td>
+  </tr>
+</table>
+<div style="text-align:center;margin-bottom:8px;">
+  <a href="${dashboardUrl}" style="display:inline-block;background:#8B6F47;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:600;">
+    Ver reserva →
+  </a>
+</div>`
+
+  await resend.emails.send({
+    from:    SYSTEM_FROM,
+    to:      landing.contact_email,
+    subject: `Check-in completado en ${property.name}: ${checkin.toLocaleDateString('es-ES')}`,
+    html:    emailShell('#0f766e', 'Check-in online completado', property.name, ref, body),
+  })
+}
+
+type CheckinReadyForSesParams = {
+  property: { name: string }
+  landing: { contact_email: string }
+  reservation: { id: string; checkin_date: string; checkout_date: string }
+  guestsCount: number
+  xml: string
+  pdf: Buffer
+}
+
+export async function sendCheckinReadyForSes({
+  property,
+  landing,
+  reservation,
+  guestsCount,
+  xml,
+  pdf,
+}: CheckinReadyForSesParams): Promise<void> {
+  const ref = reservation.id.slice(0, 8).toUpperCase()
+  const checkin  = new Date(reservation.checkin_date  + 'T00:00:00')
+  const checkout = new Date(reservation.checkout_date + 'T00:00:00')
+
+  const body = `
+<p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#374151;">
+  El check-in de <strong>${property.name}</strong> ya está listo para comunicar a SES Hospedajes.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#faf8f5;border:1px solid #e8dfd4;border-radius:10px;margin-bottom:24px;">
+  <tr>
+    <td style="padding:20px 24px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td width="50%" style="padding-bottom:12px;vertical-align:top;">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px;">ENTRADA</div>
+            <div style="font-size:14px;font-weight:600;color:#1f2937;">${formatDate(checkin)}</div>
+          </td>
+          <td width="50%" style="padding-bottom:12px;vertical-align:top;">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px;">HUÉSPEDES</div>
+            <div style="font-size:14px;font-weight:600;color:#1f2937;">${guestsCount}</div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;margin-bottom:24px;">
+  <tr>
+    <td style="padding:14px 18px;font-size:13px;color:#92400e;line-height:1.6;">
+      ⏰ <strong>Tienes 24 horas desde la entrada</strong> para subir el fichero <strong>parte-viajeros.xml</strong> adjunto en el
+      <a href="https://sede.interior.gob.es/portal/sede" style="color:#92400e;">portal de SES Hospedajes</a>
+      (Procedimientos y servicios → Hospedajes y alquiler de vehículos → Alta masiva de comunicaciones).
+    </td>
+  </tr>
+</table>
+<p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">
+  Adjuntamos también <strong>parte-entrada.pdf</strong> con los datos y la firma de cada huésped — guárdalo como justificante,
+  estás obligado a conservarlo 3 años desde la salida (RD 933/2021).
+</p>`
+
+  await resend.emails.send({
+    from:    SYSTEM_FROM,
+    to:      landing.contact_email,
+    subject: `Check-in listo para SES: ${property.name} — ${checkin.toLocaleDateString('es-ES')}`,
+    html:    emailShell('#0f766e', 'Check-in listo para SES Hospedajes', property.name, ref, body),
+    attachments: [
+      { filename: 'parte-viajeros.xml', content: Buffer.from(xml, 'utf-8'), contentType: 'application/xml' },
+      { filename: 'parte-entrada.pdf', content: pdf, contentType: 'application/pdf' },
+    ],
+  })
+}
+
 export async function sendReservationCancelled({
   reservation,
   property,

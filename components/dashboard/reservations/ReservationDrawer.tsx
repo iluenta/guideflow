@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { AddPaymentModal } from './AddPaymentModal'
+import { CheckinLinkSection } from './CheckinLinkSection'
 import { ReservationExpensesSection } from '@/components/dashboard/expenses/ReservationExpensesSection'
 import { updateReservationStatus, deletePayment, getReservation, updateChargePayment } from '@/app/actions/reservations'
 import { round2 } from '@/lib/reservations/commission-utils'
@@ -673,6 +674,10 @@ export function ReservationDrawer({
                 )}
                 <InfoRow label="Nº huéspedes" value={String(reservation.guests_count)} />
               </div>
+
+              {reservation.status !== 'cancelled' && reservation.status !== 'no_show' && (
+                <CheckinLinkSection reservationId={reservation.id} canManage={canEdit} />
+              )}
 
               <div className="bg-white border border-[#eef2f7] rounded-2xl overflow-hidden">
                 <InfoRow label="Propiedad" value={reservation.property?.name ?? '—'} />

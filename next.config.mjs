@@ -15,7 +15,10 @@ const nextConfig = {
         { key: 'X-Frame-Options', value: 'DENY' },
         { key: 'X-Content-Type-Options', value: 'nosniff' },
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-        { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        // camera=(self): el check-in online necesita acceso a la cámara del propio
+        // origen (escaneo de DNI/NIE/pasaporte en vivo, ver DocumentScanner). Sin
+        // esto getUserMedia falla siempre, para cualquier huésped, en cualquier navegador.
+        { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
       ]
     }]
   },
@@ -43,6 +46,14 @@ const nextConfig = {
   },
   experimental: {
     turbopackUseSystemTlsCerts: true,
+    serverActions: {
+      // Por defecto Next.js limita el body de una Server Action a 1MB — una
+      // foto real de móvil (escaneo de DNI/pasaporte) lo supera fácilmente.
+      // Se comprime en el cliente antes de enviarla (ver DocumentScanner),
+      // pero dejamos margen aquí también. Vercel limita el body de una
+      // función serverless a ~4.5MB, así que no subir de 4mb.
+      bodySizeLimit: '4mb',
+    },
   },
   env: {
     NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString(),

@@ -22,6 +22,8 @@
   --ink-mute: #94a3b8;
   --rule: #e2e8f0;
   --rule-soft: #eef2f7;
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: #ffffff;
   --accent: var(--navy);
   --accent-deep: var(--navy-deep);
   --gold: var(--mint);
@@ -60,6 +62,8 @@
   --color-accent: var(--mint-deep);
   --color-accent-foreground: #ffffff;
   --color-input: #e2e8f0;
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-surface: var(--bg-card);
   --color-background: var(--bg);
   --color-ink: var(--ink);

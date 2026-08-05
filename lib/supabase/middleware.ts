@@ -12,6 +12,7 @@ export async function updateSession(request: NextRequest) {
         pathname === '/api/chat' ||           // Auth delegada al handler (validateChatRequest)
         pathname === '/api/tracking' ||       // Auth delegada al handler (validateAccessToken)
         pathname === '/api/translate-guide' || // Auth delegada al handler (validateAccessToken)
+        pathname === '/api/cron/checkin-ses' || // Auth delegada al handler (CRON_SECRET, sin sesión de usuario)
         pathname.startsWith('/access-denied') ||
         pathname.startsWith('/g/') || // Rutas de tokens de invitado
         // Excluir archivos estáticos y de sistema (Next.js suele manejarlos, pero por seguridad)
