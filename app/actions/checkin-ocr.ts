@@ -69,9 +69,36 @@ function mrzSexToSes(char: string): SesSex | null {
   return null
 }
 
+// La MRZ codifica "un apellido compuesto con espacio" (DE BRUIJN, VAN DER BERG,
+// DOS SANTOS...) exactamente igual que "dos apellidos distintos" a la española
+// (RAMIREZ<SUAREZ) — un único "<" en ambos casos. No hay forma de distinguirlos
+// solo con la MRZ; esta lista de partículas conocidas cubre los casos europeos
+// más comunes, fusionando la partícula con la palabra siguiente en vez de
+// tratarla como un apellido aparte. No es infalible — el huésped revisa el
+// campo antes de enviar.
+const SURNAME_PARTICLES = new Set([
+  'de', 'del', 'della', 'der', 'den', 'van', 'von', 'la', 'le', 'les',
+  'di', 'da', 'do', 'dos', 'das', 'mac', 'mc', 'af', 'av', 'zu', 'bin', 'ibn',
+])
+
+function groupSurnameTokens(tokens: string[]): string[] {
+  const units: string[] = []
+  let current: string[] = []
+  for (const token of tokens) {
+    current.push(token)
+    if (!SURNAME_PARTICLES.has(token.toLowerCase())) {
+      units.push(current.join(' '))
+      current = []
+    }
+  }
+  if (current.length) units.push(current.join(' '))
+  return units
+}
+
 function parseMrzName(nameBlock: string): { firstSurname: string | null; secondSurname: string | null; firstName: string | null } {
   const [surnamePart, givenPart] = nameBlock.split('<<')
-  const surnames = (surnamePart ?? '').split('<').map(s => s.trim()).filter(Boolean)
+  const surnameTokens = (surnamePart ?? '').split('<').map(s => s.trim()).filter(Boolean)
+  const surnames = groupSurnameTokens(surnameTokens)
   const firstName = stripFiller(givenPart ?? '').split(/\s+/).filter(Boolean).join(' ') || null
   return {
     firstSurname: surnames[0] || null,
@@ -87,17 +114,16 @@ function parseTD1(lines: string[]): Partial<ExtractedGuestDocumentData> | null {
   const l2 = lines[1].padEnd(30, '<').slice(0, 30)
   const l3 = lines[2].padEnd(30, '<').slice(0, 30)
 
-  const issuingCountry = l1.slice(2, 5)
   const fieldNumber = stripFiller(l1.slice(5, 14))
   const optionalData1 = stripFiller(l1.slice(15, 30))
 
-  // España es un caso particular: el DNI/NIE tiene un "número de soporte" (IDESP) en este
-  // campo de la línea 1, y el número de documento real (DNI/NIF) va embebido en los datos
-  // opcionales, detrás. El resto de documentos TD1 europeos (CI italiana, CNI francesa,
-  // Personalausweis alemán...) no tienen ese doble número: este campo ES el documento real
-  // y los datos opcionales no representan un número de soporte, así que no lo inventamos.
-  const documentNumber = issuingCountry === 'ESP' ? (optionalData1 || fieldNumber || null) : (fieldNumber || null)
-  const supportNumber = issuingCountry === 'ESP' && optionalData1 ? (fieldNumber || null) : null
+  // No es solo España: verificado contra especímenes reales (EdisonTD) de Francia,
+  // Gibraltar, Países Bajos y Portugal. Cuando el documento usa los datos opcionales
+  // (p.ej. el "Personal No." de la tarjeta de Gibraltar), ESE es el número real y el
+  // campo principal es un código interno/de soporte — independientemente del país.
+  // Cuando los datos opcionales están vacíos, el campo principal ES el documento real.
+  const documentNumber = optionalData1 || fieldNumber || null
+  const supportNumber = optionalData1 ? (fieldNumber || null) : null
 
   const { firstSurname, secondSurname, firstName } = parseMrzName(l3)
 

@@ -123,6 +123,19 @@ export function GuestForm({ token, guestOrder, checkinDate, hasMinorInGroup, onS
   }, [])
 
   function handleScanned(data: ExtractedGuestDocumentData) {
+    // Limpiar primero los campos que rellena el escaneo — si no, un dato de un
+    // escaneo anterior (o escrito a mano) se queda mezclado con el nuevo cuando
+    // este segundo intento no logra leer ese campo en concreto.
+    form.setValue('first_name', '')
+    form.setValue('first_surname', '')
+    form.setValue('second_surname', '')
+    form.setValue('document_type', 'NIF')
+    form.setValue('document_number', '')
+    form.setValue('document_support_number', '')
+    form.setValue('birth_date', '')
+    form.setValue('nationality', 'ESP')
+    form.setValue('sex', 'H')
+
     if (data.first_name) form.setValue('first_name', data.first_name)
     if (data.first_surname) form.setValue('first_surname', data.first_surname)
     if (data.second_surname) form.setValue('second_surname', data.second_surname)

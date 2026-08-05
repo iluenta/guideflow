@@ -203,6 +203,18 @@ export function DocumentScanner({ token, onScanned }: DocumentScannerProps) {
     }
   }
 
+  if (scanning) {
+    return (
+      <div className="w-full aspect-[3/4] rounded-2xl bg-slate-900 flex flex-col items-center justify-center gap-4 text-white">
+        <Loader2 className="h-10 w-10 animate-spin" />
+        <div className="text-center space-y-1 px-6">
+          <p className="text-[15px] font-semibold">Leyendo tu documento…</p>
+          <p className="text-[12px] text-slate-300">Puede tardar unos segundos</p>
+        </div>
+      </div>
+    )
+  }
+
   if (cameraActive) {
     return (
       <div className="space-y-3">
@@ -231,20 +243,10 @@ export function DocumentScanner({ token, onScanned }: DocumentScannerProps) {
         <Button
           type="button"
           className="w-full rounded-full h-14 gap-2"
-          disabled={scanning}
           onClick={handleCapture}
         >
-          {scanning ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Leyendo documento…
-            </>
-          ) : (
-            <>
-              <Camera className="h-4 w-4" />
-              Hacer foto
-            </>
-          )}
+          <Camera className="h-4 w-4" />
+          Hacer foto
         </Button>
       </div>
     )
@@ -256,7 +258,6 @@ export function DocumentScanner({ token, onScanned }: DocumentScannerProps) {
         type="button"
         variant="outline"
         className="w-full rounded-2xl h-14 gap-2"
-        disabled={scanning}
         onClick={startCamera}
       >
         <Camera className="h-4 w-4" />
