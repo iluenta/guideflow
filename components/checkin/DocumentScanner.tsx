@@ -25,17 +25,39 @@ const MIN_CONTRAST = 18 // desviación típica de brillo mínima para descartar 
 export function DocumentScanner({ token, onScanned }: DocumentScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
   const [cameraActive, setCameraActive] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [aligning, setAligning] = useState(false)
 
-  // Liberar la cámara siempre al desmontar — si no, el indicador de cámara
-  // del móvil se queda encendido aunque el huésped haya pasado de pantalla.
+  // Liberar cámara y audio siempre al desmontar — si no, el indicador de
+  // cámara del móvil se queda encendido aunque el huésped haya pasado de pantalla.
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach(t => t.stop())
+      audioCtxRef.current?.close()
     }
   }, [])
+
+  // Pitido tipo obturador al capturar. Se genera con Web Audio en vez de un
+  // fichero de audio — el AudioContext se crea en startCamera() (gesto real
+  // del huésped) porque los navegadores bloquean el audio si no viene de una
+  // interacción directa, y el disparo automático no cuenta como tal.
+  function playShutterBeep() {
+    const ctx = audioCtxRef.current
+    if (!ctx) return
+    const oscillator = ctx.createOscillator()
+    const gain = ctx.createGain()
+    oscillator.type = 'sine'
+    oscillator.frequency.value = 880
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.01)
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15)
+    oscillator.connect(gain)
+    gain.connect(ctx.destination)
+    oscillator.start()
+    oscillator.stop(ctx.currentTime + 0.16)
+  }
 
   // El <video> solo existe en el DOM cuando cameraActive es true — engancharle
   // el stream aquí (no con requestAnimationFrame) garantiza que ya está montado,
@@ -130,6 +152,13 @@ export function DocumentScanner({ token, onScanned }: DocumentScannerProps) {
       })
       streamRef.current = stream
       setCameraActive(true)
+
+      if (!audioCtxRef.current) {
+        const AudioContextCtor =
+          window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+        if (AudioContextCtor) audioCtxRef.current = new AudioContextCtor()
+      }
+      audioCtxRef.current?.resume().catch(() => {})
     } catch {
       toast.error('No se pudo acceder a la cámara. Puedes rellenar los datos manualmente.')
     }
@@ -154,6 +183,7 @@ export function DocumentScanner({ token, onScanned }: DocumentScannerProps) {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
     const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1] ?? ''
 
+    playShutterBeep()
     stopCamera()
     setScanning(true)
     try {
