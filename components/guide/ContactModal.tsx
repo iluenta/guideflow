@@ -4,6 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Phone, MessageCircle, User } from 'lucide-react';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
+import { telHref, whatsappHref } from '@/lib/phone';
 
 interface ContactModalProps {
     isOpen: boolean;
@@ -111,9 +112,10 @@ export function ContactModal({
         const { name, phone, label } = getContactInfo(type);
         if (!phone) return null;
 
-        const cleanPhone = phone.replace(/\s+/g, '').replace('+', '');
-        const telLink = `tel:${phone.replace(/\s+/g, '')}`;
-        const waLink = `https://wa.me/${cleanPhone}`;
+        // Un único sitio decide el formato de cada enlace: tel: conserva el
+        // "+" y wa.me no lo admite (ver lib/phone.ts).
+        const telLink = telHref(phone) ?? undefined;
+        const waLink = whatsappHref(phone) ?? undefined;
 
         return (
             <div className={`${heroColors.bg} rounded-2xl p-4 flex flex-col gap-3`}>
@@ -167,9 +169,10 @@ export function ContactModal({
         const { name, phone, label } = getContactInfo(type);
         if (!phone) return null;
 
-        const cleanPhone = phone.replace(/\s+/g, '').replace('+', '');
-        const telLink = `tel:${phone.replace(/\s+/g, '')}`;
-        const waLink = `https://wa.me/${cleanPhone}`;
+        // Un único sitio decide el formato de cada enlace: tel: conserva el
+        // "+" y wa.me no lo admite (ver lib/phone.ts).
+        const telLink = telHref(phone) ?? undefined;
+        const waLink = whatsappHref(phone) ?? undefined;
 
         return (
             <div className="bg-surface rounded-2xl px-4 py-3 border border-primary/[0.06] flex items-center gap-3">

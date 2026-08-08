@@ -17,6 +17,7 @@ import {
     Flame,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { telHref, whatsappHref } from '@/lib/phone';
 import { PageHeader } from './PageHeader';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { motion, Variants } from 'framer-motion';
@@ -96,7 +97,8 @@ function ContactItem({
     );
     const Icon = getIconComponent(contact.type);
     const mapsUrl = getMapsUrl(contact.name, contact.address, contact.place_id);
-    const telHref = `tel:${(contact.phone || '').replace(/\s/g, '')}`;
+    // callHref, no telHref: el nombre corto lo ocupa el helper importado.
+    const callHref = telHref(contact.phone) ?? undefined;
 
     // ── Coastal open layout ────────────────────────────────────────────────
     if (isCoastal) {
@@ -112,7 +114,7 @@ function ContactItem({
                             {contact.phone && <span className="text-[#64748B] text-xs mt-0.5">{contact.phone}</span>}
                         </div>
                     </div>
-                    <a href={telHref} className="w-10 h-10 bg-[#0EA5E9] text-white rounded-full flex items-center justify-center hover:opacity-90 active:scale-95 shrink-0 shadow-md shadow-[#0EA5E9]/20 transition-all">
+                    <a href={callHref} className="w-10 h-10 bg-[#0EA5E9] text-white rounded-full flex items-center justify-center hover:opacity-90 active:scale-95 shrink-0 shadow-md shadow-[#0EA5E9]/20 transition-all">
                         <Phone className="w-5 h-5" strokeWidth={2} />
                     </a>
                 </div>
@@ -139,7 +141,7 @@ function ContactItem({
                         )}
                     </div>
                     {!hasLocation && contact.phone && (
-                        <a href={telHref} className="bg-[#0EA5E9] text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold hover:opacity-90 active:scale-95 shrink-0 shadow-sm transition-all">
+                        <a href={callHref} className="bg-[#0EA5E9] text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold hover:opacity-90 active:scale-95 shrink-0 shadow-sm transition-all">
                             <Phone className="w-4 h-4" /><span>{contact.phone}</span>
                         </a>
                     )}
@@ -151,7 +153,7 @@ function ContactItem({
                             <Navigation className="w-4 h-4" /><span>{labelNavigate}</span>
                         </a>
                         {contact.phone ? (
-                            <a href={telHref} className="flex-1 bg-[#0EA5E9] text-white py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold hover:opacity-90 shadow-sm transition-colors">
+                            <a href={callHref} className="flex-1 bg-[#0EA5E9] text-white py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold hover:opacity-90 shadow-sm transition-colors">
                                 <Phone className="w-4 h-4" /><span>{contact.phone}</span>
                             </a>
                         ) : (
@@ -201,7 +203,7 @@ function ContactItem({
                         {contact.phone && <span className={cn('text-[10px] mt-0.5', metaColor)}>{contact.phone}</span>}
                     </div>
                 </div>
-                <a href={telHref} className={cn('w-8 h-8 rounded-full flex items-center justify-center active:scale-95 shrink-0 transition-all', btnBg, btnTextColor)}>
+                <a href={callHref} className={cn('w-8 h-8 rounded-full flex items-center justify-center active:scale-95 shrink-0 transition-all', btnBg, btnTextColor)}>
                     <Phone className="w-4 h-4" strokeWidth={2} />
                 </a>
             </div>
@@ -231,7 +233,7 @@ function ContactItem({
                     </div>
                 </div>
                 {!hasLocation && contact.phone && (
-                    <a href={telHref} className={cn('px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-bold shrink-0 active:scale-95 transition-all', btnBg, btnTextColor)}>
+                    <a href={callHref} className={cn('px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-bold shrink-0 active:scale-95 transition-all', btnBg, btnTextColor)}>
                         <Phone className="w-3 h-3" /><span>{contact.phone}</span>
                     </a>
                 )}
@@ -244,7 +246,7 @@ function ContactItem({
                         <Navigation className="w-3 h-3" /><span>{labelNavigate}</span>
                     </a>
                     {contact.phone ? (
-                        <a href={telHref} className={cn('px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-bold active:scale-95 transition-all', btnBg, btnTextColor)}>
+                        <a href={callHref} className={cn('px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-bold active:scale-95 transition-all', btnBg, btnTextColor)}>
                             <Phone className="w-3 h-3" /><span>{contact.phone}</span>
                         </a>
                     ) : (
@@ -427,11 +429,11 @@ export function EmergencyView({
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <a href={`https://wa.me/${displaySupportPhone.replace(/\s+/g, '').replace('+', '')}`}
+                                <a href={whatsappHref(displaySupportPhone) ?? undefined}
                                     target="_blank" rel="noopener noreferrer" className={waBtnClass}>
                                     {isCoastal ? <MessageCircle className="w-5 h-5" strokeWidth={2} /> : <MessageSquare className="w-4 h-4" strokeWidth={2} />}
                                 </a>
-                                <a href={`tel:${displaySupportPhone.replace(/\s/g, '')}`} className={phoneBtnClass}>
+                                <a href={telHref(displaySupportPhone) ?? undefined} className={phoneBtnClass}>
                                     {isCoastal ? <Phone className="w-5 h-5" strokeWidth={2} /> : <Phone className="w-4 h-4" strokeWidth={2} />}
                                 </a>
                             </div>

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { PageHeader } from './PageHeader';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { cn } from '@/lib/utils';
+import { telHref, whatsappHref } from '@/lib/phone';
 
 interface HouseInfoViewProps {
     onBack: () => void;
@@ -281,7 +282,7 @@ export function HouseInfoView({
                                 {hostPhone && (
                                     <div className="grid grid-cols-2 gap-3 mt-8">
                                         <a
-                                            href={`https://wa.me/${hostPhone.replace(/\s+/g, '').replace('+', '')}`}
+                                            href={whatsappHref(hostPhone) ?? undefined}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className={cn('flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[14px] font-bold transition-all active:scale-95 shadow-sm', t.whatsBtnBg, t.whatsBtnText)}
@@ -290,7 +291,7 @@ export function HouseInfoView({
                                             <span>{labelWhatsApp}</span>
                                         </a>
                                         <a
-                                            href={`tel:${hostPhone.replace(/\s/g, '')}`}
+                                            href={telHref(hostPhone) ?? undefined}
                                             className={cn('flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[14px] font-bold shadow-md transition-all active:scale-95', t.phoneBtnBg, t.phoneBtnText)}
                                         >
                                             <Phone className="w-4 h-4" />

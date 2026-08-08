@@ -4,6 +4,7 @@ import type { Property, PropertyLanding } from '@/lib/types/property';
 import type { PricePeriod } from '@/lib/types/pricing';
 import { useState, useEffect, useCallback } from 'react';
 import { ThemeWrapper } from './ThemeWrapper';
+import { telHref, whatsappHref } from '@/lib/phone';
 import { Topbar } from './sections/Topbar';
 import { Hero } from './sections/Hero';
 import { Gallery } from './sections/Gallery';
@@ -186,13 +187,13 @@ export function LandingPageClient({ property, landing, initialBlockedDates, host
               <div className="lp-footer-contact-list">
                 <a href={`mailto:${landing.contact_email}`}>{landing.contact_email}</a>
                 {landing.contact_phone && (
-                  <a href={`tel:${landing.contact_phone.replace(/[\s\-().]/g, '')}`}>
+                  <a href={telHref(landing.contact_phone) ?? undefined}>
                     {landing.contact_phone}
                   </a>
                 )}
                 {landing.contact_phone && (
                   <a
-                    href={`https://wa.me/${landing.contact_phone.replace(/[\s\-().+]/g, '')}`}
+                    href={whatsappHref(landing.contact_phone) ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="lp-footer-wa"

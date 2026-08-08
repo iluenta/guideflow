@@ -4,6 +4,7 @@ import { useChat } from 'ai/react'
 import React, { useState, useEffect, useRef } from 'react'
 import { X, Send, Bot, User, Sparkles, MessageCircle, MessageSquare, Phone } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { telHref, whatsappHref } from '@/lib/phone';
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
@@ -384,20 +385,19 @@ export function GuestChat({ propertyId, propertyName, currentLanguage = 'es', ac
                                                                 // tel_wa: — existing phone + WhatsApp button
                                                                 if (href?.startsWith('tel_wa:')) {
                                                                     const num = href.split(':')[1];
-                                                                    const cleanNum = num.replace(/\D/g, '');
                                                                     return (
                                                                         <span className="inline-flex items-center gap-1.5 bg-primary/5 px-2 py-0.5 rounded-lg border border-primary/10 font-bold text-primary">
                                                                             {children}
                                                                             <span className="inline-flex items-center gap-1 ml-1 pl-1 border-l border-primary/20">
                                                                                 <a
-                                                                                    href={`tel:${num}`}
+                                                                                    href={telHref(num) ?? undefined}
                                                                                     className="p-1 hover:bg-primary/10 rounded-md transition-colors inline-flex"
                                                                                     title={callTitle}
                                                                                 >
                                                                                     <Phone className="w-3.5 h-3.5" />
                                                                                 </a>
                                                                                 <a
-                                                                                    href={`https://wa.me/${cleanNum}`}
+                                                                                    href={whatsappHref(num) ?? undefined}
                                                                                     target="_blank"
                                                                                     rel="noopener noreferrer"
                                                                                     className="p-1 hover:bg-green-50 rounded-md transition-colors text-green-600 inline-flex"

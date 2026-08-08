@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { MapPin, Wifi, Key, Car, Clock, Phone, Copy, Check, ExternalLink, MessageCircle, Star, DoorOpen, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { telHref, whatsappHref } from '@/lib/phone';
 import { GuideThemeClasses } from '@/lib/guide-theme';
 
 interface GlanceBlockProps {
@@ -139,7 +140,10 @@ export function GlanceBlock({ context, property, t, onNavigate, checkinDate, che
         </button>
     );
 
-    const contactDigits = contactPhone.replace(/\D/g, '');
+    // tel: y wa.me tienen reglas opuestas con el "+", así que cada enlace se
+    // construye por su lado — ver lib/phone.ts.
+    const contactTel = telHref(contactPhone);
+    const contactWhatsapp = whatsappHref(contactPhone);
 
     return (
         <div className="mb-8">
@@ -262,14 +266,14 @@ export function GlanceBlock({ context, property, t, onNavigate, checkinDate, che
                         actions={
                             <>
                                 <a
-                                    href={`tel:${contactDigits}`}
+                                    href={contactTel ?? undefined}
                                     aria-label={`Llamar a ${contactName || 'contacto'}`}
                                     className={cn('w-8 h-8 rounded-xl flex items-center justify-center opacity-60 hover:opacity-100 transition-all', t.chipIconBg)}
                                 >
                                     <Phone size={14} className={t.chipIconColor} />
                                 </a>
                                 <a
-                                    href={`https://wa.me/${contactDigits}`}
+                                    href={contactWhatsapp ?? undefined}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     aria-label={`WhatsApp a ${contactName || 'contacto'}`}

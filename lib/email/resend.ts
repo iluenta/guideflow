@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { telHref, whatsappHref } from '@/lib/phone'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -94,7 +95,6 @@ function stayBox(
 }
 
 function hostContact(landing: ReservationEmailParams['landing']): string {
-  const cleanPhone = (p: string) => p.replace(/[\s\-().+]/g, '')
   return `
 <div style="margin-bottom:28px;">
   <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8B6F47;margin-bottom:12px;">Contacto del anfitrión</div>
@@ -106,10 +106,10 @@ function hostContact(landing: ReservationEmailParams['landing']): string {
     </tr>
     ${landing.contact_phone ? `
     <tr><td style="padding:8px 0;font-size:14px;color:#374151;">
-      📞 <a href="tel:${landing.contact_phone}" style="color:#8B6F47;text-decoration:none;">${landing.contact_phone}</a>
+      📞 <a href="${telHref(landing.contact_phone) ?? ''}" style="color:#8B6F47;text-decoration:none;">${landing.contact_phone}</a>
     </td></tr>
     <tr><td style="padding:8px 0;font-size:14px;color:#374151;">
-      💬 <a href="https://wa.me/${cleanPhone(landing.contact_phone)}" style="color:#25d366;text-decoration:none;">WhatsApp</a>
+      💬 <a href="${whatsappHref(landing.contact_phone) ?? ''}" style="color:#25d366;text-decoration:none;">WhatsApp</a>
     </td></tr>` : ''}
   </table>
 </div>`
@@ -163,7 +163,6 @@ async function sendHostNotification({
 }: ReservationEmailParams): Promise<void> {
   const ref    = reservation.id.slice(0, 8).toUpperCase()
   const nights = Math.floor((checkout.getTime() - checkin.getTime()) / (1000 * 60 * 60 * 24))
-  const cleanPhone = (p: string) => p.replace(/[\s\-().+]/g, '')
   const dashboardUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.hospyia.com'}/dashboard/bookings`
 
   const body = `
@@ -195,9 +194,9 @@ async function sendHostNotification({
           <td style="padding-bottom:10px;">
             <div style="font-size:11px;color:#9ca3af;margin-bottom:3px;">TELÉFONO</div>
             <div style="font-size:14px;font-weight:600;color:#1f2937;">
-              <a href="tel:${reservation.guest_phone}" style="color:#8B6F47;text-decoration:none;">${reservation.guest_phone}</a>
+              <a href="${telHref(reservation.guest_phone) ?? ''}" style="color:#8B6F47;text-decoration:none;">${reservation.guest_phone}</a>
               &nbsp;·&nbsp;
-              <a href="https://wa.me/${cleanPhone(reservation.guest_phone)}" style="color:#25d366;text-decoration:none;">WhatsApp</a>
+              <a href="${whatsappHref(reservation.guest_phone) ?? ''}" style="color:#25d366;text-decoration:none;">WhatsApp</a>
             </div>
           </td>
         </tr>` : ''}

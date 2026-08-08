@@ -1,17 +1,15 @@
+import { telHref as buildTelHref, whatsappHref } from '@/lib/phone';
+
 interface Props {
   email: string;
   phone?: string;
 }
 
-function cleanPhone(phone: string) {
-  return phone.replace(/[\s\-().]/g, '');
-}
-
 /** Contact section with email, phone, and WhatsApp buttons. */
 export function Contact({ email, phone }: Props) {
-  const cleanedPhone = phone ? cleanPhone(phone) : null;
-  const waHref  = cleanedPhone ? `https://wa.me/${cleanedPhone.replace(/^\+/, '')}` : null;
-  const telHref = cleanedPhone ? `tel:${cleanedPhone}` : null;
+  // tel: conserva el "+" y wa.me solo admite dígitos — ver lib/phone.ts
+  const telHref = buildTelHref(phone);
+  const waHref = whatsappHref(phone);
 
   return (
     <div className="lp-section">

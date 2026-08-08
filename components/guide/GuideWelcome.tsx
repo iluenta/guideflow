@@ -20,6 +20,7 @@ import {
 import Image from 'next/image';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { cn } from '@/lib/utils';
+import { telHref, whatsappHref } from '@/lib/phone';
 import supabaseLoader from '@/lib/image-loader';
 import { DynamicRecommendationWidget } from './DynamicRecommendationWidget';
 import { WeatherWidgetMini } from './WeatherWidgetMini';
@@ -231,7 +232,9 @@ export function GuideWelcome({
     const hostName     = contactsData.host_name      || welcomeData.host_name      || '';
     const contactPhone = supportPhone || hostPhone;
     const contactName  = supportPhone ? supportName : hostName;
-    const contactDigits = contactPhone.replace(/\D/g, '');
+    // tel: necesita el "+" y wa.me no lo admite — ver lib/phone.ts
+    const contactTel = telHref(contactPhone);
+    const contactWhatsapp = whatsappHref(contactPhone);
 
     // Access code
     const hasAccessCodeEnabled = property?.has_access_code === true;
@@ -578,11 +581,11 @@ export function GuideWelcome({
                                 subColor={infoSubColor} iconColor={infoIconColor} iconBg={infoIconBg}
                                 actions={
                                     <>
-                                        <a href={`tel:${contactDigits}`} aria-label="Llamar"
+                                        <a href={contactTel ?? undefined} aria-label="Llamar"
                                             className={cn('w-[30px] h-[30px] rounded-full flex items-center justify-center transition-colors', infoIconBg, infoIconColor)}>
                                             <Phone size={13} />
                                         </a>
-                                        <a href={`https://wa.me/${contactDigits}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
+                                        <a href={contactWhatsapp ?? undefined} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
                                             className="w-[30px] h-[30px] rounded-full flex items-center justify-center"
                                             style={{ background: '#E6F8EF', color: '#128C7E' }}>
                                             <MessageCircle size={13} />
