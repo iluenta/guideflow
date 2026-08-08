@@ -20,8 +20,9 @@ export interface ExtractedGuestDocumentData {
 // Fila real de la tabla checkin_guests (lo que necesita el generador de XML/PDF)
 export interface CheckinGuestRecord {
   guest_order: number
-  document_type: SesDocumentType
-  document_number: string
+  // Nulos solo en el menor sin documentación: no hay documento que declarar.
+  document_type: SesDocumentType | null
+  document_number: string | null
   document_support_number: string | null
   first_name: string
   first_surname: string
@@ -31,11 +32,16 @@ export interface CheckinGuestRecord {
   sex: SesSex
   phone: string | null
   email: string | null
+  // Un único campo libre: calle, número, piso, puerta. Igual que el
+  // "direccion" del esquema de SES, que tampoco separa el número.
   address_street: string
-  address_number: string | null
   address_postal_code: string
   address_city: string | null
   address_country: string
+  // Código INE (CPRO+CMUN). Solo para residentes en España — es lo que SES
+  // exige como codigoMunicipio; para el extranjero va address_city como
+  // nombreMunicipio en texto libre.
+  address_municipality_code: string | null
   relationship_code: string | null
   signature_url: string | null
 }

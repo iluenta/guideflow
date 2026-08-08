@@ -69,8 +69,15 @@ export async function GET(
 
     // 5. Redirect to the slug page (no token in URL!)
     // We use a response object to set security headers like Referrer-Policy
+    // `screen` permite entrar directamente a una pantalla concreta de la guía
+    // (p. ej. las instrucciones de llegada desde el check-in completado).
     const lang = request.nextUrl.searchParams.get('lang');
-    const redirectUrl = new URL(`/${property.slug}${lang ? `?lang=${lang}` : ''}`, request.url);
+    const screen = request.nextUrl.searchParams.get('screen');
+    const query = new URLSearchParams();
+    if (lang) query.set('lang', lang);
+    if (screen) query.set('screen', screen);
+    const qs = query.toString();
+    const redirectUrl = new URL(`/${property.slug}${qs ? `?${qs}` : ''}`, request.url);
     const response = NextResponse.redirect(redirectUrl);
     
     // Security: Stop the leak of the /g/[token] URL in the Referer header

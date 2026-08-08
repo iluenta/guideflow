@@ -1,10 +1,13 @@
 'use client';
 
-import { ArrowLeft, MapPin, Copy, Phone, ExternalLink, Key, Lock, DoorOpen, Info, Wifi, Check, MessageSquare, Clock } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { ArrowLeft, MapPin, Copy, Phone, ExternalLink, Key, Lock, DoorOpen, Info, Wifi, Check, MessageSquare, Clock, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from './PageHeader';
 import { cn } from '@/lib/utils';
+import { telHref, whatsappHref } from '@/lib/phone';
 import { useLocalizedContent } from '@/hooks/useLocalizedContent';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 
@@ -36,7 +39,44 @@ interface CheckInViewProps {
     disabledLanguage?: boolean;
 }
 
-function StepItem({
+// La descripción de cada paso admite markdown: negritas, listas de sub-pasos y
+// avisos escritos con "> ". Cada elemento se estila explícitamente porque el
+// proyecto NO tiene el plugin de tipografía de Tailwind — las clases `prose`
+// que se usan en otras pantallas no aplican ningún estilo.
+const MARKDOWN_COMPONENTS = {
+    p: ({ children }: { children?: ReactNode }) => (
+        <p className="font-sans text-[13px] text-slate-700 leading-relaxed mb-2 last:mb-0">{children}</p>
+    ),
+    strong: ({ children }: { children?: ReactNode }) => (
+        <strong className="font-bold text-[var(--color-text-primary)]">{children}</strong>
+    ),
+    ul: ({ children }: { children?: ReactNode }) => (
+        <ul className="list-disc pl-5 space-y-1 mb-2 font-sans text-[13px] text-slate-700">{children}</ul>
+    ),
+    ol: ({ children }: { children?: ReactNode }) => (
+        <ol className="list-decimal pl-5 space-y-1 mb-2 font-sans text-[13px] text-slate-700">{children}</ol>
+    ),
+    li: ({ children }: { children?: ReactNode }) => <li className="leading-relaxed">{children}</li>,
+    code: ({ children }: { children?: ReactNode }) => (
+        <code className="font-mono text-[13px] font-bold text-primary bg-primary/[0.07] px-1.5 py-0.5 rounded">{children}</code>
+    ),
+    a: ({ href, children }: { href?: string; children?: ReactNode }) => (
+        <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">
+            {children}
+        </a>
+    ),
+    // Un "> aviso" se convierte en caja de atención. Se apoya en el icono además
+    // del color: el ámbar solo se confundiría con el dorado del tema luxury.
+    blockquote: ({ children }: { children?: ReactNode }) => (
+        <div className="flex gap-2.5 items-start bg-amber-50 border-l-4 border-amber-400 rounded-r-xl px-3 py-2.5 mb-2">
+            <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="[&_p]:mb-0 [&_p]:text-amber-900 [&_strong]:text-amber-900">{children}</div>
+        </div>
+    ),
+}
+
+// Exportado para que CheckoutView pinte sus pasos exactamente igual, sin duplicar el diseño.
+export function StepItem({
     step,
     idx,
     currentLanguage,
@@ -71,9 +111,9 @@ function StepItem({
                     <StepIcon className="w-3 h-3" />
                     <span className="text-[9px] font-black uppercase tracking-wider">{localizedTitle}</span>
                 </div>
-                <p className="font-sans text-[13px] text-slate-700 leading-relaxed mb-4">
-                    {localizedDescription}
-                </p>
+                <div className="mb-4">
+                    <ReactMarkdown components={MARKDOWN_COMPONENTS}>{localizedDescription}</ReactMarkdown>
+                </div>
 
                 {step.image_url && (
                     <div className="rounded-xl overflow-hidden border border-primary/5 shadow-inner bg-primary/[0.02] mb-4 relative">
@@ -183,15 +223,15 @@ export function CheckInView({
     const displayContactPhone = preferredContactPhone || checkinData.emergency_phone;
 
     const handleWhatsApp = () => {
-        if (!displayContactPhone) return;
-        const cleanPhone = displayContactPhone.replace(/\s+/g, '').replace('+', '');
-        const prefilledText = encodeURIComponent('¡Hola! Te informo de que ya he podido acceder al apartamento 👍');
-        window.open(`https://wa.me/${cleanPhone}?text=${prefilledText}`, '_blank');
+        const href = whatsappHref(displayContactPhone, '¡Hola! Te informo de que ya he podido acceder al apartamento 👍');
+        if (href) window.open(href, '_blank');
     };
 
     const handleCall = () => {
-        if (!displayContactPhone) return;
-        window.location.href = `tel:${displayContactPhone}`;
+        // El número se manda normalizado: tal cual venía de la ficha llevaba
+        // espacios, y sin el "+" la llamada no sale desde un móvil extranjero.
+        const href = telHref(displayContactPhone);
+        if (href) window.location.href = href;
     };
 
     const getIcon = (iconName: string) => {

@@ -21,6 +21,7 @@
     "translation:cleanup": "npx tsx scripts/translation-maintenance.ts cleanup",
     "fix-utf8": "node scripts/fix-utf8.js",
     "invite": "cross-env NODE_EXTRA_CA_CERTS=./corporate-ca.pem node scripts/generate-invite.mjs",
+    "municipios:import": "cross-env NODE_EXTRA_CA_CERTS=./corporate-ca.pem node scripts/import-ine-municipalities.mjs",
     "test:ses": "cross-env NODE_EXTRA_CA_CERTS=./scripts/certs/fnmt-ac-componentes-informaticos.pem node scripts/test-ses-connection.mjs",
     "test:ses:prod": "cross-env NODE_EXTRA_CA_CERTS=./scripts/certs/fnmt-ac-componentes-informaticos.pem node scripts/test-ses-catalogo-prod.mjs"
   },
@@ -113,6 +114,7 @@
     "cross-env": "^7.0.3",
     "eslint": "^9.39.4",
     "eslint-config-next": "^15.5.15",
+    "i18n-iso-countries": "^7.14.0",
     "jsdom": "^25.0.0",
     "postcss": "^8.5",
     "rimraf": "^6.1.3",

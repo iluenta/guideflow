@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { hasDocument, isDocumentKindAllowed, requiresSupportNumber } from '@/lib/checkin/documents'
 
 // Validación de DNI/NIE español (algoritmo oficial, dígito de control mod 23).
 // No es un requisito documentado del "alta masiva" de SES, pero un DNI/NIE con
@@ -47,19 +48,34 @@ export const guestCheckinSchema = z
     first_name: z.string().trim().min(1, 'Requerido').max(100),
     first_surname: z.string().trim().min(1, 'Requerido').max(100),
     second_surname: z.string().trim().max(100).optional(),
-    document_type: z.enum(['NIF', 'NIE', 'PAS', 'OTRO']),
-    document_number: z.string().trim().min(1, 'Requerido').max(20).transform(v => v.toUpperCase()),
+    // Lo que elige el huésped, no el código de SES: la traducción vive en
+    // lib/checkin/documents.ts (tarjeta y permiso viajan ambos como OTRO, y
+    // el menor sin documentación no lleva documento).
+    document_kind: z.enum(
+      ['DNI', 'NIE', 'PASAPORTE', 'TARJETA_IDENTIDAD', 'PERMISO_RESIDENCIA', 'MENOR_SIN_DOCUMENTO'],
+      // Sin esto, quedarse sin elegir (el escaneo no siempre detecta el tipo)
+      // enseña el mensaje por defecto de zod, en inglés y con la lista entera
+      // de valores internos.
+      { errorMap: () => ({ message: 'Selecciona el tipo de documento' }) }
+    ),
+    // Vacío solo cuando es un menor sin documentación (se comprueba abajo).
+    document_number: z.string().trim().max(20).transform(v => v.toUpperCase()),
     document_support_number: z.string().trim().max(20).optional(),
     birth_date: z.string().min(1, 'Requerido'),
-    nationality: z.string().trim().regex(/^[A-Za-z]{3}$/, 'Código de 3 letras (ej. ESP)').transform(v => v.toUpperCase()),
+    nationality: z.string().trim().regex(/^[A-Za-z]{3}$/, 'Selecciona una nacionalidad').transform(v => v.toUpperCase()),
     sex: z.enum(['H', 'M', 'O']),
     phone: z.string().trim().max(20).optional(),
     email: z.string().trim().email('Email no válido').optional().or(z.literal('')),
     address_street: z.string().trim().min(1, 'Requerido').max(200),
-    address_number: z.string().trim().max(20).optional(),
-    address_postal_code: z.string().trim().min(1, 'Requerido').max(12),
+    // Se guarda siempre en mayúsculas: los CP extranjeros son alfanuméricos
+    // (Reino Unido, Países Bajos, Canadá…) y SES los espera normalizados.
+    address_postal_code: z.string().trim().min(1, 'Requerido').max(12).transform(v => v.toUpperCase()),
     address_city: z.string().trim().max(100).optional(),
-    address_country: z.string().trim().regex(/^[A-Za-z]{3}$/, 'Código de 3 letras (ej. ESP)').transform(v => v.toUpperCase()),
+    address_country: z.string().trim().regex(/^[A-Za-z]{3}$/, 'Selecciona un país').transform(v => v.toUpperCase()),
+    // Código INE de 5 dígitos (CPRO+CMUN). Solo aplica a residentes en España:
+    // el "alta masiva" de SES exige codigoMunicipio para el país ESP y solo
+    // admite nombreMunicipio en texto libre para el extranjero.
+    address_municipality_code: z.string().trim().optional(),
     relationship_code: z.string().trim().optional(),
   })
   .superRefine((data, ctx) => {
@@ -67,23 +83,82 @@ export const guestCheckinSchema = z
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['phone'], message: 'Indica al menos un teléfono o un email' })
     }
 
-    if (data.document_type === 'NIF' && !isValidSpanishNif(data.document_number)) {
+    // Nacionalidad y tipo de documento están ligados: el DNI lo tiene quien es
+    // español, y un extranjero no puede presentar uno. Se revalida aquí porque
+    // el desplegable del formulario se puede saltar (acción pública).
+    if (!isDocumentKindAllowed(data.document_kind, data.nationality)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['document_number'],
-        message: 'DNI no válido (8 dígitos + letra; revisa la letra de control)',
-      })
-    }
-    if (data.document_type === 'NIE' && !isValidSpanishNie(data.document_number)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['document_number'],
-        message: 'NIE no válido (X/Y/Z + 7 dígitos + letra; revisa la letra de control)',
+        path: ['document_kind'],
+        message: 'Ese documento no corresponde a la nacionalidad indicada',
       })
     }
 
-    if (data.address_country === 'ESP' && !/^\d{5}$/.test(data.address_postal_code.trim())) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['address_postal_code'], message: 'Código postal español: 5 dígitos' })
+    if (hasDocument(data.document_kind)) {
+      if (!data.document_number) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['document_number'], message: 'Requerido' })
+      }
+
+      // El número de soporte es el que llevan impreso el DNI y la tarjeta de
+      // extranjero (NIE) y cambia con cada renovación — SES lo usa para saber
+      // si el documento presentado sigue vigente. No se exige en pasaporte y
+      // demás porque sencillamente no tienen ese número: pedirlo dejaría a
+      // cualquier huésped extranjero sin poder terminar el check-in.
+      if (requiresSupportNumber(data.document_kind) && !data.document_support_number) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['document_support_number'],
+          message: 'Requerido en DNI y NIE',
+        })
+      }
+
+      if (data.document_kind === 'DNI' && !isValidSpanishNif(data.document_number)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['document_number'],
+          message: 'DNI no válido (8 dígitos + letra; revisa la letra de control)',
+        })
+      }
+      if (data.document_kind === 'NIE' && !isValidSpanishNie(data.document_number)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['document_number'],
+          message: 'NIE no válido (X/Y/Z + 7 dígitos + letra; revisa la letra de control)',
+        })
+      }
+    } else if (data.document_number) {
+      // Coherencia con el CHECK de la tabla: un menor sin documentación no
+      // puede arrastrar un número tecleado antes de cambiar de opción.
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['document_number'],
+        message: 'Un menor sin documentación no lleva número de documento',
+      })
+    }
+
+    // Dirección: España y extranjero se validan distinto porque SES los trata
+    // distinto (codigoMunicipio del INE vs nombreMunicipio libre).
+    if (data.address_country === 'ESP') {
+      if (!/^\d{5}$/.test(data.address_postal_code)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['address_postal_code'], message: 'Código postal español: 5 dígitos' })
+      }
+      if (!/^\d{5}$/.test(data.address_municipality_code ?? '')) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['address_municipality_code'], message: 'Selecciona tu municipio' })
+      }
+    } else {
+      if (!data.address_city) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['address_city'], message: 'Requerido' })
+      }
+      // Solo letras mayúsculas y números: sin espacios ni guiones. Normaliza
+      // formatos que se escriben de muchas maneras (SW1A 1AA / sw1a-1aa) a uno
+      // solo, que es lo que se manda a SES.
+      if (!/^[A-Z0-9]+$/.test(data.address_postal_code)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['address_postal_code'],
+          message: 'Solo letras y números, sin espacios ni guiones',
+        })
+      }
     }
 
     if (data.phone && !/^[+\d][\d\s-]{5,19}$/.test(data.phone)) {
@@ -105,3 +180,18 @@ export const guestCheckinSchema = z
   })
 
 export type GuestCheckinFormValues = z.infer<typeof guestCheckinSchema>
+
+/**
+ * Datos que normalmente comparten todos los huéspedes de una reserva (pareja,
+ * familia…). Se copian del primer huésped a los siguientes para no teclear la
+ * misma dirección N veces; siguen siendo editables en cada ficha.
+ */
+export interface SharedGuestContact {
+  phone: string
+  email: string
+  address_street: string
+  address_postal_code: string
+  address_city: string
+  address_country: string
+  address_municipality_code: string
+}

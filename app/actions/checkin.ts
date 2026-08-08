@@ -10,6 +10,13 @@ import { scanGuestDocument } from '@/app/actions/checkin-ocr'
 import type { ExtractedGuestDocumentData, SesSex } from '@/types/checkin'
 import { calculateAge } from '@/lib/checkin/guest-utils'
 import { guestCheckinSchema } from '@/lib/checkin/guest-schema'
+import { resolveMunicipality } from '@/app/actions/municipalities'
+import {
+  hasDocument,
+  kindFromSesCode,
+  sesCodeForKind,
+  type DocumentKind,
+} from '@/lib/checkin/documents'
 import { sendCheckinCompleted } from '@/lib/email/resend'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://hospyia.com'
@@ -177,7 +184,7 @@ export interface CheckinGuestExistingData {
   first_name: string
   first_surname: string
   second_surname: string
-  document_type: SesDocumentTypeForGuest
+  document_kind: DocumentKind
   document_number: string
   document_support_number: string
   birth_date: string
@@ -186,16 +193,14 @@ export interface CheckinGuestExistingData {
   phone: string
   email: string
   address_street: string
-  address_number: string
   address_postal_code: string
   address_city: string
   address_country: string
+  address_municipality_code: string
   relationship_code: string
   ocrConfidence: string | null
   signatureDataUrl: string | null
 }
-
-type SesDocumentTypeForGuest = 'NIF' | 'NIE' | 'PAS' | 'OTRO'
 
 // Acción pública (huésped anónimo). Permite reabrir un huésped ya guardado
 // para corregir un error antes de que el cron lo comunique a SES — sin esto,
@@ -236,20 +241,18 @@ export async function getCheckinGuestData(
     }
   }
 
-  // CIF/CIF_E son para personas jurídicas, nunca los guarda este formulario —
-  // si aparecieran (dato legado), se tratan como "OTRO" igual que en el OCR.
-  const documentType: SesDocumentTypeForGuest =
-    guest.document_type === 'NIF' || guest.document_type === 'NIE' || guest.document_type === 'PAS'
-      ? guest.document_type
-      : 'OTRO'
+  // document_kind es lo que eligió el huésped; en fichas anteriores a esa
+  // columna se deduce del código de SES que sí se guardó.
+  const documentKind: DocumentKind =
+    (guest.document_kind as DocumentKind | null) ?? kindFromSesCode(guest.document_type)
 
   return {
     data: {
       first_name: guest.first_name,
       first_surname: guest.first_surname,
       second_surname: guest.second_surname ?? '',
-      document_type: documentType,
-      document_number: guest.document_number,
+      document_kind: documentKind,
+      document_number: guest.document_number ?? '',
       document_support_number: guest.document_support_number ?? '',
       birth_date: guest.birth_date,
       nationality: guest.nationality,
@@ -257,10 +260,10 @@ export async function getCheckinGuestData(
       phone: guest.phone ?? '',
       email: guest.email ?? '',
       address_street: guest.address_street ?? '',
-      address_number: guest.address_number ?? '',
       address_postal_code: guest.address_postal_code ?? '',
       address_city: guest.address_city ?? '',
       address_country: guest.address_country ?? '',
+      address_municipality_code: guest.address_municipality_code ?? '',
       relationship_code: guest.relationship_code ?? '',
       ocrConfidence: guest.ocr_confidence,
       signatureDataUrl,
@@ -272,7 +275,7 @@ export interface CheckinGuestInput {
   first_name: string
   first_surname: string
   second_surname?: string
-  document_type: string
+  document_kind: string
   document_number: string
   document_support_number?: string
   birth_date: string
@@ -281,10 +284,10 @@ export interface CheckinGuestInput {
   phone?: string
   email?: string
   address_street: string
-  address_number?: string
   address_postal_code: string
   address_city?: string
   address_country: string
+  address_municipality_code?: string
   relationship_code?: string
   ocr_confidence?: string | null
 }
@@ -316,6 +319,22 @@ export async function submitCheckinGuest(
     return { error: parsed.error.issues[0]?.message ?? 'Datos del huésped no válidos' }
   }
   const validated = parsed.data
+
+  // El municipio se resuelve contra el catálogo del INE, no se acepta tal cual:
+  // un código inventado llegaría hasta el XML de SES y lo rechazaría el portal.
+  // Además así el nombre guardado en address_city es siempre el oficial, y no
+  // depende de lo que enviara el cliente.
+  let municipalityCode: string | null = null
+  let municipalityName: string | null = validated.address_city || null
+
+  if (validated.address_country === 'ESP') {
+    const municipality = await resolveMunicipality(validated.address_municipality_code ?? '')
+    if (!municipality) {
+      return { error: 'El municipio seleccionado no existe en el catálogo del INE' }
+    }
+    municipalityCode = municipality.code
+    municipalityName = municipality.name
+  }
 
   const admin = createServerAdminClient()
 
@@ -362,8 +381,12 @@ export async function submitCheckinGuest(
         reservation_id: reservation.id,
         checkin_link_id: link.id,
         guest_order: guestOrder,
-        document_type: validated.document_type,
-        document_number: validated.document_number,
+        // Se guardan las dos caras del dato: lo que eligió el huésped
+        // (document_kind) y el código que espera SES. Un menor sin
+        // documentación no lleva ninguno de los dos.
+        document_kind: validated.document_kind,
+        document_type: sesCodeForKind(validated.document_kind),
+        document_number: hasDocument(validated.document_kind) ? validated.document_number : null,
         document_support_number: validated.document_support_number || null,
         first_name: validated.first_name,
         first_surname: validated.first_surname,
@@ -374,10 +397,10 @@ export async function submitCheckinGuest(
         phone: validated.phone || null,
         email: validated.email || null,
         address_street: validated.address_street,
-        address_number: validated.address_number || null,
         address_postal_code: validated.address_postal_code,
-        address_city: validated.address_city || null,
+        address_city: municipalityName,
         address_country: validated.address_country,
+        address_municipality_code: municipalityCode,
         relationship_code: validated.relationship_code || null,
         signature_required: signatureRequired,
         signature_url: signatureUrl,

@@ -2,14 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Camera, Loader2, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { scanDocument } from '@/app/actions/checkin'
+import type { GuideThemeClasses } from '@/lib/guide-theme'
 import type { ExtractedGuestDocumentData } from '@/types/checkin'
 
 interface DocumentScannerProps {
   token: string
   onScanned: (data: ExtractedGuestDocumentData) => void
+  guideTheme: GuideThemeClasses
 }
 
 const MAX_DIMENSION = 1800 // suficiente para que Gemini lea texto/MRZ, sin disparar el peso del envío
@@ -22,7 +23,7 @@ const STABLE_DURATION_MS = 1200
 const MOVEMENT_THRESHOLD = 8 // diferencia media de brillo (0-255) entre muestras para considerarlo "quieto"
 const MIN_CONTRAST = 18 // desviación típica de brillo mínima para descartar apuntar a una superficie lisa
 
-export function DocumentScanner({ token, onScanned }: DocumentScannerProps) {
+export function DocumentScanner({ token, onScanned, guideTheme: t }: DocumentScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
@@ -237,33 +238,39 @@ export function DocumentScanner({ token, onScanned }: DocumentScannerProps) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <p className={`text-[13px] text-center font-medium ${aligning ? 'text-emerald-600' : 'text-slate-500'}`}>
+        <p className={`text-[13px] text-center font-medium ${aligning ? 'text-emerald-600' : 'text-[var(--ck-ink-soft)]'}`}>
           {aligning ? 'Quieto… capturando' : 'Encuadra el documento dentro del marco'}
         </p>
-        <Button
+        <button
           type="button"
-          className="w-full rounded-full h-14 gap-2"
+          className={`w-full h-14 flex items-center justify-center gap-2 text-sm ${t.actionBtn}`}
           onClick={handleCapture}
         >
           <Camera className="h-4 w-4" />
           Hacer foto
-        </Button>
+        </button>
       </div>
     )
   }
 
+  // Mismo lenguaje que las tarjetas de pasos de la bienvenida: círculo de icono
+  // + título + subtítulo, con el borde del tema en vez del gris por defecto.
   return (
     <div>
-      <Button
+      <button
         type="button"
-        variant="outline"
-        className="w-full rounded-2xl h-14 gap-2"
         onClick={startCamera}
+        className={`w-full flex items-center gap-3 px-4 py-3.5 text-left ${t.chipBg}`}
       >
-        <Camera className="h-4 w-4" />
-        Escanear DNI / NIE / Pasaporte
-      </Button>
-      <p className="text-[11px] text-slate-400 text-center mt-2">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${t.chipIconBg}`}>
+          <Camera size={18} className={t.chipIconColor} aria-hidden="true" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm ${t.chipLabel}`}>Escanear documento</p>
+          <p className="text-[12px] text-[var(--ck-ink-soft)]">DNI, NIE o pasaporte — rellena tus datos solo</p>
+        </div>
+      </button>
+      <p className="text-[11px] text-[var(--ck-ink-mute)] text-center mt-2">
         También puedes rellenar los datos a mano si prefieres.
       </p>
     </div>

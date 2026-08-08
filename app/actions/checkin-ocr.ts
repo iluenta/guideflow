@@ -1,6 +1,7 @@
 'use server'
 
 import type { ExtractedGuestDocumentData, SesSex } from '@/types/checkin'
+import { isKnownCountry } from '@/lib/checkin/countries'
 
 const EMPTY_RESULT: ExtractedGuestDocumentData = {
   first_name: null,
@@ -159,6 +160,43 @@ function parseTD3(lines: string[]): Partial<ExtractedGuestDocumentData> | null {
   }
 }
 
+// La nacionalidad de la MRZ es un código ICAO 9303, que se PARECE a ISO 3166-1
+// alfa-3 pero no siempre coincide. Las excepciones que importan de verdad:
+//
+//   D          Alemania — en la MRZ va como "D<<", y al quitar los rellenos
+//              queda "D" a secas. Es el caso más frecuente en turismo español
+//              después de los propios británicos.
+//   GBD/GBN/   Categorías de súbdito británico (territorios de ultramar,
+//   GBO/GBP/   national overseas, protegidos…). Todas son Reino Unido a
+//   GBS        efectos de país.
+//
+// Sin esta traducción, el desplegable de nacionalidad se quedaba vacío tras
+// escanear un pasaporte alemán y el huésped tenía que buscarlo a mano.
+const ICAO_TO_ISO3: Record<string, string> = {
+  D: 'DEU',
+  GBD: 'GBR',
+  GBN: 'GBR',
+  GBO: 'GBR',
+  GBP: 'GBR',
+  GBS: 'GBR',
+}
+
+// Códigos ICAO que no designan un país: apátridas y refugiados (XX*),
+// Naciones Unidas (UN*) y Unión Europea (EUE). No hay país que preseleccionar,
+// así que se devuelve null y lo elige el huésped.
+const ICAO_NOT_A_COUNTRY = new Set(['XXA', 'XXB', 'XXC', 'XXX', 'UNO', 'UNA', 'UNK', 'EUE'])
+
+function normalizeNationality(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  const code = raw.toUpperCase().replace(/[^A-Z]/g, '')
+  if (!code || ICAO_NOT_A_COUNTRY.has(code)) return null
+
+  const iso = ICAO_TO_ISO3[code] ?? code
+  // Cualquier cosa que no esté en el catálogo ISO se descarta: es preferible un
+  // campo vacío que el huésped rellena a un país inventado que acaba en el XML.
+  return isKnownCountry(iso) ? iso : null
+}
+
 // El corte por posición de la MRZ es aritmética exacta — si Gemini transcribió las líneas
 // bien, esto siempre acierta el campo, a diferencia de pedirle que además haga el recorte él.
 function applyMrzOverride(parsed: ExtractedGuestDocumentData & { mrz_lines?: unknown }): ExtractedGuestDocumentData {
@@ -249,6 +287,10 @@ export async function scanGuestDocument(
     if (parsed.sex !== null && !validSex.includes(parsed.sex as string)) {
       parsed.sex = null
     }
+
+    // Se normaliza aquí, al final, para que valga igual si la nacionalidad vino
+    // de la MRZ o del texto impreso que leyó Gemini.
+    parsed.nationality = normalizeNationality(parsed.nationality)
 
     if (!['high', 'medium', 'low'].includes(parsed.confidence as string)) {
       parsed.confidence = 'medium'

@@ -44,20 +44,24 @@ function tipoPagoFromCollectionParty(collectionParty: 'platform' | 'host'): stri
   return collectionParty === 'platform' ? 'PLATF' : 'TRANS'
 }
 
-// LIMITACIÓN CONOCIDA: si el país es España, el manual exige codigoMunicipio
-// (código INE de 5 dígitos), no nombreMunicipio libre — y no lo pedimos en el
-// formulario de check-in (solo localidad en texto libre). No inventamos un
-// código: se omite para España. Como esta XML se sube a mano y con revisión
-// humana (no es un envío automático ciego), si el portal lo rechaza por este
-// campo, el propietario puede corregirlo él mismo antes de volver a subirlo.
+// España y extranjero se informan distinto, tal cual exige el manual: "si el
+// país es España (ESP), el código de municipio ha de ir informado". El código
+// es el del INE (CPRO+CMUN, 5 dígitos), que el huésped elige en el formulario
+// contra el catálogo cargado en ine_municipalities — no se deduce del código
+// postal, porque la relación es 1:N (Adra = 04770/04778/04779).
+// Para el resto de países no hay catálogo posible: va el nombre en texto libre.
 function buildDireccion(guest: CheckinGuestRecord): string {
   const isSpain = guest.address_country.toUpperCase() === 'ESP'
+  const municipio = isSpain
+    ? tag('codigoMunicipio', guest.address_municipality_code)
+    : tag('nombreMunicipio', guest.address_city)
+
   // El esquema real solo tiene un campo "direccion" de texto libre (calle,
-  // número, escalera, piso, puerta...) — no un campo "número" separado.
-  const streetLine = [guest.address_street, guest.address_number].filter(Boolean).join(', ')
+  // número, escalera, piso, puerta...) — no un campo "número" separado, que es
+  // por lo que el formulario tampoco lo pide por separado.
   return `<direccion>
-${tag('direccion', streetLine)}
-${isSpain ? '' : tag('nombreMunicipio', guest.address_city)}
+${tag('direccion', guest.address_street)}
+${municipio}
 ${tag('codigoPostal', guest.address_postal_code)}
 ${tag('pais', guest.address_country)}
 </direccion>`
@@ -69,6 +73,8 @@ ${tag('rol', 'VI')}
 ${tag('nombre', guest.first_name)}
 ${tag('apellido1', guest.first_surname)}
 ${tag('apellido2', guest.second_surname)}
+${/* Un menor sin documentación no lleva estos campos: tag() los omite al ser
+     null, en vez de mandar etiquetas vacías que el portal rechazaría. */ ''}
 ${tag('tipoDocumento', guest.document_type)}
 ${tag('numeroDocumento', guest.document_number)}
 ${tag('soporteDocumento', guest.document_support_number)}

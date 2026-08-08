@@ -24,7 +24,8 @@ import {
     HelpCircle,
     ChevronLeft,
     Menu,
-    Eye
+    Eye,
+    LogOut
 } from 'lucide-react'
 
 export function WizardLayout({ children }: { children: React.ReactNode }) {
@@ -75,6 +76,11 @@ export function WizardLayout({ children }: { children: React.ReactNode }) {
             title: 'Instrucciones de Llegada',
             description: 'Explica paso a paso cómo entrar a la propiedad y dónde encontrar las llaves.',
             icon: Key
+        },
+        'checkout': {
+            title: 'Instrucciones de Salida',
+            description: 'Explica qué debe hacer el huésped antes de irse: basura, llaves, hora límite.',
+            icon: LogOut
         },
         'rules': {
             title: 'Normas de la Casa',

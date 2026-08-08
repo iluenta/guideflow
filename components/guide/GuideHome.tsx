@@ -6,6 +6,7 @@ import {
     ArrowLeft,
     ChevronRight,
     Key,
+    LogOut,
     AlertTriangle,
     Utensils,
     Calendar,
@@ -43,6 +44,9 @@ interface GuideHomeProps {
     disabledLanguage?: boolean;
     property?: { full_address?: string };
     onPrivacyClick?: () => void;
+    /** Fechas de la estancia: deciden si el hueco destacado muestra llegada o salida */
+    checkinDate?: string;
+    checkoutDate?: string;
 }
 
 const container = {
@@ -79,10 +83,29 @@ export function GuideHome({
     disabledLanguage = false,
     property,
     onPrivacyClick,
+    checkinDate,
+    checkoutDate,
 }: GuideHomeProps) {
     const t = getGuideTheme(themeId)
 
     const hasCheckin = !!context?.find(c => c.category === 'checkin')?.content?.steps?.length;
+    const hasCheckout = !!context?.find(c => c.category === 'checkout')?.content?.steps?.length;
+
+    // El hueco destacado es uno solo y cambia con la fase de la estancia:
+    // el día de llegada muestra la entrada, y a partir del segundo día la salida.
+    // El acceso a la otra pantalla sigue disponible desde el menú.
+    const showCheckout = (() => {
+        if (!hasCheckout) return false;
+        if (!checkinDate) return false;
+        const today = new Date();
+        const cin = new Date(checkinDate);
+        today.setHours(0, 0, 0, 0);
+        cin.setHours(0, 0, 0, 0);
+        const daysFromCheckin = Math.floor((today.getTime() - cin.getTime()) / 86_400_000);
+        return daysFromCheckin >= 1;
+    })();
+
+    const showCheckin = hasCheckin && !showCheckout;
 
     const rulesContext = context?.find(c => c.category === 'rules')?.content;
     const hasRules = !!(rulesContext?.rules_items?.length > 0 || rulesContext?.quiet_hours || rulesContext?.checkout_time);
@@ -113,6 +136,7 @@ export function GuideHome({
     const { content: labelNormas } = useLocalizedContent('Normas', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelManual } = useLocalizedContent('Manual', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelCheckin } = useLocalizedContent('Check In', currentLanguage, 'ui_label', accessToken, propertyId);
+    const { content: labelCheckout } = useLocalizedContent('Check Out', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: labelSOS } = useLocalizedContent('SOS', currentLanguage, 'ui_label', accessToken, propertyId);
     const { content: poweredByLabel } = useLocalizedContent('Desarrollado por', currentLanguage, 'ui_label', accessToken, propertyId);
 
@@ -192,8 +216,8 @@ export function GuideHome({
                         <Star size={12} className="text-[#f59e0b]" fill="currentColor" />
                         {labelLoIndispensable}
                     </h3>
-                    <div className={cn('grid gap-3', hasCheckin ? 'grid-cols-2' : 'grid-cols-1')}>
-                        {hasCheckin && (
+                    <div className={cn('grid gap-3', (showCheckin || showCheckout) ? 'grid-cols-2' : 'grid-cols-1')}>
+                        {showCheckin && (
                             <button
                                 onClick={() => onNavigate('checkin')}
                                 className={cn('flex flex-col items-center justify-center p-4 rounded-2xl shadow-lg active:scale-95 transition-all', t.actionBtn)}
@@ -201,6 +225,17 @@ export function GuideHome({
                                 <Key size={24} className="mb-2 opacity-90" />
                                 <span className="text-[9px] font-black tracking-widest uppercase">
                                     {labelCheckin}
+                                </span>
+                            </button>
+                        )}
+                        {showCheckout && (
+                            <button
+                                onClick={() => onNavigate('checkout')}
+                                className={cn('flex flex-col items-center justify-center p-4 rounded-2xl shadow-lg active:scale-95 transition-all', t.actionBtn)}
+                            >
+                                <LogOut size={24} className="mb-2 opacity-90" />
+                                <span className="text-[9px] font-black tracking-widest uppercase">
+                                    {labelCheckout}
                                 </span>
                             </button>
                         )}

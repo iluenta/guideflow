@@ -98,6 +98,9 @@ run_git.ps1
 /verify-dashboard.png
 /phone.jpg
 
+# Maqueta local
+/MAQUETA/
+
 # MCP / Playwright logs
 .playwright-mcp/
 

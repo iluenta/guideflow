@@ -65,11 +65,20 @@ function PartedeEntradaDocument({ propertyName, establishmentCode, reservationId
             <Text style={styles.guestTitle}>
               Huésped {guest.guest_order}: {guest.first_name} {guest.first_surname} {guest.second_surname ?? ''}
             </Text>
-            <Row label="Documento" value={`${guest.document_type} ${guest.document_number}`} />
+            {/* Sin documento es un caso legítimo (menor sin documentación),
+                no un dato que falte: se dice así en vez de imprimir vacíos. */}
+            <Row
+              label="Documento"
+              value={
+                guest.document_type && guest.document_number
+                  ? `${guest.document_type} ${guest.document_number}`
+                  : 'Menor sin documentación'
+              }
+            />
             <Row label="Fecha de nacimiento" value={guest.birth_date} />
             <Row label="Nacionalidad" value={guest.nationality} />
             <Row label="Sexo" value={guest.sex} />
-            <Row label="Dirección" value={[guest.address_street, guest.address_number].filter(Boolean).join(' ')} />
+            <Row label="Dirección" value={guest.address_street} />
             <Row label="C.P. / Localidad" value={[guest.address_postal_code, guest.address_city].filter(Boolean).join(' — ')} />
             <Row label="País" value={guest.address_country} />
             <Row label="Contacto" value={guest.phone ?? guest.email} />

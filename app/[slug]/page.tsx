@@ -199,12 +199,12 @@ async function prefetchTranslations(
 
 interface GuidePageProps {
     params: Promise<{ slug: string }>
-    searchParams: Promise<{ token?: string, lang?: string }>
+    searchParams: Promise<{ token?: string, lang?: string, screen?: string }>
 }
 
 export default async function GuidePage({ params, searchParams }: GuidePageProps) {
     const { slug } = await params
-    const { token, lang } = await searchParams
+    const { token, lang, screen } = await searchParams
     const supabase = await createClient()
 
     const property = await getPropertyBySlug(slug)
@@ -255,9 +255,12 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
                 checkinDate = access.checkin_date || ''
                 checkoutDate = access.checkout_date || ''
             } else if (!isOwner) {
-                // Si no es el dueño y el token no es válido, fuera
-                (await cookies()).delete(`gf_token_${slug}`)
-                redirect('/access-denied?reason=invalid')
+                // Si no es el dueño y el token no es válido, fuera.
+                // La cookie caducada la borra el route handler: aquí no se
+                // puede tocar (Next prohíbe modificar cookies durante el
+                // renderizado, y hacerlo tumbaba la página con un error 500
+                // en vez de enseñar el aviso de acceso denegado).
+                redirect(`/access-denied/clear?slug=${encodeURIComponent(slug)}&reason=invalid`)
             }
         }
     }
@@ -384,6 +387,7 @@ export default async function GuidePage({ params, searchParams }: GuidePageProps
                 initialTranslations={allTranslations}
                 checkinDate={checkinDate}
                 checkoutDate={checkoutDate}
+                initialScreen={screen}
             />
         </div>
     )

@@ -19,7 +19,8 @@ import {
     Utensils,
     HelpCircle,
     BookOpen,
-    Lock
+    Lock,
+    LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWizard } from './WizardContext';
@@ -37,6 +38,7 @@ export const STEPS: Step[] = [
     { id: 'welcome', label: 'Saludo', icon: Sparkles },
     { id: 'contacts', label: 'Contactos', icon: Users },
     { id: 'checkin', label: 'Check-in', icon: Clock },
+    { id: 'checkout', label: 'Check-out', icon: LogOut },
     { id: 'rules', label: 'Normas', icon: Shield },
     { id: 'tech', label: 'Tech', icon: Wifi },
     { id: 'visual-scanner', label: 'Escáner', icon: QrCode },

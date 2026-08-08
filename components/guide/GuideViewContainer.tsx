@@ -39,6 +39,10 @@ const CheckInView = dynamic(
     () => import('@/components/guide/CheckInView').then(m => ({ default: m.CheckInView })),
     { loading: () => <ViewSkeleton />, ssr: false }
 );
+const CheckoutView = dynamic(
+    () => import('@/components/guide/CheckoutView').then(m => ({ default: m.CheckoutView })),
+    { loading: () => <ViewSkeleton />, ssr: false }
+);
 const EmergencyView = dynamic(
     () => import('@/components/guide/EmergencyView').then(m => ({ default: m.EmergencyView })),
     { loading: () => <ViewSkeleton />, ssr: false }
@@ -88,6 +92,9 @@ interface GuideViewContainerProps {
     initialTranslations?: Record<string, string>;
     checkinDate?: string;
     checkoutDate?: string;
+    /** Pantalla inicial (?screen=). Permite entrar directo a, p. ej., las
+     *  instrucciones de llegada desde el check-in ya completado. */
+    initialScreen?: string;
 }
 
 export function GuideViewContainer({
@@ -104,6 +111,7 @@ export function GuideViewContainer({
     initialTranslations = {},
     checkinDate,
     checkoutDate,
+    initialScreen,
 }: GuideViewContainerProps) {
     const themeId: string =
         branding?.layout_theme_id ||
@@ -140,7 +148,13 @@ export function GuideViewContainer({
         }
     }, [initialTranslations, initialLanguage, property.id]);
 
-    const [currentPage, setCurrentPage] = useState<string | null>('welcome');
+    // El valor llega por URL, así que solo se aceptan pantallas conocidas.
+    const ALLOWED_INITIAL_SCREENS = ['checkin', 'check-in', 'checkout', 'check-out', 'rules', 'manuals', 'house-info', 'emergency'];
+    const startScreen = initialScreen && ALLOWED_INITIAL_SCREENS.includes(initialScreen)
+        ? initialScreen
+        : 'welcome';
+
+    const [currentPage, setCurrentPage] = useState<string | null>(startScreen);
     const [activeTab, setActiveTab] = useState('welcome');
     const [language, setLanguage] = useState<string>(initialLanguage);
     const [navigationPayload, setNavigationPayload] = useState<any>(null);
@@ -512,6 +526,8 @@ export function GuideViewContainer({
                      disabledLanguage={!!tokenLanguage}
                      property={property}
                      onPrivacyClick={() => setIsPrivacyModalOpen(true)}
+                     checkinDate={checkinDate}
+                     checkoutDate={checkoutDate}
                  />
              );
          }
@@ -556,6 +572,20 @@ export function GuideViewContainer({
                 const hasAccessCodeEnabled = property?.has_access_code === true;
                 const accessCodeProp = hasAccessCodeEnabled ? (property.access_code || accessData?.access_code || '') : '';
                 return <CheckInView onBack={handleBack} propertyName={property.name} accessCodeProp={accessCodeProp} hasAccessCodeEnabled={hasAccessCodeEnabled} checkinData={checkinData} address={accessData?.full_address || property.full_address || ''} hostName={welcomeData?.host_name || labelHostNameFallback} currentLanguage={language} preferredContactName={prefName} preferredContactPhone={prefPhone} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
+            }
+            case 'check-out':
+            case 'checkout': {
+                const checkoutData = context?.find((c: any) => c.category === 'checkout')?.content || {};
+                const rulesData = context?.find((c: any) => c.category === 'rules')?.content || {};
+                const contactsData = context?.find((c: any) => c.category === 'contacts')?.content || {};
+                // Mismo contacto preferente que en la llegada
+                const prefPhone = contactsData.preferred_contact_id === 'host'
+                    ? (contactsData.host_mobile || contactsData.host_phone || '')
+                    : (contactsData.support_phone || contactsData.support_mobile || contactsData.host_mobile || contactsData.host_phone || '');
+                const prefName = contactsData.preferred_contact_id === 'host'
+                    ? (welcomeData?.host_name || contactsData.host_name || labelHostNameFallback)
+                    : (contactsData.support_name || welcomeData?.host_name || labelHostNameFallback);
+                return <CheckoutView onBack={handleBack} checkoutData={checkoutData} checkoutTime={rulesData.checkout_time} currentLanguage={language} preferredContactName={prefName} preferredContactPhone={prefPhone} onLanguageChange={setLanguage} accessToken={accessToken} propertyId={property.id} disabledLanguage={!!tokenLanguage} />;
             }
             case 'emergency': {
                 const contactsData = context?.find((c: any) => c.category === 'contacts')?.content || {};
@@ -622,6 +652,8 @@ export function GuideViewContainer({
                         context={displayContext}
                         manuals={displayManuals}
                         disabledLanguage={!!tokenLanguage}
+                        checkinDate={checkinDate}
+                        checkoutDate={checkoutDate}
                     />
                 );
         }

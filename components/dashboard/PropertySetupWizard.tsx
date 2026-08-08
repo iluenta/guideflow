@@ -9,6 +9,7 @@ import StepAccess from './wizard/steps/access/StepAccess'
 import StepWelcome from './wizard/steps/content/StepWelcome'
 import StepContacts from './wizard/steps/local/StepContacts'
 import StepCheckin from './wizard/steps/access/StepCheckin'
+import StepCheckout from './wizard/steps/access/StepCheckout'
 import StepRules from './wizard/steps/content/StepRules'
 import StepTech from './wizard/steps/technical/StepTech'
 import StepVisualScanner from './wizard/steps/technical/StepVisualScanner'
@@ -39,6 +40,7 @@ export function PropertySetupWizard({ propertyId, tenantId, onSuccess }: Propert
                 <StepWelcome value="welcome" />
                 <StepContacts value="contacts" />
                 <StepCheckin value="checkin" />
+                <StepCheckout value="checkout" />
                 <StepRules value="rules" />
                 <StepTech value="tech" />
                 <StepVisualScanner value="visual-scanner" />

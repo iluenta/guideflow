@@ -142,6 +142,11 @@ export class TranslationService {
 
       CONTEXT: This is for a luxury vacation rental digital guide (concierge). Tone should be helpful and professional.
 
+      FORMATTING: Some inputs contain Markdown (**bold**, lists with "-", quotes with ">", \`code\`, links).
+      Preserve that markup EXACTLY as-is — same symbols, same positions, same line breaks. Translate only the
+      human-readable text around it. Never add Markdown that was not in the input. Codes, numbers and proper
+      nouns (door codes, parking spots, street names) must be copied verbatim, never translated or reformatted.
+
       Input: ${JSON.stringify(denseTexts)}`;
 
       const batchModel = TranslationService.genAI.getGenerativeModel({

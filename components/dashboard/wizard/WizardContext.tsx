@@ -66,7 +66,8 @@ interface WizardContextType {
     handleGeocode: () => Promise<GeocodingResult | null>
     handleAIFill: (section: string, category?: string, overrideData?: { address?: string, coordinates?: GeocodingResult }) => Promise<void>
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
-    handleStepImageUpload: (idx: number, e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
+    /** `category` permite reutilizarlo para los pasos de salida, no solo los de llegada */
+    handleStepImageUpload: (idx: number, e: React.ChangeEvent<HTMLInputElement>, category?: 'checkin' | 'checkout') => Promise<void>
     resolvedPropertyId: string | null
 }
 
@@ -100,6 +101,10 @@ export function WizardProvider({
         welcome: { title: '', host_name: '', message: '' },
         access: { full_address: '', latitude: null, longitude: null, nearby_transport: [], access_code: '' },
         checkin: { checkin_time: '15:00 - 22:00', emergency_phone: '', steps: [] },
+        // La hora de salida sigue viviendo en `rules.checkout_time`; aquí solo
+        // los pasos de salida. La carga desde property_context es genérica por
+        // categoría, así que declararlo aquí basta para que se rellene solo.
+        checkout: { steps: [] },
         contacts: {
             support_name: '',
             support_phone: '',
@@ -1029,7 +1034,7 @@ export function WizardProvider({
         }
     }
 
-    const handleStepImageUpload = async (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleStepImageUpload = async (idx: number, e: React.ChangeEvent<HTMLInputElement>, category: 'checkin' | 'checkout' = 'checkin') => {
         const file = e.target.files?.[0]
         if (!file) return
 
@@ -1047,9 +1052,9 @@ export function WizardProvider({
 
             if (!response.ok) throw new Error('Error al subir la imagen')
 
-            const newSteps = [...data.checkin.steps]
+            const newSteps = [...(data[category]?.steps ?? [])]
             newSteps[idx] = { ...newSteps[idx], image_url: publicUrl }
-            setData({ ...data, checkin: { ...data.checkin, steps: newSteps } })
+            setData({ ...data, [category]: { ...data[category], steps: newSteps } })
 
             toast({ title: 'Imagen subida', description: 'La foto se ha añadido al paso.' })
         } catch (error) {
