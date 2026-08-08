@@ -11,6 +11,7 @@ import type { ExtractedGuestDocumentData, SesSex } from '@/types/checkin'
 import { calculateAge } from '@/lib/checkin/guest-utils'
 import { guestCheckinSchema } from '@/lib/checkin/guest-schema'
 import { resolveMunicipality } from '@/app/actions/municipalities'
+import { ensureGuestAccessToken } from '@/lib/checkin/guest-access'
 import {
   hasDocument,
   kindFromSesCode,
@@ -301,7 +302,7 @@ export async function submitCheckinGuest(
   guestOrder: number,
   data: CheckinGuestInput,
   signatureBase64: string | null
-): Promise<{ success?: true; completed?: boolean; error?: string }> {
+): Promise<{ success?: true; completed?: boolean; guideToken?: string | null; error?: string }> {
   const result = await validateCheckinToken(token)
   if (!result.valid) {
     return { error: 'Enlace no válido o caducado' }
@@ -421,12 +422,41 @@ export async function submitCheckinGuest(
     .eq('checkin_link_id', link.id)
 
   let completed = false
+  let guideToken: string | null = null
   if ((count ?? 0) >= maxGuests) {
     completed = true
     await admin
       .from('checkin_links')
       .update({ completed_at: new Date().toISOString() })
       .eq('id', link.id)
+
+    // El acceso a la guía se devuelve AQUÍ, no solo al cargar la página: el
+    // último huésped se guarda sin recargar, así que la pantalla final se
+    // pintaba con el token que había al entrar — ninguno — y los enlaces a la
+    // guía y a las instrucciones de llegada quedaban muertos.
+    // Es idempotente: si ya existe, devuelve el mismo.
+    try {
+      const { data: lead } = await admin
+        .from('checkin_guests')
+        .select('first_name, first_surname')
+        .eq('checkin_link_id', link.id)
+        .order('guest_order')
+        .limit(1)
+        .maybeSingle()
+
+      guideToken = await ensureGuestAccessToken({
+        propertyId: link.property_id,
+        tenantId: link.tenant_id,
+        reservationId: reservation.id,
+        guestName: [lead?.first_name, lead?.first_surname].filter(Boolean).join(' '),
+        checkinDate: reservation.checkin_date,
+        checkoutDate: reservation.checkout_date,
+      })
+    } catch (e) {
+      // Sin token, la pantalla final muestra las tarjetas atenuadas en vez de
+      // enlaces rotos; el check-in en sí ya está guardado y es lo que importa.
+      console.error('[submitCheckinGuest] Error generando el acceso a la guía:', e)
+    }
 
     // Aviso al propietario: best-effort, un fallo de email no debe romper el check-in.
     try {
@@ -447,5 +477,5 @@ export async function submitCheckinGuest(
     }
   }
 
-  return { success: true, completed }
+  return { success: true, completed, guideToken }
 }

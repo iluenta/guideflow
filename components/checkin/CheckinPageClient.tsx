@@ -102,11 +102,14 @@ export function CheckinPageClient({
   registeredGuests,
   checkinTime,
   hostContact,
-  guideToken,
+  guideToken: initialGuideToken,
   initialSharedContact,
   guideTheme: t,
 }: CheckinPageClientProps) {
   const [saved, setSaved] = useState<RegisteredGuest[]>(registeredGuests)
+  // Del servidor solo llega si el check-in YA estaba completo al cargar; al
+  // completarlo aquí, lo devuelve la propia acción de guardado.
+  const [guideToken, setGuideToken] = useState<string | null>(initialGuideToken)
   const [consentAccepted, setConsentAccepted] = useState(false)
   const [step, setStep] = useState<Step>(saved.length >= guestsCount ? 'done' : 'welcome')
   const [currentGuest, setCurrentGuest] = useState(1)
@@ -129,7 +132,17 @@ export function CheckinPageClient({
     return null
   }
 
-  function handleSaved(guestOrder: number, birthDate: string, shared: SharedGuestContact) {
+  function handleSaved(
+    guestOrder: number,
+    birthDate: string,
+    shared: SharedGuestContact,
+    newGuideToken: string | null
+  ) {
+    // Llega solo con el último huésped. Sin esto, la pantalla final se pintaba
+    // con el token que había al cargar la página (ninguno) y los accesos a la
+    // guía salían apagados hasta recargar.
+    if (newGuideToken) setGuideToken(newGuideToken)
+
     // El primero manda; si aún no hay nada guardado, siembra el que se guarde antes.
     if (guestOrder === 1 || !sharedContact) setSharedContact(shared)
 
@@ -287,7 +300,7 @@ export function CheckinPageClient({
               guestOrder={currentGuest}
               checkinDate={checkinDate}
               hasMinorInGroup={hasMinorInGroup}
-              onSaved={(birthDate, shared) => handleSaved(currentGuest, birthDate, shared)}
+              onSaved={(birthDate, shared, newGuideToken) => handleSaved(currentGuest, birthDate, shared, newGuideToken)}
               guideTheme={t}
               formId={GUEST_FORM_ID}
               onBusyChange={handleBusyChange}

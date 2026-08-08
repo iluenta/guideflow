@@ -39,7 +39,7 @@ interface GuestFormProps {
   guestOrder: number
   checkinDate: string
   hasMinorInGroup: boolean
-  onSaved: (birthDate: string, shared: SharedGuestContact) => void
+  onSaved: (birthDate: string, shared: SharedGuestContact, guideToken: string | null) => void
   guideTheme: GuideThemeClasses
   /** El botón de guardar vive en la barra inferior fija, fuera de este componente */
   formId: string
@@ -219,7 +219,7 @@ export function GuestForm({
     setSubmitting(true)
     try {
       const signatureBase64 = requiresSignature && sigRef.current ? sigRef.current.toDataURL('image/png') : null
-      const { error } = await submitCheckinGuest(
+      const { error, guideToken } = await submitCheckinGuest(
         token,
         guestOrder,
         { ...values, ocr_confidence: ocrConfidence },
@@ -230,15 +230,21 @@ export function GuestForm({
         return
       }
       toast.success(`Huésped ${guestOrder} guardado`)
-      onSaved(values.birth_date, {
-        phone: values.phone ?? '',
-        email: values.email ?? '',
-        address_street: values.address_street,
-        address_postal_code: values.address_postal_code,
-        address_city: values.address_city ?? '',
-        address_country: values.address_country,
-        address_municipality_code: values.address_municipality_code ?? '',
-      })
+      onSaved(
+        values.birth_date,
+        {
+          phone: values.phone ?? '',
+          email: values.email ?? '',
+          address_street: values.address_street,
+          address_postal_code: values.address_postal_code,
+          address_city: values.address_city ?? '',
+          address_country: values.address_country,
+          address_municipality_code: values.address_municipality_code ?? '',
+        },
+        // Solo viene relleno al guardar el último huésped: es el acceso a la
+        // guía, que hasta ahora solo se conocía recargando la página.
+        guideToken ?? null
+      )
     } finally {
       setSubmitting(false)
     }
