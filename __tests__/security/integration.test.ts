@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   createMockSupabaseClient,
   createMockUser,
+  createTenantAwareClient,
   simulateConcurrentRequests,
 } from './utils';
 import { SQL_INJECTION_PAYLOADS, XSS_PAYLOADS, PROMPT_INJECTION_PAYLOADS } from './payloads';
@@ -65,40 +66,26 @@ describe('Integration Security Tests', () => {
 
   describe('Authentication Bypass + Authorization Bypass', () => {
     it('debería prevenir bypass de autenticación seguido de acceso no autorizado', async () => {
+      const { createClient } = await import('@/lib/supabase/server');
       const { getProperties } = await import('@/app/actions/properties');
 
-      // Intentar acceder sin autenticación
-      mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: null },
-        error: { message: 'Not authenticated' },
-      });
+      // 1. Sin sesión → requireProfile lanza (getProperties no debe devolver datos)
+      vi.mocked(createClient).mockResolvedValueOnce(createTenantAwareClient({
+        user: null,
+        authError: { message: 'Not authenticated' },
+      }) as any);
+      await expect(getProperties()).rejects.toThrow();
 
-      try {
-        await getProperties();
-      } catch (error: any) {
-        // Esperado: debería rechazar sin autenticación
-        expect(error.message).toContain('autorizado');
-      }
-
-      // Intentar acceder con usuario de otro tenant
-      mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: user2 },
-        error: null,
-      });
-
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValueOnce({
-          data: [],
-          error: null,
-        }),
-      });
-
+      // 2. Usuario de otro tenant → solo ve lo de SU tenant (aquí, nada)
+      vi.mocked(createClient).mockResolvedValueOnce(createTenantAwareClient({
+        user: user2,
+        tables: {
+          profiles: { data: { tenant_id: 'tenant-2-id', tenant_role: 'owner' } },
+          properties_with_completion: { data: [] },
+        },
+      }) as any);
       const properties = await getProperties();
-
-      // Verificar que solo obtiene propiedades de su tenant
-      expect(properties.every((p: any) => p.tenant_id === 'tenant-2-id' || properties.length === 0)).toBe(true);
+      expect(properties.length).toBe(0);
     });
   });
 
@@ -198,53 +185,32 @@ describe('Integration Security Tests', () => {
 
   describe('Session Hijacking + Data Exfiltration', () => {
     it('debería prevenir exfiltración de datos mediante sesión comprometida', async () => {
+      const { createClient } = await import('@/lib/supabase/server');
       const { getProperties } = await import('@/app/actions/properties');
 
-      // Usuario legítimo
-      mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: user1 },
-        error: null,
-      });
-
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValueOnce({
-          data: [
-            {
-              id: 'prop-1',
-              tenant_id: 'tenant-1-id',
-              name: 'Property 1',
-              description: 'Sensitive data',
+      // Cada getProperties abre su propio cliente: encolamos uno por llamada.
+      vi.mocked(createClient)
+        .mockResolvedValueOnce(createTenantAwareClient({
+          user: user1,
+          tables: {
+            profiles: { data: { tenant_id: 'tenant-1-id', tenant_role: 'owner' } },
+            properties_with_completion: {
+              data: [{ id: 'prop-1', tenant_id: 'tenant-1-id', name: 'Property 1' }],
             },
-          ],
-          error: null,
-        }),
-      });
+          },
+        }) as any)
+        .mockResolvedValueOnce(createTenantAwareClient({
+          user: user2,
+          tables: {
+            profiles: { data: { tenant_id: 'tenant-2-id', tenant_role: 'owner' } },
+            properties_with_completion: { data: [] },
+          },
+        }) as any);
 
       const properties = await getProperties();
-
-      // Verificar que solo obtiene datos de su tenant
       expect(properties.every((p: any) => p.tenant_id === 'tenant-1-id')).toBe(true);
 
-      // Intentar acceder con sesión de otro usuario
-      mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: user2 },
-        error: null,
-      });
-
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValueOnce({
-          data: [],
-          error: null,
-        }),
-      });
-
       const properties2 = await getProperties();
-
-      // Verificar que no obtiene datos del tenant-1
       expect(properties2.length).toBe(0);
     });
   });
@@ -294,34 +260,27 @@ describe('Integration Security Tests', () => {
 
   describe('Privilege Escalation Attempt', () => {
     it('debería prevenir escalación de privilegios mediante manipulación de metadata', async () => {
-      const { getProperties } = await import('@/app/actions/properties');
+      const { createClient } = await import('@/lib/supabase/server');
 
-      // Intentar modificar tenant_id en metadata
+      // El atacante pone tenant_id: 'tenant-2-id' en su user_metadata (manipulable
+      // en el JWT). requireProfile IGNORA el metadata y lee el tenant real desde la
+      // tabla 'profiles' (tenant-1-id), así que nunca ve datos de tenant-2.
       const maliciousUser = createMockUser({
         id: 'user-1-id',
-        user_metadata: {
-          tenant_id: 'tenant-2-id', // Intentar acceder a otro tenant
+        user_metadata: { tenant_id: 'tenant-2-id' },
+      });
+
+      vi.mocked(createClient).mockResolvedValueOnce(createTenantAwareClient({
+        user: maliciousUser,
+        tables: {
+          profiles: { data: { tenant_id: 'tenant-1-id', tenant_role: 'owner' } },
+          properties_with_completion: { data: [] },
         },
-      });
+      }) as any);
 
-      mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: maliciousUser },
-        error: null,
-      });
-
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValueOnce({
-          data: [],
-          error: null,
-        }),
-      });
-
+      const { getProperties } = await import('@/app/actions/properties');
       const properties = await getProperties();
 
-      // Verificar que no obtiene propiedades del tenant-2
-      // (aunque el código usa user_metadata.tenant_id, RLS debería prevenir)
       expect(properties.length).toBe(0);
     });
   });

@@ -233,8 +233,22 @@ export async function getCheckinGuestData(
     return { data: null }
   }
 
+  // M-2 (minimización de PII): una vez el parte se ha comunicado a SES, corregir
+  // ya no tiene sentido y los datos están a punto de purgarse. A partir de ese
+  // momento el enlace deja de devolver la identidad documental (nº de documento,
+  // nº de soporte y firma), de modo que un enlace filtrado no permita cosechar
+  // esos datos en la ventana posterior a la comunicación. El resto de campos se
+  // conservan para dar contexto si el huésped reabre la ficha.
+  const { data: communicated } = await admin
+    .from('ses_communications')
+    .select('id')
+    .eq('reservation_id', link.reservation_id)
+    .in('status', ['generated', 'uploaded_manually', 'sent', 'acknowledged'])
+    .maybeSingle()
+  const identityLocked = !!communicated
+
   let signatureDataUrl: string | null = null
-  if (guest.signature_url) {
+  if (!identityLocked && guest.signature_url) {
     const { data: file } = await admin.storage.from('checkin_signatures').download(guest.signature_url)
     if (file) {
       const buffer = Buffer.from(await file.arrayBuffer())
@@ -253,8 +267,8 @@ export async function getCheckinGuestData(
       first_surname: guest.first_surname,
       second_surname: guest.second_surname ?? '',
       document_kind: documentKind,
-      document_number: guest.document_number ?? '',
-      document_support_number: guest.document_support_number ?? '',
+      document_number: identityLocked ? '' : (guest.document_number ?? ''),
+      document_support_number: identityLocked ? '' : (guest.document_support_number ?? ''),
       birth_date: guest.birth_date,
       nationality: guest.nationality,
       sex: guest.sex as SesSex,

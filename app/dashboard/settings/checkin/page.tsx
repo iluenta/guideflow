@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle2, ExternalLink } from 'lucide-react'
+import { CheckCircle2, Download, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,6 +14,7 @@ import {
   updatePropertySesSettings,
   getSesCommunicationsLog,
   markCommunicationUploaded,
+  getSesDocumentUrl,
   type CheckinPropertySettings,
   type SesCommunicationLogEntry,
 } from '@/app/actions/checkin-settings'
@@ -87,6 +88,7 @@ export default function CheckinSettingsPage() {
 
   const [properties, setProperties] = useState<CheckinPropertySettings[]>([])
   const [log, setLog] = useState<SesCommunicationLogEntry[]>([])
+  const [downloading, setDownloading] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   async function load() {
@@ -107,6 +109,20 @@ export default function CheckinSettingsPage() {
     if (error) { toast.error(error); return }
     toast.success('Marcada como subida')
     load()
+  }
+
+  // La URL se pide en el momento de pulsar y caduca en un minuto: así no queda
+  // un enlace vivo a un documento con identidades y firmas dando vueltas por el
+  // HTML de la página ni por el historial del navegador.
+  async function handleDownload(id: string, kind: 'xml' | 'pdf') {
+    setDownloading(`${id}:${kind}`)
+    try {
+      const { url, error } = await getSesDocumentUrl(id, kind)
+      if (error || !url) { toast.error(error ?? 'No se pudo descargar'); return }
+      window.location.href = url
+    } finally {
+      setDownloading(null)
+    }
   }
 
   return (
@@ -151,6 +167,7 @@ export default function CheckinSettingsPage() {
                     <th className="px-6 py-3 font-medium">Propiedad</th>
                     <th className="px-6 py-3 font-medium">Huéspedes</th>
                     <th className="px-6 py-3 font-medium">Estado</th>
+                    <th className="px-6 py-3 font-medium">Documentos</th>
                     <th className="px-6 py-3 font-medium"></th>
                   </tr>
                 </thead>
@@ -166,6 +183,38 @@ export default function CheckinSettingsPage() {
                           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium ${status.className}`}>
                             {status.label}
                           </span>
+                        </td>
+                        <td className="px-6 py-3">
+                          {entry.xml_path || entry.pdf_path ? (
+                            <div className="flex items-center gap-2">
+                              {entry.xml_path && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="rounded-full h-7 text-[11px] gap-1"
+                                  disabled={downloading === `${entry.id}:xml`}
+                                  onClick={() => handleDownload(entry.id, 'xml')}
+                                >
+                                  <Download className="h-3 w-3" />
+                                  XML
+                                </Button>
+                              )}
+                              {entry.pdf_path && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="rounded-full h-7 text-[11px] gap-1"
+                                  disabled={downloading === `${entry.id}:pdf`}
+                                  onClick={() => handleDownload(entry.id, 'pdf')}
+                                >
+                                  <Download className="h-3 w-3" />
+                                  Justificante
+                                </Button>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-slate-400">Retirados</span>
+                          )}
                         </td>
                         <td className="px-6 py-3 text-right">
                           {entry.status === 'generated' && canEdit && (

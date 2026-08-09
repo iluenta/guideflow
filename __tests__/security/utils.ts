@@ -158,11 +158,82 @@ export function createMockSupabaseClient() {
       };
       return queryBuilder;
     }),
-    rpc: vi.fn(),
+    // rpc devuelve por defecto la forma { data, error } que espera el código
+    // (p. ej. RateLimiter.checkLimit con check_and_increment_rate_limit). Antes
+    // era vi.fn() → undefined, que reventaba al desestructurar { data, error }.
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     storage: {
       from: vi.fn(() => ({
         createSignedUploadUrl: vi.fn(),
         remove: vi.fn(),
+      })),
+    },
+  };
+}
+
+/**
+ * Crea un mock de cliente Supabase "consciente de la tabla".
+ *
+ * A diferencia de createMockSupabaseClient, from(tabla) devuelve respuestas
+ * configuradas por tabla, lo que permite testear acciones que consultan varias
+ * tablas en una sola llamada (p. ej. requireProfile → 'profiles', y luego la
+ * tabla real de la acción). Cada tabla admite:
+ *   - un único { data, error }  → se reutiliza en todas sus consultas
+ *   - un array de { data, error } → se consume FIFO (para acciones que consultan
+ *     la MISMA tabla varias veces, p. ej. createProperty: check de slug + insert)
+ *
+ * Los métodos terminales soportados son single(), maybeSingle() y await directo
+ * de la cadena (para queries que terminan en .order()/.limit()).
+ */
+export function createTenantAwareClient(config: {
+  user?: any | null;
+  authError?: any;
+  tables?: Record<string, { data?: any; error?: any } | Array<{ data?: any; error?: any }>>;
+} = {}) {
+  const { user = null, authError = null, tables = {} } = config;
+
+  // Cola por tabla, compartida entre todas las llamadas a from(tabla) del cliente.
+  const queues: Record<string, Array<{ data?: any; error?: any }>> = {};
+  for (const [table, raw] of Object.entries(tables)) {
+    queues[table] = Array.isArray(raw) ? [...raw] : [raw];
+  }
+  const nextFor = (table: string) => {
+    const q = queues[table];
+    if (!q || q.length === 0) return { data: null, error: null };
+    return q.length > 1 ? q.shift()! : q[0];
+  };
+
+  const chainMethods = [
+    'select', 'insert', 'update', 'delete', 'upsert', 'eq', 'neq', 'gt', 'gte',
+    'lt', 'lte', 'like', 'ilike', 'is', 'in', 'contains', 'order', 'limit',
+    'range', 'filter', 'match', 'not',
+  ];
+
+  const buildBuilder = (table: string) => {
+    const builder: any = {};
+    for (const m of chainMethods) builder[m] = vi.fn(() => builder);
+    builder.single = vi.fn(() => Promise.resolve(nextFor(table)));
+    builder.maybeSingle = vi.fn(() => Promise.resolve(nextFor(table)));
+    // Hace la cadena "awaitable" para queries que terminan en .order()/.limit().
+    builder.then = (onFulfilled: any, onRejected?: any) =>
+      Promise.resolve(nextFor(table)).then(onFulfilled, onRejected);
+    return builder;
+  };
+
+  return {
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user }, error: authError }),
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    },
+    from: vi.fn((table: string) => buildBuilder(table)),
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+    storage: {
+      from: vi.fn(() => ({
+        upload: vi.fn().mockResolvedValue({ data: null, error: null }),
+        remove: vi.fn().mockResolvedValue({ data: null, error: null }),
+        download: vi.fn().mockResolvedValue({ data: null, error: null }),
+        createSignedUploadUrl: vi.fn(),
+        createSignedUrl: vi.fn(),
       })),
     },
   };

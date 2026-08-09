@@ -59,31 +59,31 @@ export class RateLimiter {
         const supabase = createEdgeAdminClient()
         const now = Date.now()
         const windowStart = new Date(now - config.windowMs).toISOString()
+        const resetAt = new Date(now + config.windowMs)
 
-        // 1. Count requests in window
-        const { count, error } = await supabase
-            .from('rate_limit_requests')
-            .select('*', { count: 'exact', head: true })
-            .eq('key', key)
-            .gte('timestamp', windowStart)
+        // Conteo + registro atómico en una única transacción del lado de Postgres
+        // (advisory lock por clave). Evita el TOCTOU del count+insert separados,
+        // por el que una ráfaga concurrente superaba el límite.
+        const { data, error } = await supabase.rpc('check_and_increment_rate_limit', {
+            p_key: key,
+            p_window_start: windowStart,
+            p_max_requests: config.maxRequests,
+        })
 
         if (error) {
-            console.error('[RATE-LIMIT] Select error:', error.message)
-            return { allowed: true, remaining: 1, resetAt: new Date() }
+            // Fail-CLOSED: estos límites protegen endpoints de coste (IA/OCR). Ante
+            // un fallo de infraestructura preferimos denegar a dejar pasar. Requiere
+            // que la migración 20260809120000_atomic_rate_limit.sql esté aplicada.
+            console.error('[RATE-LIMIT] RPC error (fail-closed):', error.message)
+            return { allowed: false, remaining: 0, resetAt, message: config.message }
         }
 
-        const requestCount = count || 0
+        // La función devuelve el nº de peticiones que ya había en la ventana
+        // (sin contar la actual, que solo se inserta si está por debajo del tope).
+        const requestCount = typeof data === 'number' ? data : 0
         const allowed = requestCount < config.maxRequests
-        const remaining = Math.max(0, config.maxRequests - requestCount)
-        const resetAt = new Date(now + config.windowMs)
+        const remaining = Math.max(0, config.maxRequests - requestCount - (allowed ? 1 : 0))
         const message = allowed ? undefined : config.message
-
-        if (allowed) {
-            // 2. Register this request
-            await supabase
-                .from('rate_limit_requests')
-                .insert({ key, timestamp: new Date().toISOString() })
-        }
 
         return { allowed, remaining, resetAt, message }
     }

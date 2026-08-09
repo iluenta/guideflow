@@ -39,9 +39,11 @@ describe('Auth Server Actions', () => {
         await signInWithMagicLink(formData)
         expect.fail('Should have thrown error')
       } catch (error: any) {
-        if (error.message === 'REDIRECT') {
-          expect(redirect).toHaveBeenCalledWith('/auth/login?error=Email is required')
-        }
+        // La acción redirige a /auth/login con el error (mensaje en español,
+        // URL-encoded). El mock de redirect lanza 'REDIRECT'.
+        expect(error.message).toBe('REDIRECT')
+        expect(redirect).toHaveBeenCalledTimes(1)
+        expect(redirect).toHaveBeenCalledWith(expect.stringContaining('/auth/login?error='))
       }
     })
 

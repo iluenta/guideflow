@@ -183,22 +183,27 @@ export function GuestForm({
     if (data.first_surname) form.setValue('first_surname', data.first_surname)
     if (data.second_surname) form.setValue('second_surname', data.second_surname)
 
-    // La nacionalidad se aplica ANTES que el documento: es la que decide qué
-    // documentos son válidos, y así la combinación que queda es coherente
-    // (un pasaporte alemán, no un DNI alemán).
-    //
-    // Si el escaneo no la trae, el campo se queda vacío a propósito: caer en
-    // "España" por defecto atribuiría nacionalidad española a un extranjero
-    // sin que nadie lo haya dicho, y eso acabaría en la comunicación a SES.
-    // El código ya viene normalizado a ISO 3166-1 alfa-3 desde el OCR.
-    const scannedNationality = data.nationality ?? ''
-    if (scannedNationality) form.setValue('nationality', scannedNationality)
+    // Nacionalidad y tipo de documento se resuelven juntos: la primera decide
+    // qué documentos son válidos, y así lo que queda es coherente (un pasaporte
+    // alemán, no un DNI alemán).
+    const kind = data.document_type ? kindFromSesCode(data.document_type) : null
 
-    if (data.document_type) {
-      const kind = kindFromSesCode(data.document_type)
-      if (isDocumentKindAllowed(kind, scannedNationality)) {
-        form.setValue('document_kind', kind)
-      }
+    // El código ya viene normalizado a ISO 3166-1 alfa-3 desde el OCR.
+    let nationality = data.nationality ?? ''
+
+    // Un DNI solo lo expide España. Si el escaneo leyó el documento pero no la
+    // nacionalidad, se deduce del propio documento en vez de dejar los dos
+    // campos vacíos. No es lo mismo que poner "España" por defecto sin saber
+    // nada: aquí lo dice el documento que el huésped tiene en la mano.
+    if (!nationality && kind === 'DNI') nationality = 'ESP'
+
+    if (nationality) form.setValue('nationality', nationality)
+
+    // Con la nacionalidad aún desconocida no se descarta nada: el documento es
+    // la prueba física que hay delante, y vale más que un campo que el OCR
+    // pudo no llegar a leer.
+    if (kind && (!nationality || isDocumentKindAllowed(kind, nationality))) {
+      form.setValue('document_kind', kind)
     }
     if (data.document_number) form.setValue('document_number', data.document_number)
     if (data.document_support_number) form.setValue('document_support_number', data.document_support_number)

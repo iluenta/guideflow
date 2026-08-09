@@ -1,5 +1,6 @@
 import { createEdgeAdminClient } from '@/lib/supabase/edge';
 import { NextResponse } from 'next/server';
+import { safeCompareSecret } from '@/lib/security/constant-time';
 
 export const runtime = 'nodejs';
 
@@ -15,7 +16,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
     }
 
-    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== adminKey) {
+    if (!safeCompareSecret(authHeader, `Bearer ${adminKey}`)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

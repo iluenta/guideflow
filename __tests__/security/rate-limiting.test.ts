@@ -196,30 +196,27 @@ describe('Rate Limiting Tests', () => {
   });
 
   describe('Daily Rate Limits', () => {
-    it('debería limitar requests diarios por token', async () => {
+    it('bloquea cuando el token alcanza el límite diario (50)', async () => {
+      const { createEdgeAdminClient } = await import('@/lib/supabase/edge');
+
+      // La función atómica devuelve el recuento previo en la ventana. Simulamos
+      // que el contador diario del token ya está en 50 → debe bloquear.
+      const rpc = vi.fn(async (_fn: string, params: any) =>
+        params.p_key === 'token:daily:test-token-daily'
+          ? { data: 50, error: null }
+          : { data: 0, error: null }
+      );
+      vi.mocked(createEdgeAdminClient).mockReturnValue({ rpc } as any);
+
       const { RateLimiter } = await import('@/lib/security/rate-limiter');
+      const result = await RateLimiter.checkChatRateLimit(
+        'test-token-daily',
+        '127.0.0.1',
+        'test-device',
+      );
 
-      const accessToken = 'test-token-daily';
-      const ip = '127.0.0.1';
-      const deviceFingerprint = 'test-device';
-
-      // Simular 60 requests (más del límite diario de 50)
-      const results = await simulateConcurrentRequests(60, async () => {
-        try {
-          const result = await RateLimiter.checkChatRateLimit(
-            accessToken,
-            ip,
-            deviceFingerprint
-          );
-          return result;
-        } catch (error) {
-          return { allowed: false, error };
-        }
-      });
-
-      // Verificar que algunos requests son rechazados
-      const rejected = results.filter((r) => !r.response?.allowed);
-      expect(rejected.length).toBeGreaterThan(0);
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toBe('daily_limit_exceeded');
     });
   });
 
@@ -261,60 +258,24 @@ describe('Rate Limiting Tests', () => {
   });
 
   describe('Rate Limit Reset', () => {
-    it('debería resetear rate limits después del período de ventana', async () => {
+    it('permite de nuevo cuando la ventana está vacía (recuento previo 0)', async () => {
+      const { createEdgeAdminClient } = await import('@/lib/supabase/edge');
+
+      // La función atómica ahora vive en Postgres: simulamos su contrato
+      // (devuelve el recuento previo en la ventana). Ventana reseteada → 0 → permitido.
+      const rpc = vi.fn().mockResolvedValue({ data: 0, error: null });
+      vi.mocked(createEdgeAdminClient).mockReturnValue({ rpc } as any);
+
       const { RateLimiter } = await import('@/lib/security/rate-limiter');
-      const { createEdgeClient } = await import('@/lib/supabase/edge');
-      
-      // Mock del edge client para rate limiter (usa createEdgeClient, no createEdgeAdminClient)
-      const mockEdgeClient = createMockSupabaseClient();
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockEq = vi.fn().mockReturnThis();
-      const mockGte = vi.fn().mockReturnThis();
-      const mockCount = vi.fn().mockResolvedValue({ count: 0, error: null });
-      const mockInsert = vi.fn().mockResolvedValue({ data: null, error: null });
-      
-      mockSelect.mockReturnValue({
-        eq: mockEq,
-        gte: mockGte,
-        count: mockCount,
-      });
-      mockEq.mockReturnValue({
-        gte: mockGte,
-        count: mockCount,
-      });
-      mockGte.mockReturnValue({
-        count: mockCount,
-      });
-      
-      mockEdgeClient.from.mockReturnValue({
-        select: mockSelect,
-        insert: mockInsert,
-      });
-      
-      vi.mocked(createEdgeClient).mockReturnValue(mockEdgeClient);
 
-      const accessToken = 'test-token-reset';
-      const ip = '127.0.0.1';
-      const deviceFingerprint = 'test-device';
-
-      // Hacer requests hasta alcanzar el límite
-      for (let i = 0; i < 10; i++) {
-        await RateLimiter.checkChatRateLimit(accessToken, ip, deviceFingerprint);
-      }
-
-      // Esperar que pase la ventana (1 minuto en producción)
-      // En tests, podemos simular esto
-      await sleep(100);
-
-      // Verificar que después del reset, se pueden hacer más requests
       const result = await RateLimiter.checkChatRateLimit(
-        accessToken,
-        ip,
-        deviceFingerprint
+        'test-token-reset',
+        '127.0.0.1',
+        'test-device',
       );
 
-      // Nota: En producción, esto dependería del tiempo real
-      expect(result).toBeDefined();
+      expect(result.allowed).toBe(true);
+      expect(rpc).toHaveBeenCalledWith('check_and_increment_rate_limit', expect.any(Object));
     });
   });
 

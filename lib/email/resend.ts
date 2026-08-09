@@ -4,6 +4,7 @@ import { telHref, whatsappHref } from '@/lib/phone'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 const SENDER_DOMAIN = 'hospyia.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://app.hospyia.com'
 const SYSTEM_FROM   = `Hospyia Reservas <reservas@${SENDER_DOMAIN}>`
 
 function buildFromAddress(propertyName: string): string {
@@ -484,13 +485,15 @@ export async function sendCheckinCompleted({
   })
 }
 
+// Aviso, no entrega. El XML y el PDF NO viajan como adjuntos: llevan
+// identidades completas y firmas, y en una bandeja de correo se quedarían
+// indefinidamente y fuera de nuestro alcance. Se descargan desde el panel con
+// enlace firmado. Aquí solo van la referencia de la reserva y el plazo.
 type CheckinReadyForSesParams = {
   property: { name: string }
   landing: { contact_email: string }
   reservation: { id: string; checkin_date: string; checkout_date: string }
   guestsCount: number
-  xml: string
-  pdf: Buffer
 }
 
 export async function sendCheckinReadyForSes({
@@ -498,8 +501,6 @@ export async function sendCheckinReadyForSes({
   landing,
   reservation,
   guestsCount,
-  xml,
-  pdf,
 }: CheckinReadyForSesParams): Promise<void> {
   const ref = reservation.id.slice(0, 8).toUpperCase()
   const checkin  = new Date(reservation.checkin_date  + 'T00:00:00')
@@ -530,15 +531,29 @@ export async function sendCheckinReadyForSes({
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;margin-bottom:24px;">
   <tr>
     <td style="padding:14px 18px;font-size:13px;color:#92400e;line-height:1.6;">
-      ⏰ <strong>Tienes 24 horas desde la entrada</strong> para subir el fichero <strong>parte-viajeros.xml</strong> adjunto en el
+      ⏰ <strong>Tienes 24 horas desde la entrada</strong> para subir el fichero <strong>parte-viajeros.xml</strong> en el
       <a href="https://sede.interior.gob.es/portal/sede" style="color:#92400e;">portal de SES Hospedajes</a>
       (Procedimientos y servicios → Hospedajes y alquiler de vehículos → Alta masiva de comunicaciones).
     </td>
   </tr>
 </table>
-<p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">
-  Adjuntamos también <strong>parte-entrada.pdf</strong> con los datos y la firma de cada huésped — guárdalo como justificante,
-  estás obligado a conservarlo 3 años desde la salida (RD 933/2021).
+<p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.6;">
+  Descarga el XML y el justificante desde el panel:
+</p>
+<table cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+  <tr><td style="background:#0f766e;border-radius:8px;">
+    <a href="${SITE_URL}/dashboard/settings/checkin" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#fff;text-decoration:none;">
+      Ir a comunicaciones a SES
+    </a>
+  </td></tr>
+</table>
+<p style="margin:0 0 8px;font-size:13px;color:#6b7280;line-height:1.6;">
+  Allí tienes <strong>parte-entrada.pdf</strong> con los datos y la firma de cada huésped. Guárdalo como justificante:
+  estás obligado a conservarlo 3 años desde la salida (RD 933/2021). Cuando subas el XML al portal, márcalo como subido
+  en el panel — es lo que permite a la aplicación dejar de guardar los datos de tus huéspedes.
+</p>
+<p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
+  Por seguridad, los ficheros no se envían por correo: contienen documentos de identidad y firmas.
 </p>`
 
   await resend.emails.send({
@@ -546,10 +561,6 @@ export async function sendCheckinReadyForSes({
     to:      landing.contact_email,
     subject: `Check-in listo para SES: ${property.name} — ${checkin.toLocaleDateString('es-ES')}`,
     html:    emailShell('#0f766e', 'Check-in listo para SES Hospedajes', property.name, ref, body),
-    attachments: [
-      { filename: 'parte-viajeros.xml', content: Buffer.from(xml, 'utf-8'), contentType: 'application/xml' },
-      { filename: 'parte-entrada.pdf', content: pdf, contentType: 'application/pdf' },
-    ],
   })
 }
 

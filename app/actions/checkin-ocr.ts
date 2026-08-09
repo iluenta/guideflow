@@ -109,6 +109,23 @@ function parseMrzName(nameBlock: string): { firstSurname: string | null; secondS
 }
 
 // DNI / NIE español — TD1, 3 líneas de 30 caracteres (ICAO 9303).
+/**
+ * Tipo de documento deducido del número, no leído por el modelo.
+ *
+ * El formato español es inequívoco —8 dígitos + letra en el DNI, X/Y/Z + 7
+ * dígitos + letra en el NIE— así que se puede afirmar con certeza en vez de
+ * fiarlo a que Gemini interprete bien el anverso. Cuando no encaja con ninguno
+ * (una tarjeta de identidad extranjera, por ejemplo) devuelve null y se
+ * respeta lo que haya leído el modelo.
+ */
+function documentTypeFromNumber(documentNumber: string | null): 'NIF' | 'NIE' | null {
+  if (!documentNumber) return null
+  const value = documentNumber.toUpperCase()
+  if (/^\d{8}[A-Z]$/.test(value)) return 'NIF'
+  if (/^[XYZ]\d{7}[A-Z]$/.test(value)) return 'NIE'
+  return null
+}
+
 function parseTD1(lines: string[]): Partial<ExtractedGuestDocumentData> | null {
   if (lines.length !== 3) return null
   const l1 = lines[0].padEnd(30, '<').slice(0, 30)
@@ -131,6 +148,9 @@ function parseTD1(lines: string[]): Partial<ExtractedGuestDocumentData> | null {
   return {
     document_number: documentNumber,
     document_support_number: supportNumber,
+    // Null si el número no es español: applyMrzOverride ignora los nulos, así
+    // que en ese caso se conserva el tipo que leyera el modelo.
+    document_type: documentTypeFromNumber(documentNumber),
     birth_date: mrzDateToIso(l2.slice(0, 6)),
     sex: mrzSexToSes(l2[7] ?? ''),
     nationality: stripFiller(l2.slice(15, 18)) || null,
@@ -151,6 +171,9 @@ function parseTD3(lines: string[]): Partial<ExtractedGuestDocumentData> | null {
   return {
     document_number: stripFiller(l2.slice(0, 9)) || null,
     document_support_number: null,
+    // El formato TD3 (2 líneas de 44) es, por definición del ICAO 9303, un
+    // pasaporte: no hace falta que el modelo lo adivine.
+    document_type: 'PAS',
     nationality: stripFiller(l2.slice(10, 13)) || null,
     birth_date: mrzDateToIso(l2.slice(13, 19)),
     sex: mrzSexToSes(l2[20] ?? ''),

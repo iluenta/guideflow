@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createMockSupabaseClient, createMockUser } from './utils';
+import { createMockSupabaseClient, createMockUser, createTenantAwareClient } from './utils';
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
@@ -34,32 +34,23 @@ describe('Authorization and Tenant Isolation Tests', () => {
 
   describe('Properties Access Control', () => {
     it('debería filtrar propiedades por tenant_id', async () => {
+      const { createClient } = await import('@/lib/supabase/server');
+      // requireProfile consulta 'profiles'; getProperties consulta
+      // 'properties_with_completion'. El mock table-aware responde a ambas.
+      vi.mocked(createClient).mockResolvedValueOnce(createTenantAwareClient({
+        user: user1,
+        tables: {
+          profiles: { data: { tenant_id: 'tenant-1-id', tenant_role: 'owner' } },
+          properties_with_completion: {
+            data: [{ id: 'prop-1', tenant_id: 'tenant-1-id', name: 'Property 1' }],
+          },
+        },
+      }) as any);
+
       const { getProperties } = await import('@/app/actions/properties');
-
-      mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: user1 },
-        error: null,
-      });
-
-      const mockEq = vi.fn().mockReturnThis();
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockOrder = vi.fn().mockResolvedValueOnce({
-        data: [
-          { id: 'prop-1', tenant_id: 'tenant-1-id', name: 'Property 1' },
-        ],
-        error: null,
-      });
-
-      mockSupabase.from.mockReturnValueOnce({
-        select: mockSelect,
-        eq: mockEq,
-        order: mockOrder,
-      });
-
       const properties = await getProperties();
 
-      // Verificar que se filtra por tenant_id (RLS debería hacerlo automáticamente)
-      // El test verifica que los datos retornados pertenecen al tenant correcto
+      expect(properties.length).toBe(1);
       expect(properties.every((p: any) => p.tenant_id === 'tenant-1-id')).toBe(true);
     });
 
@@ -86,26 +77,22 @@ describe('Authorization and Tenant Isolation Tests', () => {
     });
 
     it('debería validar tenant_id al crear propiedades', async () => {
+      const { createClient } = await import('@/lib/supabase/server');
+      // createProperty: requireProfile('profiles') → check de slug en 'properties'
+      // (maybeSingle, debe ser null) → insert en 'properties' (single, la nueva fila).
+      // La cola FIFO de 'properties' da null primero y la fila después.
+      vi.mocked(createClient).mockResolvedValueOnce(createTenantAwareClient({
+        user: user1,
+        tables: {
+          profiles: { data: { tenant_id: 'tenant-1-id', tenant_role: 'owner' } },
+          properties: [
+            { data: null, error: null },
+            { data: { id: 'new-prop', tenant_id: 'tenant-1-id', name: 'New Property' }, error: null },
+          ],
+        },
+      }) as any);
+
       const { createProperty } = await import('@/app/actions/properties');
-
-      mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: user1 },
-        error: null,
-      });
-
-      mockSupabase.from.mockReturnValueOnce({
-        insert: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValueOnce({
-          data: {
-            id: 'new-prop',
-            tenant_id: 'tenant-1-id',
-            name: 'New Property',
-          },
-          error: null,
-        }),
-      });
-
       const property = await createProperty({
         name: 'New Property',
         location: 'Test Location',
@@ -114,7 +101,7 @@ describe('Authorization and Tenant Isolation Tests', () => {
         guests: 4,
       } as any);
 
-      // Verificar que se asigna el tenant_id correcto
+      // El tenant_id lo fija el servidor desde requireProfile, no el input del cliente
       expect(property.tenant_id).toBe('tenant-1-id');
     });
 
@@ -162,38 +149,21 @@ describe('Authorization and Tenant Isolation Tests', () => {
 
   describe('Guest Access Tokens', () => {
     it('debería validar tenant_id al crear tokens de acceso', async () => {
-      const { createGuestAccess } = await import('@/app/actions/guest-access');
-
-      mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: user1 },
-        error: null,
-      });
-
-      // Verificar propiedad pertenece al tenant
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValueOnce({
-          data: { id: 'prop-1', tenant_id: 'tenant-1-id' },
-          error: null,
-        }),
-      });
-
-      // Insertar token
-      mockSupabase.from.mockReturnValueOnce({
-        insert: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValueOnce({
-          data: {
-            id: 'token-1',
-            tenant_id: 'tenant-1-id',
-            property_id: 'prop-1',
-            access_token: 'test-token',
+      const { createClient } = await import('@/lib/supabase/server');
+      // createGuestAccess: requireProfile('profiles') → verifica propiedad del
+      // tenant en 'properties' → inserta en 'guest_access_tokens'.
+      vi.mocked(createClient).mockResolvedValueOnce(createTenantAwareClient({
+        user: user1,
+        tables: {
+          profiles: { data: { tenant_id: 'tenant-1-id', tenant_role: 'owner' } },
+          properties: { data: { id: 'prop-1' } },
+          guest_access_tokens: {
+            data: { id: 'token-1', tenant_id: 'tenant-1-id', property_id: 'prop-1', access_token: 'test-token' },
           },
-          error: null,
-        }),
-      });
+        },
+      }) as any);
 
+      const { createGuestAccess } = await import('@/app/actions/guest-access');
       const result = await createGuestAccess({
         propertyId: 'prop-1',
         guestName: 'Test Guest',
@@ -201,7 +171,6 @@ describe('Authorization and Tenant Isolation Tests', () => {
         checkoutDate: '2024-01-02',
       });
 
-      // Verificar que se valida tenant_id
       expect(result.data.tenant_id).toBe('tenant-1-id');
     });
 
@@ -325,28 +294,20 @@ describe('Authorization and Tenant Isolation Tests', () => {
 
   describe('Cross-Tenant Data Leakage', () => {
     it('debería prevenir fuga de datos entre tenants', async () => {
+      const { createClient } = await import('@/lib/supabase/server');
+      vi.mocked(createClient).mockResolvedValueOnce(createTenantAwareClient({
+        user: user1,
+        tables: {
+          profiles: { data: { tenant_id: 'tenant-1-id', tenant_role: 'owner' } },
+          properties_with_completion: {
+            data: [{ id: 'prop-1', tenant_id: 'tenant-1-id', name: 'Property 1' }],
+          },
+        },
+      }) as any);
+
       const { getProperties } = await import('@/app/actions/properties');
-
-      // User1 obtiene sus propiedades
-      mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: user1 },
-        error: null,
-      });
-
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValueOnce({
-          data: [
-            { id: 'prop-1', tenant_id: 'tenant-1-id', name: 'Property 1' },
-          ],
-          error: null,
-        }),
-      });
-
       const properties = await getProperties();
 
-      // Verificar que no hay propiedades de otros tenants
       const otherTenantProperties = properties.filter(
         (p: any) => p.tenant_id !== 'tenant-1-id'
       );

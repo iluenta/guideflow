@@ -68,8 +68,23 @@ const KINDS_FOREIGN: readonly DocumentKind[] = [
   'MENOR_SIN_DOCUMENTO',
 ]
 
+// Mientras no se sepa la nacionalidad no se restringe nada. Antes se caía en la
+// lista de extranjero, que es una suposición sin fundamento y además tenía un
+// efecto feo: al escanear un DNI cuyo MRZ no dejaba leer la nacionalidad, el
+// tipo de documento se descartaba en silencio por "no válido" y el huésped veía
+// el desplegable vacío y sin la opción DNI.
+const KINDS_UNKNOWN: readonly DocumentKind[] = [
+  'DNI',
+  'NIE',
+  'PASAPORTE',
+  'TARJETA_IDENTIDAD',
+  'PERMISO_RESIDENCIA',
+  'MENOR_SIN_DOCUMENTO',
+]
+
 export function documentKindsForNationality(nationality: string): DocumentKindDefinition[] {
-  const kinds = nationality.toUpperCase() === 'ESP' ? KINDS_SPANISH : KINDS_FOREIGN
+  const code = nationality.trim().toUpperCase()
+  const kinds = !code ? KINDS_UNKNOWN : code === 'ESP' ? KINDS_SPANISH : KINDS_FOREIGN
   return kinds.map(k => DEFINITIONS[k])
 }
 

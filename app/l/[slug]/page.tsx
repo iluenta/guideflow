@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getPropertyLandingBySlug } from '@/app/actions/landing-config';
 import { LandingPageClient } from '@/components/property-landing/LandingPageClient';
+import { stringifyJsonLd } from '@/lib/security/escape-json-ld';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -162,7 +163,11 @@ function buildJsonLd(data: NonNullable<Awaited<ReturnType<typeof getPropertyLand
       : {}),
   };
 
-  return JSON.stringify(ld);
+  // Seguridad (XSS): el JSON se inyecta con dangerouslySetInnerHTML dentro de un
+  // <script>. stringifyJsonLd escapa '<','>','&' y U+2028/U+2029 para que un campo
+  // controlado por el propietario (name, custom_description, tourist_registration…)
+  // con "</script>" no pueda cerrar el tag ni ejecutar JS. Ver lib/security/escape-json-ld.
+  return stringifyJsonLd(ld);
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
